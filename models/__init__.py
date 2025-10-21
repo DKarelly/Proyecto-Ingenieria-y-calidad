@@ -7,6 +7,7 @@ from .recurso import Recurso
 from .tipo_recurso import TipoRecurso
 from .reporte_ocupacion import ReporteOcupacion
 from .incidencia import Incidencia
+from .paciente import Paciente
 
 __all__ = ['Empleado', 'RegistroActividad', 'Categoria', 'Reporte', 
-           'Recurso', 'TipoRecurso', 'ReporteOcupacion', 'Incidencia']
+           'Recurso', 'TipoRecurso', 'ReporteOcupacion', 'Incidencia', 'Paciente']
