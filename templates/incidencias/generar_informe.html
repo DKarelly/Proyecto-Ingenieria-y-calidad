@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Informe de Incidencia - Clínica Unión S.A.C.</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/generar_informe_incidencias.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <i class="fas fa-hospital-alt"></i>
+                <h1>Clínica Unión S.A.C.</h1>
+            </div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a href="/incidencias" class="nav-link active">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Incidencias</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <div class="page-header">
+            <div class="title-section">
+                <i class="fas fa-file-medical-alt"></i>
+                <h2>Generar Informe de Incidencia</h2>
+            </div>
+            <div class="breadcrumb">
+                <a href="/">Inicio</a>
+                <span>/</span>
+                <a href="/incidencias">Incidencias</a>
+                <span>/</span>
+                <span>Generar Informe</span>
+            </div>
+        </div>
+
+        <!-- Filtros Section -->
+        <section class="filters-section">
+            <div class="filters-container">
+                <h3 class="section-title">
+                    <i class="fas fa-filter"></i>
+                    Filtros de Búsqueda
+                </h3>
+                
+                <div class="filters-grid">
+                    <!-- Paciente -->
+                    <div class="filter-group">
+                        <label for="pacienteSelect">
+                            <i class="fas fa-user-injured"></i>
+                            Paciente
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="pacienteSelect" class="form-select">
+                                <option value="">Buscar Paciente</option>
+                            </select>
+                            <i class="fas fa-search select-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="filter-group">
+                        <label for="fechaInput">
+                            <i class="fas fa-calendar-alt"></i>
+                            Fecha
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="date" id="fechaInput" class="form-input">
+                            <i class="fas fa-chevron-down input-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Categoría -->
+                    <div class="filter-group">
+                        <label for="categoriaSelect">
+                            <i class="fas fa-tags"></i>
+                            Categoría
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="categoriaSelect" class="form-select">
+                                <option value="">Seleccionar Categoría</option>
+                            </select>
+                            <i class="fas fa-chevron-down select-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="filter-group">
+                        <label for="estadoSelect">
+                            <i class="fas fa-flag"></i>
+                            Estado
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="estadoSelect" class="form-select">
+                                <option value="">Seleccionar Estado</option>
+                                <option value="Todos">Todos</option>
+                            </select>
+                            <i class="fas fa-chevron-down select-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Generar Reporte -->
+                <div class="action-button-container">
+                    <button id="btnGenerarReporte" class="btn-generate">
+                        <i class="fas fa-chart-bar"></i>
+                        Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabla de Resultados -->
+        <section class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h3 class="section-title">
+                    <i class="fas fa-list-alt"></i>
+                    Incidencias Encontradas
+                </h3>
+                <div class="results-info">
+                    <span id="totalIncidencias" class="total-badge">0 incidencias</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Prioridad</th>
+                            <th>Fecha Resolución</th>
+                            <th>Observaciones</th>
+                            <th class="th-controls">Controles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaIncidencias">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Mostrando <span id="paginaActual">1</span> de <span id="totalPaginas">1</span> páginas
+                </div>
+                <div class="pagination-controls">
+                    <button id="btnPrevPage" class="btn-page" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                        Anterior
+                    </button>
+                    <button id="btnNextPage" class="btn-page">
+                        Siguiente
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Detalle de Incidencia -->
+    <div id="modalDetalle" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Detalle de Incidencia
+                </h3>
+                <button class="modal-close" onclick="cerrarModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>ID:</label>
+                        <span id="detalle-id"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Fecha Registro:</label>
+                        <span id="detalle-fecha"></span>
+                    </div>
+                    <div class="detail-item full-width">
+                        <label>Descripción:</label>
+                        <span id="detalle-descripcion"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Estado:</label>
+                        <span id="detalle-estado" class="badge"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Prioridad:</label>
+                        <span id="detalle-prioridad" class="badge"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Fecha Resolución:</label>
+                        <span id="detalle-resolucion"></span>
+                    </div>
+                    <div class="detail-item full-width">
+                        <label>Observaciones:</label>
+                        <span id="detalle-observaciones"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="cerrarModal()">
+                    <i class="fas fa-times"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Éxito -->
+    <div id="modalExito" class="modal">
+        <div class="modal-content modal-success">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-check-circle"></i>
+                    Reporte Generado
+                </h3>
+                <button class="modal-close" onclick="cerrarModalExito()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="success-message">
+                    El informe de incidencias se ha generado exitosamente.
+                </p>
+                <p id="mensajeResultado" class="result-summary"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="cerrarModalExito()">
+                    <i class="fas fa-check"></i>
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/generar_informe_incidencias.js') }}"></script>
+</body>
+</html>

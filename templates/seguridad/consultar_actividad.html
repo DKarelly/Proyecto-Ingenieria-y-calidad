@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultar Actividad - Clínica Unión S.A.C.</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/consultar_actividad.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="page-header">
+            <h1>Consultar Actividad</h1>
+            <button class="btn-export" id="btnExportar">
+                <i class="fas fa-file-export"></i>
+                Exportar
+            </button>
+        </header>
+
+        <!-- Filtros de búsqueda -->
+        <section class="filtros-section">
+            <div class="filtro-grupo">
+                <label for="filtroEmpleado">EMPLEADO</label>
+                <div class="input-icon">
+                    <input 
+                        type="text" 
+                        id="filtroEmpleado" 
+                        placeholder="Buscar Empleado"
+                        class="input-search"
+                    >
+                    <i class="fas fa-search icon-search"></i>
+                </div>
+            </div>
+
+            <div class="filtro-grupo">
+                <label for="filtroHorario">HORARIO</label>
+                <div class="input-icon">
+                    <input 
+                        type="text" 
+                        id="filtroHorario" 
+                        placeholder="Buscar Horario"
+                        class="input-search"
+                    >
+                    <i class="fas fa-search icon-search"></i>
+                </div>
+            </div>
+
+            <div class="filtro-grupo">
+                <label for="filtroFecha">FECHA</label>
+                <div class="input-icon">
+                    <input 
+                        type="date" 
+                        id="filtroFecha" 
+                        placeholder="Ingrese Fecha"
+                        class="input-date"
+                    >
+                    <i class="fas fa-calendar-alt icon-calendar"></i>
+                </div>
+            </div>
+
+            <div class="filtro-grupo">
+                <button class="btn-buscar" id="btnBuscar">
+                    <i class="fas fa-search"></i>
+                    Buscar
+                </button>
+            </div>
+        </section>
+
+        <!-- Tabla de registros -->
+        <section class="tabla-section">
+            <div class="tabla-container">
+                <table class="tabla-actividad">
+                    <thead>
+                        <tr>
+                            <th>ID Actividad</th>
+                            <th>Empleado</th>
+                            <th>Descripción</th>
+                            <th>Fecha/Hora</th>
+                            <th>IP</th>
+                            <th>Resultado</th>
+                            <th>Controles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaRegistros">
+                        <!-- Los registros se cargarán dinámicamente -->
+                        <tr>
+                            <td colspan="7" class="loading-message">
+                                <i class="fas fa-spinner fa-spin"></i> Cargando registros...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="paginacion">
+                <button class="btn-pag" id="btnAnterior">
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+                <span class="pagina-info">Página <span id="paginaActual">1</span> de <span id="totalPaginas">1</span></span>
+                <button class="btn-pag" id="btnSiguiente">
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal de detalle de registro -->
+    <div id="modalDetalle" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Detalle de Actividad</h2>
+            <div class="detalle-content">
+                <div class="detalle-item">
+                    <strong>ID Registro:</strong>
+                    <span id="detalleId"></span>
+                </div>
+                <div class="detalle-item">
+                    <strong>Empleado:</strong>
+                    <span id="detalleEmpleado"></span>
+                </div>
+                <div class="detalle-item">
+                    <strong>Descripción:</strong>
+                    <span id="detalleDescripcion"></span>
+                </div>
+                <div class="detalle-item">
+                    <strong>Fecha y Hora:</strong>
+                    <span id="detalleFechaHora"></span>
+                </div>
+                <div class="detalle-item">
+                    <strong>IP Origen:</strong>
+                    <span id="detalleIP"></span>
+                </div>
+                <div class="detalle-item">
+                    <strong>Resultado:</strong>
+                    <span id="detalleResultado"></span>
+                </div>
+                <div class="detalle-item" id="detalleErrorContainer" style="display: none;">
+                    <strong>Detalles del Error:</strong>
+                    <span id="detalleError"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div id="modalEliminar" class="modal">
+        <div class="modal-content modal-confirm">
+            <span class="close">&times;</span>
+            <h2>Confirmar Eliminación</h2>
+            <p>¿Está seguro que desea eliminar este registro de actividad?</p>
+            <div class="modal-actions">
+                <button class="btn-cancelar" id="btnCancelarEliminar">Cancelar</button>
+                <button class="btn-confirmar" id="btnConfirmarEliminar">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/consultar_actividad.js') }}"></script>
+</body>
+</html>
