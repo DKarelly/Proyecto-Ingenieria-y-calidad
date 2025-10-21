@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Catalogo de Servicios</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+
+</head>
+
+<body>
+
+    <!-- CABECERA -->
+    
+    <!--CUERPO-->
+    <!-- Contenido principal -->
+    <main class="servicios-main container py-5">
+        <h2 class="fw-bold mb-4 text-slate-800">Gestión de Servicios</h2>
+
+        <button class="btn btn-info text-white mb-4" data-bs-toggle="modal" data-bs-target="#modalRegistrarServicio">
+            <i class="fa-solid fa-plus me-2"></i>Registrar Nuevo Servicio
+        </button>
+
+        <div class="servicios-filtros d-flex flex-wrap gap-2 mb-4">
+            <select class="form-select w-auto">
+                <option selected>Seleccionar Tipo Servicio</option>
+                <option>Consulta</option>
+                <option>Tratamiento</option>
+            </select>
+            <div class="input-group w-auto">
+                <input type="text" class="form-control" placeholder="Buscar Servicio">
+                <button class="btn btn-outline-info"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+            <button class="btn btn-outline-secondary">
+                <i class="fa-solid fa-broom"></i>
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center servicios-tabla">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID Servicio</th>
+                        <th>Nombre Servicio</th>
+                        <th>Descripcion</th>
+                        <th>Duracion</th>
+                        <th>Estado</th>
+                        <th>Tipo de Servicio</th>
+                        <th>Especialidad</th>
+                        <th>Controles</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-servicios-body">
+                    <!-- Aquí se llenarán los servicios desde la base de datos -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer id="contacto" class="mt-16 pt-12 pb-8 animate-on-scroll">
+        <div class="grid md:grid-cols-4 gap-8 border-t pt-10">
+            <div class="md:col-span-1">
+                <h3 class="font-bold text-lg mb-3">Clínica Unión</h3>
+                <p class="text-gray-500 text-sm">Cuidando de tu salud y la de tu familia con profesionalismo y calidez.
+                </p>
+            </div>
+            <div class="md:col-span-1">
+                <h3 class="font-semibold mb-3">Contacto</h3>
+                <ul class="space-y-2 text-sm text-gray-600">
+                    <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone">
+                            <path
+                                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                        </svg> 555-123-456</li>
+                    <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail">
+                            <rect width="20" height="16" x="2" y="4" rx="2" />
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                        </svg> info@clinicaunion.com</li>
+                    <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg> Calle Ficticia 123, Ciudad</li>
+                </ul>
+            </div>
+            <div class="md:col-span-1">
+                <h3 class="font-semibold mb-3">Enlaces</h3>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="#nosotros" class="text-gray-600 hover:text-cyan-500">Nosotros</a></li>
+                    <li><a href="#servicios" class="text-gray-600 hover:text-cyan-500">Servicios</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-cyan-500">Blog</a></li>
+                </ul>
+            </div>
+            <div class="md:col-span-1">
+                <h3 class="font-semibold mb-3">Newsletter</h3>
+                <p class="text-sm text-gray-500 mb-2">Recibe noticias de salud.</p>
+                <div class="flex">
+                    <input type="email" placeholder="Tu email" class="w-full p-2 border rounded-l-md text-sm">
+                    <button class="bg-cyan-500 text-white px-3 rounded-r-md text-sm">OK</button>
+                </div>
+            </div>
+        </div>
+        <div
+            class="text-center text-sm text-gray-400 mt-12 border-t pt-6 flex flex-col sm:flex-row justify-between items-center">
+            <p>Clínica Unión &copy; 2025. Todos los derechos reservados.</p>
+            <div class="flex gap-4 mt-4 sm:mt-0">
+                <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20"
+                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter">
+                        <path
+                            d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9s-5.2-.8-6.1-2.4c-1.1 1.1-2.5 2.1-4.6 2.5H4.2c-1.1 0-2.2-.4-2.2-2.2s1.1-2.3 2.2-2.3c1 .2 2.3.1 3.4-.4C8.7 8.1 9.1 7 9.1 7s-2.1-.2-2.1-2.3c0-1.2 1-2.1 2.1-2.1H12c3.4 0 5.6 2.3 5.6 2.3s2.1-.2 2.1 1.1c0 .9-.8 1.9-1.5 2.4.9-.1 2.4-1 2.4-1z" />
+                    </svg></a>
+                <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20"
+                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook">
+                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                    </svg></a>
+                <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20"
+                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                    </svg></a>
+            </div>
+        </div>
+    </footer>
+
+    <!---MODALLLL-->
+    <!-- Modal: Registrar Nuevo Servicio -->
+    <div class="modal fade" id="modalRegistrarServicio" tabindex="-1" aria-labelledby="modalRegistrarServicioLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <div class="modal-header bg-white border-bottom-0">
+                    <div class="text-center w-100">
+                        <i class="fa-solid fa-stethoscope fa-2x text-cyan-500 mb-2"></i>
+                        <h5 class="modal-title fw-bold" id="modalRegistrarServicioLabel">Registrar un nuevo servicio
+                        </h5>
+                    </div>
+                </div>
+                <div class="modal-body px-5 pb-4">
+                    <form id="formRegistrarServicio">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="nombreServicio" class="form-label fw-semibold">Nombre</label>
+                                <input type="text" class="form-control" id="nombreServicio"
+                                    placeholder="Ingrese nombre del servicio" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="duracionServicio" class="form-label fw-semibold">Duración</label>
+                                <input type="text" class="form-control" id="duracionServicio"
+                                    placeholder="Ej: 30 minutos" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="descripcionServicio" class="form-label fw-semibold">Descripción</label>
+                                <textarea class="form-control" id="descripcionServicio" rows="3"
+                                    placeholder="Describa el servicio..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="estadoServicio" class="form-label fw-semibold">Estado</label>
+                                <select id="estadoServicio" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione un estado</option>
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="especialidadServicio" class="form-label fw-semibold">Especialidad</label>
+                                <select id="especialidadServicio" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione una especialidad</option>
+                                    <option>Cardiología</option>
+                                    <option>Pediatría</option>
+                                    <option>Odontología</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tipoServicio" class="form-label fw-semibold">Tipo de Servicio</label>
+                                <select id="tipoServicio" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione tipo de servicio</option>
+                                    <option>Consulta</option>
+                                    <option>Tratamiento</option>
+                                    <option>Procedimiento</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-info text-white px-4">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
+                            </button>
+                            <button type="button" class="btn btn-secondary ms-2 px-4" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Modificar Servicio -->
+    <div class="modal fade" id="modalModificarServicio" tabindex="-1" aria-labelledby="modalModificarServicioLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <div class="modal-header bg-white border-bottom-0">
+                    <div class="text-center w-100">
+                        <i class="fa-solid fa-pen-to-square fa-2x text-cyan-500 mb-2"></i>
+                        <h5 class="modal-title fw-bold" id="modalModificarServicioLabel">Modificar un servicio</h5>
+                    </div>
+                </div>
+                <div class="modal-body px-5 pb-4">
+                    <form id="formModificarServicio">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="codigoServicio" class="form-label fw-semibold">Código</label>
+                                <input type="text" class="form-control" id="codigoServicio"
+                                    placeholder="Código del servicio" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="nombreServicioEditar" class="form-label fw-semibold">Nombre</label>
+                                <input type="text" class="form-control" id="nombreServicioEditar"
+                                    placeholder="Ingrese nombre del servicio" required>
+                            </div>
+                            <div class="col-12">
+                                <label for="descripcionServicioEditar"
+                                    class="form-label fw-semibold">Descripción</label>
+                                <textarea class="form-control" id="descripcionServicioEditar" rows="3"
+                                    placeholder="Describa el servicio..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="duracionServicioEditar" class="form-label fw-semibold">Duración</label>
+                                <input type="text" class="form-control" id="duracionServicioEditar"
+                                    placeholder="Ej: 45 minutos" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="estadoServicioEditar" class="form-label fw-semibold">Estado</label>
+                                <select id="estadoServicioEditar" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione un estado</option>
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="especialidadServicioEditar"
+                                    class="form-label fw-semibold">Especialidad</label>
+                                <select id="especialidadServicioEditar" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione una especialidad</option>
+                                    <option>Cardiología</option>
+                                    <option>Pediatría</option>
+                                    <option>Odontología</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tipoServicioEditar" class="form-label fw-semibold">Tipo de Servicio</label>
+                                <select id="tipoServicioEditar" class="form-select" required>
+                                    <option value="" selected disabled>Seleccione tipo de servicio</option>
+                                    <option>Consulta</option>
+                                    <option>Tratamiento</option>
+                                    <option>Procedimiento</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-info text-white px-4">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Cambios
+                            </button>
+                            <button type="button" class="btn btn-secondary ms-2 px-4" data-bs-dismiss="modal">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (necesario para los modales) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
