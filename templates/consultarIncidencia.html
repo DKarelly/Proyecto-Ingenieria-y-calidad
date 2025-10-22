@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -82,13 +82,14 @@
                 <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                     <label for="filtroPaciente" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-user text-gray-500 mr-1"></i>
                         Paciente
                     </label>
                     <input 
+                        minlength="3"
                         type="text" 
                         id="filtroPaciente" 
                         placeholder="Buscar paciente"
@@ -143,11 +144,11 @@
                     <button id="btnLimpiar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
                         <i class="fas fa-broom"></i>
                     </button>
-                    <button id="btnBuscar" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
+                    <button type="submit" id="btnBuscar" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
 
         <!-- Tabla de incidencias -->
@@ -537,10 +538,11 @@
         // Botón buscar
         const btnBuscar = document.getElementById('btnBuscar');
         if (btnBuscar) {
-            btnBuscar.onclick = function() {
+            document.getElementById('formFiltros').addEventListener('submit', function(e) {
+                e.preventDefault(); // Prevenir el envío real para este ejemplo
                 console.log('Buscando incidencias...');
                 // Aquí ejecutarías la búsqueda
-            }
+            });
         }
     </script>
 
