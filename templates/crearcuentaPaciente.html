@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Cuenta de Paciente - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    <div class="container mx-auto">
+        {% include 'header_admin.html' %}
+
+    <div class="max-w-4xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Cuentas
+            </a>
+        </div>
+        
+        <!-- Título principal -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Crear Cuenta de Paciente</h1>
+
+        <!-- Form Card -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 md:p-8 admin-card">
+            <form method="POST" class="space-y-6">
+                <!-- Nombres y Apellidos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="nombres">Nombres</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="nombres" 
+                            name="nombres" 
+                            placeholder="John" 
+                            type="text"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="apellidos">Apellidos</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="apellidos" 
+                            name="apellidos" 
+                            placeholder="Doe" 
+                            type="text"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- Documento de Identidad -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="documento-identidad">Documento de Identidad</label>
+                    <input 
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                        id="documento-identidad" 
+                        name="documento-identidad" 
+                        placeholder="12345678" 
+                        type="text"
+                        required
+                    />
+                </div>
+
+                <!-- Teléfono y Fecha de Nacimiento -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="telefono">Teléfono</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="telefono" 
+                            name="telefono" 
+                            placeholder="987654321" 
+                            type="tel"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="fecha-nacimiento">Fecha de Nacimiento</label>
+                        <div class="relative">
+                            <input 
+                                class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                                id="fecha-nacimiento" 
+                                name="fecha-nacimiento" 
+                                placeholder="dd/mm/aaaa" 
+                                type="text"
+                                required
+                            />
+                            <i class="fa-regular fa-calendar absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Correo Electrónico -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="email">Correo Electrónico</label>
+                    <input 
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                        id="email" 
+                        name="email" 
+                        placeholder="tu@email.com" 
+                        type="email"
+                        required
+                    />
+                </div>
+
+                <!-- Departamento, Provincia, Distrito -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="departamento">Departamento</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="departamento" 
+                            name="departamento" 
+                            placeholder="Ej: Lima" 
+                            type="text"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="provincia">Provincia</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="provincia" 
+                            name="provincia" 
+                            placeholder="Ej: Lima" 
+                            type="text"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="distrito">Distrito</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="distrito" 
+                            name="distrito" 
+                            placeholder="Ej: Miraflores" 
+                            type="text"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- Contraseña -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="password">Contraseña</label>
+                    <input 
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                        id="password" 
+                        name="password" 
+                        placeholder="••••••••" 
+                        type="password"
+                        required
+                    />
+                </div>
+
+                <!-- Términos y Condiciones -->
+                <div class="flex items-center">
+                    <input 
+                        class="h-4 w-4 text-cyan-500 focus:ring-cyan-500 border-gray-300 rounded" 
+                        id="terms" 
+                        name="terms" 
+                        type="checkbox"
+                        required
+                    />
+                    <label class="ml-2 block text-sm text-gray-700" for="terms">
+                        Acepto los <a class="font-medium text-cyan-600 hover:text-cyan-700 hover:underline" href="#">Términos y Condiciones</a>
+                    </label>
+                </div>
+
+                <!-- Botón Registrarse -->
+                <div class="pt-4">
+                    <button 
+                        class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors inline-flex items-center justify-center btn btn-primary" 
+                        type="submit"
+                    >
+                        <i class="fa-solid fa-user-plus mr-2"></i>
+                        Registrarse
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
+
+    <!-- Script de validación de sesión -->
+    <script>
+        // Validar sesión al cargar la página
+        fetch('/usuarios/api/session')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.logged_in) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('Error al validar sesión:', error);
+                window.location.href = '/';
+            });
+    </script>
+</body>
+</html>

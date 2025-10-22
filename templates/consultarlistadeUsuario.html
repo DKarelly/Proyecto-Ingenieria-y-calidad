@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultar Lista de Usuarios - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    <div class="container mx-auto">
+        {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Cuentas
+            </a>
+        </div>
+        
+        <!-- Título principal -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Consultar Lista de Usuarios</h1>
+        <!-- Search Section -->
+        <div class="admin-card shadow-sm p-6 mb-8">
+            <form method="get" class="flex flex-col md:flex-row items-center gap-4">
+                <div class="relative w-full md:flex-grow">
+                    <label for="search-empleado" class="sr-only">Buscar usuario</label>
+                    <input 
+                        type="search" 
+                        id="search-empleado" 
+                        name="q" 
+                        placeholder="Buscar por nombre, email o rol..." 
+                        value="{{ request.args.get('q', '') }}"
+                        class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
+                    >
+                    <i class="fa-solid fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button type="submit" class="flex-1 md:flex-none btn btn-primary">
+                        <i class="fa-solid fa-search mr-2"></i>
+                        Buscar
+                    </button>
+                    <a href="/cuentas/consultar-lista-usuarios" title="Limpiar filtros" class="flex items-center justify-center btn btn-outline">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Users Table -->
+        <div class="overflow-x-auto admin-card shadow-md">
+            <table class="admin-table w-full">
+                <thead>
+                    <tr>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Nombre Completo</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Email</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Rol</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% if usuarios %}
+                        {% for usuario in usuarios %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">{{ usuario.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">{{ usuario.nombre }} {{ usuario.apellido }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">{{ usuario.email }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if usuario.rol == 'admin' %}
+                                <span class="bg-cyan-100 text-cyan-700 font-semibold py-1 px-3 rounded-full text-sm">
+                                    Admin
+                                </span>
+                                {% elif usuario.rol == 'medico' %}
+                                <span class="bg-blue-100 text-blue-700 font-semibold py-1 px-3 rounded-full text-sm">
+                                    Médico
+                                </span>
+                                {% else %}
+                                <span class="bg-gray-100 text-gray-700 font-semibold py-1 px-3 rounded-full text-sm">
+                                    {{ usuario.rol | capitalize }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="{% if usuario.activo %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} font-semibold py-1 px-3 rounded-full text-sm">
+                                    {% if usuario.activo %}Activo{% else %}Inactivo{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <button class="btn btn-outline text-cyan-700 hover:text-white hover:bg-cyan-500" title="Ver Detalle">
+                                    <i class="fa-solid fa-eye mr-2"></i>
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-10 text-center">
+                                <p class="text-gray-500 font-medium text-base mb-1">No se encontraron usuarios</p>
+                                <p class="text-gray-400 text-sm">No hay datos para mostrar</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
+
+    <!-- Script de validación de sesión -->
+    <script>
+        // Validar sesión al cargar la página
+        fetch('/usuarios/api/session')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.logged_in) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('Error al validar sesión:', error);
+                window.location.href = '/';
+            });
+    </script>
+</body>
+</html>

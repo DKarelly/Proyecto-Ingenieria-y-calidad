@@ -1,302 +1,524 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión Catalogo de Servicios</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Preconnect for performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://unpkg.com">
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <title>Gestión Catálogo de Servicios - Clínica Union</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
-
+    <style>
+        .badge-activo {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .badge-inactivo {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 700px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
 </head>
-
-<body>
-
-    <!-- CABECERA -->
+<body class="bg-[#f8fafc] font-['Inter']">
     
-    <!--CUERPO-->
-    <!-- Contenido principal -->
-    <main class="servicios-main container py-5">
-        <h2 class="fw-bold mb-4 text-slate-800">Gestión de Servicios</h2>
+    {% include 'header_admin.html' %}
 
-        <button class="btn btn-info text-white mb-4" data-bs-toggle="modal" data-bs-target="#modalRegistrarServicio">
-            <i class="fa-solid fa-plus me-2"></i>Registrar Nuevo Servicio
-        </button>
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/admin" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                <span class="font-medium">Volver al Panel de Administración</span>
+            </a>
+        </div>
 
-        <div class="servicios-filtros d-flex flex-wrap gap-2 mb-4">
-            <select class="form-select w-auto">
-                <option selected>Seleccionar Tipo Servicio</option>
-                <option>Consulta</option>
-                <option>Tratamiento</option>
-            </select>
-            <div class="input-group w-auto">
-                <input type="text" class="form-control" placeholder="Buscar Servicio">
-                <button class="btn btn-outline-info"><i class="fa-solid fa-magnifying-glass"></i></button>
-            </div>
-            <button class="btn btn-outline-secondary">
-                <i class="fa-solid fa-broom"></i>
+        <!-- Título -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Gestión de Catálogo de Servicios</h1>
+            <p class="text-gray-600 mt-2">Administra el catálogo de servicios médicos de la clínica</p>
+        </div>
+
+        <!-- Botón registrar nuevo servicio -->
+        <div class="mb-6">
+            <button id="btnRegistrarServicio" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>
+                Registrar Nuevo Servicio
             </button>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle text-center servicios-tabla">
-                <thead class="table-light">
-                    <tr>
-                        <th>ID Servicio</th>
-                        <th>Nombre Servicio</th>
-                        <th>Descripcion</th>
-                        <th>Duracion</th>
-                        <th>Estado</th>
-                        <th>Tipo de Servicio</th>
-                        <th>Especialidad</th>
-                        <th>Controles</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-servicios-body">
-                    <!-- Aquí se llenarán los servicios desde la base de datos -->
-                </tbody>
-            </table>
-        </div>
-    </main>
+        <!-- Filtros de búsqueda -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 admin-card">
+            <div class="flex items-center gap-2 mb-6">
+                <i class="fas fa-filter text-cyan-600 text-xl"></i>
+                <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
+            </div>
 
-    <!-- Footer -->
-    <footer id="contacto" class="mt-16 pt-12 pb-8 animate-on-scroll">
-        <div class="grid md:grid-cols-4 gap-8 border-t pt-10">
-            <div class="md:col-span-1">
-                <h3 class="font-bold text-lg mb-3">Clínica Unión</h3>
-                <p class="text-gray-500 text-sm">Cuidando de tu salud y la de tu familia con profesionalismo y calidez.
-                </p>
-            </div>
-            <div class="md:col-span-1">
-                <h3 class="font-semibold mb-3">Contacto</h3>
-                <ul class="space-y-2 text-sm text-gray-600">
-                    <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone">
-                            <path
-                                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                        </svg> 555-123-456</li>
-                    <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail">
-                            <rect width="20" height="16" x="2" y="4" rx="2" />
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                        </svg> info@clinicaunion.com</li>
-                    <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin">
-                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                            <circle cx="12" cy="10" r="3" />
-                        </svg> Calle Ficticia 123, Ciudad</li>
-                </ul>
-            </div>
-            <div class="md:col-span-1">
-                <h3 class="font-semibold mb-3">Enlaces</h3>
-                <ul class="space-y-2 text-sm">
-                    <li><a href="#nosotros" class="text-gray-600 hover:text-cyan-500">Nosotros</a></li>
-                    <li><a href="#servicios" class="text-gray-600 hover:text-cyan-500">Servicios</a></li>
-                    <li><a href="#" class="text-gray-600 hover:text-cyan-500">Blog</a></li>
-                </ul>
-            </div>
-            <div class="md:col-span-1">
-                <h3 class="font-semibold mb-3">Newsletter</h3>
-                <p class="text-sm text-gray-500 mb-2">Recibe noticias de salud.</p>
-                <div class="flex">
-                    <input type="email" placeholder="Tu email" class="w-full p-2 border rounded-l-md text-sm">
-                    <button class="bg-cyan-500 text-white px-3 rounded-r-md text-sm">OK</button>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="filtroTipoServicio" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-tags text-gray-500 mr-1"></i>
+                        Tipo de Servicio
+                    </label>
+                    <select id="filtroTipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
+                        <option value="">Todos los tipos</option>
+                        <option>Consulta</option>
+                        <option>Tratamiento</option>
+                        <option>Procedimiento</option>
+                    </select>
                 </div>
-            </div>
-        </div>
-        <div
-            class="text-center text-sm text-gray-400 mt-12 border-t pt-6 flex flex-col sm:flex-row justify-between items-center">
-            <p>Clínica Unión &copy; 2025. Todos los derechos reservados.</p>
-            <div class="flex gap-4 mt-4 sm:mt-0">
-                <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20"
-                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter">
-                        <path
-                            d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9s-5.2-.8-6.1-2.4c-1.1 1.1-2.5 2.1-4.6 2.5H4.2c-1.1 0-2.2-.4-2.2-2.2s1.1-2.3 2.2-2.3c1 .2 2.3.1 3.4-.4C8.7 8.1 9.1 7 9.1 7s-2.1-.2-2.1-2.3c0-1.2 1-2.1 2.1-2.1H12c3.4 0 5.6 2.3 5.6 2.3s2.1-.2 2.1 1.1c0 .9-.8 1.9-1.5 2.4.9-.1 2.4-1 2.4-1z" />
-                    </svg></a>
-                <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20"
-                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook">
-                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                    </svg></a>
-                <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20"
-                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram">
-                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                    </svg></a>
-            </div>
-        </div>
-    </footer>
 
-    <!---MODALLLL-->
-    <!-- Modal: Registrar Nuevo Servicio -->
-    <div class="modal fade" id="modalRegistrarServicio" tabindex="-1" aria-labelledby="modalRegistrarServicioLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header bg-white border-bottom-0">
-                    <div class="text-center w-100">
-                        <i class="fa-solid fa-stethoscope fa-2x text-cyan-500 mb-2"></i>
-                        <h5 class="modal-title fw-bold" id="modalRegistrarServicioLabel">Registrar un nuevo servicio
-                        </h5>
-                    </div>
+                <div>
+                    <label for="filtroServicio" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-stethoscope text-gray-500 mr-1"></i>
+                        Buscar Servicio
+                    </label>
+                    <input 
+                        type="text" 
+                        id="filtroServicio" 
+                        placeholder="Buscar servicio"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
                 </div>
-                <div class="modal-body px-5 pb-4">
-                    <form id="formRegistrarServicio">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="nombreServicio" class="form-label fw-semibold">Nombre</label>
-                                <input type="text" class="form-control" id="nombreServicio"
-                                    placeholder="Ingrese nombre del servicio" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="duracionServicio" class="form-label fw-semibold">Duración</label>
-                                <input type="text" class="form-control" id="duracionServicio"
-                                    placeholder="Ej: 30 minutos" required>
-                            </div>
-                            <div class="col-12">
-                                <label for="descripcionServicio" class="form-label fw-semibold">Descripción</label>
-                                <textarea class="form-control" id="descripcionServicio" rows="3"
-                                    placeholder="Describa el servicio..." required></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="estadoServicio" class="form-label fw-semibold">Estado</label>
-                                <select id="estadoServicio" class="form-select" required>
-                                    <option value="" selected disabled>Seleccione un estado</option>
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="especialidadServicio" class="form-label fw-semibold">Especialidad</label>
-                                <select id="especialidadServicio" class="form-select" required>
-                                    <option value="" selected disabled>Seleccione una especialidad</option>
-                                    <option>Cardiología</option>
-                                    <option>Pediatría</option>
-                                    <option>Odontología</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="tipoServicio" class="form-label fw-semibold">Tipo de Servicio</label>
-                                <select id="tipoServicio" class="form-select" required>
-                                    <option value="" selected disabled>Seleccione tipo de servicio</option>
-                                    <option>Consulta</option>
-                                    <option>Tratamiento</option>
-                                    <option>Procedimiento</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-info text-white px-4">
-                                <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
-                            </button>
-                            <button type="button" class="btn btn-secondary ms-2 px-4" data-bs-dismiss="modal">
-                                Cancelar
-                            </button>
-                        </div>
-                    </form>
+
+                <div class="flex items-end">
+                    <button id="btnLimpiar" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
+                        <i class="fas fa-broom mr-2"></i>
+                        Limpiar
+                    </button>
                 </div>
+
+                <div class="flex items-end">
+                    <button id="btnBuscar" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
+                        <i class="fas fa-search mr-2"></i>
+                        Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de servicios -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="admin-table w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Servicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Servicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Duración</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo de Servicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Especialidad</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-servicios-body" class="divide-y divide-gray-200">
+                        <!-- Ejemplo de registros -->
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">SRV-001</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Consulta General</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">Evaluación médica general del paciente</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">30 minutos</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                    Activo
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Consulta</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Medicina General</td>
+                            <td class="px-6 py-4 text-center">
+                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
+                                    <i class="fas fa-edit text-lg"></i>
+                                </button>
+                                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
+                                    <i class="fas fa-trash-alt text-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">SRV-002</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Consulta Cardiológica</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">Evaluación cardiovascular especializada</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">45 minutos</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                    Activo
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Consulta</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Cardiología</td>
+                            <td class="px-6 py-4 text-center">
+                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
+                                    <i class="fas fa-edit text-lg"></i>
+                                </button>
+                                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
+                                    <i class="fas fa-trash-alt text-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">SRV-003</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Tratamiento Odontológico</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">Limpieza dental profesional</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">60 minutos</td>
+                            <td class="px-6 py-4 text-center">
+                                <span class="badge-inactivo text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                    Inactivo
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Tratamiento</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Odontología</td>
+                            <td class="px-6 py-4 text-center">
+                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
+                                    <i class="fas fa-edit text-lg"></i>
+                                </button>
+                                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
+                                    <i class="fas fa-trash-alt text-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Modificar Servicio -->
-    <div class="modal fade" id="modalModificarServicio" tabindex="-1" aria-labelledby="modalModificarServicioLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-3">
-                <div class="modal-header bg-white border-bottom-0">
-                    <div class="text-center w-100">
-                        <i class="fa-solid fa-pen-to-square fa-2x text-cyan-500 mb-2"></i>
-                        <h5 class="modal-title fw-bold" id="modalModificarServicioLabel">Modificar un servicio</h5>
+    <!-- Modal Registrar Nuevo Servicio -->
+    <div id="modalRegistrarServicio" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-stethoscope text-cyan-600 mr-2"></i>
+                    Registrar Nuevo Servicio
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <form id="formRegistrarServicio" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-file-medical text-gray-500 mr-1"></i>
+                            Nombre del Servicio
+                        </label>
+                        <input type="text" id="nombreServicio" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Duración
+                        </label>
+                        <input type="text" id="duracionServicio" placeholder="Ej: 30 minutos" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-align-left text-gray-500 mr-1"></i>
+                            Descripción
+                        </label>
+                        <textarea id="descripcionServicio" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+                            Estado
+                        </label>
+                        <select id="estadoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option value="">Seleccione un estado</option>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                            Especialidad
+                        </label>
+                        <select id="especialidadServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option value="">Seleccione una especialidad</option>
+                            <option>Cardiología</option>
+                            <option>Pediatría</option>
+                            <option>Odontología</option>
+                            <option>Medicina General</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-tags text-gray-500 mr-1"></i>
+                            Tipo de Servicio
+                        </label>
+                        <select id="tipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option value="">Seleccione tipo de servicio</option>
+                            <option>Consulta</option>
+                            <option>Tratamiento</option>
+                            <option>Procedimiento</option>
+                        </select>
                     </div>
                 </div>
-                <div class="modal-body px-5 pb-4">
-                    <form id="formModificarServicio">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="codigoServicio" class="form-label fw-semibold">Código</label>
-                                <input type="text" class="form-control" id="codigoServicio"
-                                    placeholder="Código del servicio" readonly>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="nombreServicioEditar" class="form-label fw-semibold">Nombre</label>
-                                <input type="text" class="form-control" id="nombreServicioEditar"
-                                    placeholder="Ingrese nombre del servicio" required>
-                            </div>
-                            <div class="col-12">
-                                <label for="descripcionServicioEditar"
-                                    class="form-label fw-semibold">Descripción</label>
-                                <textarea class="form-control" id="descripcionServicioEditar" rows="3"
-                                    placeholder="Describa el servicio..." required></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="duracionServicioEditar" class="form-label fw-semibold">Duración</label>
-                                <input type="text" class="form-control" id="duracionServicioEditar"
-                                    placeholder="Ej: 45 minutos" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="estadoServicioEditar" class="form-label fw-semibold">Estado</label>
-                                <select id="estadoServicioEditar" class="form-select" required>
-                                    <option value="" selected disabled>Seleccione un estado</option>
-                                    <option value="Activo">Activo</option>
-                                    <option value="Inactivo">Inactivo</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="especialidadServicioEditar"
-                                    class="form-label fw-semibold">Especialidad</label>
-                                <select id="especialidadServicioEditar" class="form-select" required>
-                                    <option value="" selected disabled>Seleccione una especialidad</option>
-                                    <option>Cardiología</option>
-                                    <option>Pediatría</option>
-                                    <option>Odontología</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="tipoServicioEditar" class="form-label fw-semibold">Tipo de Servicio</label>
-                                <select id="tipoServicioEditar" class="form-select" required>
-                                    <option value="" selected disabled>Seleccione tipo de servicio</option>
-                                    <option>Consulta</option>
-                                    <option>Tratamiento</option>
-                                    <option>Procedimiento</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="text-center mt-4">
-                            <button type="submit" class="btn btn-info text-white px-4">
-                                <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Cambios
-                            </button>
-                            <button type="button" class="btn btn-secondary ms-2 px-4" data-bs-dismiss="modal">
-                                Cancelar
-                            </button>
-                        </div>
-                    </form>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        Guardar
+                    </button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Modificar Servicio -->
+    <div id="modalModificarServicio" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-edit text-blue-600 mr-2"></i>
+                    Modificar Servicio
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <form id="formModificarServicio" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            Código
+                        </label>
+                        <input type="text" id="codigoServicio" value="SRV-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-file-medical text-gray-500 mr-1"></i>
+                            Nombre del Servicio
+                        </label>
+                        <input type="text" id="nombreServicioEditar" value="Consulta General" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-align-left text-gray-500 mr-1"></i>
+                            Descripción
+                        </label>
+                        <textarea id="descripcionServicioEditar" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>Evaluación médica general del paciente</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Duración
+                        </label>
+                        <input type="text" id="duracionServicioEditar" value="30 minutos" placeholder="Ej: 45 minutos" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+                            Estado
+                        </label>
+                        <select id="estadoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                            Especialidad
+                        </label>
+                        <select id="especialidadServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option>Cardiología</option>
+                            <option>Pediatría</option>
+                            <option>Odontología</option>
+                            <option selected>Medicina General</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-tags text-gray-500 mr-1"></i>
+                            Tipo de Servicio
+                        </label>
+                        <select id="tipoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option selected>Consulta</option>
+                            <option>Tratamiento</option>
+                            <option>Procedimiento</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div id="modalEliminar" class="modal">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                    Confirmar Eliminación
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar este servicio del catálogo?</p>
+            <div class="flex gap-4">
+                <button id="btnCancelarEliminar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button id="btnConfirmarEliminar" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <i class="fas fa-trash-alt mr-2"></i>
+                    Eliminar
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS (necesario para los modales) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Funcionalidad de modales
+        const modales = ['modalRegistrarServicio', 'modalModificarServicio', 'modalEliminar'];
+        
+        modales.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                const closeBtn = modal.querySelector('.close');
+                if (closeBtn) {
+                    closeBtn.onclick = function() {
+                        modal.classList.remove('show');
+                    }
+                }
+            }
+        });
 
+        window.onclick = function(event) {
+            modales.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && event.target == modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
+
+        // Botón registrar servicio
+        const btnRegistrarServicio = document.getElementById('btnRegistrarServicio');
+        if (btnRegistrarServicio) {
+            btnRegistrarServicio.onclick = function() {
+                document.getElementById('modalRegistrarServicio').classList.add('show');
+            }
+        }
+
+        // Botones de editar
+        document.querySelectorAll('.btn-editar').forEach(btn => {
+            btn.onclick = function() {
+                document.getElementById('modalModificarServicio').classList.add('show');
+            }
+        });
+
+        // Botones de eliminar
+        document.querySelectorAll('.btn-eliminar').forEach(btn => {
+            btn.onclick = function() {
+                document.getElementById('modalEliminar').classList.add('show');
+            }
+        });
+
+        // Formulario registrar
+        const formRegistrar = document.getElementById('formRegistrarServicio');
+        if (formRegistrar) {
+            formRegistrar.onsubmit = function(e) {
+                e.preventDefault();
+                document.getElementById('modalRegistrarServicio').classList.remove('show');
+                alert('Servicio registrado exitosamente');
+            }
+            
+            // Botón cancelar
+            const btnCancelar = formRegistrar.querySelector('button[type="button"]');
+            if (btnCancelar) {
+                btnCancelar.onclick = function() {
+                    document.getElementById('modalRegistrarServicio').classList.remove('show');
+                }
+            }
+        }
+
+        // Formulario modificar
+        const formModificar = document.getElementById('formModificarServicio');
+        if (formModificar) {
+            formModificar.onsubmit = function(e) {
+                e.preventDefault();
+                document.getElementById('modalModificarServicio').classList.remove('show');
+                alert('Servicio actualizado exitosamente');
+            }
+            
+            // Botón cancelar
+            const btnCancelar = formModificar.querySelector('button[type="button"]');
+            if (btnCancelar) {
+                btnCancelar.onclick = function() {
+                    document.getElementById('modalModificarServicio').classList.remove('show');
+                }
+            }
+        }
+
+        // Modal eliminar
+        const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
+        if (btnCancelarEliminar) {
+            btnCancelarEliminar.onclick = function() {
+                document.getElementById('modalEliminar').classList.remove('show');
+            }
+        }
+
+        const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+        if (btnConfirmarEliminar) {
+            btnConfirmarEliminar.onclick = function() {
+                document.getElementById('modalEliminar').classList.remove('show');
+                alert('Servicio eliminado exitosamente');
+            }
+        }
+
+        // Botón limpiar
+        const btnLimpiar = document.getElementById('btnLimpiar');
+        if (btnLimpiar) {
+            btnLimpiar.onclick = function() {
+                document.getElementById('filtroTipoServicio').value = '';
+                document.getElementById('filtroServicio').value = '';
+            }
+        }
+
+        // Botón buscar
+        const btnBuscar = document.getElementById('btnBuscar');
+        if (btnBuscar) {
+            btnBuscar.onclick = function() {
+                console.log('Buscando servicios...');
+                // Aquí ejecutarías la búsqueda
+            }
+        }
+    </script>
+
+    {% include 'footer.html' %}
 </body>
 </html>

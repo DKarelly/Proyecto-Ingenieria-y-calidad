@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Generar Incidencia</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#80DEEA",
+              "background-light": "#F7FAFC",
+              "background-dark": "#1A202C",
+              "text-light": "#2D3748",
+              "text-dark": "#E2E8F0",
+              "border-light": "#E2E8F0",
+              "border-dark": "#4A5568",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .form-input {
+        appearance: none;
+        -webkit-appearance: none;
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.5em 1.5em;
+        padding-right: 3rem;
+      }
+      select.form-input {
+          background-image: url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(97,117,137)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e");
+      }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-10">
+<div class="layout-content-container flex flex-col max-w-4xl flex-1 bg-white dark:bg-background-dark rounded-xl shadow-lg p-6 md:p-8">
+<div class="flex flex-wrap justify-between gap-3 pb-6 border-b border-border-light dark:border-border-dark">
+<p class="text-text-light dark:text-text-dark text-3xl font-bold tracking-tight">Generar Incidencia</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-6">
+<div class="flex flex-col">
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Fecha de Reporte</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-[#f0f2f4] dark:bg-gray-700 h-14 p-4 text-base font-normal leading-normal" readonly="" value="24/05/2024 10:30 AM"/>
+</label>
+</div>
+<div class="flex flex-col">
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Paciente</p>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-[#f0f2f4] dark:bg-gray-700 h-14 p-4 text-base font-normal leading-normal" readonly="" value="Carlos Sánchez (Automático)"/>
+</label>
+</div>
+<div class="md:col-span-2">
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Descripción<span class="text-red-500">*</span></p>
+<textarea class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-white dark:bg-background-dark min-h-36 placeholder:text-gray-400 p-4 text-base font-normal leading-normal" placeholder="Ingrese una descripción detallada de la incidencia" required></textarea>
+</label>
+</div>
+<div class="md:col-span-2">
+<label class="flex flex-col min-w-40 flex-1">
+<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Categoría<span class="text-red-500">*</span></p>
+<select class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-white dark:bg-background-dark h-14 p-4 text-base font-normal leading-normal" required>
+<option value="">Seleccione una categoría</option>
+<option value="hardware">Hardware</option>
+<option value="software">Software</option>
+<option value="red">Red</option>
+<option value="otro">Otro</option>
+</select>
+</label>
+</div>
+</div>
+<div class="flex justify-end mt-8 pt-6 border-t border-border-light dark:border-border-dark">
+<button class="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary text-text-light text-base font-semibold leading-normal shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200">
+<span class="material-symbols-outlined">add_circle</span>
+                        Crear Incidencia
+                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

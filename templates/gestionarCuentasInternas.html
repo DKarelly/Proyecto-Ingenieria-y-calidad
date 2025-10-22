@@ -1,0 +1,557 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cuentas Internas - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Cuentas
+            </a>
+        </div>
+        
+        <!-- Header con título y botón -->
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-8 admin-toolbar">
+            <h1 class="text-3xl font-bold text-gray-800">Gestión de Cuentas Internas</h1>
+            <button id="new-employee-button" class="btn btn-primary">
+                <i class="fa-solid fa-plus mr-2"></i>
+                Registrar Nuevo Empleado
+            </button>
+        </div>
+
+        <!-- Panel de resumen -->
+        <div class="grid gap-4 md:grid-cols-3 mb-8">
+            <div class="admin-card">
+                <p class="text-sm text-slate-500">Cuentas activas</p>
+                <p class="text-2xl font-semibold text-slate-900">128</p>
+                <span class="admin-badge success mt-3 inline-flex items-center">
+                    <i class="fa-solid fa-arrow-trend-up mr-1.5"></i>
+                    +5% este mes
+                </span>
+            </div>
+            <div class="admin-card">
+                <p class="text-sm text-slate-500">Administradores</p>
+                <p class="text-2xl font-semibold text-slate-900">12</p>
+                <span class="admin-badge info mt-3 inline-flex items-center">
+                    <i class="fa-solid fa-user-shield mr-1.5"></i>
+                    Roles verificados
+                </span>
+            </div>
+            <div class="admin-card">
+                <p class="text-sm text-slate-500">Pendientes de activacion</p>
+                <p class="text-2xl font-semibold text-slate-900">7</p>
+                <span class="admin-badge warn mt-3 inline-flex items-center">
+                    <i class="fa-solid fa-clock mr-1.5"></i>
+                    Requieren revision
+                </span>
+            </div>
+        </div>
+        <!-- Modal de Registro de Empleado -->
+        <div id="register-employee-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative max-h-[90vh] overflow-y-auto">
+                <button id="close-register-employee-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Registrar Nuevo Empleado</h2>
+                <form method="POST" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="employee-nombres" class="block text-sm font-semibold text-gray-700 mb-2">Nombres</label>
+                            <input type="text" id="employee-nombres" name="nombres" minlength="2" maxlength="60" pattern="^[\\p{L}\\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="John" required>
+                            <p class="error-text hidden" data-error-for="employee-nombres"></p>
+                        </div>
+                        <div>
+                            <label for="employee-apellidos" class="block text-sm font-semibold text-gray-700 mb-2">Apellidos</label>
+                            <input type="text" id="employee-apellidos" name="apellidos" minlength="2" maxlength="60" pattern="^[\\p{L}\\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="Doe" required>
+                            <p class="error-text hidden" data-error-for="employee-apellidos"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="employee-documento" class="block text-sm font-semibold text-gray-700 mb-2">Documento de Identidad</label>
+                        <input type="text" id="employee-documento" name="documento" minlength="8" maxlength="12" pattern="^[0-9]+$" inputmode="numeric" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="12345678" required>
+                        <p class="error-text hidden" data-error-for="employee-documento"></p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="employee-telefono" class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                            <input type="tel" id="employee-telefono" name="telefono" minlength="6" maxlength="15" pattern="^[0-9]+$" inputmode="tel" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="987654321" required>
+                            <p class="error-text hidden" data-error-for="employee-telefono"></p>
+                        </div>
+                        <div>
+                            <label for="employee-nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
+                            <input type="date" id="employee-nacimiento" name="nacimiento" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" required>
+                            <p class="error-text hidden" data-error-for="employee-nacimiento"></p>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="employee-email" class="block text-sm font-semibold text-gray-700 mb-2">Correo Electrónico</label>
+                        <input type="email" id="employee-email" name="email" maxlength="120" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="tu@email.com" required>
+                        <p class="error-text hidden" data-error-for="employee-email"></p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="employee-departamento" class="block text-sm font-semibold text-gray-700 mb-2">Departamento</label>
+                            <input type="text" id="employee-departamento" name="departamento" minlength="2" maxlength="60" pattern="^[\p{L}\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="Ej: Lima" required>
+                            <p class="error-text hidden" data-error-for="employee-departamento"></p>
+                        </div>
+                        <div>
+                            <label for="employee-provincia" class="block text-sm font-semibold text-gray-700 mb-2">Provincia</label>
+                            <input type="text" id="employee-provincia" name="provincia" minlength="2" maxlength="60" pattern="^[\p{L}\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="Ej: Lima" required>
+                            <p class="error-text hidden" data-error-for="employee-provincia"></p>
+                        </div>
+                        <div>
+                            <label for="employee-distrito" class="block text-sm font-semibold text-gray-700 mb-2">Distrito</label>
+                            <input type="text" id="employee-distrito" name="distrito" minlength="2" maxlength="60" pattern="^[\p{L}\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="Ej: Miraflores" required>
+                            <p class="error-text hidden" data-error-for="employee-distrito"></p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="employee-password" class="block text-sm font-semibold text-gray-700 mb-2">Contrasena</label>
+                            <input type="password" id="employee-password" name="password" minlength="8" maxlength="64" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="********" required>
+                            <p class="error-text hidden" data-error-for="employee-password"></p>
+                        </div>
+                        <div>
+                            <label for="employee-rol" class="block text-sm font-semibold text-gray-700 mb-2">Rol</label>
+                            <select id="employee-rol" name="rol" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all" required>
+                                 <option value="">Seleccione un rol</option>
+                                 <option value="admin">Administrador</option>
+                                 <option value="medico">Medico</option>
+                                 <option value="recepcion">Recepcionista</option>
+                                 <option value="enfermero">Enfermero(a)</option>
+                             </select>
+                            <p class="error-text hidden" data-error-for="employee-rol"></p>
+                        </div>
+                    </div>
+                    <div class="pt-4">
+                        <button type="submit" class="btn btn-primary w-full justify-center">
+                            <i class="fa-solid fa-user-plus mr-2"></i>
+                            Registrar Empleado
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="admin-card shadow-sm p-6 mb-8">
+            <form method="get" class="flex flex-col md:flex-row items-center gap-4">
+                <div class="relative w-full md:flex-grow">
+                    <label for="search-empleado" class="sr-only">Buscar empleado</label>
+                    <input 
+                        type="search" 
+                        id="search-empleado" 
+                        name="q" minlength="2" title="Ingrese al menos 2 caracteres" 
+                        placeholder="Buscar por nombre, email o rol..." 
+                        value="{{ request.args.get('q', '') }}"
+                        class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
+                    >
+                    <i class="fa-solid fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+                    <p class="error-text hidden" data-error-for="search-empleado"></p>
+                </div>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button type="submit" class="flex-1 md:flex-none btn btn-primary">
+                        <i class="fa-solid fa-search mr-2"></i>
+                        Buscar
+                    </button>
+                    <a href="/cuentas/gestionar-cuenta-interna" title="Limpiar filtros" class="flex items-center justify-center btn btn-outline">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabla de Empleados -->
+        <div class="overflow-x-auto admin-card shadow-md mt-8">
+            <table class="admin-table w-full">
+                <thead>
+                    <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                ID
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Nombre Completo
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Email
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Rol
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Estado
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-slate-700">#1</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                                        <i class="fa-solid fa-user-doctor text-cyan-600"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-900">Dr. Juan Perez Lopez</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
+                                juan.perez@clinica.com
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="admin-badge info inline-flex items-center">
+                                    <i class="fa-solid fa-user-doctor mr-1.5"></i>
+                                    Medico
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="admin-badge success inline-flex items-center">
+                                    <i class="fa-solid fa-circle-check mr-1.5"></i>
+                                    Activo
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button class="btn btn-outline text-cyan-600 hover:text-white hover:bg-cyan-500" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button class="btn btn-outline text-red-600 hover:text-white hover:bg-red-500" title="Eliminar">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-slate-700">#2</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center">
+                                        <i class="fa-solid fa-user-shield text-teal-600"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-900">Maria Gonzalez Sanchez</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
+                                maria.gonzalez@clinica.com
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="admin-badge info inline-flex items-center">
+                                    <i class="fa-solid fa-user-shield mr-1.5"></i>
+                                    Administrador
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="admin-badge success inline-flex items-center">
+                                    <i class="fa-solid fa-circle-check mr-1.5"></i>
+                                    Activo
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button class="btn btn-outline text-cyan-600 hover:text-white hover:bg-cyan-500" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button class="btn btn-outline text-red-600 hover:text-white hover:bg-red-500" title="Eliminar">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-6 py-4 font-semibold text-slate-700">#3</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center">
+                                        <i class="fa-solid fa-user text-slate-500"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-slate-900">Carlos Ramirez Torres</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600">
+                                <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
+                                carlos.ramirez@clinica.com
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="admin-badge info inline-flex items-center">
+                                    <i class="fa-solid fa-user mr-1.5"></i>
+                                    Recepcionista
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="admin-badge success inline-flex items-center">
+                                    <i class="fa-solid fa-circle-check mr-1.5"></i>
+                                    Activo
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button class="btn btn-outline text-cyan-600 hover:text-white hover:bg-cyan-500" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button class="btn btn-outline text-red-600 hover:text-white hover:bg-red-500" title="Eliminar">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+        <script>
+        // Validacion de sesion
+        fetch('/usuarios/api/session')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.logged_in) {
+                    window.location.href = '/usuarios/login';
+                }
+            })
+            .catch(error => {
+                console.error('Error al verificar la sesion:', error);
+            });
+
+        const modal = document.getElementById('register-employee-modal');
+        const openButton = document.getElementById('new-employee-button');
+        const closeButton = document.getElementById('close-register-employee-modal');
+        const employeeForm = document.getElementById('register-employee-form');
+        const fieldIds = [
+            'employee-nombres',
+            'employee-apellidos',
+            'employee-documento',
+            'employee-telefono',
+            'employee-nacimiento',
+            'employee-email',
+            'employee-departamento',
+            'employee-provincia',
+            'employee-distrito',
+            'employee-password',
+            'employee-rol'
+        ];
+        const nameRegex = /^[\p{L}\s]+$/u;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const today = new Date();
+        const adultDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+
+        const setFieldError = (fieldId, message) => {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            const errorElement = document.querySelector('[data-error-for="' + fieldId + '"]');
+            const container = field.closest('div');
+
+            if (message) {
+                if (errorElement) {
+                    errorElement.textContent = message;
+                    errorElement.classList.remove('hidden');
+                }
+                if (container) {
+                    container.classList.add('has-error');
+                }
+                field.setAttribute('aria-invalid', 'true');
+            } else {
+                if (errorElement) {
+                    errorElement.textContent = '';
+                    errorElement.classList.add('hidden');
+                }
+                if (container) {
+                    container.classList.remove('has-error');
+                }
+                field.removeAttribute('aria-invalid');
+            }
+        };
+
+        const validators = {
+            'employee-nombres': value => {
+                if (!value) return 'Ingresa los nombres';
+                if (!nameRegex.test(value)) return 'Solo se permiten letras';
+                return '';
+            },
+            'employee-apellidos': value => {
+                if (!value) return 'Ingresa los apellidos';
+                if (!nameRegex.test(value)) return 'Solo se permiten letras';
+                return '';
+            },
+            'employee-documento': (value, field) => {
+                const digits = value.replace(/\D/g, '');
+                if (digits !== value) {
+                    field.value = digits;
+                }
+                if (!digits) return 'Ingresa el documento';
+                if (digits.length < 8 || digits.length > 12) return 'El documento debe tener entre 8 y 12 digitos';
+                return '';
+            },
+            'employee-telefono': (value, field) => {
+                const digits = value.replace(/\D/g, '');
+                if (digits !== value) {
+                    field.value = digits;
+                }
+                if (digits.length < 6 || digits.length > 15) return 'Ingresa un telefono valido';
+                return '';
+            },
+            'employee-nacimiento': value => {
+                if (!value) return 'Selecciona la fecha de nacimiento';
+                const selected = new Date(value);
+                if (Number.isNaN(selected.getTime())) return 'Fecha no valida';
+                if (selected > adultDate) return 'Debes ser mayor de edad';
+                return '';
+            },
+            'employee-email': value => {
+                if (!value) return 'Ingresa el correo';
+                if (!emailRegex.test(value)) return 'Correo no valido';
+                return '';
+            },
+            'employee-departamento': value => {
+                if (!value) return 'Ingresa el departamento';
+                if (!nameRegex.test(value)) return 'Solo se permiten letras';
+                return '';
+            },
+            'employee-provincia': value => {
+                if (!value) return 'Ingresa la provincia';
+                if (!nameRegex.test(value)) return 'Solo se permiten letras';
+                return '';
+            },
+            'employee-distrito': value => {
+                if (!value) return 'Ingresa el distrito';
+                if (!nameRegex.test(value)) return 'Solo se permiten letras';
+                return '';
+            },
+            'employee-password': value => {
+                if (!value) return 'Define una contrasena';
+                if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) return 'Debe incluir letras y numeros';
+                return '';
+            },
+            'employee-rol': value => {
+                if (!value) return 'Selecciona un rol';
+                return '';
+            }
+        };
+
+        const validateField = fieldId => {
+            const field = document.getElementById(fieldId);
+            if (!field) return true;
+            const isPassword = field.type === "password";
+            const value = isPassword ? field.value : field.value.trim();
+            if (!isPassword && field.type !== "date" && field.tagName !== "SELECT") {
+                field.value = value;
+            }
+            const validator = validators[fieldId];
+            const message = validator ? validator(value, field) : "";
+            setFieldError(fieldId, message || "");
+            return !message;
+        };
+
+        const resetEmployeeForm = () => {
+            if (!employeeForm) return;
+            employeeForm.reset();
+            fieldIds.forEach(id => setFieldError(id, ''));
+        };
+
+        if (employeeForm) {
+            const nacimientoInput = document.getElementById('employee-nacimiento');
+            if (nacimientoInput) {
+                nacimientoInput.max = adultDate.toISOString().split('T')[0];
+            }
+
+            fieldIds.forEach(id => {
+                const field = document.getElementById(id);
+                if (!field) return;
+                const eventName = field.tagName === 'SELECT' || field.type === 'date' ? 'change' : 'input';
+                field.addEventListener(eventName, () => validateField(id));
+                field.addEventListener('blur', () => validateField(id));
+            });
+
+            employeeForm.addEventListener('submit', event => {
+                let firstInvalid = null;
+                fieldIds.forEach(id => {
+                    if (!validateField(id) && !firstInvalid) {
+                        firstInvalid = id;
+                    }
+                });
+
+                if (firstInvalid) {
+                    event.preventDefault();
+                    document.getElementById(firstInvalid)?.focus();
+                }
+            });
+        }
+
+        const toggleModal = shouldOpen => {
+            if (!modal) return;
+            if (shouldOpen) {
+                resetEmployeeForm();
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                requestAnimationFrame(() => {
+                    document.getElementById('employee-nombres')?.focus();
+                });
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                resetEmployeeForm();
+            }
+        };
+
+        openButton?.addEventListener('click', () => toggleModal(true));
+        closeButton?.addEventListener('click', () => toggleModal(false));
+        modal?.addEventListener('click', event => {
+            if (event.target === modal) {
+                toggleModal(false);
+            }
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                toggleModal(false);
+            }
+        });
+
+        const searchForm = document.querySelector('.admin-card form[method="get"]');
+        if (searchForm) {
+            const searchInput = document.getElementById('search-empleado');
+            const validateSearch = () => {
+                const value = searchInput.value.trim();
+                if (value && value.length < 2) {
+                    setFieldError('search-empleado', 'Escribe al menos 2 caracteres para buscar');
+                    return false;
+                }
+                setFieldError('search-empleado', '');
+                return true;
+            };
+
+            searchInput.addEventListener('input', validateSearch);
+            searchForm.addEventListener('submit', event => {
+                if (!validateSearch()) {
+                    event.preventDefault();
+                    searchInput.focus();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

@@ -1,154 +1,31 @@
 <!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clínica Unión - Cuidamos de ti</title>
-
+    
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com">
-
+    
     <!-- Google Fonts: Inter (preload for faster loading) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
+    
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
-
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
 </head>
-
 <body class="text-gray-700">
 
-    <!-- Header Fijo -->
-    <header id="main-header"
-        class="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm transition-shadow duration-300">
-        <div class="container mx-auto px-4 flex justify-between items-center py-4">
-            <a href="#" class="flex items-center">
-                <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-12 w-auto">
-            </a>
-            <nav class="hidden md:flex items-center gap-8">
-                <a href="#nosotros" class="hover:text-cyan-500 transition-colors duration-300">Nosotros</a>
-                <a href="#servicios" class="hover:text-cyan-500 transition-colors duration-300">Servicios</a>
-                <a href="#especialidades" class="hover:text-cyan-500 transition-colors duration-300">Especialidades</a>
-                <a href="#contacto" class="hover:text-cyan-500 transition-colors duration-300">Contáctanos</a>
-                
-                <!-- Dropdown MAURICIO -->
-                <div class="relative group">
-                    <a href="#"
-                        class="hover:text-cyan-500 transition-colors duration-300 font-semibold flex items-center">
-                        MAURICIO
-                        <span class="ml-1">▾</span>
-                    </a>
-                    <ul
-                        class="absolute hidden group-hover:block bg-white border border-gray-200 rounded-lg shadow-lg mt-2 min-w-[280px] text-gray-700">
-                        <li class="border-b border-gray-100">
-                            <div class="px-4 py-2 bg-cyan-50 font-semibold text-cyan-700 text-sm">Módulo Reportes</div>
-                        </li>
-                        <li><a href="/reportes/consultar-por-categoria"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Consultar Reportes por Categoría</a>
-                        </li>
-                        <li><a href="/reportes/generar-reporte-actividad"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Generar Reporte de Actividad</a>
-                        </li>
-                        <li><a href="/reportes/generar-ocupacion-recursos"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Generar Reporte de Ocupación</a>
-                        </li>
-                        <li class="border-t border-b border-gray-100">
-                            <div class="px-4 py-2 bg-cyan-50 font-semibold text-cyan-700 text-sm">Módulo Incidencias</div>
-                        </li>
-                        <li><a href="/incidencias/generar-informe"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Generar Informe de Incidencias</a>
-                        </li>
-                    </ul>
-                </div>
-                
-                <!-- Dropdown KARELLY -->
-                <div class="relative group">
-                    <a href="#"
-                        class="hover:text-cyan-500 transition-colors duration-300 font-semibold flex items-center">
-                        KARELLY
-                        <span class="ml-1">▾</span>
-                    </a>
-
-                    <ul
-                        class="absolute hidden group-hover:block bg-white border border-gray-200 rounded-lg shadow-lg mt-2 min-w-[220px] text-gray-700">
-                        <li><a href="gestionCatalogoServicio.html"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Gestión de servicios</a>
-                        </li>
-                        <li><a href="consultaAgendaMedica.html"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Consultar agenda médica</a>
-                        </li>
-                        <li><a href="gestionRecursosFisicos.html"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Gestión de recursos
-                                físicos</a></li>
-                        <li><a href="gestionHorariosLaborables.html"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Gestion de Horarios
-                                Laborables</a></li>
-                        <li><a href="consultarIncidencia.html"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Consultar Incidencias</a>
-                        </li>
-                        <li><a href="gestionarBloqueo.html"
-                                class="block px-4 py-2 hover:bg-cyan-50 hover:text-cyan-600">Gestionar Bloqueo horarios</a></li>
-                    </ul>
-                </div>
-            </nav>
-            <div class="flex items-center gap-4">
-                <div id="user-auth-button" class="relative cursor-pointer">
-                    <div
-                        class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-user text-gray-600">
-                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                            <circle cx="12" cy="7" r="4" />
-                        </svg>
-                    </div>
-                </div>
-                <button id="mobile-menu-button" class="md:hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-menu">
-                        <line x1="4" x2="20" y1="12" y2="12" />
-                        <line x1="4" x2="20" y1="6" y2="6" />
-                        <line x1="4" x2="20" y1="18" y2="18" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <!-- Menú Móvil -->
-    <div id="mobile-menu"
-        class="fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-[60] p-6 transform translate-x-full md:hidden">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-xl font-bold">Menú</h2>
-            <button id="mobile-menu-close">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-x">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                </svg>
-            </button>
-        </div>
-        <nav class="flex flex-col gap-6">
-            <a href="#nosotros"
-                class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Nosotros</a>
-            <a href="#servicios"
-                class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Servicios</a>
-            <a href="#especialidades"
-                class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Especialidades</a>
-            <a href="#contacto"
-                class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Contáctanos</a>
-        </nav>
-    </div>
+    {% include 'header.html' %}
 
     <!-- Contenedor principal con padding para el header fijo -->
     <div class="container mx-auto px-4 pt-24">
@@ -157,47 +34,32 @@
             <div class="swiper hero-swiper">
                 <div class="swiper-wrapper">
                     <!-- Slide 1 -->
-                    <div class="swiper-slide"
-                        style="background-image: url('{{ url_for('static', filename='images/portada1.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
+                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada1.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
                         <div class="flex items-center justify-center h-full bg-black/30">
                             <div class="py-20 px-6 md:px-12 text-center max-w-2xl">
-                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">
-                                    Tu salud es nuestra prioridad. Cuidamos de ti.</h1>
-                                <p class="text-white mb-8 text-lg drop-shadow-md">Programa tu cita hoy y da el primer
-                                    paso hacia tu bienestar.</p>
-                                <button
-                                    class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all duration-300 transform hover:scale-105 shadow-lg">Realizar
-                                    Reserva</button>
+                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">Tu salud es nuestra prioridad. Cuidamos de ti.</h1>
+                                <p class="text-white mb-8 text-lg drop-shadow-md">Programa tu cita hoy y da el primer paso hacia tu bienestar.</p>
+                                <button class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all duration-300 transform hover:scale-105 shadow-lg">Realizar Reserva</button>
                             </div>
                         </div>
                     </div>
                     <!-- Slide 2 -->
-                    <div class="swiper-slide"
-                        style="background-image: url('{{ url_for('static', filename='images/portada2.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
+                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada2.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
                         <div class="flex items-center justify-center h-full bg-black/30">
                             <div class="py-20 px-6 md:px-12 text-center max-w-2xl">
-                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">
-                                    Tecnología de Vanguardia</h1>
-                                <p class="text-white mb-8 text-lg drop-shadow-md">Equipos de última generación para un
-                                    diagnóstico preciso y seguro.</p>
-                                <button
-                                    class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all">Conoce
-                                    Más</button>
+                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">Tecnología de Vanguardia</h1>
+                                <p class="text-white mb-8 text-lg drop-shadow-md">Equipos de última generación para un diagnóstico preciso y seguro.</p>
+                                <button class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all">Conoce Más</button>
                             </div>
                         </div>
                     </div>
                     <!-- Slide 3 -->
-                    <div class="swiper-slide"
-                        style="background-image: url('{{ url_for('static', filename='images/portada3.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
+                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada3.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
                         <div class="flex items-center justify-center h-full bg-black/30">
                             <div class="py-20 px-6 md:px-12 text-center max-w-2xl">
-                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">
-                                    Atención Humana y Cercana</h1>
-                                <p class="text-white mb-8 text-lg drop-shadow-md">Porque cada paciente es único,
-                                    ofrecemos un trato personalizado y empático.</p>
-                                <button
-                                    class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all">Nuestro
-                                    Equipo</button>
+                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">Atención Humana y Cercana</h1>
+                                <p class="text-white mb-8 text-lg drop-shadow-md">Porque cada paciente es único, ofrecemos un trato personalizado y empático.</p>
+                                <button class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all">Nuestro Equipo</button>
                             </div>
                         </div>
                     </div>
@@ -209,25 +71,20 @@
                 <div class="swiper-pagination"></div>
             </div>
         </main>
-
+        
         <!-- Sobre Nosotros Section -->
         <section id="nosotros" class="py-16 animate-on-scroll">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="animate-on-scroll" style="animation-delay: 0.1s;">
-                    <img src="{{ url_for('static', filename='images/ClinicaU.jpg') }}" alt="Interior de la clínica"
-                        class="rounded-lg shadow-lg">
+                    <img src="{{ url_for('static', filename='images/ClinicaU.jpg') }}" alt="Interior de la clínica" class="rounded-lg shadow-lg">
                 </div>
                 <div class="animate-on-scroll" style="animation-delay: 0.2s;">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Sobre Nosotros</h2>
                     <p class="text-gray-600 mb-4">
-                        En Clínica Unión, nuestra misión es ofrecer atención médica de la más alta calidad con un
-                        enfoque humano y personalizado. Desde nuestra fundación, nos hemos comprometido con el bienestar
-                        de nuestros pacientes, combinando la experiencia de nuestro equipo médico con tecnología de
-                        vanguardia.
+                        En Clínica Unión, nuestra misión es ofrecer atención médica de la más alta calidad con un enfoque humano y personalizado. Desde nuestra fundación, nos hemos comprometido con el bienestar de nuestros pacientes, combinando la experiencia de nuestro equipo médico con tecnología de vanguardia.
                     </p>
                     <p class="text-gray-600">
-                        Creemos en una medicina cercana, donde cada paciente es tratado con el respeto, la empatía y la
-                        dedicación que merece.
+                        Creemos en una medicina cercana, donde cada paciente es tratado con el respeto, la empatía y la dedicación que merece.
                     </p>
                 </div>
             </div>
@@ -237,44 +94,21 @@
         <section id="servicios" class="py-16 bg-white rounded-2xl my-8 animate-on-scroll">
             <div class="text-center mb-12">
                 <h2 class="text-3xl font-bold text-gray-800">Nuestros Servicios</h2>
-                <p class="text-gray-500 mt-2 max-w-2xl mx-auto">Ofrecemos un cuidado integral de la salud con un equipo
-                    de expertos y tecnología de última generación.</p>
+                <p class="text-gray-500 mt-2 max-w-2xl mx-auto">Ofrecemos un cuidado integral de la salud con un equipo de expertos y tecnología de última generación.</p>
             </div>
             <div class="grid md:grid-cols-3 gap-8 px-6">
                 <div class="text-center p-6 bg-gray-50 rounded-xl animate-on-scroll" style="animation-delay: 0.1s;">
-                    <div class="mx-auto w-16 h-16 mb-4 bg-cyan-100 rounded-full flex items-center justify-center"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-award text-cyan-600">
-                            <circle cx="12" cy="8" r="6" />
-                            <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                        </svg></div>
+                    <div class="mx-auto w-16 h-16 mb-4 bg-cyan-100 rounded-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award text-cyan-600"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></div>
                     <h3 class="font-bold text-xl mb-2">Médicos Expertos</h3>
                     <p class="text-gray-500">Profesionales altamente calificados y con años de experiencia.</p>
                 </div>
                 <div class="text-center p-6 bg-gray-50 rounded-xl animate-on-scroll" style="animation-delay: 0.2s;">
-                    <div class="mx-auto w-16 h-16 mb-4 bg-cyan-100 rounded-full flex items-center justify-center"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-microscope text-cyan-600">
-                            <path d="M6 18h8" />
-                            <path d="M3 22h18" />
-                            <path d="M14 22a7 7 0 1 0 0-14h-1" />
-                            <path d="M9 14h2" />
-                            <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z" />
-                            <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" />
-                        </svg></div>
+                    <div class="mx-auto w-16 h-16 mb-4 bg-cyan-100 rounded-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-microscope text-cyan-600"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg></div>
                     <h3 class="font-bold text-xl mb-2">Tecnología Avanzada</h3>
                     <p class="text-gray-500">Equipamiento moderno para diagnósticos y tratamientos precisos.</p>
                 </div>
                 <div class="text-center p-6 bg-gray-50 rounded-xl animate-on-scroll" style="animation-delay: 0.3s;">
-                    <div class="mx-auto w-16 h-16 mb-4 bg-cyan-100 rounded-full flex items-center justify-center"><svg
-                            xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-clock text-cyan-600">
-                            <circle cx="12" cy="12" r="10" />
-                            <polyline points="12 6 12 12 16 14" />
-                        </svg></div>
+                    <div class="mx-auto w-16 h-16 mb-4 bg-cyan-100 rounded-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock text-cyan-600"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                     <h3 class="font-bold text-xl mb-2">Atención 24/7</h3>
                     <p class="text-gray-500">Servicio de emergencias disponible las 24 horas del día.</p>
                 </div>
@@ -289,98 +123,36 @@
                     <div class="swiper-wrapper py-4">
                         <!-- Slide 1 -->
                         <div class="swiper-slide h-auto">
-                            <div
-                                class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" class="lucide lucide-heart-pulse text-cyan-500">
-                                        <path
-                                            d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
-                                        <path d="M3.22 12H9.5l.7-1 2.1 4.3 1.4-2.3h4.1" />
-                                    </svg>
-                                </div>
+                            <div class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
+                                <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-pulse text-cyan-500"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.7-1 2.1 4.3 1.4-2.3h4.1"/></svg></div>
                                 <h3 class="font-semibold text-lg text-gray-800">Cardiología</h3>
                             </div>
                         </div>
                         <!-- Slide 2 -->
                         <div class="swiper-slide h-auto">
-                            <div
-                                class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" class="lucide lucide-brain-circuit text-cyan-500">
-                                        <path d="M12 5a3 3 0 1 0-5.993.142" />
-                                        <path d="M18 5a3 3 0 1 0-5.993.142" />
-                                        <path d="M21 12a9 9 0 0 0-9-9h.01Z" />
-                                        <path d="M12 12a9 9 0 0 1 9 9h-.01Z" />
-                                        <path d="M3 12a9 9 0 0 1 9-9h-.01Z" />
-                                        <path d="M12 12a9 9 0 0 0-9 9h.01Z" />
-                                        <path d="M12 21a3 3 0 1 0 .142-5.993" />
-                                        <path d="M5.01 18a3 3 0 1 0 .142-5.993" />
-                                        <path d="M18.99 18a3 3 0 1 0 .142-5.993" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                </div>
+                           <div class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
+                                <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-brain-circuit text-cyan-500"><path d="M12 5a3 3 0 1 0-5.993.142"/><path d="M18 5a3 3 0 1 0-5.993.142"/><path d="M21 12a9 9 0 0 0-9-9h.01Z"/><path d="M12 12a9 9 0 0 1 9 9h-.01Z"/><path d="M3 12a9 9 0 0 1 9-9h-.01Z"/><path d="M12 12a9 9 0 0 0-9 9h.01Z"/><path d="M12 21a3 3 0 1 0 .142-5.993"/><path d="M5.01 18a3 3 0 1 0 .142-5.993"/><path d="M18.99 18a3 3 0 1 0 .142-5.993"/><circle cx="12" cy="12" r="3"/></svg></div>
                                 <h3 class="font-semibold text-lg text-gray-800">Neurología</h3>
                             </div>
                         </div>
                         <!-- Slide 3 -->
                         <div class="swiper-slide h-auto">
-                            <div
-                                class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" class="lucide lucide-bone text-cyan-500">
-                                        <path
-                                            d="M17 14.5c.9-.9 1.5-2.1 1.5-3.5A4.5 4.5 0 0 0 14 7c-1.4 0-2.6.6-3.5 1.5" />
-                                        <path
-                                            d="M9.5 17c.9.9 2.1 1.5 3.5 1.5a4.5 4.5 0 0 0 4-4.5c0-1.4-.6-2.6-1.5-3.5" />
-                                        <path d="m7 10 9-9" />
-                                        <path d="m14 17-9 9" />
-                                    </svg>
-                                </div>
+                            <div class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
+                                <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bone text-cyan-500"><path d="M17 14.5c.9-.9 1.5-2.1 1.5-3.5A4.5 4.5 0 0 0 14 7c-1.4 0-2.6.6-3.5 1.5"/><path d="M9.5 17c.9.9 2.1 1.5 3.5 1.5a4.5 4.5 0 0 0 4-4.5c0-1.4-.6-2.6-1.5-3.5"/><path d="m7 10 9-9"/><path d="m14 17-9 9"/></svg></div>
                                 <h3 class="font-semibold text-lg text-gray-800">Traumatología</h3>
                             </div>
                         </div>
-                        <!-- Slide 4 -->
+                         <!-- Slide 4 -->
                         <div class="swiper-slide h-auto">
-                            <div
-                                class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
-                                <div
-                                    class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round" class="lucide lucide-baby text-cyan-500">
-                                        <path d="M9 12.5a5 5 0 0 0 5 5" />
-                                        <path d="M12 18a5 5 0 0 0-5-5" />
-                                        <path d="M20 10c0-5-4.5-9-10-9S2 5 2 10c0 .9.1 1.8.4 2.6" />
-                                        <path d="M12 18c6.627 0 10-4.373 10-10" />
-                                        <path d="M2.4 12.6C3.2 14.8 5.4 16 8 16h8" />
-                                    </svg>
-                                </div>
+                           <div class="bg-cyan-50 p-8 rounded-2xl text-center shadow-md hover:shadow-xl hover:-translate-y-2 transition-all duration-300 h-full">
+                                <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center mb-4 shadow-inner"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-baby text-cyan-500"><path d="M9 12.5a5 5 0 0 0 5 5"/><path d="M12 18a5 5 0 0 0-5-5"/><path d="M20 10c0-5-4.5-9-10-9S2 5 2 10c0 .9.1 1.8.4 2.6"/><path d="M12 18c6.627 0 10-4.373 10-10"/><path d="M2.4 12.6C3.2 14.8 5.4 16 8 16h8"/></svg></div>
                                 <h3 class="font-semibold text-lg text-gray-800">Pediatría</h3>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="swiper-button-prev-custom swiper-nav-button specialties-prev"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-chevron-left">
-                        <path d="m15 18-6-6 6-6" />
-                    </svg></div>
-                <div class="swiper-button-next-custom swiper-nav-button specialties-next"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-chevron-right">
-                        <path d="m9 18 6-6-6-6" />
-                    </svg></div>
+                <div class="swiper-button-prev-custom swiper-nav-button specialties-prev"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg></div>
+                <div class="swiper-button-next-custom swiper-nav-button specialties-next"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></div>
             </div>
         </section>
 
@@ -390,40 +162,32 @@
             <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Nuestro Equipo Médico</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Doctor 1 -->
-                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll"
-                    style="animation-delay: 0.1s;">
-                    <img src="https://placehold.co/400x400/a7f3d0/333333?text=Dr.+Perez" alt="Dr. Carlos Perez"
-                        class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll" style="animation-delay: 0.1s;">
+                    <img src="https://placehold.co/400x400/a7f3d0/333333?text=Dr.+Perez" alt="Dr. Carlos Perez" class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
                     <div class="p-4">
                         <h3 class="font-bold text-lg">Dr. Carlos Perez</h3>
                         <p class="text-cyan-600">Cardiólogo</p>
                     </div>
                 </div>
                 <!-- Doctor 2 -->
-                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll"
-                    style="animation-delay: 0.2s;">
-                    <img src="https://placehold.co/400x400/bae6fd/333333?text=Dra.+Gomez" alt="Dra. Ana Gomez"
-                        class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll" style="animation-delay: 0.2s;">
+                    <img src="https://placehold.co/400x400/bae6fd/333333?text=Dra.+Gomez" alt="Dra. Ana Gomez" class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
                     <div class="p-4">
                         <h3 class="font-bold text-lg">Dra. Ana Gomez</h3>
                         <p class="text-cyan-600">Neuróloga</p>
                     </div>
                 </div>
                 <!-- Doctor 3 -->
-                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll"
-                    style="animation-delay: 0.3s;">
-                    <img src="https://placehold.co/400x400/f9a8d4/333333?text=Dr.+Ramos" alt="Dr. Luis Ramos"
-                        class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll" style="animation-delay: 0.3s;">
+                    <img src="https://placehold.co/400x400/f9a8d4/333333?text=Dr.+Ramos" alt="Dr. Luis Ramos" class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
                     <div class="p-4">
                         <h3 class="font-bold text-lg">Dr. Luis Ramos</h3>
                         <p class="text-cyan-600">Traumatólogo</p>
                     </div>
                 </div>
                 <!-- Doctor 4 -->
-                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll"
-                    style="animation-delay: 0.4s;">
-                    <img src="https://placehold.co/400x400/fde68a/333333?text=Dra.+Soto" alt="Dra. Maria Soto"
-                        class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="bg-white rounded-lg shadow-md text-center overflow-hidden group animate-on-scroll" style="animation-delay: 0.4s;">
+                    <img src="https://placehold.co/400x400/fde68a/333333?text=Dra.+Soto" alt="Dra. Maria Soto" class="w-full h-56 object-cover group-hover:scale-105 transition-transform duration-300">
                     <div class="p-4">
                         <h3 class="font-bold text-lg">Dra. Maria Soto</h3>
                         <p class="text-cyan-600">Pediatra</p>
@@ -435,84 +199,66 @@
         <!-- Testimonios Section -->
         <section id="testimonios" class="py-16 bg-white rounded-2xl my-8 animate-on-scroll">
             <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Testimonios de Pacientes</h2>
-            <div class="relative max-w-6xl mx-auto">
+             <div class="relative max-w-6xl mx-auto">
                 <div class="swiper testimonials-swiper">
                     <div class="swiper-wrapper py-4">
                         <!-- Testimonio 1 -->
                         <div class="swiper-slide">
                             <div class="bg-gray-50 p-6 rounded-xl border border-gray-200/80 h-full">
                                 <div class="flex items-center mb-4">
-                                    <img src="https://placehold.co/48x48/a7f3d0/333333?text=M" alt="Foto de Manuel"
-                                        class="w-12 h-12 rounded-full mr-4">
+                                    <img src="https://placehold.co/48x48/a7f3d0/333333?text=M" alt="Foto de Manuel" class="w-12 h-12 rounded-full mr-4">
                                     <div>
                                         <p class="font-bold text-gray-800">Manuel</p>
                                         <p class="text-sm text-gray-500">Paciente Verificado</p>
                                     </div>
                                 </div>
-                                <p class="text-gray-600">"Excelente atención y profesionales de primer nivel. Me sentí
-                                    seguro y bien cuidado durante todo mi tratamiento."</p>
+                                <p class="text-gray-600">"Excelente atención y profesionales de primer nivel. Me sentí seguro y bien cuidado durante todo mi tratamiento."</p>
                             </div>
                         </div>
                         <!-- Testimonio 2 -->
                         <div class="swiper-slide">
                             <div class="bg-gray-50 p-6 rounded-xl border border-gray-200/80 h-full">
                                 <div class="flex items-center mb-4">
-                                    <img src="https://placehold.co/48x48/bae6fd/333333?text=L" alt="Foto de Lucía"
-                                        class="w-12 h-12 rounded-full mr-4">
+                                    <img src="https://placehold.co/48x48/bae6fd/333333?text=L" alt="Foto de Lucía" class="w-12 h-12 rounded-full mr-4">
                                     <div>
                                         <p class="font-bold text-gray-800">Lucía</p>
                                         <p class="text-sm text-gray-500">Paciente Verificada</p>
                                     </div>
                                 </div>
-                                <p class="text-gray-600">"El equipo médico fue increíblemente amable y resolvió todas
-                                    mis dudas. Las instalaciones son modernas y limpias. ¡Muy recomendable!"</p>
+                                <p class="text-gray-600">"El equipo médico fue increíblemente amable y resolvió todas mis dudas. Las instalaciones son modernas y limpias. ¡Muy recomendable!"</p>
                             </div>
                         </div>
                         <!-- Testimonio 3 -->
                         <div class="swiper-slide">
                             <div class="bg-gray-50 p-6 rounded-xl border border-gray-200/80 h-full">
                                 <div class="flex items-center mb-4">
-                                    <img src="https://placehold.co/48x48/f9a8d4/333333?text=J" alt="Foto de Javier"
-                                        class="w-12 h-12 rounded-full mr-4">
+                                    <img src="https://placehold.co/48x48/f9a8d4/333333?text=J" alt="Foto de Javier" class="w-12 h-12 rounded-full mr-4">
                                     <div>
                                         <p class="font-bold text-gray-800">Javier</p>
                                         <p class="text-sm text-gray-500">Paciente Verificado</p>
                                     </div>
                                 </div>
-                                <p class="text-gray-600">"Gracias a la Clínica Unión, mi recuperación fue más rápida de
-                                    lo esperado. Un agradecimiento especial al Dr. Ramos por su dedicación."</p>
+                                <p class="text-gray-600">"Gracias a la Clínica Unión, mi recuperación fue más rápida de lo esperado. Un agradecimiento especial al Dr. Ramos por su dedicación."</p>
                             </div>
                         </div>
-                        <!-- Testimonio 4 -->
+                         <!-- Testimonio 4 -->
                         <div class="swiper-slide">
                             <div class="bg-gray-50 p-6 rounded-xl border border-gray-200/80 h-full">
                                 <div class="flex items-center mb-4">
-                                    <img src="https://placehold.co/48x48/fde68a/333333?text=S" alt="Foto de Sofia"
-                                        class="w-12 h-12 rounded-full mr-4">
+                                    <img src="https://placehold.co/48x48/fde68a/333333?text=S" alt="Foto de Sofia" class="w-12 h-12 rounded-full mr-4">
                                     <div>
                                         <p class="font-bold text-gray-800">Sofía</p>
                                         <p class="text-sm text-gray-500">Paciente Verificada</p>
                                     </div>
                                 </div>
-                                <p class="text-gray-600">"El trato humano y la profesionalidad del personal de
-                                    enfermería marcaron la diferencia. Me sentí como en casa."</p>
+                                <p class="text-gray-600">"El trato humano y la profesionalidad del personal de enfermería marcaron la diferencia. Me sentí como en casa."</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="swiper-pagination-custom testimonials-pagination"></div>
-                <div class="swiper-button-prev-custom swiper-nav-button testimonials-prev"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-chevron-left">
-                        <path d="m15 18-6-6 6-6" />
-                    </svg></div>
-                <div class="swiper-button-next-custom swiper-nav-button testimonials-next"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-chevron-right">
-                        <path d="m9 18 6-6-6-6" />
-                    </svg></div>
+                <div class="swiper-button-prev-custom swiper-nav-button testimonials-prev"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg></div>
+                <div class="swiper-button-next-custom swiper-nav-button testimonials-next"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></div>
             </div>
         </section>
 
@@ -521,232 +267,41 @@
         <section class="py-16 animate-on-scroll">
             <h2 class="text-3xl font-bold text-center text-gray-800 mb-12">Ubicación</h2>
             <div class="rounded-lg overflow-hidden shadow-lg">
-                <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.0447444724845!2d-79.8424031!3d-6.77365!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x904cef4e8c241a07%3A0xc1db95384026fab5!2sCl%C3%ADnica%20Uni%C3%B3n!5e0!3m2!1ses-419!2spe!4v1699999999999!5m2!1ses-419!2spe"
-                    width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade" class="w-full">
+                <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3963.0447444724845!2d-79.8424031!3d-6.77365!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x904cef4e8c241a07%3A0xc1db95384026fab5!2sCl%C3%ADnica%20Uni%C3%B3n!5e0!3m2!1ses-419!2spe!4v1699999999999!5m2!1ses-419!2spe" 
+                    width="100%" 
+                    height="450" 
+                    style="border:0;" 
+                    allowfullscreen="" 
+                    loading="lazy" 
+                    referrerpolicy="no-referrer-when-downgrade"
+                    class="w-full">
                 </iframe>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer id="contacto" class="mt-16 pt-12 pb-8 animate-on-scroll">
-            <div class="grid md:grid-cols-4 gap-8 border-t pt-10">
-                <div class="md:col-span-1">
-                    <h3 class="font-bold text-lg mb-3">Clínica Unión</h3>
-                    <p class="text-gray-500 text-sm">Cuidando de tu salud y la de tu familia con profesionalismo y
-                        calidez.</p>
-                </div>
-                <div class="md:col-span-1">
-                    <h3 class="font-semibold mb-3">Contacto</h3>
-                    <ul class="space-y-2 text-sm text-gray-600">
-                        <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16"
-                                height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone">
-                                <path
-                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-                            </svg> 555-123-456</li>
-                        <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16"
-                                height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail">
-                                <rect width="20" height="16" x="2" y="4" rx="2" />
-                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                            </svg> info@clinicaunion.com</li>
-                        <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16"
-                                height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin">
-                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                                <circle cx="12" cy="10" r="3" />
-                            </svg> Calle Ficticia 123, Ciudad</li>
-                    </ul>
-                </div>
-                <div class="md:col-span-1">
-                    <h3 class="font-semibold mb-3">Enlaces</h3>
-                    <ul class="space-y-2 text-sm">
-                        <li><a href="#nosotros" class="text-gray-600 hover:text-cyan-500">Nosotros</a></li>
-                        <li><a href="#servicios" class="text-gray-600 hover:text-cyan-500">Servicios</a></li>
-                        <li><a href="#" class="text-gray-600 hover:text-cyan-500">Blog</a></li>
-                    </ul>
-                </div>
-                <div class="md:col-span-1">
-                    <h3 class="font-semibold mb-3">Newsletter</h3>
-                    <p class="text-sm text-gray-500 mb-2">Recibe noticias de salud.</p>
-                    <div class="flex">
-                        <input type="email" placeholder="Tu email" class="w-full p-2 border rounded-l-md text-sm">
-                        <button class="bg-cyan-500 text-white px-3 rounded-r-md text-sm">OK</button>
-                    </div>
-                </div>
-            </div>
-            <div
-                class="text-center text-sm text-gray-400 mt-12 border-t pt-6 flex flex-col sm:flex-row justify-between items-center">
-                <p>Clínica Unión &copy; 2025. Todos los derechos reservados.</p>
-                <div class="flex gap-4 mt-4 sm:mt-0">
-                    <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg"
-                            width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-twitter">
-                            <path
-                                d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9s-5.2-.8-6.1-2.4c-1.1 1.1-2.5 2.1-4.6 2.5H4.2c-1.1 0-2.2-.4-2.2-2.2s1.1-2.3 2.2-2.3c1 .2 2.3.1 3.4-.4C8.7 8.1 9.1 7 9.1 7s-2.1-.2-2.1-2.3c0-1.2 1-2.1 2.1-2.1H12c3.4 0 5.6 2.3 5.6 2.3s2.1-.2 2.1 1.1c0 .9-.8 1.9-1.5 2.4.9-.1 2.4-1 2.4-1z" />
-                        </svg></a>
-                    <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg"
-                            width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-facebook">
-                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                        </svg></a>
-                    <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg"
-                            width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="lucide lucide-instagram">
-                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                        </svg></a>
-                </div>
-            </div>
-        </footer>
+        {% include 'footer.html' %}
     </div>
 
-    <!-- Modals de Autenticación -->
-    <!-- Login Modal -->
-    <div id="login-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-            <button id="close-login-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-x">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                </svg>
-            </button>
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Iniciar Sesión</h2>
-            <form>
-                <div class="mb-4">
-                    <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="login-email"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="tu@email.com">
-                </div>
-                <div class="mb-6">
-                    <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                    <input type="password" id="login-password"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="••••••••">
-                </div>
-                <button type="submit"
-                    class="w-full bg-cyan-500 text-white font-bold py-3 rounded-lg hover:bg-cyan-600 transition-colors">Ingresar</button>
-            </form>
-            <p class="text-center text-sm text-gray-600 mt-6">
-                ¿No tienes una cuenta? <button id="go-to-register"
-                    class="font-medium text-cyan-600 hover:underline">Regístrate</button>
-            </p>
-        </div>
-    </div>
-
-    <!-- Register Modal -->
-    <div id="register-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 relative">
-            <button id="close-register-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-x">
-                    <path d="M18 6 6 18" />
-                    <path d="m6 6 12 12" />
-                </svg>
-            </button>
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Crear Cuenta de Paciente</h2>
-            <form>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="register-nombres"
-                            class="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
-                        <input type="text" id="register-nombres"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="John">
-                    </div>
-                    <div>
-                        <label for="register-apellidos"
-                            class="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
-                        <input type="text" id="register-apellidos"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="Doe">
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label for="register-documento" class="block text-sm font-medium text-gray-700 mb-1">Documento de
-                        Identidad</label>
-                    <input type="text" id="register-documento"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="12345678">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="register-telefono"
-                            class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                        <input type="tel" id="register-telefono"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="987654321">
-                    </div>
-                    <div>
-                        <label for="register-nacimiento" class="block text-sm font-medium text-gray-700 mb-1">Fecha de
-                            Nacimiento</label>
-                        <input type="date" id="register-nacimiento"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1">Correo
-                        Electrónico</label>
-                    <input type="email" id="register-email"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="tu@email.com">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <label for="register-departamento"
-                            class="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
-                        <input type="text" id="register-departamento"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="Ej: Lima">
-                    </div>
-                    <div>
-                        <label for="register-provincia"
-                            class="block text-sm font-medium text-gray-700 mb-1">Provincia</label>
-                        <input type="text" id="register-provincia"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="Ej: Lima">
-                    </div>
-                    <div>
-                        <label for="register-distrito"
-                            class="block text-sm font-medium text-gray-700 mb-1">Distrito</label>
-                        <input type="text" id="register-distrito"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                            placeholder="Ej: Miraflores">
-                    </div>
-                </div>
-                <div class="mb-6">
-                    <label for="register-password"
-                        class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                    <input type="password" id="register-password"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                        placeholder="••••••••">
-                </div>
-                <button type="submit"
-                    class="w-full bg-cyan-500 text-white font-bold py-3 rounded-lg hover:bg-cyan-600 transition-colors">Registrarse</button>
-            </form>
-            <p class="text-center text-sm text-gray-600 mt-6">
-                ¿Ya tienes una cuenta? <button id="go-to-login" class="font-medium text-cyan-600 hover:underline">Inicia
-                    Sesión</button>
-            </p>
-        </div>
-    </div>
+    {% include 'auth_modals.html' %}
 
     <!-- Swiper JS (defer for better performance) -->
     <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js" defer></script>
-
+    
     <!-- Custom JavaScript -->
     <script type="module" src="{{ url_for('static', filename='js/home.js') }}" defer></script>
+    
+    <script>
+        // Hacer la función logout disponible globalmente
+        window.logout = function() {
+            if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                localStorage.removeItem('usuario');
+                fetch('/usuarios/logout', { method: 'GET' })
+                    .then(() => location.reload())
+                    .catch(() => location.reload());
+            }
+        };
+    </script>
 
 </body>
-
 </html>

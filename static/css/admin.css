@@ -1,0 +1,179 @@
+/* Admin panel harmonized styles */
+:root {
+  --admin-gap: 1rem;
+  --admin-gap-lg: 1.5rem;
+  --admin-radius: 0.75rem;
+}
+
+.admin-page {
+  background: var(--bg-page);
+  color: var(--text);
+}
+
+.admin-title {
+  font-weight: 700;
+  color: #0f172a; /* slate-900 */
+}
+
+.admin-section {
+  margin: 1.25rem 0;
+}
+
+.admin-toolbar { display: flex; gap: var(--admin-gap); flex-wrap: wrap; align-items: center; }
+
+.admin-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--admin-radius);
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--admin-radius);
+  overflow: hidden;
+}
+.admin-table thead th {
+  text-align: left;
+  background: #f1f5f9; /* slate-100 */
+  color: #0f172a; /* slate-900 */
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.admin-table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.admin-table tbody tr:hover { background: #f8fafc; }
+
+.admin-badge { display:inline-block; padding: .25rem .5rem; border-radius: .5rem; font-weight:600; font-size:.75rem }
+.admin-badge.success { background: #ecfdf5; color: #065f46; }
+.admin-badge.warn { background: #fffbeb; color: #92400e; }
+.admin-badge.info { background: #eef2ff; color: #3730a3; }
+
+/* Harmonize existing gradient/utility buttons */
+button.bg-cyan-500,
+button.bg-gradient-to-r,
+button[class*="bg-cyan-"],
+button[id^="btn"] {
+  font-weight: 600;
+  border-radius: 0.5rem;
+}
+
+/* Common tables used in admin even without admin-table class */
+table.min-w-full,
+table.w-full {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+table.min-w-full thead th,
+table.w-full thead th {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Normalize legacy card markup */
+.bg-white.rounded-lg,
+.bg-white.rounded-xl,
+.bg-white.rounded-2xl {
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  border-radius: 0.75rem;
+}
+
+.bg-white.rounded-lg.shadow-md,
+.bg-white.rounded-xl.shadow-md,
+.bg-white.rounded-2xl.shadow-md {
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.bg-white.rounded-lg.shadow-sm,
+.bg-white.rounded-xl.shadow-sm,
+.bg-white.rounded-2xl.shadow-sm {
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+}
+
+.bg-white.rounded-lg > *,
+.bg-white.rounded-xl > *,
+.bg-white.rounded-2xl > * {
+  border-radius: inherit;
+}
+
+/* Scheduler helpers */
+.schedule-card {
+  background: #f8fafc;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  border: 1px dashed #cbd5e1;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.calendar-nav button {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.calendar-nav button:hover {
+  background: #e0f2fe;
+  color: #0e7490;
+}
+
+.schedule-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.schedule-slot.available {
+  background: #ecfeff;
+  border-color: #bae6fd;
+  color: #0e7490;
+}
+
+.schedule-slot.available:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(14, 116, 144, 0.15);
+}
+
+.schedule-slot.selected {
+  background: linear-gradient(135deg, #06b6d4, #0e7490);
+  color: #fff;
+  box-shadow: 0 8px 16px rgba(6, 182, 212, 0.25);
+}
+
+.schedule-slot.booked {
+  background: #fee2e2;
+  color: #b91c1c;
+  cursor: not-allowed;
+  border-color: #fecaca;
+}
+
+.schedule-slot.blocked {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: #cbd5f5;
+}

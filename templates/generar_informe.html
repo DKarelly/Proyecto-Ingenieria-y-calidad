@@ -1,0 +1,628 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Informe de Incidencia - Clínica Union</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#f8fafc] font-['Inter']">
+    
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/seguridad/incidencias" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                <span class="font-medium">Volver al Panel de Incidencias</span>
+            </a>
+        </div>
+
+        <!-- Título -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Generar Informe de Incidencias</h1>
+            <p class="text-gray-600 mt-2">Filtra y genera reportes detallados de incidencias</p>
+        </div>
+
+        <!-- Sección de Filtros -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 admin-card">
+            <div class="flex items-center gap-2 mb-6">
+                <i class="fas fa-filter text-cyan-600 text-xl"></i>
+                <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
+            </div>
+
+            <form id="formFiltros" method="GET" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Paciente -->
+                    <div>
+                        <label for="paciente" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-injured text-gray-500 mr-1"></i>
+                            Paciente
+                        </label>
+                        <select 
+                            id="paciente" 
+                            name="paciente"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                        >
+                            <option value="">Buscar Paciente</option>
+                            <option value="1">María González</option>
+                            <option value="2">Carlos Ramírez</option>
+                            <option value="3">Ana Torres</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div>
+                        <label for="fecha" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
+                            Fecha
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fecha" 
+                            name="fecha"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                        >
+                    </div>
+
+                    <!-- Categoría -->
+                    <div>
+                        <label for="categoria" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-tags text-gray-500 mr-1"></i>
+                            Categoría
+                        </label>
+                        <select 
+                            id="categoria" 
+                            name="categoria"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                        >
+                            <option value="">Seleccionar Categoría</option>
+                            <option value="medica">Médica</option>
+                            <option value="administrativa">Administrativa</option>
+                            <option value="tecnica">Técnica</option>
+                        </select>
+                    </div>
+
+                    <!-- Estado -->
+                    <div>
+                        <label for="estado" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-flag text-gray-500 mr-1"></i>
+                            Estado
+                        </label>
+                        <select 
+                            id="estado" 
+                            name="estado"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                        >
+                            <option value="">Todos</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="en_proceso">En Proceso</option>
+                            <option value="resuelto">Resuelto</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botón Generar -->
+                <div class="flex justify-center pt-4">
+                    <button 
+                        type="button"
+                        id="btnGenerarReporte"
+                        class="px-8 py-3 bg-cyan-600 text-white rounded-lg font-semibold hover:bg-cyan-700 transition-colors shadow-md hover:shadow-lg inline-flex items-center"
+                    >
+                        <i class="fas fa-chart-bar mr-2"></i>
+                        Generar Reporte
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Sección de Resultados -->
+        <div id="resultsSection" class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden" style="display: none;">
+            <div class="p-6 bg-gradient-to-r from-cyan-50 to-blue-50 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-list-alt text-cyan-600 text-xl"></i>
+                        <h3 class="text-xl font-bold text-gray-800">Incidencias Encontradas</h3>
+                    </div>
+                    <span id="totalIncidencias" class="px-4 py-2 bg-cyan-600 text-white rounded-full font-semibold text-sm">
+                        0 incidencias
+                    </span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto admin-card">
+                <table class="admin-table min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Prioridad</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaIncidencias" class="bg-white divide-y divide-gray-200">
+                        <!-- Ejemplo 1 -->
+                        <tr class="hover:bg-gray-50 transition-all duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#INC-001</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">15/12/2024</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Equipo médico fuera de servicio</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Pendiente
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    Alta
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <button onclick="verDetalle(1)" class="text-cyan-600 hover:text-cyan-800 font-semibold">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Ejemplo 2 -->
+                        <tr class="hover:bg-gray-50 transition-all duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#INC-002</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">14/12/2024</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Retraso en resultados de laboratorio</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    En Proceso
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                    Media
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <button onclick="verDetalle(2)" class="text-cyan-600 hover:text-cyan-800 font-semibold">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Ejemplo 3 -->
+                        <tr class="hover:bg-gray-50 transition-all duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#INC-003</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">13/12/2024</td>
+                            <td class="px-6 py-4 text-sm text-gray-900">Falta de insumos médicos</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Resuelto
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    Baja
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <button onclick="verDetalle(3)" class="text-cyan-600 hover:text-cyan-800 font-semibold">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    Ver
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-sm text-gray-600">
+                        Mostrando <span id="paginaActual" class="font-semibold">1</span> de <span id="totalPaginas" class="font-semibold">1</span> páginas
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btnPrevPage" disabled class="px-4 py-2 bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                            <i class="fas fa-chevron-left mr-1"></i>
+                            Anterior
+                        </button>
+                        <button id="btnNextPage" class="px-4 py-2 bg-cyan-600 text-white rounded-lg font-semibold hover:bg-cyan-700 transition-colors">
+                            Siguiente
+                            <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <!-- Modal Detalle -->
+    <div id="modalDetalle" class="fixed inset-0 bg-black bg-opacity-60 z-[70] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i>
+                        Detalle de Incidencia
+                    </h3>
+                    <button onclick="cerrarModal()" class="text-white hover:text-gray-200 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600">ID:</label>
+                        <p id="detalle-id" class="text-gray-900 font-medium">#INC-001</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600">Fecha Registro:</label>
+                        <p id="detalle-fecha" class="text-gray-900 font-medium">15/12/2024</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-semibold text-gray-600">Descripción:</label>
+                        <p id="detalle-descripcion" class="text-gray-900">Equipo médico fuera de servicio en sala de urgencias</p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600">Estado:</label>
+                        <p id="detalle-estado" class="mt-1">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                Pendiente
+                            </span>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600">Prioridad:</label>
+                        <p id="detalle-prioridad" class="mt-1">
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                Alta
+                            </span>
+                        </p>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-gray-600">Fecha Resolución:</label>
+                        <p id="detalle-resolucion" class="text-gray-900 font-medium">Pendiente</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-semibold text-gray-600">Observaciones:</label>
+                        <p id="detalle-observaciones" class="text-gray-900">Se requiere atención inmediata del área técnica</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end">
+                <button onclick="cerrarModal()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Éxito -->
+    <div id="modalExito" class="fixed inset-0 bg-black bg-opacity-60 z-[70] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div class="sticky top-0 bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i>
+                        Reporte Generado
+                    </h3>
+                    <button onclick="cerrarModalExito()" class="text-white hover:text-gray-200 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 text-center">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-6xl text-green-500"></i>
+                </div>
+                <p class="text-gray-900 font-semibold mb-2">El informe de incidencias se ha generado exitosamente.</p>
+                <p id="mensajeResultado" class="text-gray-600">Se encontraron 3 incidencias.</p>
+            </div>
+
+            <div class="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-center">
+                <button onclick="cerrarModalExito()" class="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                    <i class="fas fa-check mr-2"></i>
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Generar reporte
+        document.getElementById('btnGenerarReporte').addEventListener('click', function() {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Actualizar contador
+            document.getElementById('totalIncidencias').textContent = '3 incidencias';
+            
+            // Mostrar modal de éxito
+            document.getElementById('modalExito').classList.remove('hidden');
+            document.getElementById('modalExito').classList.add('flex');
+        });
+
+        // Funciones de modal
+        function verDetalle(id) {
+            document.getElementById('modalDetalle').classList.remove('hidden');
+            document.getElementById('modalDetalle').classList.add('flex');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalDetalle').classList.add('hidden');
+            document.getElementById('modalDetalle').classList.remove('flex');
+        }
+
+        function cerrarModalExito() {
+            document.getElementById('modalExito').classList.add('hidden');
+            document.getElementById('modalExito').classList.remove('flex');
+        }
+
+        // Paginación
+        document.getElementById('btnNextPage').addEventListener('click', function() {
+            // Lógica de paginación
+        });
+
+        document.getElementById('btnPrevPage').addEventListener('click', function() {
+            // Lógica de paginación
+        });
+    </script>
+</body>
+</html>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <i class="fas fa-hospital-alt"></i>
+                <h1>Clínica Unión S.A.C.</h1>
+            </div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    <span>Inicio</span>
+                </a>
+                <a href="/incidencias" class="nav-link active">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Incidencias</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <div class="page-header">
+            <div class="title-section">
+                <i class="fas fa-file-medical-alt"></i>
+                <h2>Generar Informe de Incidencia</h2>
+            </div>
+            <div class="breadcrumb">
+                <a href="/">Inicio</a>
+                <span>/</span>
+                <a href="/incidencias">Incidencias</a>
+                <span>/</span>
+                <span>Generar Informe</span>
+            </div>
+        </div>
+
+        <!-- Filtros Section -->
+        <section class="filters-section">
+            <div class="filters-container">
+                <h3 class="section-title">
+                    <i class="fas fa-filter"></i>
+                    Filtros de Búsqueda
+                </h3>
+                
+                <div class="filters-grid">
+                    <!-- Paciente -->
+                    <div class="filter-group">
+                        <label for="pacienteSelect">
+                            <i class="fas fa-user-injured"></i>
+                            Paciente
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="pacienteSelect" class="form-select">
+                                <option value="">Buscar Paciente</option>
+                            </select>
+                            <i class="fas fa-search select-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Fecha -->
+                    <div class="filter-group">
+                        <label for="fechaInput">
+                            <i class="fas fa-calendar-alt"></i>
+                            Fecha
+                        </label>
+                        <div class="input-wrapper">
+                            <input type="date" id="fechaInput" class="form-input">
+                            <i class="fas fa-chevron-down input-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Categoría -->
+                    <div class="filter-group">
+                        <label for="categoriaSelect">
+                            <i class="fas fa-tags"></i>
+                            Categoría
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="categoriaSelect" class="form-select">
+                                <option value="">Seleccionar Categoría</option>
+                            </select>
+                            <i class="fas fa-chevron-down select-icon"></i>
+                        </div>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="filter-group">
+                        <label for="estadoSelect">
+                            <i class="fas fa-flag"></i>
+                            Estado
+                        </label>
+                        <div class="select-wrapper">
+                            <select id="estadoSelect" class="form-select">
+                                <option value="">Seleccionar Estado</option>
+                                <option value="Todos">Todos</option>
+                            </select>
+                            <i class="fas fa-chevron-down select-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Generar Reporte -->
+                <div class="action-button-container">
+                    <button id="btnGenerarReporte" class="btn-generate">
+                        <i class="fas fa-chart-bar"></i>
+                        Generar Reporte
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tabla de Resultados -->
+        <section class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h3 class="section-title">
+                    <i class="fas fa-list-alt"></i>
+                    Incidencias Encontradas
+                </h3>
+                <div class="results-info">
+                    <span id="totalIncidencias" class="total-badge">0 incidencias</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Estado</th>
+                            <th>Prioridad</th>
+                            <th>Fecha Resolución</th>
+                            <th>Observaciones</th>
+                            <th class="th-controls">Controles</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaIncidencias">
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="pagination-container">
+                <div class="pagination-info">
+                    Mostrando <span id="paginaActual">1</span> de <span id="totalPaginas">1</span> páginas
+                </div>
+                <div class="pagination-controls">
+                    <button id="btnPrevPage" class="btn-page" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                        Anterior
+                    </button>
+                    <button id="btnNextPage" class="btn-page">
+                        Siguiente
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Detalle de Incidencia -->
+    <div id="modalDetalle" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Detalle de Incidencia
+                </h3>
+                <button class="modal-close" onclick="cerrarModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>ID:</label>
+                        <span id="detalle-id"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Fecha Registro:</label>
+                        <span id="detalle-fecha"></span>
+                    </div>
+                    <div class="detail-item full-width">
+                        <label>Descripción:</label>
+                        <span id="detalle-descripcion"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Estado:</label>
+                        <span id="detalle-estado" class="badge"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Prioridad:</label>
+                        <span id="detalle-prioridad" class="badge"></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Fecha Resolución:</label>
+                        <span id="detalle-resolucion"></span>
+                    </div>
+                    <div class="detail-item full-width">
+                        <label>Observaciones:</label>
+                        <span id="detalle-observaciones"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="cerrarModal()">
+                    <i class="fas fa-times"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Éxito -->
+    <div id="modalExito" class="modal">
+        <div class="modal-content modal-success">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-check-circle"></i>
+                    Reporte Generado
+                </h3>
+                <button class="modal-close" onclick="cerrarModalExito()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="success-message">
+                    El informe de incidencias se ha generado exitosamente.
+                </p>
+                <p id="mensajeResultado" class="result-summary"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="cerrarModalExito()">
+                    <i class="fas fa-check"></i>
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/generar_informe_incidencias.js') }}"></script>
+</body>
+</html>

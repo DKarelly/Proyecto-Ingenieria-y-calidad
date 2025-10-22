@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultar Perfil - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    <div class="container mx-auto">
+        {% include 'header_admin.html' %}
+
+    <div class="max-w-5xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Cuentas
+            </a>
+        </div>
+        
+        <!-- Header con título y botón -->
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-8 admin-toolbar">
+            <h1 class="text-3xl font-bold text-gray-800">Consultar Perfil</h1>
+            <button class="btn btn-primary">
+                <i class="fa-solid fa-edit mr-2"></i>
+                Editar Perfil
+            </button>
+        </div>
+
+        <!-- Profile Information Card -->
+        <div class="admin-card shadow-md p-6 md:p-8">
+            <div class="space-y-0 divide-y divide-gray-200">
+                <!-- Nombre Completo -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Nombre Completo</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">Ana García</p>
+                </div>
+                
+                <!-- Documento de Identidad -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Documento de Identidad</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">12345678</p>
+                </div>
+                
+                <!-- Teléfono -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Teléfono</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">+51 987 654 321</p>
+                </div>
+                
+                <!-- Fecha de Nacimiento -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Fecha de Nacimiento</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">15/08/1985</p>
+                </div>
+                
+                <!-- Correo Electrónico -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Correo Electrónico</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">ana.garcia@example.com</p>
+                </div>
+                
+                <!-- Departamento -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Departamento</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">Lima</p>
+                </div>
+                
+                <!-- Provincia -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Provincia</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">Lima</p>
+                </div>
+                
+                <!-- Distrito -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Distrito</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">Miraflores</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
+
+    <!-- Script de validación de sesión -->
+    <script>
+        // Validar sesión al cargar la página
+        fetch('/usuarios/api/session')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.logged_in) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('Error al validar sesión:', error);
+                window.location.href = '/';
+            });
+    </script>
+</body>
+</html>

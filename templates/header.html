@@ -1,0 +1,41 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+<!-- Header Fijo -->
+<header id="main-header" class="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm transition-shadow duration-300">
+    <div class="container mx-auto px-4 flex justify-between items-center py-4">
+        <a href="/" class="flex items-center">
+            <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-12 w-auto">
+        </a>
+        <nav class="hidden md:flex items-center gap-8">
+            <a href="/#nosotros" class="hover:text-cyan-500 transition-colors duration-300">Nosotros</a>
+            <a href="/#servicios" class="hover:text-cyan-500 transition-colors duration-300">Servicios</a>
+            <a href="/#especialidades" class="hover:text-cyan-500 transition-colors duration-300">Especialidades</a>
+            <a href="/#contacto" class="hover:text-cyan-500 transition-colors duration-300">Contáctanos</a>
+        </nav>
+        <div class="flex items-center gap-4">
+            <div id="user-auth-button" class="relative cursor-pointer">
+                <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user text-gray-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+            </div>
+            <button id="mobile-menu-button" class="md:hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- Menú Móvil -->
+<div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-[60] p-6 transform translate-x-full md:hidden">
+    <div class="flex justify-between items-center mb-8">
+        <h2 class="text-xl font-bold">Menú</h2>
+        <button id="mobile-menu-close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+    </div>
+    <nav class="flex flex-col gap-6">
+        <a href="/#nosotros" class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Nosotros</a>
+        <a href="/#servicios" class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Servicios</a>
+        <a href="/#especialidades" class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Especialidades</a>
+        <a href="/#contacto" class="text-lg hover:text-cyan-500 transition-colors duration-300 mobile-link">Contáctanos</a>
+    </nav>
+</div>

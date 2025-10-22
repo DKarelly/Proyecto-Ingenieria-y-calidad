@@ -1,0 +1,135 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reprogramar Reserva - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    <div class="container mx-auto">
+        {% include 'header_admin.html' %}
+
+    <div class="max-w-6xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/reservas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Reservas
+            </a>
+        </div>
+
+        
+        <!-- Título principal -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Reprogramar Reserva</h1>
+
+        <!-- Sección de Búsqueda -->
+        <div class="admin-card shadow-sm p-6 mb-6">
+            <label for="search-dni" class="block text-sm font-semibold text-gray-700 mb-2">Buscar Reserva</label>
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="search-dni" 
+                    placeholder="Buscar por DNI" 
+                    class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
+                >
+                <i class="fas fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+        </div>
+
+        <!-- Sección de Cita Actual -->
+        <div class="admin-card shadow-sm p-6 mb-6">
+            <p class="text-sm font-semibold text-gray-700 mb-4">Cita Actual</p>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
+                <p class="text-gray-700"><span class="font-semibold">Paciente:</span> Juan Carlos Pérez</p>
+                <p class="text-gray-700"><span class="font-semibold">Fecha:</span> 21/10/2025</p>
+                <p class="text-gray-700"><span class="font-semibold">Hora:</span> 09:00 AM</p>
+                <p class="text-gray-700"><span class="font-semibold">Médico:</span> Dr. Luis Gonzalez</p>
+                <p class="text-gray-700"><span class="font-semibold">Servicio:</span> Consulta General</p>
+            </div>
+        </div>
+        
+        <!-- Sección de Nuevo Horario -->
+        <div class="admin-card shadow-sm p-6">
+            <p class="text-sm font-semibold text-gray-700 mb-4">Seleccionar Nuevo Horario</p>
+            <div class="mb-4">
+                <label for="select-medic" class="block text-sm font-semibold text-gray-700 mb-2">Médico</label>
+                <select 
+                    id="select-medic" 
+                    class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all appearance-none"
+                    style="background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem;"
+                >
+                    <option>Seleccione un Médico</option>
+                    <option>Dr. Luis Gonzalez</option>
+                    <option>Dra. Ana Martínez</option>
+                    <option>Dr. Carlos Sánchez</option>
+                </select>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 min-h-[150px]">
+                 <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    <!-- Horarios de ejemplo -->
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">09:00 AM</button>
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">09:30 AM</button>
+                    <button class="bg-cyan-600 text-white border border-cyan-700 text-center font-semibold py-2 px-1 rounded-md">10:00 AM</button>
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">10:30 AM</button>
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">11:00 AM</button>
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">11:30 AM</button>
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">02:00 PM</button>
+                    <button class="bg-cyan-100 hover:bg-cyan-600 hover:text-white text-cyan-700 border border-cyan-300 text-center font-semibold py-2 px-1 rounded-md transition-all">02:30 PM</button>
+                 </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                 <button class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 px-8 rounded-lg transition-all shadow-sm hover:shadow-md inline-flex items-center">
+                    <i class="fas fa-calendar-check mr-2"></i>
+                    Reprogramar
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    {% include 'footer.html' %}
+
+    </div>
+
+    <!-- AlpineJS para interactividad del dropdown -->
+    <script src="//unpkg.com/alpinejs" defer></script>
+    
+    <script>
+        // Cargar información del usuario desde la sesión del servidor
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/usuarios/api/session');
+                const data = await response.json();
+                
+                if (data.logged_in && data.usuario) {
+                    if (data.usuario.nombre) {
+                        document.getElementById('admin-username').textContent = data.usuario.nombre;
+                    }
+                    if (data.usuario.rol) {
+                        document.getElementById('admin-role').textContent = data.usuario.rol;
+                    }
+                } else {
+                    // Si no hay sesión, redirigir al inicio
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error al cargar datos de sesión:', error);
+                window.location.href = '/';
+            }
+        });
+    </script>
+
+</body>
+</html>
+

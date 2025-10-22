@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Contraseña - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Cuentas
+            </a>
+        </div>
+
+        <!-- Formulario centrado -->
+        <div class="flex items-center justify-center">
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-cyan-100 rounded-full mb-4">
+                        <i class="fa-solid fa-key text-cyan-600 text-2xl"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-800">Recuperar Contraseña</h1>
+                    <p class="mt-2 text-sm text-gray-600">Ingrese su correo para recibir un código de verificación</p>
+                </div>
+
+                <form method="POST" class="space-y-6">
+                    <!-- Correo Electrónico -->
+                    <div>
+                        <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">Correo Electrónico</label>
+                        <div class="relative">
+                            <input 
+                                type="email" 
+                                id="email" 
+                                name="email" 
+                                class="w-full px-4 py-3 pr-24 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                                placeholder="usted@ejemplo.com"
+                                required
+                            >
+                            <button 
+                                type="button" 
+                                id="btn-enviar-codigo"
+                                class="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 text-sm font-semibold text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg transition-colors"
+                            >
+                                Enviar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Código de Verificación -->
+                    <div>
+                        <label for="code" class="block text-sm font-semibold text-gray-700 mb-2">Código de Verificación</label>
+                        <input 
+                            type="text" 
+                            id="code" 
+                            name="code" 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            placeholder="Ingrese el código de 6 dígitos"
+                            maxlength="6"
+                            required
+                        >
+                    </div>
+
+                    <!-- Nueva Contraseña -->
+                    <div>
+                        <label for="new-password" class="block text-sm font-semibold text-gray-700 mb-2">Nueva Contraseña</label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="new-password" 
+                                name="new_password" 
+                                class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                                placeholder="••••••••"
+                                required
+                            >
+                            <button 
+                                type="button" 
+                                onclick="togglePassword('new-password')"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <i class="fa-solid fa-eye" id="new-password-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirmar Contraseña -->
+                    <div>
+                        <label for="confirm-password" class="block text-sm font-semibold text-gray-700 mb-2">Repetir Nueva Contraseña</label>
+                        <div class="relative">
+                            <input 
+                                type="password" 
+                                id="confirm-password" 
+                                name="confirm_password" 
+                                class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                                placeholder="••••••••"
+                                required
+                            >
+                            <button 
+                                type="button" 
+                                onclick="togglePassword('confirm-password')"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <i class="fa-solid fa-eye" id="confirm-password-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Submit -->
+                    <div class="pt-4">
+                        <button 
+                            type="submit" 
+                            class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors inline-flex items-center justify-center"
+                        >
+                            <i class="fa-solid fa-check-circle mr-2"></i>
+                            Verificar y Cambiar Contraseña
+                        </button>
+                    </div>
+
+                    <!-- Link adicional -->
+                    <div class="text-center">
+                        <a href="/usuarios/login" class="text-sm text-cyan-600 hover:text-cyan-800 font-medium">
+                            ¿Ya tienes cuenta? Inicia sesión
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Función para toggle de contraseña
+        function togglePassword(fieldId) {
+            const input = document.getElementById(fieldId);
+            const icon = document.getElementById(fieldId + '-icon');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Enviar código de verificación
+        document.getElementById('btn-enviar-codigo').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                alert('Por favor ingrese su correo electrónico');
+                return;
+            }
+
+            // Aquí iría la llamada al backend para enviar el código
+            alert('Código de verificación enviado a ' + email);
+            this.textContent = 'Reenviado';
+            this.classList.add('bg-green-500', 'hover:bg-green-600');
+            this.classList.remove('bg-cyan-500', 'hover:bg-cyan-600');
+            
+            setTimeout(() => {
+                this.textContent = 'Enviar';
+                this.classList.remove('bg-green-500', 'hover:bg-green-600');
+                this.classList.add('bg-cyan-500', 'hover:bg-cyan-600');
+            }, 3000);
+        });
+
+        // Validación de coincidencia de contraseñas
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden');
+            }
+        });
+    </script>
+</body>
+</html>
