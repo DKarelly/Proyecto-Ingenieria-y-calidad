@@ -1,140 +1,184 @@
-/* --- Main --- */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding-top: 180px !important; /* espacio debajo del header fijo */
-    padding-bottom: 50px;
+/* Estilos base */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
 }
 
-.section-title {
-    font-size: 2rem !important;
-    color: #1e293b;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-/* --- Botón Registrar --- */
-.btn-agregar {
-    background-color: #a7e5f6;
-    color: #1e293b;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
+@keyframes fadeInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
 }
 
-.btn-agregar:hover {
-    background-color: #89d9ed;
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translate(-50%, -100%) translateY(0);
+    }
+    40% {
+        transform: translate(-50%, -100%) translateY(-20px);
+    }
+    60% {
+        transform: translate(-50%, -100%) translateY(-10px);
+    }
 }
 
-/* --- Filtros --- */
-.filtros {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1rem;
-    margin: 25px 0;
+/* Clases para animaciones con Intersection Observer */
+.fade-in { 
+    animation: fadeIn 1s ease-out forwards; 
 }
 
-.select-tipo,
-.busqueda input {
-    border: 1px solid #bcd9e2;
-    border-radius: 8px;
-    padding: 10px 14px;
-    background-color: #fff;
-    color: #1e293b;
-    font-size: 0.95rem;
-    flex: 1 1 200px;
+.fade-in-up { 
+    animation: fadeInUp 0.8s ease-out forwards; 
 }
 
-.busqueda {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+/* Estilo para que las secciones con animación inicien invisibles */
+.animate-on-scroll {
+    opacity: 0;
+    transition: opacity 0.5s;
 }
 
-.btn-buscar,
-.btn-limpiar {
-    border: 1px solid #0ea5e9;
-    color: #0ea5e9;
-    background-color: #ecfeff;
-    padding: 10px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-buscar:hover,
-.btn-limpiar:hover {
-    background-color: #0ea5e9;
-    color: #fff;
-}
-
-/* --- Tabla --- */
-.tabla {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: #fff;
-    border-radius: 8px;
+/* Estilo para el mapa placeholder */
+.map-placeholder {
+    background-image: url('https://placehold.co/1200x400/e0e0e0/a0a0a0?text=Mapa+de+Ubicacion');
+    background-size: cover;
+    background-position: center;
+    position: relative;
     overflow: hidden;
-    margin-top: 20px;
+    border-radius: 0.75rem;
 }
 
-.tabla thead {
-    background-color: #e0f2fe;
+.map-pin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    animation: bounce 2s infinite;
 }
 
-.tabla th {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: #1e293b;
-    padding: 14px;
-    border-bottom: 1px solid #e2e8f0;
+/* Estilos para el menú móvil */
+#mobile-menu {
+    transition: transform 0.3s ease-in-out;
 }
 
-.tabla td {
-    padding: 14px;
-    vertical-align: middle;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+/* Estilos personalizados para Swiper Carousel */
+.hero-swiper .swiper-button-next, 
+.hero-swiper .swiper-button-prev {
+    color: #0891b2;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
 }
 
-.tabla tbody tr:nth-child(even) {
+.hero-swiper .swiper-button-next:after, 
+.hero-swiper .swiper-button-prev:after {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.hero-swiper .swiper-pagination-bullet-active {
+    background-color: #06b6d4;
+}
+
+.specialties-swiper, 
+.testimonials-swiper {
+    padding: 0 10px;
+}
+
+.swiper-nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    cursor: pointer;
+    color: #0891b2;
+    background-color: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.swiper-nav-button:hover {
     background-color: #f0f9ff;
 }
 
-.controles {
-    display: flex;
-    gap: 8px;
+.swiper-button-prev-custom { 
+    left: -15px; 
 }
 
-/* Botones de control */
-.btn-editar {
-    background-color: #3b82f6;
-    border: none;
-    color: #fff;
-    padding: 7px 9px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+.swiper-button-next-custom { 
+    right: -15px; 
 }
 
-.btn-editar:hover {
-    background-color: #2563eb;
+.swiper-pagination-custom {
+    bottom: -10px !important;
 }
 
-.btn-eliminar {
-    background-color: #ef4444;
-    border: none;
-    color: #fff;
-    padding: 7px 9px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+.testimonials-swiper .swiper-slide {
+    height: auto;
 }
 
-.btn-eliminar:hover {
-    background-color: #dc2626;
+.testimonials-swiper .bg-gray-50 {
+    height: 100%;
 }
+
+.auth-modal {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Menú desplegable del usuario */
+.user-button-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.user-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    min-width: 200px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+/* Área invisible para mantener el hover */
+.user-menu::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+}
+
+/* Mostrar menú al hacer hover en el botón o en el menú */
+.user-button-wrapper:hover .user-menu,
+.user-menu:hover {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+

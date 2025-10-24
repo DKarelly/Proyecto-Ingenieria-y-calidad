@@ -1,269 +1,526 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Bloqueo de Horarios</title>
-
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Preconnect for performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://unpkg.com">
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <title>Gestión de Bloqueo de Horarios - Clínica Union</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
-
-    <!-- Estilos -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilosGeneral.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <style>
+        .badge-activo {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .badge-inactivo {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        .badge-bloqueado {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
 </head>
+<body class="bg-[#f8fafc] font-['Inter']">
+    
+    {% include 'header_admin.html' %}
 
-<body style="font-family: 'Inter', sans-serif;">
-
-    <!-- MAIN -->
-    <main class="gestion-main container">
-
-        <h2 class="mb-4">Gestión de Bloqueo de Horarios</h2>
-
-        <!-- Botón registrar -->
-        <button class="btn btn-info mb-4 text-white fw-semibold" data-bs-toggle="modal"
-            data-bs-target="#modalRegistrarBloqueo">
-            <i class="fa-solid fa-plus me-2"></i>Registrar Nuevo Bloqueo
-        </button>
-
-        <!-- Filtros -->
-        <div class="gestion-filtros d-flex flex-wrap gap-3 mb-4">
-
-            <!-- Buscar Horario -->
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Buscar Horario">
-                <button class="btn btn-outline-info">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
-            </div>
-
-            <!-- Buscar Bloqueo -->
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Buscar Bloqueo">
-                <button class="btn btn-outline-info">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </button>
-            </div>
-
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/admin" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                <span class="font-medium">Volver al Panel de Administración</span>
+            </a>
         </div>
 
-        <!-- Tablas -->
-        <div class="row">
-            <!-- Tabla Horario -->
-            <div class="col-md-6">
-                <h6 class="fw-bold mb-2">HORARIO</h6>
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle gestion-tabla">
-                        <thead class="table-light">
+        <!-- Título -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Gestión de Bloqueo de Horarios</h1>
+            <p class="text-gray-600 mt-2">Administra los bloqueos de horarios del personal médico</p>
+        </div>
+
+        <!-- Botón registrar nuevo bloqueo -->
+        <div class="mb-6">
+            <button id="btnRegistrarBloqueo" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>
+                Registrar Nuevo Bloqueo
+            </button>
+        </div>
+
+        <!-- Filtros de búsqueda -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6 admin-card">
+            <div class="flex items-center gap-2 mb-6">
+                <i class="fas fa-filter text-cyan-600 text-xl"></i>
+                <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="filtroHorario" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-clock text-gray-500 mr-1"></i>
+                        Buscar Horario
+                    </label>
+                    <input 
+                        type="text" 
+                        id="filtroHorario" 
+                        placeholder="Buscar por horario"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
+                </div>
+
+                <div>
+                    <label for="filtroBloqueo" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-ban text-gray-500 mr-1"></i>
+                        Buscar Bloqueo
+                    </label>
+                    <input 
+                        type="text" 
+                        id="filtroBloqueo" 
+                        placeholder="Buscar bloqueo"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
+                </div>
+
+                <div class="flex items-end">
+                    <button id="btnBuscar" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
+                        <i class="fas fa-search mr-2"></i>
+                        Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tablas de Horarios y Bloqueos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Tabla de Horarios -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-cyan-500 to-blue-500 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-clock mr-2"></i>
+                        Horarios
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="admin-table w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th>ID Horario</th>
-                                <th>Dia</th>
-                                <th>Hora Inicio</th>
-                                <th>Hora Fin</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Horario</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Día</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hora Inicio</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hora Fin</th>
                             </tr>
                         </thead>
-                        <tbody>
-
+                        <tbody id="tablaHorarios" class="divide-y divide-gray-200">
+                            <!-- Ejemplo de registros -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 text-sm text-gray-900 font-medium">HOR-001</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">Lunes</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 font-mono">08:00</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 font-mono">12:00</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 text-sm text-gray-900 font-medium">HOR-002</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">Martes</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 font-mono">14:00</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 font-mono">18:00</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4 text-sm text-gray-900 font-medium">HOR-003</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">Miércoles</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 font-mono">09:00</td>
+                                <td class="px-6 py-4 text-sm text-gray-600 font-mono">13:00</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Tabla Bloqueo Horario -->
-            <div class="col-md-6">
-                <h6 class="fw-bold mb-2">BLOQUEO HORARIO</h6>
-                <div class="table-responsive">
-                    <table class="table table-bordered align-middle gestion-tabla">
-                        <thead class="table-light">
+            <!-- Tabla de Bloqueos de Horario -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-red-500 to-orange-500 px-6 py-4">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-ban mr-2"></i>
+                        Bloqueos de Horario
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="admin-table w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th>ID Bloqueo</th>
-                                <th>ID Horario</th>
-                                <th>Fecha</th>
-                                <th>Hora Inicio</th>
-                                <th>Hora Fin</th>
-                                <th>Estado</th>
-                                <th>Motivo</th>
-                                <th>Controles</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Horario</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hora Inicio</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hora Fin</th>
+                                <th class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Motivo</th>
+                                <th class="px-4 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td class="text-center text-muted">Sin registros</td>
+                        <tbody id="tablaBloqueos" class="divide-y divide-gray-200">
+                            <!-- Ejemplo de registros -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-4 text-sm text-gray-900 font-medium">BLQ-001</td>
+                                <td class="px-4 py-4 text-sm text-gray-900">HOR-001</td>
+                                <td class="px-4 py-4 text-sm text-gray-900">
+                                    <div class="font-medium">25/10/2025</div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-600 font-mono">08:00</td>
+                                <td class="px-4 py-4 text-sm text-gray-600 font-mono">10:00</td>
+                                <td class="px-4 py-4 text-center">
+                                    <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                        Activo
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-600">Mantenimiento</td>
+                                <td class="px-4 py-4 text-center">
+                                    <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
+                                        <i class="fas fa-edit text-lg"></i>
+                                    </button>
+                                    <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
+                                        <i class="fas fa-trash-alt text-lg"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-4 py-4 text-sm text-gray-900 font-medium">BLQ-002</td>
+                                <td class="px-4 py-4 text-sm text-gray-900">HOR-002</td>
+                                <td class="px-4 py-4 text-sm text-gray-900">
+                                    <div class="font-medium">26/10/2025</div>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-600 font-mono">15:00</td>
+                                <td class="px-4 py-4 text-sm text-gray-600 font-mono">17:00</td>
+                                <td class="px-4 py-4 text-center">
+                                    <span class="badge-inactivo text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                        Inactivo
+                                    </span>
+                                </td>
+                                <td class="px-4 py-4 text-sm text-gray-600">Reunión médica</td>
+                                <td class="px-4 py-4 text-center">
+                                    <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
+                                        <i class="fas fa-edit text-lg"></i>
+                                    </button>
+                                    <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
+                                        <i class="fas fa-trash-alt text-lg"></i>
+                                    </button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-    </main>
-
-    <!-- FOOTER -->
-    <footer class="text-center text-muted border-top py-4 mt-5">
-        <div class="container d-flex flex-wrap justify-content-between align-items-center">
-            <div class="text-start">
-                <h6 class="fw-bold text-dark mb-2">Clínica Unión</h6>
-                <p class="mb-1"><i class="fa-solid fa-phone me-2 text-info"></i>978583886</p>
-                <p class="mb-1"><i class="fa-solid fa-envelope me-2 text-info"></i>callcenterclinicaunion@gmail.com</p>
-                <p class="mb-1"><i class="fa-solid fa-location-dot me-2 text-info"></i>Calle Torres Paz 204 · 230
-                    Chiclayo - Lambayeque - Perú.</p>
-            </div>
-
-            <div class="text-end">
-                <ul class="list-unstyled mb-2">
-                    <li><a href="#" class="text-muted text-decoration-none">Inicio</a></li>
-                    <li><a href="#" class="text-muted text-decoration-none">Nosotros</a></li>
-                    <li><a href="#" class="text-muted text-decoration-none">Servicios</a></li>
-                    <li><a href="#" class="text-muted text-decoration-none">Especialidad</a></li>
-                    <li><a href="#" class="text-muted text-decoration-none">Contáctanos</a></li>
-                </ul>
-            </div>
-        </div>
-        <p class="mt-3 mb-0 small">Clínica Unión © Todos los derechos reservados</p>
-    </footer>
+    </div>
 
     <!-- Modal Registrar Bloqueo -->
-    <div class="modal fade" id="modalRegistrarBloqueo" tabindex="-1" aria-labelledby="modalRegistrarBloqueoLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header bg-light border-0">
-                    <div class="w-100 text-center">
-                        <i class="fa-solid fa-clock fa-3x mb-2" style="color:#0dcaf0;"></i>
-                        <h5 class="modal-title fw-bold" id="modalRegistrarBloqueoLabel">Registrar Nuevo Bloqueo</h5>
+    <div id="modalRegistrarBloqueo" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-ban text-cyan-600 mr-2"></i>
+                    Registrar Nuevo Bloqueo
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <form id="formRegistrarBloqueo" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
+                            Fecha
+                        </label>
+                        <input type="date" id="fecha" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Hora Inicio
+                        </label>
+                        <input type="time" id="horaInicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Hora Fin
+                        </label>
+                        <input type="time" id="horaFin" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-comment text-gray-500 mr-1"></i>
+                            Motivo
+                        </label>
+                        <textarea id="motivo" rows="3" placeholder="Ingrese el motivo del bloqueo" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+                            Estado
+                        </label>
+                        <select id="estado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option value="">Seleccionar estado</option>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            ID de Horario
+                        </label>
+                        <input type="text" id="idProgramacion" placeholder="Ej. HOR-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                 </div>
-                <div class="modal-body px-4">
-
-                    <form id="formRegistrarBloqueo" class="needs-validation" novalidate>
-                        <div class="mb-3">
-                            <label for="fecha" class="form-label">Fecha</label>
-                            <input type="date" class="form-control" id="fecha" required>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="horaInicio" class="form-label">Hora Inicio</label>
-                                <input type="time" class="form-control" id="horaInicio" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="horaFin" class="form-label">Hora Fin</label>
-                                <input type="time" class="form-control" id="horaFin" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="motivo" class="form-label">Motivo</label>
-                            <textarea class="form-control" id="motivo" rows="2"
-                                placeholder="Ingrese el motivo del bloqueo" required></textarea>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="estado" class="form-label">Estado</label>
-                            <select class="form-select" id="estado" required>
-                                <option value="" disabled selected>Seleccionar estado</option>
-                                <option>Activo</option>
-                                <option>Inactivo</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="idProgramacion" class="form-label">ID de Programación</label>
-                            <input type="text" class="form-control" id="idProgramacion" placeholder="Ej. 1023" required>
-                        </div>
-                    </form>
-
+                <div class="flex gap-4 pt-4">
+                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        Registrar
+                    </button>
                 </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="formRegistrarBloqueo"
-                        class="btn btn-info text-white fw-semibold">Registrar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Modificar Bloqueo -->
+    <div id="modalModificarHorario" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-edit text-blue-600 mr-2"></i>
+                    Modificar Bloqueo
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <form id="formModificarHorario" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            Código
+                        </label>
+                        <input type="text" id="codigo" value="BLQ-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
+                            Fecha
+                        </label>
+                        <input type="date" id="fechaEdit" value="2025-10-25" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Hora Inicio
+                        </label>
+                        <input type="time" id="horaInicioEdit" value="08:00" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clock text-gray-500 mr-1"></i>
+                            Hora Fin
+                        </label>
+                        <input type="time" id="horaFinEdit" value="10:00" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-comment text-gray-500 mr-1"></i>
+                            Motivo
+                        </label>
+                        <textarea id="motivoEdit" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>Mantenimiento</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+                            Estado
+                        </label>
+                        <select id="estadoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option>Activo</option>
+                            <option>Inactivo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            ID de Horario
+                        </label>
+                        <input type="text" id="idProgramacionEdit" value="HOR-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    </div>
                 </div>
+                <div class="flex gap-4 pt-4">
+                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación de eliminación -->
+    <div id="modalEliminar" class="modal">
+        <div class="modal-content max-w-md">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                    Confirmar Eliminación
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar este bloqueo de horario?</p>
+            <div class="flex gap-4">
+                <button id="btnCancelarEliminar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button id="btnConfirmarEliminar" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <i class="fas fa-trash-alt mr-2"></i>
+                    Eliminar
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Modificar Horario -->
-    <div class="modal fade" id="modalModificarHorario" tabindex="-1" aria-labelledby="modalModificarHorarioLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header bg-light border-0">
-                    <div class="w-100 text-center">
-                        <i class="fa-solid fa-pen-to-square fa-3x mb-2" style="color:#0dcaf0;"></i>
-                        <h5 class="modal-title fw-bold" id="modalModificarHorarioLabel">Modificar Horario</h5>
-                    </div>
-                </div>
-                <div class="modal-body px-4">
+    <script>
+        // Funcionalidad de modales
+        const modales = ['modalRegistrarBloqueo', 'modalModificarHorario', 'modalEliminar'];
+        
+        modales.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                const closeBtn = modal.querySelector('.close');
+                if (closeBtn) {
+                    closeBtn.onclick = function() {
+                        modal.classList.remove('show');
+                    }
+                }
+            }
+        });
 
-                    <form id="formModificarHorario" class="needs-validation" novalidate>
-                        <div class="mb-3">
-                            <label for="codigo" class="form-label">Código</label>
-                            <input type="text" class="form-control" id="codigo" readonly>
-                        </div>
+        window.onclick = function(event) {
+            modales.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && event.target == modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
 
-                        <div class="mb-3">
-                            <label for="fechaEdit" class="form-label">Fecha</label>
-                            <input type="date" class="form-control" id="fechaEdit" required>
-                        </div>
+        // Botón registrar bloqueo
+        const btnRegistrarBloqueo = document.getElementById('btnRegistrarBloqueo');
+        if (btnRegistrarBloqueo) {
+            btnRegistrarBloqueo.onclick = function() {
+                document.getElementById('modalRegistrarBloqueo').classList.add('show');
+            }
+        }
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="horaInicioEdit" class="form-label">Hora Inicio</label>
-                                <input type="time" class="form-control" id="horaInicioEdit" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="horaFinEdit" class="form-label">Hora Fin</label>
-                                <input type="time" class="form-control" id="horaFinEdit" required>
-                            </div>
-                        </div>
+        // Botones de editar
+        document.querySelectorAll('.btn-editar').forEach(btn => {
+            btn.onclick = function() {
+                document.getElementById('modalModificarHorario').classList.add('show');
+            }
+        });
 
-                        <div class="mb-3">
-                            <label for="motivoEdit" class="form-label">Motivo</label>
-                            <textarea class="form-control" id="motivoEdit" rows="2" required></textarea>
-                        </div>
+        // Botones de eliminar
+        document.querySelectorAll('.btn-eliminar').forEach(btn => {
+            btn.onclick = function() {
+                document.getElementById('modalEliminar').classList.add('show');
+            }
+        });
 
-                        <div class="mb-3">
-                            <label for="estadoEdit" class="form-label">Estado</label>
-                            <select class="form-select" id="estadoEdit" required>
-                                <option value="" disabled selected>Seleccionar estado</option>
-                                <option>Activo</option>
-                                <option>Inactivo</option>
-                            </select>
-                        </div>
+        // Formulario registrar
+        const formRegistrar = document.getElementById('formRegistrarBloqueo');
+        if (formRegistrar) {
+            formRegistrar.onsubmit = function(e) {
+                e.preventDefault();
+                document.getElementById('modalRegistrarBloqueo').classList.remove('show');
+                alert('Bloqueo registrado exitosamente');
+            }
+            
+            // Botón cancelar
+            const btnCancelar = formRegistrar.querySelector('button[type="button"]');
+            if (btnCancelar) {
+                btnCancelar.onclick = function() {
+                    document.getElementById('modalRegistrarBloqueo').classList.remove('show');
+                }
+            }
+        }
 
-                        <div class="mb-3">
-                            <label for="idProgramacionEdit" class="form-label">ID de Programación</label>
-                            <input type="text" class="form-control" id="idProgramacionEdit" required>
-                        </div>
-                    </form>
+        // Formulario modificar
+        const formModificar = document.getElementById('formModificarHorario');
+        if (formModificar) {
+            formModificar.onsubmit = function(e) {
+                e.preventDefault();
+                document.getElementById('modalModificarHorario').classList.remove('show');
+                alert('Bloqueo actualizado exitosamente');
+            }
+            
+            // Botón cancelar
+            const btnCancelar = formModificar.querySelector('button[type="button"]');
+            if (btnCancelar) {
+                btnCancelar.onclick = function() {
+                    document.getElementById('modalModificarHorario').classList.remove('show');
+                }
+            }
+        }
 
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="formModificarHorario"
-                        class="btn btn-info text-white fw-semibold">Guardar Cambios</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        // Modal eliminar
+        const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
+        if (btnCancelarEliminar) {
+            btnCancelarEliminar.onclick = function() {
+                document.getElementById('modalEliminar').classList.remove('show');
+            }
+        }
 
+        const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+        if (btnConfirmarEliminar) {
+            btnConfirmarEliminar.onclick = function() {
+                document.getElementById('modalEliminar').classList.remove('show');
+                alert('Bloqueo eliminado exitosamente');
+            }
+        }
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        // Botón buscar
+        const btnBuscar = document.getElementById('btnBuscar');
+        if (btnBuscar) {
+            btnBuscar.onclick = function() {
+                console.log('Buscando...');
+                // Aquí ejecutarías la búsqueda
+            }
+        }
+    </script>
+
+    {% include 'footer.html' %}
 </body>
-
 </html>

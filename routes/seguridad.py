@@ -1,70 +1,91 @@
-# Módulo de Seguridad - Auditoría, Respaldos, Roles y Permisos
-from flask import Blueprint, render_template, request, jsonify
-from models.registro_actividad import RegistroActividad
-from models.empleado import Empleado
+from flask import Blueprint, render_template, session, redirect, url_for
 
-seguridad_bp = Blueprint('seguridad', __name__, url_prefix='/seguridad')
+seguridad_bp = Blueprint('seguridad', __name__)
 
-@seguridad_bp.route('/consultar-actividad')
+@seguridad_bp.route('/')
+def panel():
+    """Panel de Seguridad"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('panel.html', subsistema='seguridad')
+
+@seguridad_bp.route('/incidencias')
+def incidencias():
+    """Panel de Incidencias"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('panel.html', subsistema='incidencias')
+
+@seguridad_bp.route('/incidencias/generar-incidencia')
+def generar_incidencia():
+    """Generar Nueva Incidencia"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('generarIncidencia.html')
+
+@seguridad_bp.route('/incidencias/asignar-responsable')
+def asignar_responsable():
+    """Asignar Responsable a Incidencias"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('asignarResponsable.html')
+
+@seguridad_bp.route('/incidencias/generar-informe')
+def generar_informe():
+    """Generar Informe de Incidencias"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('generar_informe.html')
+
+@seguridad_bp.route('/incidencias/ocupacion-recursos')
+def ocupacion_recursos():
+    """Generar Reporte de Ocupación de Recursos"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('generar_ocupacion_recursos.html')
+
+@seguridad_bp.route('/incidencias/reporte-actividad')
+def reporte_actividad():
+    """Generar Reporte de Actividad"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('generar_reporte_actividad.html')
+
+@seguridad_bp.route('/incidencias/consultar-actividad')
 def consultar_actividad():
-    """Renderiza la página de consulta de actividad"""
-    return render_template('seguridad/consultar_actividad.html')
-
-@seguridad_bp.route('/api/registros', methods=['GET'])
-def obtener_registros():
-    """API para obtener registros de actividad con filtros"""
-    try:
-        # Obtener parámetros de filtrado
-        empleado = request.args.get('empleado', '')
-        fecha = request.args.get('fecha', '')
-        horario = request.args.get('horario', '')
-        
-        filtros = {
-            'empleado': empleado,
-            'fecha': fecha,
-            'horario': horario
-        }
-        
-        # Buscar registros aplicando filtros
-        registros = RegistroActividad.buscar_registros(filtros)
-        
-        return jsonify({
-            'success': True,
-            'data': registros
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-@seguridad_bp.route('/api/empleados', methods=['GET'])
-def obtener_empleados():
-    """API para obtener lista de empleados"""
-    try:
-        empleados = Empleado.listar_empleados()
-        return jsonify({
-            'success': True,
-            'data': empleados
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-@seguridad_bp.route('/api/exportar-registros', methods=['POST'])
-def exportar_registros():
-    """API para exportar registros en PDF o Excel"""
-    try:
-        formato = request.json.get('formato', 'pdf')
-        # TODO: Implementar exportación real
-        return jsonify({
-            'success': True,
-            'message': f'Registros exportados en formato {formato}'
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
+    """Consultar Actividad del Sistema"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('consultar_actividad.html')

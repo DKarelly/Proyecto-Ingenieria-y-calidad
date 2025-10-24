@@ -1,80 +1,50 @@
-from flask import Flask, render_template
-from routes.seguridad import seguridad_bp
+from flask import Flask, render_template, session, redirect, url_for
+from routes.usuarios import usuarios_bp
+from routes.cuentas import cuentas_bp
+from routes.admin import admin_bp
+from routes.reservas import reservas_bp
+from routes.notificaciones import notificaciones_bp
 from routes.reportes import reportes_bp
-from routes.incidencias import incidencias_bp
+from routes.seguridad import seguridad_bp
 
 app = Flask(__name__)
+app.secret_key = 'tu_clave_secreta_super_segura_aqui_12345'  # Cambia esto por una clave segura
 
 # Registrar blueprints
-app.register_blueprint(seguridad_bp)
-app.register_blueprint(reportes_bp)
-app.register_blueprint(incidencias_bp)
+app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
+app.register_blueprint(cuentas_bp, url_prefix='/cuentas')
+app.register_blueprint(admin_bp, url_prefix='/admin')
+app.register_blueprint(reservas_bp, url_prefix='/reservas')
+app.register_blueprint(notificaciones_bp, url_prefix='/notificaciones')
+app.register_blueprint(reportes_bp, url_prefix='/reportes')
+app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
 
-""" RUTA DEL HOME """
 @app.route("/")
 def home():
     return render_template('home.html')
 
-"""------------------------------------------------------------------"""
-""" RUTAS MAURICIO """
-# Módulo de Reportes
-@app.route('/reportes/consultar-por-categoria')
-@app.route('/reportes/consultar-por-categoria.html')
-def consultar_reportes_por_categoria():
-    return render_template('reportes/consultar_por_categoria.html')
+@app.route("/admin/panel")
+def admin_panel():
+    """Panel de administración - Solo para empleados con rol administrador"""
+    # Verificar si hay sesión activa
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    # Verificar que sea empleado
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    # Verificar que sea administrador (opcional, dependiendo de tus roles)
+    # if session.get('rol') != 'Administrador':
+    #     return redirect(url_for('home'))
+    
+    return render_template('panel.html')
 
-@app.route('/reportes/generar-reporte-actividad')
-@app.route('/reportes/generar-reporte-actividad.html')
-def generar_reporte_actividad():
-    return render_template('reportes/generar_reporte_actividad.html')
-
-@app.route('/reportes/generar-ocupacion-recursos')
-@app.route('/reportes/generar-ocupacion-recursos.html')
-def generar_ocupacion_recursos():
-    return render_template('reportes/generar_ocupacion_recursos.html')
-
-# Módulo de Incidencias
-@app.route('/incidencias/generar-informe')
-@app.route('/incidencias/generar-informe.html')
-def generar_informe_incidencias():
-    return render_template('incidencias/generar_informe.html')
-
-"""------------------------------------------------------------------"""
-""" RUTAS KARELLY"""
-@app.route('/gestionCatalogoServicio')
-@app.route('/gestionCatalogoServicio.html')
-def gestion_catalogo_servicio():
-    return render_template('gestionCatalogoServicio.html')
-
-@app.route('/consultaAgendaMedica')
-@app.route('/consultaAgendaMedica.html')
-def consulta_agenda_medica():
-    return render_template('consultaAgendaMedica.html')  
-
-@app.route('/gestionRecursosFisicos')
-@app.route('/gestionRecursosFisicos.html')
-def gestion_recursos_fisicos():
-    return render_template('gestionRecursosFisicos.html') 
-
-@app.route('/gestionHorariosLaborables')
-@app.route('/gestionHorariosLaborables.html')
-def gestion_horarios_laborables():
-    return render_template('gestionHorariosLaborables.html')
-
-@app.route('/consultarIncidencia')
-@app.route('/consultarIncidencia.html')
-def consultarIncidencia():
-    return render_template('incidencias/consultarIncidencia.html') 
-
-@app.route('/gestionarBloqueo')
-@app.route('/gestionarBloqueo.html')
-def gestionarBloqueo():
-    return render_template('gestionarBloqueo.html') 
-
-"""------------------------------------------------------------------"""
-
-
-
+@app.route("/logout")
+def logout():
+    """Cerrar sesión y limpiar datos"""
+    session.clear()
+    return redirect(url_for('home'))
 
 if __name__ == "__main__":
     app.run(debug=True)

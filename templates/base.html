@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Clínica Unión - Cuidamos de ti{% endblock %}</title>
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com">
+    
+    <!-- Google Fonts: Inter (preload for faster loading) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    {% block extra_css %}
+    <!-- Swiper CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/swiper@8/swiper-bundle.min.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    {% endblock %}
+</head>
+<body class="text-gray-700">
+
+    {% include 'header.html' %}
+
+    <!-- Contenedor principal con padding para el header fijo -->
+    <div class="container mx-auto px-4 pt-24">
+        {% block content %}
+        {% endblock %}
+
+        {% include 'footer.html' %}
+    </div>
+
+    {% include 'auth_modals.html' %}
+
+    {% block extra_js %}
+    <!-- Swiper JS (defer for better performance) -->
+    <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js" defer></script>
+    
+    <!-- Custom JavaScript -->
+    <script type="module" src="{{ url_for('static', filename='js/home.js') }}" defer></script>
+    
+    <script>
+        // Hacer la función logout disponible globalmente
+        window.logout = function() {
+            if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+                localStorage.removeItem('usuario');
+                fetch('/usuarios/logout', { method: 'GET' })
+                    .then(() => location.reload())
+                    .catch(() => location.reload());
+            }
+        };
+    </script>
+    {% endblock %}
+
+</body>
+</html>
