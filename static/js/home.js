@@ -94,16 +94,23 @@ function initializeScrollAnimations() {
 function initializeAuthModals() {
     const loginModal = document.getElementById('login-modal');
     const registerModal = document.getElementById('register-modal');
+    const forgotPasswordModal = document.getElementById('forgot-password-modal');
     const closeLoginModal = document.getElementById('close-login-modal');
     const closeRegisterModal = document.getElementById('close-register-modal');
+    const closeForgotPasswordModal = document.getElementById('close-forgot-password-modal');
     const goToRegister = document.getElementById('go-to-register');
     const goToLogin = document.getElementById('go-to-login');
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const backToLogin = document.getElementById('back-to-login');
 
     const openModal = (modal) => {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        // Focus first input
+        const firstInput = modal.querySelector('input:not([type="hidden"])');
+        if (firstInput) firstInput.focus();
     };
-    
+
     const closeModal = (modal) => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
@@ -115,14 +122,25 @@ function initializeAuthModals() {
     // Cerrar modales
     closeLoginModal.addEventListener('click', () => closeModal(loginModal));
     closeRegisterModal.addEventListener('click', () => closeModal(registerModal));
+    closeForgotPasswordModal.addEventListener('click', () => closeModal(forgotPasswordModal));
 
     goToRegister.addEventListener('click', () => {
         closeModal(loginModal);
         openModal(registerModal);
     });
-    
+
     goToLogin.addEventListener('click', () => {
         closeModal(registerModal);
+        openModal(loginModal);
+    });
+
+    forgotPasswordLink.addEventListener('click', () => {
+        closeModal(loginModal);
+        openModal(forgotPasswordModal);
+    });
+
+    backToLogin.addEventListener('click', () => {
+        closeModal(forgotPasswordModal);
         openModal(loginModal);
     });
 
@@ -130,6 +148,7 @@ function initializeAuthModals() {
     window.addEventListener('click', (event) => {
         if (event.target === loginModal) closeModal(loginModal);
         if (event.target === registerModal) closeModal(registerModal);
+        if (event.target === forgotPasswordModal) closeModal(forgotPasswordModal);
     });
 
     // Manejo del formulario de login
@@ -177,7 +196,7 @@ function initializeAuthModals() {
     const registerForm = document.querySelector('#register-modal form');
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const formData = {
             nombres: document.getElementById('register-nombres').value,
             apellidos: document.getElementById('register-apellidos').value,
@@ -212,6 +231,38 @@ function initializeAuthModals() {
                 document.getElementById('register-distrito').disabled = true;
             } else {
                 alert(data.error || 'Error al registrarse');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al conectar con el servidor');
+        }
+    });
+
+    // Manejo del formulario de recuperación de contraseña
+    const forgotPasswordForm = document.querySelector('#forgot-password-modal form');
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('forgot-email').value;
+
+        try {
+            const response = await fetch('/usuarios/api/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ correo: email })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert('Se ha enviado un código de recuperación a tu correo electrónico');
+                closeModal(forgotPasswordModal);
+                openModal(loginModal);
+                forgotPasswordForm.reset();
+            } else {
+                alert(data.error || 'Error al enviar el código de recuperación');
             }
         } catch (error) {
             console.error('Error:', error);
@@ -318,11 +369,11 @@ function loadUbicacionSelectors() {
 // Actualizar el botón de usuario cuando está logueado
 function updateUserButton(usuario) {
     const userAuthButton = document.getElementById('user-auth-button');
-    
+
     if (usuario) {
         // Usuario logueado - mostrar menú desplegable
         const inicial = usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : 'U';
-        
+
         userAuthButton.innerHTML = `
             <div class="user-button-wrapper">
                 <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center hover:bg-cyan-600 transition-colors duration-300 cursor-pointer">
@@ -344,19 +395,16 @@ function updateUserButton(usuario) {
     } else {
         // Usuario no logueado - mostrar botón de login
         userAuthButton.innerHTML = `
-            <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors duration-300 cursor-pointer" id="login-trigger">
+            <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user text-gray-600"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </div>
         `;
-        
+
         // Agregar event listener SOLO cuando no está logueado
-        const loginTrigger = document.getElementById('login-trigger');
-        if (loginTrigger) {
-            loginTrigger.addEventListener('click', () => {
-                const loginModal = document.getElementById('login-modal');
-                openModal(loginModal);
-            });
-        }
+        userAuthButton.addEventListener('click', () => {
+            const loginModal = document.getElementById('login-modal');
+            openModal(loginModal);
+        });
     }
 }
 

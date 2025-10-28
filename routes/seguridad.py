@@ -7,10 +7,15 @@ def panel():
     """Panel de Seguridad"""
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
-    
+
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
-    
+
+    # Verificar que el rol esté entre 1 y 5
+    id_rol = session.get('id_rol')
+    if id_rol is None or id_rol not in [1, 2, 3, 4, 5]:
+        return redirect(url_for('home'))
+
     return render_template('panel.html', subsistema='seguridad')
 
 @seguridad_bp.route('/incidencias')

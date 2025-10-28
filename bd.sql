@@ -327,5 +327,14 @@ CREATE TABLE REPORTE (
 );
 
 -- =====================================================
--- FIN DEL SCRIPT
+-- INSETAR ROLES PREDEFINIDOS
 -- =====================================================
+
+INSERT INTO `CLINICA`.`ROL` (`nombre`, `estado`) VALUES
+('Administrador', 'Activo'),
+('Médico', 'Activo'),
+('Recepcionista', 'Activo'),
+('Farmacéutico', 'Activo'),
+('Laboratorista', 'Activo');
+
+
