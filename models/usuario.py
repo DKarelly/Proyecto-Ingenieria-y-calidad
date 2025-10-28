@@ -215,6 +215,26 @@ class Usuario:
         if not Usuario.verificar_contrasena(usuario['contrasena'], contrasena):
             return {'error': 'Contraseña incorrecta'}
         
+        # Determinar el nombre según el tipo de usuario
+        nombre = None
+        if usuario['tipo_usuario'] == 'paciente':
+            nombre = usuario.get('nombre_paciente')
+        elif usuario['tipo_usuario'] == 'empleado':
+            nombre = usuario.get('nombre_empleado')
+
+        # Si no se encontró nombre, intentar obtenerlo directamente de las tablas
+        if not nombre:
+            if usuario['tipo_usuario'] == 'paciente' and usuario.get('id_paciente'):
+                from models.paciente import Paciente
+                paciente = Paciente.obtener_por_id(usuario['id_paciente'])
+                if paciente:
+                    nombre = f"{paciente['nombres']} {paciente['apellidos']}"
+            elif usuario['tipo_usuario'] == 'empleado' and usuario.get('id_empleado'):
+                from models.empleado import Empleado
+                empleado = Empleado.obtener_por_id(usuario['id_empleado'])
+                if empleado:
+                    nombre = f"{empleado['nombres']} {empleado['apellidos']}"
+
         return {
             'success': True,
             'usuario': {
@@ -222,7 +242,7 @@ class Usuario:
                 'correo': usuario['correo'],
                 'telefono': usuario['telefono'],
                 'tipo_usuario': usuario['tipo_usuario'],
-                'nombre': usuario['nombre_paciente'] if usuario['tipo_usuario'] == 'paciente' else usuario['nombre_empleado'],
+                'nombre': nombre,
                 'rol': usuario.get('rol_empleado'),
                 'id_rol': usuario.get('id_rol'),
                 'id_paciente': usuario.get('id_paciente'),

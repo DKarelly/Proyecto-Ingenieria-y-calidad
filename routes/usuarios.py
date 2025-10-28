@@ -450,7 +450,7 @@ def api_obtener_provincias(id_departamento):
 def api_obtener_distritos(id_provincia):
     """API: Obtiene distritos por provincia"""
     from bd import obtener_conexion
-    
+
     conexion = obtener_conexion()
     try:
         with conexion.cursor() as cursor:
@@ -462,3 +462,152 @@ def api_obtener_distritos(id_provincia):
             return jsonify(distritos)
     finally:
         conexion.close()
+
+@usuarios_bp.route('/api/send-email', methods=['POST'])
+def api_send_email():
+    """API: Enviar email genérico"""
+    import smtplib
+    from email.message import EmailMessage
+    import os
+
+    data = request.get_json()
+    to_email = data.get('to')
+    subject = data.get('subject', 'Mensaje del Sistema Medico')
+    body = data.get('body', '')
+
+    if not to_email or not body:
+        return jsonify({'error': 'Los campos "to" y "body" son requeridos'}), 400
+
+    try:
+        # Configuración SMTP - usar variables de entorno para mayor seguridad
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        sender_email = os.getenv('SMTP_EMAIL')
+        sender_password = os.getenv('SMTP_PASSWORD')
+
+        if not sender_email or not sender_password:
+            return jsonify({'error': 'Configuración SMTP no encontrada. Verifica las variables de entorno.'}), 500
+
+        # Crear mensaje
+        msg = EmailMessage()
+        msg.set_charset('utf-8')
+        msg['From'] = sender_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        msg.set_content(body)
+
+        # Enviar email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg, sender_email, to_email)
+        server.quit()
+
+        return jsonify({'success': True, 'message': 'Email enviado exitosamente'})
+
+    except smtplib.SMTPAuthenticationError as e:
+        print(f"Error de autenticación SMTP: {e}")
+        return jsonify({'error': 'Error de autenticación. Verifica las credenciales SMTP.'}), 500
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        return jsonify({'error': f'Error al enviar email: {str(e)}'}), 500
+
+@usuarios_bp.route('/api/forgot-password', methods=['POST'])
+def api_forgot_password():
+    """API: Enviar código de recuperación de contraseña"""
+    import random
+    import string
+    from bd import obtener_conexion
+
+    data = request.get_json()
+    correo = data.get('correo')
+
+    if not correo:
+        return jsonify({'error': 'El correo electrónico es requerido'}), 400
+
+    # Verificar si el usuario existe
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT id_usuario FROM USUARIO WHERE correo = %s AND estado = 'activo'", (correo,))
+            usuario = cursor.fetchone()
+
+            if not usuario:
+                return jsonify({'error': 'No se encontró una cuenta con ese correo electrónico'}), 404
+
+            # Generar código de recuperación
+            codigo = ''.join(random.choices(string.digits, k=6))
+
+            # Guardar código en la base de datos (crear tabla temporal si no existe)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS RECUPERACION_CONTRASENA (
+                    id_recuperacion INT AUTO_INCREMENT PRIMARY KEY,
+                    id_usuario INT NOT NULL,
+                    codigo VARCHAR(6) NOT NULL,
+                    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    usado BOOLEAN DEFAULT FALSE,
+                    FOREIGN KEY (id_usuario) REFERENCES USUARIO(id_usuario)
+                )
+            """)
+
+            # Eliminar códigos anteriores para este usuario
+            cursor.execute("DELETE FROM RECUPERACION_CONTRASENA WHERE id_usuario = %s", (usuario['id_usuario'],))
+
+            # Insertar nuevo código
+            cursor.execute("""
+                INSERT INTO RECUPERACION_CONTRASENA (id_usuario, codigo)
+                VALUES (%s, %s)
+            """, (usuario['id_usuario'], codigo))
+
+            conexion.commit()
+
+            # Enviar email usando la API de envío de emails
+            email_data = {
+                'to': correo,
+                'subject': 'Codigo de recuperacion de contrasena - Sistema Medico',
+                'body': f"""
+Hola,
+
+Has solicitado recuperar tu contrasena. Tu codigo de recuperacion es:
+
+{codigo}
+
+Este codigo expirara en 15 minutos.
+
+Si no solicitaste este cambio, ignora este mensaje.
+
+Atentamente,
+Sistema de Gestion Medica
+                """.strip()
+            }
+
+            # Hacer petición interna a la API de envío de emails
+            from flask import current_app
+            with current_app.test_client() as client:
+                response = client.post('/usuarios/api/send-email',
+                                     json=email_data,
+                                     content_type='application/json')
+                email_result = response.get_json()
+
+                if email_result.get('success'):
+                    return jsonify({'success': True, 'message': 'Código enviado exitosamente'})
+                else:
+                    # Si falla el envío, mostrar el código en consola para desarrollo
+                    print(f"Código de recuperación para {correo}: {codigo}")
+                    return jsonify({'success': True, 'message': 'Código generado (revisa la consola)'})
+
+    except Exception as e:
+        if conexion:
+            try:
+                conexion.rollback()
+            except:
+                pass
+        print(f"Error en forgot-password: {str(e)}")
+        return jsonify({'error': 'Error al procesar la solicitud de recuperación de contraseña'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
