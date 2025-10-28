@@ -147,7 +147,7 @@ function initializeAuthModals() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    correo_electronico: email,
+                    correo: email,
                     contrasena: password
                 })
             });
@@ -158,7 +158,7 @@ function initializeAuthModals() {
                 // Verificar si es empleado y redirigir al panel
                 if (data.usuario.tipo_usuario === 'empleado') {
                     // Redirigir al panel de administración
-                    window.location.href = '/admin/panel';
+                    window.location.href = '/admin/';
                     return;
                 }
                 
@@ -331,7 +331,7 @@ function updateUserButton(usuario) {
                 <div class="user-menu">
                     <div class="px-4 py-3 border-b border-gray-200">
                         <p class="font-semibold text-gray-800 text-sm">${usuario.nombre}</p>
-                        <p class="text-xs text-gray-500 mt-1">${usuario.correo_electronico}</p>
+                        <p class="text-xs text-gray-500 mt-1">${usuario.correo}</p>
                     </div>
                     <div class="py-1">
                         <a href="/usuarios/perfil" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">Mi Perfil</a>

@@ -46,7 +46,7 @@ CREATE TABLE ROL (
 CREATE TABLE USUARIO (
   id_usuario INT AUTO_INCREMENT PRIMARY KEY,
   correo VARCHAR(100),
-  contrasena VARCHAR(100),
+  contrasena VARCHAR(255),  -- Aumentado para hashes de werkzeug.security
   telefono VARCHAR(9),
   estado VARCHAR(20),
   fecha_creacion DATE

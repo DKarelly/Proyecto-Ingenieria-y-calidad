@@ -76,13 +76,20 @@ class Usuario:
                            p.documento_identidad as documento_paciente,
                            p.sexo as sexo_paciente,
                            p.fecha_nacimiento,
+                           p.id_distrito as id_distrito_paciente,
                            e.id_empleado,
                            CONCAT(e.nombres, ' ', e.apellidos) as nombre_empleado,
                            e.documento_identidad as documento_empleado,
                            e.sexo as sexo_empleado,
+                           e.id_distrito as id_distrito_empleado,
                            r.nombre as rol_empleado,
                            r.id_rol,
-                           esp.nombre as especialidad,
+                           esp.nombre as especialidad_empleado,
+                           esp.id_especialidad,
+                           -- Información de ubicación
+                           dist.nombre as distrito,
+                           prov.nombre as provincia,
+                           dept.nombre as departamento,
                            CASE 
                                WHEN p.id_paciente IS NOT NULL THEN 'paciente'
                                WHEN e.id_empleado IS NOT NULL THEN 'empleado'
@@ -93,6 +100,10 @@ class Usuario:
                     LEFT JOIN EMPLEADO e ON u.id_usuario = e.id_usuario
                     LEFT JOIN ROL r ON e.id_rol = r.id_rol
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    -- Join para ubicación de pacientes
+                    LEFT JOIN DISTRITO dist ON (p.id_distrito = dist.id_distrito OR e.id_distrito = dist.id_distrito)
+                    LEFT JOIN PROVINCIA prov ON dist.id_provincia = prov.id_provincia
+                    LEFT JOIN DEPARTAMENTO dept ON prov.id_departamento = dept.id_departamento
                     WHERE u.id_usuario = %s
                 """
                 cursor.execute(sql, (id_usuario,))
