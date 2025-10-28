@@ -21,74 +21,178 @@
     <div class="max-w-5xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+            {% if usuario and usuario.tipo_usuario == 'empleado' %}
+            <a href="/admin/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Volver a Cuentas
+                Volver al Panel
             </a>
+            {% else %}
+            <a href="/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Inicio
+            </a>
+            {% endif %}
         </div>
         
         <!-- Header con título y botón -->
         <div class="flex flex-wrap justify-between items-center gap-4 mb-8 admin-toolbar">
-            <h1 class="text-3xl font-bold text-gray-800">Consultar Perfil</h1>
-            <button class="btn btn-primary">
-                <i class="fa-solid fa-edit mr-2"></i>
-                Editar Perfil
-            </button>
+            <h1 class="text-3xl font-bold text-gray-800">Mi Perfil</h1>
+            <div class="flex gap-3">
+                <a href="/usuarios/cambiar-contrasena" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                    <i class="fa-solid fa-key mr-2"></i>
+                    Cambiar Contraseña
+                </a>
+                {% if usuario %}
+                <a href="/usuarios/editar/{{ usuario.id_usuario }}" class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium">
+                    <i class="fa-solid fa-edit mr-2"></i>
+                    Editar Perfil
+                </a>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Profile Information Card -->
         <div class="admin-card shadow-md p-6 md:p-8">
+            {% if usuario %}
             <div class="space-y-0 divide-y divide-gray-200">
+                <!-- Tipo de Usuario -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Tipo de Usuario</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if usuario.tipo_usuario == 'empleado' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
+                            {% if usuario.tipo_usuario == 'empleado' %}
+                                <i class="fa-solid fa-user-tie mr-2"></i>Empleado
+                            {% else %}
+                                <i class="fa-solid fa-user mr-2"></i>Paciente
+                            {% endif %}
+                        </span>
+                    </p>
+                </div>
+                
                 <!-- Nombre Completo -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Nombre Completo</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">Ana García</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">
+                        {% if usuario.tipo_usuario == 'paciente' %}
+                            {{ usuario.nombre_paciente or 'No especificado' }}
+                        {% else %}
+                            {{ usuario.nombre_empleado or 'No especificado' }}
+                        {% endif %}
+                    </p>
                 </div>
                 
                 <!-- Documento de Identidad -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Documento de Identidad</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">12345678</p>
-                </div>
-                
-                <!-- Teléfono -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Teléfono</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">+51 987 654 321</p>
-                </div>
-                
-                <!-- Fecha de Nacimiento -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Fecha de Nacimiento</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">15/08/1985</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">
+                        {% if usuario.tipo_usuario == 'paciente' %}
+                            {{ usuario.documento_paciente or 'No especificado' }}
+                        {% else %}
+                            {{ usuario.documento_empleado or 'No especificado' }}
+                        {% endif %}
+                    </p>
                 </div>
                 
                 <!-- Correo Electrónico -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Correo Electrónico</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">ana.garcia@example.com</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.correo or 'No especificado' }}</p>
                 </div>
                 
-                <!-- Departamento -->
+                <!-- Teléfono -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Departamento</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">Lima</p>
+                    <p class="text-gray-500 text-sm font-medium">Teléfono</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.telefono or 'No especificado' }}</p>
                 </div>
                 
-                <!-- Provincia -->
+                {% if usuario.tipo_usuario == 'paciente' %}
+                <!-- Fecha de Nacimiento (solo pacientes) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Provincia</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">Lima</p>
+                    <p class="text-gray-500 text-sm font-medium">Fecha de Nacimiento</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">
+                        {% if usuario.fecha_nacimiento %}
+                            {{ usuario.fecha_nacimiento.strftime('%d/%m/%Y') if usuario.fecha_nacimiento is not string else usuario.fecha_nacimiento }}
+                        {% else %}
+                            No especificado
+                        {% endif %}
+                    </p>
                 </div>
                 
-                <!-- Distrito -->
+                <!-- Sexo -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Distrito</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">Miraflores</p>
+                    <p class="text-gray-500 text-sm font-medium">Sexo</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.sexo_paciente or 'No especificado' }}</p>
+                </div>
+                {% endif %}
+                
+                {% if usuario.tipo_usuario == 'empleado' %}
+                <!-- Rol (solo empleados) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Rol</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.rol_empleado or 'No especificado' }}</p>
+                </div>
+                
+                <!-- Especialidad (solo empleados) -->
+                {% if usuario.especialidad_empleado %}
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Especialidad</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.especialidad_empleado }}</p>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                <!-- Ubicación -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Ubicación</p>
+                    <div class="text-gray-800 font-semibold md:col-span-2">
+                        {% if usuario.distrito or usuario.provincia or usuario.departamento %}
+                            <p>{{ usuario.distrito or 'N/A' }}</p>
+                            <p class="text-sm text-gray-500">{{ usuario.provincia or 'N/A' }}, {{ usuario.departamento or 'N/A' }}</p>
+                        {% else %}
+                            <p>No especificado</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Estado -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Estado de Cuenta</p>
+                    <p class="md:col-span-2">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                            {% if usuario.estado == 'activo' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if usuario.estado == 'activo' %}
+                                <i class="fa-solid fa-circle-check mr-2"></i>Activo
+                            {% else %}
+                                <i class="fa-solid fa-circle-xmark mr-2"></i>Inactivo
+                            {% endif %}
+                        </span>
+                    </p>
+                </div>
+                
+                <!-- Fecha de Creación -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Fecha de Registro</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">
+                        {% if usuario.fecha_creacion %}
+                            {{ usuario.fecha_creacion.strftime('%d/%m/%Y') if usuario.fecha_creacion is not string else usuario.fecha_creacion }}
+                        {% else %}
+                            No especificado
+                        {% endif %}
+                    </p>
                 </div>
             </div>
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fa-solid fa-user-slash text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">No se pudo cargar la información del usuario</p>
+                <a href="/" class="mt-4 inline-block text-cyan-600 hover:text-cyan-800">Volver al inicio</a>
+            </div>
+            {% endif %}
         </div>
     </div>
     </div>
