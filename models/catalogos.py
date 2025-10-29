@@ -163,3 +163,44 @@ class TipoServicio:
             return {'error': str(e)}
         finally:
             conexion.close()
+
+class TipoRecurso:
+    @staticmethod
+    def obtener_todos():
+        """Obtiene todos los tipos de recurso"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = "SELECT * FROM TIPO_RECURSO ORDER BY nombre"
+                cursor.execute(sql)
+                return cursor.fetchall()
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def obtener_por_id(id_tipo_recurso):
+        """Obtiene un tipo de recurso por su ID"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = "SELECT * FROM TIPO_RECURSO WHERE id_tipo_recurso = %s"
+                cursor.execute(sql, (id_tipo_recurso,))
+                return cursor.fetchone()
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def crear(nombre, descripcion):
+        """Crea un nuevo tipo de recurso"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = "INSERT INTO TIPO_RECURSO (nombre, descripcion) VALUES (%s, %s)"
+                cursor.execute(sql, (nombre, descripcion))
+                conexion.commit()
+                return {'success': True, 'id_tipo_recurso': cursor.lastrowid}
+        except Exception as e:
+            conexion.rollback()
+            return {'error': str(e)}
+        finally:
+            conexion.close()

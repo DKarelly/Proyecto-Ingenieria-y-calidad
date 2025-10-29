@@ -75,7 +75,7 @@
                 <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                     <label for="filtroTipoServicio" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-tags text-gray-500 mr-1"></i>
@@ -83,9 +83,16 @@
                     </label>
                     <select id="filtroTipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
                         <option value="">Todos los tipos</option>
-                        <option>Consulta</option>
-                        <option>Tratamiento</option>
-                        <option>Procedimiento</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="filtroEspecialidad" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                        Especialidad
+                    </label>
+                    <select id="filtroEspecialidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
+                        <option value="">Todas las especialidades</option>
                     </select>
                 </div>
 
@@ -94,9 +101,9 @@
                         <i class="fas fa-stethoscope text-gray-500 mr-1"></i>
                         Buscar Servicio
                     </label>
-                    <input 
-                        type="text" 
-                        id="filtroServicio" 
+                    <input
+                        type="text"
+                        id="filtroServicio"
                         placeholder="Buscar servicio"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                     >
@@ -127,7 +134,6 @@
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Servicio</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Servicio</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Duración</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo de Servicio</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Especialidad</th>
@@ -135,70 +141,7 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-servicios-body" class="divide-y divide-gray-200">
-                        <!-- Ejemplo de registros -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">SRV-001</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Consulta General</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Evaluación médica general del paciente</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">30 minutos</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Activo
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Consulta</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Medicina General</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
-                                    <i class="fas fa-trash-alt text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">SRV-002</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Consulta Cardiológica</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Evaluación cardiovascular especializada</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">45 minutos</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Activo
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Consulta</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Cardiología</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
-                                    <i class="fas fa-trash-alt text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">SRV-003</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Tratamiento Odontológico</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Limpieza dental profesional</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">60 minutos</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-inactivo text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Inactivo
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Tratamiento</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Odontología</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
-                                    <i class="fas fa-trash-alt text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
+                        <!-- Los datos se cargarán dinámicamente desde la BD -->
                     </tbody>
                 </table>
             </div>
@@ -222,44 +165,24 @@
                             <i class="fas fa-file-medical text-gray-500 mr-1"></i>
                             Nombre del Servicio
                         </label>
-                        <input type="text" id="nombreServicio" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-clock text-gray-500 mr-1"></i>
-                            Duración
-                        </label>
-                        <input type="text" id="duracionServicio" placeholder="Ej: 30 minutos" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="text" name="nombreServicio" id="nombreServicio" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                     <div class="col-span-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-align-left text-gray-500 mr-1"></i>
                             Descripción
                         </label>
-                        <textarea id="descripcionServicio" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
+                        <textarea name="descripcionServicio" id="descripcionServicio" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
                             Estado
                         </label>
-                        <select id="estadoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <select name="estadoServicio" id="estadoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                             <option value="">Seleccione un estado</option>
-                            <option>Activo</option>
-                            <option>Inactivo</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
-                            Especialidad
-                        </label>
-                        <select id="especialidadServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option value="">Seleccione una especialidad</option>
-                            <option>Cardiología</option>
-                            <option>Pediatría</option>
-                            <option>Odontología</option>
-                            <option>Medicina General</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
                         </select>
                     </div>
                     <div>
@@ -267,11 +190,17 @@
                             <i class="fas fa-tags text-gray-500 mr-1"></i>
                             Tipo de Servicio
                         </label>
-                        <select id="tipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <select name="tipoServicio" id="tipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                             <option value="">Seleccione tipo de servicio</option>
-                            <option>Consulta</option>
-                            <option>Tratamiento</option>
-                            <option>Procedimiento</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                            Especialidad
+                        </label>
+                        <select name="especialidadServicio" id="especialidadServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                            <option value="">Seleccione especialidad (opcional)</option>
                         </select>
                     </div>
                 </div>
@@ -306,49 +235,30 @@
                             <i class="fas fa-hashtag text-gray-500 mr-1"></i>
                             Código
                         </label>
-                        <input type="text" id="codigoServicio" value="SRV-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                        <input type="text" id="codigoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-file-medical text-gray-500 mr-1"></i>
                             Nombre del Servicio
                         </label>
-                        <input type="text" id="nombreServicioEditar" value="Consulta General" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="text" name="nombreServicioEditar" id="nombreServicioEditar" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                     <div class="col-span-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-align-left text-gray-500 mr-1"></i>
                             Descripción
                         </label>
-                        <textarea id="descripcionServicioEditar" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>Evaluación médica general del paciente</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-clock text-gray-500 mr-1"></i>
-                            Duración
-                        </label>
-                        <input type="text" id="duracionServicioEditar" value="30 minutos" placeholder="Ej: 45 minutos" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <textarea name="descripcionServicioEditar" id="descripcionServicioEditar" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
                             Estado
                         </label>
-                        <select id="estadoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option>Activo</option>
-                            <option>Inactivo</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
-                            Especialidad
-                        </label>
-                        <select id="especialidadServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option>Cardiología</option>
-                            <option>Pediatría</option>
-                            <option>Odontología</option>
-                            <option selected>Medicina General</option>
+                        <select name="estadoServicioEditar" id="estadoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
                         </select>
                     </div>
                     <div>
@@ -356,10 +266,16 @@
                             <i class="fas fa-tags text-gray-500 mr-1"></i>
                             Tipo de Servicio
                         </label>
-                        <select id="tipoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option selected>Consulta</option>
-                            <option>Tratamiento</option>
-                            <option>Procedimiento</option>
+                        <select name="tipoServicioEditar" id="tipoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                            Especialidad
+                        </label>
+                        <select name="especialidadServicioEditar" id="especialidadServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                            <option value="">Seleccione especialidad (opcional)</option>
                         </select>
                     </div>
                 </div>
@@ -401,123 +317,7 @@
         </div>
     </div>
 
-    <script>
-        // Funcionalidad de modales
-        const modales = ['modalRegistrarServicio', 'modalModificarServicio', 'modalEliminar'];
-        
-        modales.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                const closeBtn = modal.querySelector('.close');
-                if (closeBtn) {
-                    closeBtn.onclick = function() {
-                        modal.classList.remove('show');
-                    }
-                }
-            }
-        });
-
-        window.onclick = function(event) {
-            modales.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal && event.target == modal) {
-                    modal.classList.remove('show');
-                }
-            });
-        }
-
-        // Botón registrar servicio
-        const btnRegistrarServicio = document.getElementById('btnRegistrarServicio');
-        if (btnRegistrarServicio) {
-            btnRegistrarServicio.onclick = function() {
-                document.getElementById('modalRegistrarServicio').classList.add('show');
-            }
-        }
-
-        // Botones de editar
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalModificarServicio').classList.add('show');
-            }
-        });
-
-        // Botones de eliminar
-        document.querySelectorAll('.btn-eliminar').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalEliminar').classList.add('show');
-            }
-        });
-
-        // Formulario registrar
-        const formRegistrar = document.getElementById('formRegistrarServicio');
-        if (formRegistrar) {
-            formRegistrar.onsubmit = function(e) {
-                e.preventDefault();
-                document.getElementById('modalRegistrarServicio').classList.remove('show');
-                alert('Servicio registrado exitosamente');
-            }
-            
-            // Botón cancelar
-            const btnCancelar = formRegistrar.querySelector('button[type="button"]');
-            if (btnCancelar) {
-                btnCancelar.onclick = function() {
-                    document.getElementById('modalRegistrarServicio').classList.remove('show');
-                }
-            }
-        }
-
-        // Formulario modificar
-        const formModificar = document.getElementById('formModificarServicio');
-        if (formModificar) {
-            formModificar.onsubmit = function(e) {
-                e.preventDefault();
-                document.getElementById('modalModificarServicio').classList.remove('show');
-                alert('Servicio actualizado exitosamente');
-            }
-            
-            // Botón cancelar
-            const btnCancelar = formModificar.querySelector('button[type="button"]');
-            if (btnCancelar) {
-                btnCancelar.onclick = function() {
-                    document.getElementById('modalModificarServicio').classList.remove('show');
-                }
-            }
-        }
-
-        // Modal eliminar
-        const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
-        if (btnCancelarEliminar) {
-            btnCancelarEliminar.onclick = function() {
-                document.getElementById('modalEliminar').classList.remove('show');
-            }
-        }
-
-        const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
-        if (btnConfirmarEliminar) {
-            btnConfirmarEliminar.onclick = function() {
-                document.getElementById('modalEliminar').classList.remove('show');
-                alert('Servicio eliminado exitosamente');
-            }
-        }
-
-        // Botón limpiar
-        const btnLimpiar = document.getElementById('btnLimpiar');
-        if (btnLimpiar) {
-            btnLimpiar.onclick = function() {
-                document.getElementById('filtroTipoServicio').value = '';
-                document.getElementById('filtroServicio').value = '';
-            }
-        }
-
-        // Botón buscar
-        const btnBuscar = document.getElementById('btnBuscar');
-        if (btnBuscar) {
-            btnBuscar.onclick = function() {
-                console.log('Buscando servicios...');
-                // Aquí ejecutarías la búsqueda
-            }
-        }
-    </script>
+    <script src="/static/js/gestionCatalogoServicio.js"></script>
 
     {% include 'footer.html' %}
 </body>

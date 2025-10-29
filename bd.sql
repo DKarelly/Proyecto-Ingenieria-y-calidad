@@ -107,7 +107,8 @@ CREATE TABLE HORARIO (
   fecha DATE,
   hora_inicio TIME,
   hora_fin TIME,
-  estado VARCHAR(20),
+  disponibilidad VARCHAR(30),
+  estado VARCHAR(30),
   FOREIGN KEY (id_empleado) REFERENCES EMPLEADO(id_empleado)
 );
 
@@ -325,16 +326,4 @@ CREATE TABLE REPORTE (
   FOREIGN KEY (id_servicio) REFERENCES SERVICIO(id_servicio),
   FOREIGN KEY (id_recurso) REFERENCES RECURSO(id_recurso)
 );
-
--- =====================================================
--- INSETAR ROLES PREDEFINIDOS
--- =====================================================
-
-INSERT INTO `CLINICA`.`ROL` (`nombre`, `estado`) VALUES
-('Administrador', 'Activo'),
-('Médico', 'Activo'),
-('Recepcionista', 'Activo'),
-('Farmacéutico', 'Activo'),
-('Laboratorista', 'Activo');
-
 

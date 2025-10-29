@@ -1,4 +1,9 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
+from models.servicio import Servicio
+from models.catalogos import TipoServicio, TipoRecurso
+from models.recurso import Recurso
+from models.horario import Horario
+from models.empleado import Empleado
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -83,3 +88,392 @@ def gestionar_recursos_fisicos():
         return redirect(url_for('home'))
     
     return render_template('gestionRecursosFisicos.html')
+
+# API Routes for Gestion Catalogo Servicios
+
+@admin_bp.route('/api/servicios', methods=['GET'])
+def api_obtener_servicios():
+    """API para obtener todos los servicios"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    servicios = Servicio.obtener_todos()
+    return jsonify(servicios)
+
+@admin_bp.route('/api/tipos-servicio', methods=['GET'])
+def api_obtener_tipos_servicio():
+    """API para obtener tipos de servicio"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    tipos = TipoServicio.obtener_todos()
+    return jsonify(tipos)
+
+@admin_bp.route('/api/especialidades', methods=['GET'])
+def api_obtener_especialidades():
+    """API para obtener especialidades"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    from models.catalogos import Especialidad
+    especialidades = Especialidad.obtener_todas()
+    return jsonify(especialidades)
+
+@admin_bp.route('/api/servicios/buscar', methods=['POST'])
+def api_buscar_servicios():
+    """API para buscar servicios con filtros"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    tipo_servicio = data.get('tipo_servicio', '')
+    especialidad = data.get('especialidad', '')
+    termino = data.get('termino', '')
+
+    if tipo_servicio and especialidad and termino:
+        # Buscar por tipo, especialidad y término
+        servicios = Servicio.buscar(termino)
+        servicios_filtrados = [s for s in servicios if str(s['id_tipo_servicio']) == tipo_servicio and str(s.get('id_especialidad', '')) == especialidad]
+    elif tipo_servicio and especialidad:
+        # Buscar por tipo y especialidad
+        servicios = Servicio.obtener_por_tipo(int(tipo_servicio))
+        servicios_filtrados = [s for s in servicios if str(s.get('id_especialidad', '')) == especialidad]
+    elif tipo_servicio and termino:
+        # Buscar por tipo y término
+        servicios = Servicio.buscar(termino)
+        servicios_filtrados = [s for s in servicios if str(s['id_tipo_servicio']) == tipo_servicio]
+    elif especialidad and termino:
+        # Buscar por especialidad y término
+        servicios = Servicio.buscar(termino)
+        servicios_filtrados = [s for s in servicios if str(s.get('id_especialidad', '')) == especialidad]
+    elif tipo_servicio:
+        # Buscar por tipo
+        servicios_filtrados = Servicio.obtener_por_tipo(int(tipo_servicio))
+    elif especialidad:
+        # Buscar por especialidad
+        servicios_filtrados = Servicio.obtener_por_especialidad(int(especialidad))
+    elif termino:
+        # Buscar por término
+        servicios_filtrados = Servicio.buscar(termino)
+    else:
+        # Todos los servicios
+        servicios_filtrados = Servicio.obtener_todos()
+
+    return jsonify(servicios_filtrados)
+
+@admin_bp.route('/api/servicios', methods=['POST'])
+def api_crear_servicio():
+    """API para crear un nuevo servicio"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion')
+    estado = data.get('estado')
+    id_tipo_servicio = data.get('id_tipo_servicio')
+    id_especialidad = data.get('id_especialidad')
+
+    if not nombre or not descripcion or not estado or not id_tipo_servicio:
+        return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
+
+    resultado = Servicio.crear(nombre, descripcion, id_tipo_servicio, id_especialidad)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Servicio creado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/servicios/<int:id_servicio>', methods=['PUT'])
+def api_actualizar_servicio(id_servicio):
+    """API para actualizar un servicio"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    nombre = data.get('nombre')
+    descripcion = data.get('descripcion')
+    estado = data.get('estado')
+    id_tipo_servicio = data.get('id_tipo_servicio')
+    id_especialidad = data.get('id_especialidad')
+
+    resultado = Servicio.actualizar(id_servicio, nombre=nombre, descripcion=descripcion, estado=estado, id_tipo_servicio=id_tipo_servicio, id_especialidad=id_especialidad)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Servicio actualizado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/servicios/<int:id_servicio>', methods=['GET'])
+def api_obtener_servicio(id_servicio):
+    """API para obtener un servicio específico"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    servicio = Servicio.obtener_por_id(id_servicio)
+    if servicio:
+        return jsonify(servicio)
+    else:
+        return jsonify({'error': 'Servicio no encontrado'}), 404
+
+@admin_bp.route('/api/servicios/<int:id_servicio>', methods=['DELETE'])
+def api_eliminar_servicio(id_servicio):
+    """API para eliminar (desactivar) un servicio"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    resultado = Servicio.eliminar(id_servicio)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Servicio desactivado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+# API Routes for Gestion Recursos Fisicos
+
+@admin_bp.route('/api/recursos', methods=['GET'])
+def api_obtener_recursos():
+    """API para obtener todos los recursos"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    recursos = Recurso.obtener_todos()
+    return jsonify(recursos)
+
+@admin_bp.route('/api/tipos-recurso', methods=['GET'])
+def api_obtener_tipos_recurso():
+    """API para obtener tipos de recurso"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    tipos = TipoRecurso.obtener_todos()
+    return jsonify(tipos)
+
+@admin_bp.route('/api/recursos/buscar', methods=['POST'])
+def api_buscar_recursos():
+    """API para buscar recursos con filtros"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    tipo_recurso = data.get('tipo_recurso', '')
+    termino = data.get('termino', '')
+
+    if tipo_recurso and termino:
+        # Buscar por tipo y término
+        recursos = Recurso.buscar(termino)
+        recursos_filtrados = [r for r in recursos if str(r['id_tipo_recurso']) == tipo_recurso]
+    elif tipo_recurso:
+        # Buscar por tipo
+        recursos_filtrados = Recurso.obtener_por_tipo(int(tipo_recurso))
+    elif termino:
+        # Buscar por término
+        recursos_filtrados = Recurso.buscar(termino)
+    else:
+        # Todos los recursos
+        recursos_filtrados = Recurso.obtener_todos()
+
+    return jsonify(recursos_filtrados)
+
+@admin_bp.route('/api/recursos', methods=['POST'])
+def api_crear_recurso():
+    """API para crear un nuevo recurso"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    nombre = data.get('nombre')
+    estado = data.get('estado')
+    id_tipo_recurso = data.get('id_tipo_recurso')
+
+    if not nombre or not estado or not id_tipo_recurso:
+        return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
+
+    resultado = Recurso.crear(nombre, id_tipo_recurso)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Recurso creado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/recursos/<int:id_recurso>', methods=['PUT'])
+def api_actualizar_recurso(id_recurso):
+    """API para actualizar un recurso"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    nombre = data.get('nombre')
+    estado = data.get('estado')
+    id_tipo_recurso = data.get('id_tipo_recurso')
+
+    resultado = Recurso.actualizar(id_recurso, nombre=nombre, estado=estado, id_tipo_recurso=id_tipo_recurso)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Recurso actualizado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/recursos/<int:id_recurso>', methods=['GET'])
+def api_obtener_recurso(id_recurso):
+    """API para obtener un recurso específico"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    recurso = Recurso.obtener_por_id(id_recurso)
+    if recurso:
+        return jsonify(recurso)
+    else:
+        return jsonify({'error': 'Recurso no encontrado'}), 404
+
+@admin_bp.route('/api/recursos/<int:id_recurso>', methods=['DELETE'])
+def api_eliminar_recurso(id_recurso):
+    """API para eliminar (desactivar) un recurso"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    resultado = Recurso.eliminar(id_recurso)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Recurso desactivado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+# API Routes for Gestion Horarios Laborales
+
+@admin_bp.route('/api/horarios', methods=['GET'])
+def api_obtener_horarios():
+    """API para obtener todos los horarios"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    horarios = Horario.obtener_todos()
+
+    # Convertir objetos datetime a strings para JSON serialization
+    for horario in horarios:
+        if 'hora_inicio' in horario and horario['hora_inicio']:
+            horario['hora_inicio'] = str(horario['hora_inicio'])
+        if 'hora_fin' in horario and horario['hora_fin']:
+            horario['hora_fin'] = str(horario['hora_fin'])
+        if 'fecha' in horario and horario['fecha']:
+            horario['fecha'] = horario['fecha'].isoformat()
+
+    return jsonify(horarios)
+
+@admin_bp.route('/api/empleados', methods=['GET'])
+def api_obtener_empleados():
+    """API para obtener todos los empleados"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    empleados = Empleado.obtener_todos()
+    return jsonify(empleados)
+
+@admin_bp.route('/api/empleados/buscar', methods=['GET'])
+def api_buscar_empleados():
+    """API para buscar empleados por término"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    termino = request.args.get('termino', '')
+
+    if termino:
+        empleados = Empleado.buscar(termino)
+    else:
+        empleados = Empleado.obtener_todos()
+
+    return jsonify(empleados)
+
+@admin_bp.route('/api/horarios/buscar', methods=['POST'])
+def api_buscar_horarios():
+    """API para buscar horarios por fecha"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    fecha = data.get('fecha', '')
+
+    if fecha:
+        # Buscar por fecha
+        horarios_filtrados = Horario.obtener_por_fecha(fecha)
+    else:
+        # Todos los horarios
+        horarios_filtrados = Horario.obtener_todos()
+
+    # Convertir objetos datetime a strings para JSON serialization
+    for horario in horarios_filtrados:
+        if 'hora_inicio' in horario and horario['hora_inicio']:
+            horario['hora_inicio'] = str(horario['hora_inicio'])
+        if 'hora_fin' in horario and horario['hora_fin']:
+            horario['hora_fin'] = str(horario['hora_fin'])
+        if 'fecha' in horario and horario['fecha']:
+            horario['fecha'] = horario['fecha'].isoformat()
+
+    return jsonify(horarios_filtrados)
+
+@admin_bp.route('/api/horarios', methods=['POST'])
+def api_crear_horario():
+    """API para crear un nuevo horario"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    id_empleado = data.get('id_empleado')
+    fecha = data.get('fecha')
+    hora_inicio = data.get('hora_inicio')
+    hora_fin = data.get('hora_fin')
+    estado = data.get('estado', 'disponible')
+
+    if not id_empleado or not fecha or not hora_inicio or not hora_fin:
+        return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
+
+    resultado = Horario.crear(id_empleado, fecha, hora_inicio, hora_fin)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Horario creado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/horarios/<int:id_horario>', methods=['PUT'])
+def api_actualizar_horario(id_horario):
+    """API para actualizar un horario"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    fecha = data.get('fecha')
+    hora_inicio = data.get('hora_inicio')
+    hora_fin = data.get('hora_fin')
+    estado = data.get('estado')
+
+    resultado = Horario.actualizar(id_horario, fecha=fecha, hora_inicio=hora_inicio,
+                                  hora_fin=hora_fin, estado=estado)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Horario actualizado exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/horarios/<int:id_horario>', methods=['GET'])
+def api_obtener_horario(id_horario):
+    """API para obtener un horario específico"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    horario = Horario.obtener_por_id(id_horario)
+    if horario:
+        # Convertir objetos datetime a strings para JSON serialization
+        if 'hora_inicio' in horario and horario['hora_inicio']:
+            horario['hora_inicio'] = str(horario['hora_inicio'])
+        if 'hora_fin' in horario and horario['hora_fin']:
+            horario['hora_fin'] = str(horario['hora_fin'])
+        if 'fecha' in horario and horario['fecha']:
+            horario['fecha'] = horario['fecha'].isoformat()
+        return jsonify(horario)
+    else:
+        return jsonify({'error': 'Horario no encontrado'}), 404
+
+@admin_bp.route('/api/horarios/<int:id_horario>', methods=['DELETE'])
+def api_eliminar_horario(id_horario):
+    """API para eliminar (desactivar) un horario"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    # Cambiar estado a inactivo en lugar de eliminar
+    resultado = Horario.actualizar_estado(id_horario, 'inactivo')
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Horario dado de baja exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
