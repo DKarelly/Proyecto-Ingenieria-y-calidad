@@ -1,26 +1,32 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestión de Horarios Laborales - Clínica Union</title>
   <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .badge-activo {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     }
+
     .badge-inactivo {
       background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
     }
+
     .badge-disponible {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     }
+
     .badge-no-disponible {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     }
+
     .modal {
       display: none;
       position: fixed;
@@ -31,11 +37,13 @@
       height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
     }
+
     .modal.show {
       display: flex;
       align-items: center;
       justify-content: center;
     }
+
     .modal-content {
       background: white;
       border-radius: 1rem;
@@ -47,8 +55,9 @@
     }
   </style>
 </head>
+
 <body class="bg-[#f8fafc] font-['Inter']">
-  
+
   {% include 'header_admin.html' %}
 
   <div class="max-w-7xl mx-auto p-6 md:p-10">
@@ -68,7 +77,8 @@
 
     <!-- Botón registrar nuevo horario -->
     <div class="mb-6">
-      <button id="btnRegistrarHorario" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
+      <button id="btnRegistrarHorario"
+        class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
         <i class="fas fa-plus mr-2"></i>
         Registrar Nuevo Horario
       </button>
@@ -87,36 +97,30 @@
             <i class="fas fa-user text-gray-500 mr-1"></i>
             Buscar Empleado
           </label>
-          <input 
-            type="text" 
-            id="filtroEmpleado" 
-            placeholder="Buscar empleado"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-          >
+          <input type="text" id="filtroEmpleado" placeholder="Buscar empleado"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
         </div>
 
         <div>
           <label for="filtroHorario" class="block text-sm font-semibold text-gray-700 mb-2">
-            <i class="fas fa-clock text-gray-500 mr-1"></i>
-            Buscar Horario
+            <i class="fas fa-calendar text-gray-500 mr-1"></i>
+            Seleccionar Fecha
           </label>
-          <input 
-            type="text" 
-            id="filtroHorario" 
-            placeholder="Buscar horario"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-          >
+          <input type="date" id="filtroHorario"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
         </div>
 
         <div class="flex items-end">
-          <button id="btnLimpiar" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
+          <button id="btnLimpiar"
+            class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
             <i class="fas fa-broom mr-2"></i>
             Limpiar
           </button>
         </div>
 
         <div class="flex items-end">
-          <button id="btnBuscar" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
+          <button id="btnBuscar"
+            class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
             <i class="fas fa-search mr-2"></i>
             Buscar
           </button>
@@ -131,97 +135,18 @@
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
               <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Empleado</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Empleado</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Empleado
+              </th>
               <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Horario</th>
-              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Día</th>
+              <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
               <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hora Inicio</th>
               <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Hora Fin</th>
-              <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Disponibilidad</th>
               <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
               <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
             </tr>
           </thead>
           <tbody id="tabla-horarios-body" class="divide-y divide-gray-200">
-            <!-- Ejemplo de registros -->
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">EMP-001</td>
-              <td class="px-6 py-4 text-sm text-gray-900">Dr. Juan Pérez</td>
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">HOR-001</td>
-              <td class="px-6 py-4 text-sm text-gray-900">Lunes</td>
-              <td class="px-6 py-4 text-sm text-gray-900">08:00</td>
-              <td class="px-6 py-4 text-sm text-gray-900">12:00</td>
-              <td class="px-6 py-4 text-center">
-                <span class="badge-disponible text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Disponible
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Activo
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                  <i class="fas fa-edit text-lg"></i>
-                </button>
-                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
-                  <i class="fas fa-trash-alt text-lg"></i>
-                </button>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">EMP-002</td>
-              <td class="px-6 py-4 text-sm text-gray-900">Dra. María García</td>
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">HOR-002</td>
-              <td class="px-6 py-4 text-sm text-gray-900">Martes</td>
-              <td class="px-6 py-4 text-sm text-gray-900">14:00</td>
-              <td class="px-6 py-4 text-sm text-gray-900">18:00</td>
-              <td class="px-6 py-4 text-center">
-                <span class="badge-disponible text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Disponible
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <span class="badge-activo text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Activo
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                  <i class="fas fa-edit text-lg"></i>
-                </button>
-                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
-                  <i class="fas fa-trash-alt text-lg"></i>
-                </button>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">EMP-003</td>
-              <td class="px-6 py-4 text-sm text-gray-900">Dr. Carlos Rodríguez</td>
-              <td class="px-6 py-4 text-sm text-gray-900 font-medium">HOR-003</td>
-              <td class="px-6 py-4 text-sm text-gray-900">Miércoles</td>
-              <td class="px-6 py-4 text-sm text-gray-900">09:00</td>
-              <td class="px-6 py-4 text-sm text-gray-900">13:00</td>
-              <td class="px-6 py-4 text-center">
-                <span class="badge-no-disponible text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  No disponible
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <span class="badge-inactivo text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  Inactivo
-                </span>
-              </td>
-              <td class="px-6 py-4 text-center">
-                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                  <i class="fas fa-edit text-lg"></i>
-                </button>
-                <button class="btn-eliminar text-red-600 hover:text-red-800 mx-1 transition-colors" title="Eliminar">
-                  <i class="fas fa-trash-alt text-lg"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
+            <!-- Los horarios se cargarán dinámicamente desde la base de datos -->
         </table>
       </div>
     </div>
@@ -244,52 +169,49 @@
               <i class="fas fa-hashtag text-gray-500 mr-1"></i>
               ID del Empleado
             </label>
-            <input type="text" id="idEmpleado" placeholder="ID automático o asignado" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+            <input type="text" id="idEmpleado" name="idEmpleado" placeholder="ID automático o asignado"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-user text-gray-500 mr-1"></i>
               Nombre del Empleado
             </label>
-            <input type="text" id="nombreEmpleado" placeholder="Buscar empleado..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <input type="text" id="nombreEmpleado" name="nombreEmpleado" placeholder="Buscar empleado..."
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
             <small class="text-xs text-gray-500 mt-1">Escribe el nombre para filtrar y obtener el ID.</small>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-calendar text-gray-500 mr-1"></i>
-              Día de Semana
+              Fecha
             </label>
-            <select id="diaSemana" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option value="">Seleccionar día</option>
-              <option>Lunes</option>
-              <option>Martes</option>
-              <option>Miércoles</option>
-              <option>Jueves</option>
-              <option>Viernes</option>
-              <option>Sábado</option>
-              <option>Domingo</option>
-            </select>
+            <input type="date" id="fecha" name="fecha"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-clock text-gray-500 mr-1"></i>
               Hora Inicio
             </label>
-            <input type="time" id="horaInicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <input type="time" id="horaInicio" name="horaInicio"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-clock text-gray-500 mr-1"></i>
               Hora Fin
             </label>
-            <input type="time" id="horaFin" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <input type="time" id="horaFin" name="horaFin"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-check-circle text-gray-500 mr-1"></i>
               Disponibilidad
             </label>
-            <select id="disponibilidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <select id="disponibilidad" name="disponibilidad"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
               <option value="">Seleccionar</option>
               <option>Disponible</option>
               <option>No disponible</option>
@@ -300,33 +222,23 @@
               <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
               Estado
             </label>
-            <select id="estado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <select id="estado" name="estado"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
               <option value="">Seleccionar</option>
               <option>Activo</option>
               <option>Inactivo</option>
             </select>
           </div>
-          <div class="col-span-2">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-stethoscope text-gray-500 mr-1"></i>
-              Servicios Disponibles
-            </label>
-            <select id="servicios" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option value="">Seleccionar servicio</option>
-              <option>Consulta General</option>
-              <option>Pediatría</option>
-              <option>Ginecología</option>
-              <option>Odontología</option>
-              <option>Cardiología</option>
-            </select>
-          </div>
+
         </div>
         <div class="flex gap-4 pt-4">
-          <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+          <button type="button"
+            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
             <i class="fas fa-times mr-2"></i>
             Cancelar
           </button>
-          <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+          <button type="submit"
+            class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
             <i class="fas fa-save mr-2"></i>
             Guardar
           </button>
@@ -352,58 +264,58 @@
               <i class="fas fa-barcode text-gray-500 mr-1"></i>
               Código del Horario
             </label>
-            <input type="text" id="codigoHorario" value="HOR-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+            <input type="text" id="codigoHorario" name="codigoHorario" value="HOR-001"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-hashtag text-gray-500 mr-1"></i>
               ID del Empleado
             </label>
-            <input type="text" id="idEmpleadoMod" value="EMP-001" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+            <input type="text" id="idEmpleadoMod" name="idEmpleadoMod" value="EMP-001"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-user text-gray-500 mr-1"></i>
               Nombre del Empleado
             </label>
-            <input type="text" id="nombreEmpleadoMod" value="Dr. Juan Pérez" placeholder="Buscar empleado..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <input type="text" id="nombreEmpleadoMod" name="nombreEmpleadoMod" value="Dr. Juan Pérez"
+              placeholder="Buscar empleado..."
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
             <small class="text-xs text-gray-500 mt-1">Escribe el nombre para filtrar y obtener el ID.</small>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-calendar text-gray-500 mr-1"></i>
-              Día de Semana
+              Fecha
             </label>
-            <select id="diaSemanaMod" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option selected>Lunes</option>
-              <option>Martes</option>
-              <option>Miércoles</option>
-              <option>Jueves</option>
-              <option>Viernes</option>
-              <option>Sábado</option>
-              <option>Domingo</option>
-            </select>
+            <input type="date" id="fechaMod" name="fechaMod"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-clock text-gray-500 mr-1"></i>
               Hora Inicio
             </label>
-            <input type="time" id="horaInicioMod" value="08:00" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <input type="time" id="horaInicioMod" name="horaInicioMod" value="08:00"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-clock text-gray-500 mr-1"></i>
               Hora Fin
             </label>
-            <input type="time" id="horaFinMod" value="12:00" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <input type="time" id="horaFinMod" name="horaFinMod" value="12:00"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
               <i class="fas fa-check-circle text-gray-500 mr-1"></i>
               Disponibilidad
             </label>
-            <select id="disponibilidadMod" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <select id="disponibilidadMod" name="disponibilidadMod"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
               <option selected>Disponible</option>
               <option>No disponible</option>
             </select>
@@ -413,31 +325,22 @@
               <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
               Estado
             </label>
-            <select id="estadoMod" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+            <select id="estadoMod" name="estadoMod"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
               <option selected>Activo</option>
               <option>Inactivo</option>
             </select>
           </div>
-          <div class="col-span-2">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-stethoscope text-gray-500 mr-1"></i>
-              Servicios Disponibles
-            </label>
-            <select id="serviciosMod" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option selected>Consulta General</option>
-              <option>Pediatría</option>
-              <option>Ginecología</option>
-              <option>Odontología</option>
-              <option>Cardiología</option>
-            </select>
-          </div>
+
         </div>
         <div class="flex gap-4 pt-4">
-          <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+          <button type="button"
+            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
             <i class="fas fa-times mr-2"></i>
             Cancelar
           </button>
-          <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+          <button type="submit"
+            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
             <i class="fas fa-save mr-2"></i>
             Guardar Cambios
           </button>
@@ -456,13 +359,15 @@
         </h2>
         <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
       </div>
-      <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar este horario laboral?</p>
+      <p class="text-gray-600 mb-6">¿Está seguro que desea dar de baja este horario laboral?</p>
       <div class="flex gap-4">
-        <button id="btnCancelarEliminar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+        <button id="btnCancelarEliminar"
+          class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
           <i class="fas fa-times mr-2"></i>
           Cancelar
         </button>
-        <button id="btnConfirmarEliminar" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+        <button id="btnConfirmarEliminar"
+          class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
           <i class="fas fa-trash-alt mr-2"></i>
           Eliminar
         </button>
@@ -470,124 +375,9 @@
     </div>
   </div>
 
-  <script>
-    // Funcionalidad de modales
-    const modales = ['modalRegistrarHorario', 'modalModificarHorario', 'modalEliminar'];
-    
-    modales.forEach(modalId => {
-      const modal = document.getElementById(modalId);
-      if (modal) {
-        const closeBtn = modal.querySelector('.close');
-        if (closeBtn) {
-          closeBtn.onclick = function() {
-            modal.classList.remove('show');
-          }
-        }
-      }
-    });
-
-    window.onclick = function(event) {
-      modales.forEach(modalId => {
-        const modal = document.getElementById(modalId);
-        if (modal && event.target == modal) {
-          modal.classList.remove('show');
-        }
-      });
-    }
-
-    // Botón registrar horario
-    const btnRegistrarHorario = document.getElementById('btnRegistrarHorario');
-    if (btnRegistrarHorario) {
-      btnRegistrarHorario.onclick = function() {
-        document.getElementById('modalRegistrarHorario').classList.add('show');
-      }
-    }
-
-    // Botones de editar
-    document.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.onclick = function() {
-        document.getElementById('modalModificarHorario').classList.add('show');
-      }
-    });
-
-    // Botones de eliminar
-    document.querySelectorAll('.btn-eliminar').forEach(btn => {
-      btn.onclick = function() {
-        document.getElementById('modalEliminar').classList.add('show');
-      }
-    });
-
-    // Formulario registrar
-    const formRegistrar = document.getElementById('formRegistrarHorario');
-    if (formRegistrar) {
-      formRegistrar.onsubmit = function(e) {
-        e.preventDefault();
-        document.getElementById('modalRegistrarHorario').classList.remove('show');
-        alert('Horario registrado exitosamente');
-      }
-      
-      // Botón cancelar
-      const btnCancelar = formRegistrar.querySelector('button[type="button"]');
-      if (btnCancelar) {
-        btnCancelar.onclick = function() {
-          document.getElementById('modalRegistrarHorario').classList.remove('show');
-        }
-      }
-    }
-
-    // Formulario modificar
-    const formModificar = document.getElementById('formModificarHorario');
-    if (formModificar) {
-      formModificar.onsubmit = function(e) {
-        e.preventDefault();
-        document.getElementById('modalModificarHorario').classList.remove('show');
-        alert('Horario actualizado exitosamente');
-      }
-      
-      // Botón cancelar
-      const btnCancelar = formModificar.querySelector('button[type="button"]');
-      if (btnCancelar) {
-        btnCancelar.onclick = function() {
-          document.getElementById('modalModificarHorario').classList.remove('show');
-        }
-      }
-    }
-
-    // Modal eliminar
-    const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
-    if (btnCancelarEliminar) {
-      btnCancelarEliminar.onclick = function() {
-        document.getElementById('modalEliminar').classList.remove('show');
-      }
-    }
-
-    const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
-    if (btnConfirmarEliminar) {
-      btnConfirmarEliminar.onclick = function() {
-        document.getElementById('modalEliminar').classList.remove('show');
-        alert('Horario eliminado exitosamente');
-      }
-    }
-
-    // Botón limpiar
-    const btnLimpiar = document.getElementById('btnLimpiar');
-    if (btnLimpiar) {
-      btnLimpiar.onclick = function() {
-        document.getElementById('filtroEmpleado').value = '';
-        document.getElementById('filtroHorario').value = '';
-      }
-    }
-
-    // Botón buscar
-    const btnBuscar = document.getElementById('btnBuscar');
-    if (btnBuscar) {
-      btnBuscar.onclick = function() {
-        console.log('Buscando horarios...');
-        // Aquí ejecutarías la búsqueda
-      }
-    }
-  </script>
+  <script src="{{ url_for('static', filename='js/gestionHorariosLaborables.js') }}"></script>
 
   {% include 'footer.html' %}
 </body>
+
 </html>
