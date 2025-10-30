@@ -337,7 +337,9 @@ document.getElementById('formFiltros').addEventListener('submit', async function
         empleado: document.getElementById('filtroEmpleado').value.trim(),
         fecha_registro: document.getElementById('filtroFechaRegistro').value,
         fecha_resolucion: document.getElementById('filtroFechaResolucion').value,
-        estado: document.getElementById('filtroEstado').value
+        estado: document.getElementById('filtroEstado').value,
+        categoria: document.getElementById('filtroCategoria') ? document.getElementById('filtroCategoria').value : '',
+        prioridad: document.getElementById('filtroPrioridad') ? document.getElementById('filtroPrioridad').value : ''
     };
 
     try {
