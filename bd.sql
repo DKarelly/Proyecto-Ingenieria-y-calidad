@@ -275,7 +275,7 @@ CREATE TABLE INCIDENCIA (
 CREATE TABLE ASIGNAR_EMPLEADO_INCIDENCIA (
   id_historial INT AUTO_INCREMENT PRIMARY KEY,
   observaciones VARCHAR(200),
-  estado_historial VARCHAR(20),
+  estado_historial VARCHAR(20), /* 'Activada' 'En proceso' , etc */
   fecha_resolucion DATE,
   id_empleado INT,
   id_incidencia INT,

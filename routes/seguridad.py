@@ -112,8 +112,8 @@ def consultar_incidencia():
 @seguridad_bp.route('/api/incidencias', methods=['GET'])
 def api_obtener_incidencias():
     """API para obtener todas las incidencias"""
-    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 401
+    # if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+    #     return jsonify({'error': 'No autorizado'}), 401
 
     incidencias = Incidencia.obtener_todas()
     return jsonify(incidencias)
@@ -128,11 +128,11 @@ def api_buscar_incidencias():
     filtros = {
         'paciente': data.get('paciente', ''),
         'empleado': data.get('empleado', ''),
-        'fecha_registro_desde': data.get('fecha_registro_desde', ''),
-        'fecha_registro_hasta': data.get('fecha_registro_hasta', ''),
-        'fecha_resolucion_desde': data.get('fecha_resolucion_desde', ''),
-        'fecha_resolucion_hasta': data.get('fecha_resolucion_hasta', ''),
-        'estado': data.get('estado', '')
+        'fecha_registro': data.get('fecha_registro', ''),
+        'fecha_resolucion': data.get('fecha_resolucion', ''),
+        'estado': data.get('estado', ''),
+        'categoria': data.get('categoria', ''),
+        'prioridad': data.get('prioridad', '')
     }
 
     incidencias = Incidencia.buscar(filtros)
