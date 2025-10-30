@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
+from models.incidencia import Incidencia
 
 seguridad_bp = Blueprint('seguridad', __name__)
 
@@ -89,8 +90,70 @@ def consultar_actividad():
     """Consultar Actividad del Sistema"""
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
-    
+
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
-    
+
     return render_template('consultar_actividad.html')
+
+@seguridad_bp.route('/incidencias/consultar-incidencia')
+def consultar_incidencia():
+    """Consultar Incidencias"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+
+    return render_template('consultarIncidencia.html')
+
+# API Routes for Incidencias
+
+@seguridad_bp.route('/api/incidencias', methods=['GET'])
+def api_obtener_incidencias():
+    """API para obtener todas las incidencias"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    incidencias = Incidencia.obtener_todas()
+    return jsonify(incidencias)
+
+@seguridad_bp.route('/api/incidencias/buscar', methods=['POST'])
+def api_buscar_incidencias():
+    """API para buscar incidencias con filtros"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    filtros = {
+        'paciente': data.get('paciente', ''),
+        'empleado': data.get('empleado', ''),
+        'fecha_registro_desde': data.get('fecha_registro_desde', ''),
+        'fecha_registro_hasta': data.get('fecha_registro_hasta', ''),
+        'fecha_resolucion_desde': data.get('fecha_resolucion_desde', ''),
+        'fecha_resolucion_hasta': data.get('fecha_resolucion_hasta', ''),
+        'estado': data.get('estado', '')
+    }
+
+    incidencias = Incidencia.buscar(filtros)
+    return jsonify(incidencias)
+
+@seguridad_bp.route('/api/incidencias/buscar-pacientes', methods=['GET'])
+def api_buscar_pacientes():
+    """API para buscar pacientes (autocompletado)"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    termino = request.args.get('termino', '')
+    pacientes = Incidencia.buscar_pacientes(termino)
+    return jsonify(pacientes)
+
+@seguridad_bp.route('/api/incidencias/buscar-empleados', methods=['GET'])
+def api_buscar_empleados():
+    """API para buscar empleados (autocompletado)"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    termino = request.args.get('termino', '')
+    empleados = Incidencia.buscar_empleados(termino)
+    return jsonify(empleados)

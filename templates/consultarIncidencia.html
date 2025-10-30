@@ -10,16 +10,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .badge-abierta {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: #fbbf24;
+            color: #92400e;
         }
         .badge-en-proceso {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: #3b82f6;
+            color: white;
         }
         .badge-resuelta {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: #10b981;
+            color: white;
         }
         .badge-cerrada {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            background: #d1d5db;
+            color: #374151;
         }
         .badge-alta {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -57,7 +61,7 @@
     </style>
 </head>
 <body class="bg-[#f8fafc] font-['Inter']">
-    
+
     {% include 'header_admin.html' %}
 
     <div class="max-w-7xl mx-auto p-6 md:p-10">
@@ -82,48 +86,59 @@
                 <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
             </div>
 
-            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
+            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <div class="relative">
                     <label for="filtroPaciente" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-user text-gray-500 mr-1"></i>
                         Paciente
                     </label>
-                    <input 
-                        minlength="3"
-                        type="text" 
-                        id="filtroPaciente" 
+                    <input
+                        type="text"
+                        id="filtroPaciente"
                         placeholder="Buscar paciente"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
+                    <div id="sugerenciasPaciente" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto hidden">
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <label for="filtroEmpleado" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user-tie text-gray-500 mr-1"></i>
+                        Empleado
+                    </label>
+                    <input
+                        type="text"
+                        id="filtroEmpleado"
+                        placeholder="Buscar empleado"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
+                    <div id="sugerenciasEmpleado" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto hidden">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="filtroFechaRegistro" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
+                        Fecha Registro
+                    </label>
+                    <input
+                        type="date"
+                        id="filtroFechaRegistro"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                     >
                 </div>
 
                 <div>
-                    <label for="filtroFecha" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
-                        Fecha
+                    <label for="filtroFechaResolucion" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-check text-gray-500 mr-1"></i>
+                        Fecha Resolución
                     </label>
-                    <select id="filtroFecha" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Seleccionar fecha</option>
-                        <option>Hoy</option>
-                        <option>Ayer</option>
-                        <option>Últimos 7 días</option>
-                        <option>Últimos 30 días</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="filtroCategoria" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-tags text-gray-500 mr-1"></i>
-                        Categoría
-                    </label>
-                    <select id="filtroCategoria" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Todas las categorías</option>
-                        <option>Técnica</option>
-                        <option>Administrativa</option>
-                        <option>Infraestructura</option>
-                        <option>Equipamiento</option>
-                        <option>Personal</option>
-                    </select>
+                    <input
+                        type="date"
+                        id="filtroFechaResolucion"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
                 </div>
 
                 <div>
@@ -157,115 +172,17 @@
                 <table class="admin-table w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Paciente</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Incidencia</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Registro</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Paciente</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Trabajador</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Prioridad</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Categoría</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Responsable</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
                         </tr>
                     </thead>
                     <tbody id="tablaIncidencias" class="divide-y divide-gray-200">
-                        <!-- Ejemplo de registros -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">INC-001</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">María González Pérez</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">21/10/2025</div>
-                                <div class="text-gray-500 text-xs">14:30</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Error en sistema de citas médicas</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-abierta text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Abierta
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-alta text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Alta
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Técnica</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Carlos Ramírez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-800 mx-1 transition-colors" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-resolver text-green-600 hover:text-green-800 mx-1 transition-colors" title="Resolver">
-                                    <i class="fas fa-check-circle text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">INC-002</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Juan Rodríguez López</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">20/10/2025</div>
-                                <div class="text-gray-500 text-xs">10:15</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Demora en atención de recepción</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-en-proceso text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    En proceso
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-media text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Media
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Administrativa</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Ana Martínez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-800 mx-1 transition-colors" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-resolver text-green-600 hover:text-green-800 mx-1 transition-colors" title="Resolver">
-                                    <i class="fas fa-check-circle text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">INC-003</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Pedro Sánchez García</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">19/10/2025</div>
-                                <div class="text-gray-500 text-xs">16:45</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Fallo en aire acondicionado sala de espera</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-resuelta text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Resuelta
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-baja text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Baja
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Infraestructura</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Luis Torres</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-800 mx-1 transition-colors" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-resolver text-green-600 hover:text-green-800 mx-1 transition-colors" title="Resolver">
-                                    <i class="fas fa-check-circle text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
+
                     </tbody>
                 </table>
             </div>
@@ -445,9 +362,12 @@
     </div>
 
     <script>
+        // Variables globales
+        let incidenciasData = [];
+
         // Funcionalidad de modales
         const modales = ['modalDetalle', 'modalEditar', 'modalResolver'];
-        
+
         modales.forEach(modalId => {
             const modal = document.getElementById(modalId);
             if (modal) {
@@ -469,24 +389,255 @@
             });
         }
 
-        // Botones de ver detalle
-        document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
-            btn.onclick = function() {
+        // Cargar incidencias al inicio
+        async function cargarIncidencias() {
+            try {
+                const response = await fetch('/seguridad/api/incidencias');
+                if (response.ok) {
+                    incidenciasData = await response.json();
+                    mostrarIncidencias(incidenciasData);
+                } else {
+                    console.error('Error al cargar incidencias');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Mostrar incidencias en la tabla
+        function mostrarIncidencias(incidencias) {
+            const tbody = document.getElementById('tablaIncidencias');
+            tbody.innerHTML = '';
+
+            if (incidencias.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            No se encontraron incidencias
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            incidencias.forEach(incidencia => {
+                const estadoClass = incidencia.estado ? incidencia.estado.toLowerCase().replace(' ', '-') : 'abierta';
+
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${incidencia.id_incidencia}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${incidencia.descripcion}">${incidencia.descripcion}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.fecha_registro}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.paciente}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.empleado}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-${estadoClass}">
+                                ${incidencia.estado || 'Abierta'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                            <div class="flex justify-center space-x-2">
+                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-900 p-1" data-id="${incidencia.id_incidencia}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn-editar text-blue-600 hover:text-blue-900 p-1" data-id="${incidencia.id_incidencia}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-resolver text-green-600 hover:text-green-900 p-1" data-id="${incidencia.id_incidencia}">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            // Reasignar eventos a los botones
+            asignarEventosBotones();
+        }
+
+        // Asignar eventos a botones dinámicos
+        function asignarEventosBotones() {
+            // Botones de ver detalle
+            document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
+                btn.onclick = function() {
+                    const id = this.getAttribute('data-id');
+                    mostrarDetalleIncidencia(id);
+                }
+            });
+
+            // Botones de editar
+            document.querySelectorAll('.btn-editar').forEach(btn => {
+                btn.onclick = function() {
+                    const id = this.getAttribute('data-id');
+                    mostrarEditarIncidencia(id);
+                }
+            });
+
+            // Botones de resolver
+            document.querySelectorAll('.btn-resolver').forEach(btn => {
+                btn.onclick = function() {
+                    const id = this.getAttribute('data-id');
+                    mostrarResolverIncidencia(id);
+                }
+            });
+        }
+
+        // Mostrar detalle de incidencia
+        function mostrarDetalleIncidencia(id) {
+            const incidencia = incidenciasData.find(inc => inc.id_incidencia == id);
+            if (incidencia) {
+                document.getElementById('detalleId').textContent = incidencia.id_incidencia;
+                document.getElementById('detallePaciente').textContent = incidencia.paciente;
+                document.getElementById('detalleFecha').textContent = incidencia.fecha_registro;
+                document.getElementById('detalleCategoria').textContent = incidencia.categoria;
+                document.getElementById('detalleDescripcion').textContent = incidencia.descripcion;
+                document.getElementById('detalleEstado').textContent = incidencia.estado || 'Abierta';
+                document.getElementById('detallePrioridad').textContent = incidencia.prioridad;
+                document.getElementById('detalleResponsable').textContent = incidencia.empleado;
+                document.getElementById('detalleFechaResolucion').textContent = incidencia.fecha_resolucion || 'Pendiente';
+                document.getElementById('detalleObservaciones').textContent = incidencia.observaciones || 'Sin observaciones';
                 document.getElementById('modalDetalle').classList.add('show');
             }
-        });
+        }
 
-        // Botones de editar
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.onclick = function() {
+        // Mostrar editar incidencia
+        function mostrarEditarIncidencia(id) {
+            const incidencia = incidenciasData.find(inc => inc.id_incidencia == id);
+            if (incidencia) {
+                document.getElementById('editDescripcion').value = incidencia.descripcion;
+                document.getElementById('editEstado').value = incidencia.estado || 'Abierta';
+                document.getElementById('editPrioridad').value = incidencia.prioridad;
+                document.getElementById('editCategoria').value = incidencia.categoria;
+                document.getElementById('editResponsable').value = incidencia.empleado;
+                document.getElementById('editObservaciones').value = incidencia.observaciones || '';
                 document.getElementById('modalEditar').classList.add('show');
             }
+        }
+
+        // Mostrar resolver incidencia
+        function mostrarResolverIncidencia(id) {
+            document.getElementById('modalResolver').classList.add('show');
+        }
+
+        // Autocompletado para pacientes
+        let timeoutPaciente;
+        document.getElementById('filtroPaciente').addEventListener('input', function() {
+            clearTimeout(timeoutPaciente);
+            const termino = this.value.trim();
+
+            if (termino.length < 2) {
+                document.getElementById('sugerenciasPaciente').classList.add('hidden');
+                return;
+            }
+
+            timeoutPaciente = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/seguridad/api/incidencias/buscar-pacientes?termino=${encodeURIComponent(termino)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'same-origin'
+                    });
+                    if (response.ok) {
+                        const pacientes = await response.json();
+                        mostrarSugerenciasPaciente(pacientes);
+                    } else {
+                        console.error('Error en respuesta:', response.status);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }, 300);
         });
 
-        // Botones de resolver
-        document.querySelectorAll('.btn-resolver').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalResolver').classList.add('show');
+        function mostrarSugerenciasPaciente(pacientes) {
+            const contenedor = document.getElementById('sugerenciasPaciente');
+            contenedor.innerHTML = '';
+
+            if (pacientes.length === 0) {
+                contenedor.classList.add('hidden');
+                return;
+            }
+
+            pacientes.forEach(paciente => {
+                const div = document.createElement('div');
+                div.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                div.textContent = paciente.nombre_completo;
+                div.onclick = function() {
+                    document.getElementById('filtroPaciente').value = paciente.nombre_completo;
+                    contenedor.classList.add('hidden');
+                };
+                contenedor.appendChild(div);
+            });
+
+            contenedor.classList.remove('hidden');
+        }
+
+        // Autocompletado para empleados
+        let timeoutEmpleado;
+        document.getElementById('filtroEmpleado').addEventListener('input', function() {
+            clearTimeout(timeoutEmpleado);
+            const termino = this.value.trim();
+
+            if (termino.length < 2) {
+                document.getElementById('sugerenciasEmpleado').classList.add('hidden');
+                return;
+            }
+
+            timeoutEmpleado = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/seguridad/api/incidencias/buscar-empleados?termino=${encodeURIComponent(termino)}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'same-origin'
+                    });
+                    if (response.ok) {
+                        const empleados = await response.json();
+                        mostrarSugerenciasEmpleado(empleados);
+                    } else {
+                        console.error('Error en respuesta:', response.status);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }, 300);
+        });
+
+        function mostrarSugerenciasEmpleado(empleados) {
+            const contenedor = document.getElementById('sugerenciasEmpleado');
+            contenedor.innerHTML = '';
+
+            if (empleados.length === 0) {
+                contenedor.classList.add('hidden');
+                return;
+            }
+
+            empleados.forEach(empleado => {
+                const div = document.createElement('div');
+                div.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+                div.textContent = empleado.nombre_completo;
+                div.onclick = function() {
+                    document.getElementById('filtroEmpleado').value = empleado.nombre_completo;
+                    contenedor.classList.add('hidden');
+                };
+                contenedor.appendChild(div);
+            });
+
+            contenedor.classList.remove('hidden');
+        }
+
+        // Ocultar sugerencias al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#filtroPaciente')) {
+                document.getElementById('sugerenciasPaciente').classList.add('hidden');
+            }
+            if (!e.target.closest('#filtroEmpleado')) {
+                document.getElementById('sugerenciasEmpleado').classList.add('hidden');
             }
         });
 
@@ -497,8 +648,9 @@
                 e.preventDefault();
                 document.getElementById('modalEditar').classList.remove('show');
                 alert('Incidencia actualizada exitosamente');
+                // Aquí iría la lógica para actualizar la incidencia
             }
-            
+
             // Botón cancelar
             const btnCancelar = formEditar.querySelector('button[type="button"]');
             if (btnCancelar) {
@@ -521,6 +673,7 @@
             btnConfirmarResolver.onclick = function() {
                 document.getElementById('modalResolver').classList.remove('show');
                 alert('Incidencia marcada como resuelta');
+                // Aquí iría la lógica para resolver la incidencia
             }
         }
 
@@ -529,23 +682,49 @@
         if (btnLimpiar) {
             btnLimpiar.onclick = function() {
                 document.getElementById('filtroPaciente').value = '';
-                document.getElementById('filtroFecha').value = '';
-                document.getElementById('filtroCategoria').value = '';
+                document.getElementById('filtroEmpleado').value = '';
+                document.getElementById('filtroFechaRegistro').value = '';
+                document.getElementById('filtroFechaResolucion').value = '';
                 document.getElementById('filtroEstado').value = '';
+                document.getElementById('sugerenciasPaciente').classList.add('hidden');
+                document.getElementById('sugerenciasEmpleado').classList.add('hidden');
+                cargarIncidencias(); // Recargar todas las incidencias
             }
         }
 
-        // Botón buscar
-        const btnBuscar = document.getElementById('btnBuscar');
-        if (btnBuscar) {
-            document.getElementById('formFiltros').addEventListener('submit', function(e) {
-                e.preventDefault(); // Prevenir el envío real para este ejemplo
-                console.log('Buscando incidencias...');
-                // Aquí ejecutarías la búsqueda
-            });
-        }
-    </script>
+        // Formulario de búsqueda
+        document.getElementById('formFiltros').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-    {% include 'footer.html' %}
-</body>
-</html>
+            const filtros = {
+                paciente: document.getElementById('filtroPaciente').value.trim(),
+                empleado: document.getElementById('filtroEmpleado').value.trim(),
+                fecha_registro_desde: document.getElementById('filtroFechaRegistro').value,
+                fecha_registro_hasta: document.getElementById('filtroFechaRegistro').value, // Para rango simple
+                fecha_resolucion_desde: document.getElementById('filtroFechaResolucion').value,
+                fecha_resolucion_hasta: document.getElementById('filtroFechaResolucion').value, // Para rango simple
+                estado: document.getElementById('filtroEstado').value
+            };
+
+            try {
+                const response = await fetch('/seguridad/api/incidencias/buscar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(filtros)
+                });
+
+                if (response.ok) {
+                    const incidenciasFiltradas = await response.json();
+                    mostrarIncidencias(incidenciasFiltradas);
+                } else {
+                    console.error('Error en la búsqueda');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Inicializar la página
+     
