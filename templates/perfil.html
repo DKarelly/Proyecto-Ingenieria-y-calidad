@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    <div class="container mx-auto">
+        {% include 'header_admin.html' %}
+
+    <div class="max-w-4xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            {% if usuario and usuario.tipo_usuario == 'empleado' %}
+            <a href="/admin/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Panel
+            </a>
+            {% else %}
+            <a href="/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Inicio
+            </a>
+            {% endif %}
+        </div>
+        
+        <!-- Header simple -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Mi Perfil</h1>
+            <p class="text-gray-600">Información de tu cuenta</p>
+        </div>
+
+        <!-- Profile Card Simple -->
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            {% if usuario %}
+            <div class="space-y-6">
+                <!-- Tipo de Usuario -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Tipo de Usuario</p>
+                    <p class="text-lg font-semibold text-gray-800 capitalize">
+                        {% if usuario.tipo_usuario == 'empleado' %}
+                            <i class="fa-solid fa-user-tie text-blue-600 mr-2"></i>Empleado
+                        {% else %}
+                            <i class="fa-solid fa-user text-green-600 mr-2"></i>Paciente
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Nombre Completo -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Nombre Completo</p>
+                    <p class="text-lg font-semibold text-gray-800">
+                        {% if usuario.tipo_usuario == 'paciente' %}
+                            {{ usuario.nombre_paciente or 'No especificado' }}
+                        {% else %}
+                            {{ usuario.nombre_empleado or 'No especificado' }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Documento -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Documento de Identidad</p>
+                    <p class="text-lg font-semibold text-gray-800">
+                        {% if usuario.tipo_usuario == 'paciente' %}
+                            {{ usuario.documento_paciente or 'No especificado' }}
+                        {% else %}
+                            {{ usuario.documento_empleado or 'No especificado' }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <!-- Correo -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Correo Electrónico</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ usuario.correo or 'No especificado' }}</p>
+                </div>
+                
+                <!-- Teléfono -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Teléfono</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ usuario.telefono or 'No especificado' }}</p>
+                </div>
+                
+                {% if usuario.tipo_usuario == 'paciente' %}
+                <!-- Sexo -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Sexo</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ usuario.sexo_paciente or 'No especificado' }}</p>
+                </div>
+                {% endif %}
+                
+                {% if usuario.tipo_usuario == 'empleado' and usuario.rol_empleado %}
+                <!-- Rol -->
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Rol</p>
+                    <p class="text-lg font-semibold text-gray-800">{{ usuario.rol_empleado }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Ubicación -->
+                {% if usuario.distrito or usuario.provincia or usuario.departamento %}
+                <div class="pb-4 border-b">
+                    <p class="text-sm text-gray-500 mb-1">Ubicación</p>
+                    <div class="text-lg font-semibold text-gray-800">
+                        <p>{{ usuario.distrito or 'N/A' }}</p>
+                        <p class="text-sm text-gray-600">{{ usuario.provincia or 'N/A' }}, {{ usuario.departamento or 'N/A' }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Estado -->
+                <div class="pb-4">
+                    <p class="text-sm text-gray-500 mb-1">Estado</p>
+                    <p class="text-lg font-semibold">
+                        {% if usuario.estado == 'activo' %}
+                            <span class="text-green-600"><i class="fa-solid fa-circle-check mr-1"></i>Activo</span>
+                        {% else %}
+                            <span class="text-red-600"><i class="fa-solid fa-circle-xmark mr-1"></i>Inactivo</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="mt-8 flex gap-4 flex-wrap">
+                <a href="/usuarios/editar-perfil" 
+                   class="flex-1 min-w-[200px] bg-cyan-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-cyan-700 transition-colors text-center">
+                    <i class="fa-solid fa-edit mr-2"></i>
+                    Editar Perfil
+                </a>
+                <a href="/cuentas/recuperar-contrasena" 
+                   class="flex-1 min-w-[200px] bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors text-center">
+                    <i class="fa-solid fa-key mr-2"></i>
+                    Cambiar Contraseña
+                </a>
+            </div>
+
+            {% else %}
+            <div class="text-center py-12">
+                <i class="fa-solid fa-user-slash text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">No se pudo cargar la información del usuario</p>
+                <a href="/" class="mt-4 inline-block text-cyan-600 hover:text-cyan-800">Volver al inicio</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
+
+    <!-- Script de validación de sesión -->
+    <script>
+        // Validar sesión al cargar la página
+        fetch('/usuarios/api/session')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.logged_in) {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                console.error('Error al validar sesión:', error);
+                window.location.href = '/';
+            });
+    </script>
+</body>
+</html>

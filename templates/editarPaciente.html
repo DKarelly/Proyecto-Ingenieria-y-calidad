@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Paciente - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    <div class="container mx-auto">
+        {% include 'header_admin.html' %}
+
+    <div class="max-w-4xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/cuentas/gestionar-datos-pacientes" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver a Cuentas
+            </a>
+        </div>
+        
+        <!-- Título principal -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Editar Paciente</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' or category == 'danger' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Form Card -->
+        <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 md:p-8 admin-card">
+            <form method="POST" action="/cuentas/editar-paciente/{{ paciente.id_paciente }}" class="space-y-6"
+            <form method="POST" action="/cuentas/editar-paciente/{{ paciente.id_paciente }}" class="space-y-6">
+                <!-- Nombres y Apellidos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="nombres">Nombres</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="nombres" 
+                            name="nombres" 
+                            value="{{ paciente.nombres }}"
+                            type="text"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="apellidos">Apellidos</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="apellidos" 
+                            name="apellidos" 
+                            value="{{ paciente.apellidos }}"
+                            type="text"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- Documento de Identidad -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="documento_identidad">Documento de Identidad</label>
+                    <input 
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                        id="documento_identidad" 
+                        name="documento_identidad" 
+                        value="{{ paciente.documento_identidad }}"
+                        type="text"
+                        pattern="[0-9]{8}"
+                        maxlength="8"
+                        required
+                    />
+                </div>
+
+                <!-- Teléfono y Fecha de Nacimiento -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="telefono">Teléfono</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="telefono" 
+                            name="telefono" 
+                            value="{{ paciente.telefono }}"
+                            type="tel"
+                            pattern="[0-9]{9}"
+                            maxlength="9"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="fecha_nacimiento">Fecha de Nacimiento</label>
+                        <input 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                            id="fecha_nacimiento" 
+                            name="fecha_nacimiento" 
+                            value="{{ paciente.fecha_nacimiento }}"
+                            type="date"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <!-- Correo Electrónico -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="correo">Correo Electrónico</label>
+                    <input 
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                        id="correo" 
+                        name="correo" 
+                        value="{{ paciente.correo }}"
+                        type="email"
+                        required
+                    />
+                </div>
+
+                <!-- Ubicación: Departamento, Provincia y Distrito -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="departamento">Departamento</label>
+                        <select 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all" 
+                            id="departamento"
+                        >
+                            <option value="">Ej: Lima</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="provincia">Provincia</label>
+                        <select 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all" 
+                            id="provincia"
+                            disabled
+                        >
+                            <option value="">Ej: Lima</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="distrito">Distrito</label>
+                        <select 
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all" 
+                            id="distrito"
+                            name="id_ubicacion"
+                            disabled
+                        >
+                            <option value="">Ej: Miraflores</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sexo -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sexo</label>
+                    <div class="flex items-center space-x-6">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="sexo" value="M" {% if paciente.sexo == 'M' %}checked{% endif %} class="form-radio text-cyan-600 focus:ring-cyan-500" required>
+                            <span class="ml-2 text-gray-700">Masculino</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="sexo" value="F" {% if paciente.sexo == 'F' %}checked{% endif %} class="form-radio text-cyan-600 focus:ring-cyan-500" required>
+                            <span class="ml-2 text-gray-700">Femenino</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-4 pt-6">
+                    <button 
+                        type="submit" 
+                        class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors inline-flex items-center justify-center">
+                        <i class="fa-solid fa-save mr-2"></i>
+                        Guardar Cambios
+                    </button>
+                    <a 
+                        href="/cuentas/gestionar-datos-pacientes" 
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors text-center inline-flex items-center justify-center">
+                        <i class="fa-solid fa-times mr-2"></i>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+
+<script>
+    const pacienteData = {
+        id_distrito: {{ paciente.id_ubicacion or 0 }},
+        distrito: "{{ paciente.distrito }}",
+        provincia: "{{ paciente.provincia }}",
+        departamento: "{{ paciente.departamento }}"
+    };
+
+    let departamentos = [];
+    let provincias = [];
+    let distritos = [];
+
+    // Cargar departamentos al inicio
+    async function cargarDepartamentos() {
+        try {
+            const response = await fetch('/usuarios/api/departamentos');
+            departamentos = await response.json();
+            
+            const selectDepartamento = document.getElementById('departamento');
+            selectDepartamento.innerHTML = '<option value="">Seleccione...</option>';
+            
+            departamentos.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.id_departamento;  // DictCursor devuelve objetos
+                option.textContent = dept.nombre;
+                selectDepartamento.appendChild(option);
+            });
+
+            // Si hay departamento preseleccionado, encontrarlo y seleccionarlo
+            if (pacienteData.departamento) {
+                const deptEncontrado = departamentos.find(d => d.nombre === pacienteData.departamento);
+                if (deptEncontrado) {
+                    selectDepartamento.value = deptEncontrado.id_departamento;
+                    await cargarProvincias(deptEncontrado.id_departamento, true);
+                }
+            }
+        } catch (error) {
+            console.error('Error al cargar departamentos:', error);
+        }
+    }
+
+    // Cargar provincias según departamento
+    async function cargarProvincias(id_departamento, preseleccionar = false) {
+        try {
+            const response = await fetch(`/usuarios/api/provincias/${id_departamento}`);
+            provincias = await response.json();
+            
+            const selectProvincia = document.getElementById('provincia');
+            const selectDistrito = document.getElementById('distrito');
+            
+            selectProvincia.innerHTML = '<option value="">Seleccione...</option>';
+            selectDistrito.innerHTML = '<option value="">Seleccione...</option>';
+            selectDistrito.disabled = true;
+            
+            provincias.forEach(prov => {
+                const option = document.createElement('option');
+                option.value = prov.id_provincia;  // DictCursor devuelve objetos
+                option.textContent = prov.nombre;
+                selectProvincia.appendChild(option);
+            });
+            
+            selectProvincia.disabled = false;
+
+            // Si hay provincia preseleccionada, encontrarla y seleccionarla
+            if (preseleccionar && pacienteData.provincia) {
+                const provEncontrada = provincias.find(p => p.nombre === pacienteData.provincia);
+                if (provEncontrada) {
+                    selectProvincia.value = provEncontrada.id_provincia;
+                    await cargarDistritos(provEncontrada.id_provincia, true);
+                }
+            }
+        } catch (error) {
+            console.error('Error al cargar provincias:', error);
+        }
+    }
+
+    // Cargar distritos según provincia
+    async function cargarDistritos(id_provincia, preseleccionar = false) {
+        try {
+            const response = await fetch(`/usuarios/api/distritos/${id_provincia}`);
+            distritos = await response.json();
+            
+            const selectDistrito = document.getElementById('distrito');
+            selectDistrito.innerHTML = '<option value="">Seleccione...</option>';
+            
+            distritos.forEach(dist => {
+                const option = document.createElement('option');
+                option.value = dist.id_distrito;  // DictCursor devuelve objetos
+                option.textContent = dist.nombre;
+                selectDistrito.appendChild(option);
+            });
+            
+            selectDistrito.disabled = false;
+
+            // Si hay distrito preseleccionado, seleccionarlo
+            if (preseleccionar && pacienteData.id_distrito) {
+                selectDistrito.value = pacienteData.id_distrito;
+                selectDistrito.value = pacienteData.id_distrito;
+            }
+        } catch (error) {
+            console.error('Error al cargar distritos:', error);
+        }
+    }
+
+    // Event Listeners
+    document.getElementById('departamento').addEventListener('change', function() {
+        const id_departamento = this.value;
+        const selectProvincia = document.getElementById('provincia');
+        const selectDistrito = document.getElementById('distrito');
+        
+        if (id_departamento) {
+            cargarProvincias(id_departamento);
+        } else {
+            selectProvincia.innerHTML = '<option value="">Seleccione...</option>';
+            selectProvincia.disabled = true;
+            selectDistrito.innerHTML = '<option value="">Seleccione...</option>';
+            selectDistrito.disabled = true;
+        }
+    });
+
+    document.getElementById('provincia').addEventListener('change', function() {
+        const id_provincia = this.value;
+        const selectDistrito = document.getElementById('distrito');
+        
+        if (id_provincia) {
+            cargarDistritos(id_provincia);
+        } else {
+            selectDistrito.innerHTML = '<option value="">Seleccione...</option>';
+            selectDistrito.disabled = true;
+        }
+    });
+
+    // Inicializar
+    cargarDepartamentos();
+</script>
+</body>
+</html>
