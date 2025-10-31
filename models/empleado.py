@@ -37,7 +37,7 @@ class Empleado:
 
     @staticmethod
     def obtener_todos():
-        """Obtiene todos los empleados"""
+        """Obtiene todos los empleados activos"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -56,6 +56,7 @@ class Empleado:
                     LEFT JOIN DISTRITO d ON e.id_distrito = d.id_distrito
                     LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
                     LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+                    WHERE u.estado = 'activo'
                     ORDER BY e.apellidos, e.nombres
                 """
                 cursor.execute(sql)
@@ -299,7 +300,7 @@ class Empleado:
 
     @staticmethod
     def buscar(termino):
-        """Busca empleados por nombre, apellido o documento"""
+        """Busca empleados activos por nombre, apellido, correo o documento"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -307,7 +308,10 @@ class Empleado:
                     SELECT e.*,
                            u.correo, u.telefono,
                            r.nombre as rol,
-                           esp.nombre as especialidad
+                           esp.nombre as especialidad,
+                           d.nombre as distrito,
+                           prov.nombre as provincia,
+                           dep.nombre as departamento
                     FROM EMPLEADO e
                     INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
                     LEFT JOIN ROL r ON e.id_rol = r.id_rol
@@ -315,10 +319,13 @@ class Empleado:
                     WHERE e.nombres LIKE %s
                        OR e.apellidos LIKE %s
                        OR e.documento_identidad LIKE %s
+                       OR u.correo LIKE %s
+                       OR r.nombre LIKE %s)
                     ORDER BY e.apellidos, e.nombres
                 """
                 termino_busqueda = f"%{termino}%"
-                cursor.execute(sql, (termino_busqueda, termino_busqueda, termino_busqueda))
+                cursor.execute(sql, (termino_busqueda, termino_busqueda, termino_busqueda, 
+                                   termino_busqueda, termino_busqueda))
                 return cursor.fetchall()
         finally:
             conexion.close()

@@ -44,7 +44,7 @@ class Horario:
                     INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     LEFT JOIN ROL r ON e.id_rol = r.id_rol
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                    ORDER BY h.fecha DESC, h.hora_inicio
+                    ORDER BY h.id_horario ASC
                 """
                 cursor.execute(sql)
                 return cursor.fetchall()
@@ -194,6 +194,30 @@ class Horario:
         except Exception as e:
             conexion.rollback()
             return {'error': str(e)}
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def buscar_por_termino(termino):
+        """Busca horarios por término (ID de horario o nombre de empleado)"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = """
+                    SELECT h.*,
+                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
+                           r.nombre as rol,
+                           esp.nombre as especialidad
+                    FROM HORARIO h
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    WHERE h.id_horario LIKE %s OR CONCAT(e.nombres, ' ', e.apellidos) LIKE %s
+                    ORDER BY h.id_horario ASC
+                """
+                termino_like = f"%{termino}%"
+                cursor.execute(sql, (termino_like, termino_like))
+                return cursor.fetchall()
         finally:
             conexion.close()
 

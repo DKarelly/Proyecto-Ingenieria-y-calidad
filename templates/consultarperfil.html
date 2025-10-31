@@ -22,7 +22,7 @@
         <!-- Botón de regreso -->
         <div class="mb-6">
             {% if usuario and usuario.tipo_usuario == 'empleado' %}
-            <a href="/admin/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+            <a href="/cuentas/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -39,15 +39,18 @@
         </div>
         
         <!-- Header con título y botón -->
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-8 admin-toolbar">
-            <h1 class="text-3xl font-bold text-gray-800">Mi Perfil</h1>
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Mi Perfil Completo</h1>
+                <p class="text-gray-600">Información detallada de tu cuenta y accesos rápidos</p>
+            </div>
             <div class="flex gap-3">
-                <a href="/usuarios/cambiar-contrasena" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                <a href="/cuentas/recuperar-contrasena" class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium">
                     <i class="fa-solid fa-key mr-2"></i>
                     Cambiar Contraseña
                 </a>
                 {% if usuario %}
-                <a href="/usuarios/editar/{{ usuario.id_usuario }}" class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium">
+                <a href="/usuarios/editar-perfil" class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium">
                     <i class="fa-solid fa-edit mr-2"></i>
                     Editar Perfil
                 </a>
@@ -55,10 +58,122 @@
             </div>
         </div>
 
+        <!-- Información de Actividad -->
+        {% if usuario %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Cuenta Activa -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-600 text-sm font-medium mb-1">Estado de Cuenta</p>
+                        <p class="text-2xl font-bold text-green-800">
+                            {% if usuario.estado == 'activo' %}Activa{% else %}Inactiva{% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-green-200 rounded-full p-3">
+                        <i class="fa-solid fa-circle-check text-2xl text-green-700"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fecha de Registro -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-sm font-medium mb-1">Miembro Desde</p>
+                        <p class="text-2xl font-bold text-blue-800">
+                            {% if usuario.fecha_creacion %}
+                                {{ usuario.fecha_creacion.strftime('%b %Y') if usuario.fecha_creacion is not string else usuario.fecha_creacion[:7] }}
+                            {% else %}
+                                --
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-blue-200 rounded-full p-3">
+                        <i class="fa-solid fa-calendar-days text-2xl text-blue-700"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tipo de Usuario -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-600 text-sm font-medium mb-1">Tipo de Usuario</p>
+                        <p class="text-2xl font-bold text-purple-800 capitalize">
+                            {{ usuario.tipo_usuario or 'Usuario' }}
+                        </p>
+                    </div>
+                    <div class="bg-purple-200 rounded-full p-3">
+                        {% if usuario.tipo_usuario == 'empleado' %}
+                            <i class="fa-solid fa-user-tie text-2xl text-purple-700"></i>
+                        {% else %}
+                            <i class="fa-solid fa-user text-2xl text-purple-700"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accesos Rápidos -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fa-solid fa-bolt text-cyan-600 mr-2"></i>
+                Accesos Rápidos
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {% if usuario.tipo_usuario == 'paciente' %}
+                <a href="/reservas/generar-reserva" class="group bg-white hover:bg-cyan-50 border-2 border-gray-200 hover:border-cyan-500 rounded-xl p-6 text-center transition-all shadow-sm hover:shadow-md">
+                    <div class="bg-cyan-100 group-hover:bg-cyan-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3 transition-colors">
+                        <i class="fa-solid fa-calendar-plus text-2xl text-cyan-600"></i>
+                    </div>
+                    <p class="font-semibold text-gray-700 group-hover:text-cyan-700">Agendar Cita</p>
+                </a>
+                {% endif %}
+
+                <a href="/usuarios/editar-perfil" class="group bg-white hover:bg-cyan-50 border-2 border-gray-200 hover:border-cyan-500 rounded-xl p-6 text-center transition-all shadow-sm hover:shadow-md">
+                    <div class="bg-blue-100 group-hover:bg-blue-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3 transition-colors">
+                        <i class="fa-solid fa-user-pen text-2xl text-blue-600"></i>
+                    </div>
+                    <p class="font-semibold text-gray-700 group-hover:text-cyan-700">Editar Datos</p>
+                </a>
+
+                <a href="/cuentas/recuperar-contrasena" class="group bg-white hover:bg-cyan-50 border-2 border-gray-200 hover:border-cyan-500 rounded-xl p-6 text-center transition-all shadow-sm hover:shadow-md">
+                    <div class="bg-orange-100 group-hover:bg-orange-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3 transition-colors">
+                        <i class="fa-solid fa-key text-2xl text-orange-600"></i>
+                    </div>
+                    <p class="font-semibold text-gray-700 group-hover:text-cyan-700">Contraseña</p>
+                </a>
+
+                {% if usuario.tipo_usuario == 'empleado' %}
+                <a href="/admin/" class="group bg-white hover:bg-cyan-50 border-2 border-gray-200 hover:border-cyan-500 rounded-xl p-6 text-center transition-all shadow-sm hover:shadow-md">
+                    <div class="bg-green-100 group-hover:bg-green-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3 transition-colors">
+                        <i class="fa-solid fa-gauge text-2xl text-green-600"></i>
+                    </div>
+                    <p class="font-semibold text-gray-700 group-hover:text-cyan-700">Panel Admin</p>
+                </a>
+                {% else %}
+                <a href="/" class="group bg-white hover:bg-cyan-50 border-2 border-gray-200 hover:border-cyan-500 rounded-xl p-6 text-center transition-all shadow-sm hover:shadow-md">
+                    <div class="bg-green-100 group-hover:bg-green-200 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-3 transition-colors">
+                        <i class="fa-solid fa-house text-2xl text-green-600"></i>
+                    </div>
+                    <p class="font-semibold text-gray-700 group-hover:text-cyan-700">Inicio</p>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Profile Information Card -->
-        <div class="admin-card shadow-md p-6 md:p-8">
+        <div class="mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <i class="fa-solid fa-address-card text-cyan-600 mr-2"></i>
+                Información Personal
+            </h2>
+        </div>
+        <div class="admin-card shadow-md p-6 md:p-8 mb-8">
             {% if usuario %}
-            <div class="space-y-0 divide-y divide-gray-200">
+            <div class="space-y-0 divide-y divide-gray-200">`
                 <!-- Tipo de Usuario -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Tipo de Usuario</p>
@@ -194,6 +309,25 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- Completitud del Perfil -->
+        {% if usuario %}
+        <div class="bg-white border-2 border-cyan-200 rounded-xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center">
+                    <i class="fa-solid fa-chart-line text-cyan-600 mr-2"></i>
+                    Completitud del Perfil
+                </h2>
+                <span class="text-2xl font-bold text-cyan-600" id="profile-percentage">---%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div id="profile-progress-bar" class="bg-gradient-to-r from-cyan-500 to-cyan-600 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div id="profile-suggestions" class="space-y-2">
+                <!-- Se llenará con JavaScript -->
+            </div>
+        </div>
+        {% endif %}
     </div>
     </div>
 

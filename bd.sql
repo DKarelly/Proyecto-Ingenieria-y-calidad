@@ -107,7 +107,8 @@ CREATE TABLE HORARIO (
   fecha DATE,
   hora_inicio TIME,
   hora_fin TIME,
-  estado VARCHAR(20),
+  disponibilidad VARCHAR(30),
+  estado VARCHAR(30),
   FOREIGN KEY (id_empleado) REFERENCES EMPLEADO(id_empleado)
 );
 
@@ -127,7 +128,7 @@ CREATE TABLE SERVICIO (
   id_servicio INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100),
   descripcion TEXT,
-  estado VARCHAR(20),
+  estado VARCHAR(20),  /* 'Activo' */
   id_tipo_servicio INT,
   id_especialidad INT,
   FOREIGN KEY (id_tipo_servicio) REFERENCES TIPO_SERVICIO(id_tipo_servicio),
@@ -274,7 +275,7 @@ CREATE TABLE INCIDENCIA (
 CREATE TABLE ASIGNAR_EMPLEADO_INCIDENCIA (
   id_historial INT AUTO_INCREMENT PRIMARY KEY,
   observaciones VARCHAR(200),
-  estado_historial VARCHAR(20),
+  estado_historial VARCHAR(20), /* 'Activada' 'En proceso' , etc */
   fecha_resolucion DATE,
   id_empleado INT,
   id_incidencia INT,
@@ -325,16 +326,4 @@ CREATE TABLE REPORTE (
   FOREIGN KEY (id_servicio) REFERENCES SERVICIO(id_servicio),
   FOREIGN KEY (id_recurso) REFERENCES RECURSO(id_recurso)
 );
-
--- =====================================================
--- INSETAR ROLES PREDEFINIDOS
--- =====================================================
-
-INSERT INTO `CLINICA`.`ROL` (`nombre`, `estado`) VALUES
-('Administrador', 'Activo'),
-('Médico', 'Activo'),
-('Recepcionista', 'Activo'),
-('Farmacéutico', 'Activo'),
-('Laboratorista', 'Activo');
-
 

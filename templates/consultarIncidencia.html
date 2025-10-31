@@ -10,26 +10,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .badge-abierta {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            background: #fbbf24;
+            color: #92400e;
         }
         .badge-en-proceso {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: #3b82f6;
+            color: white;
         }
         .badge-resuelta {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            background: #10b981;
+            color: white;
         }
         .badge-cerrada {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            background: #d1d5db;
+            color: #374151;
         }
-        .badge-alta {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-        .badge-media {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        }
-        .badge-baja {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
+
         .modal {
             display: none;
             position: fixed;
@@ -57,7 +53,7 @@
     </style>
 </head>
 <body class="bg-[#f8fafc] font-['Inter']">
-    
+
     {% include 'header_admin.html' %}
 
     <div class="max-w-7xl mx-auto p-6 md:p-10">
@@ -82,48 +78,61 @@
                 <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
             </div>
 
-            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
+            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-7 gap-4">
+                <div class="relative">
                     <label for="filtroPaciente" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-user text-gray-500 mr-1"></i>
                         Paciente
                     </label>
-                    <input 
-                        minlength="3"
-                        type="text" 
-                        id="filtroPaciente" 
+                    <input
+                        type="text"
+                        id="filtroPaciente"
                         placeholder="Buscar paciente"
+                        oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
+                    <div id="sugerenciasPaciente" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto hidden">
+                    </div>
+                </div>
+
+                <div class="relative">
+                    <label for="filtroEmpleado" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user-tie text-gray-500 mr-1"></i>
+                        Empleado
+                    </label>
+                    <input
+                        type="text"
+                        id="filtroEmpleado"
+                        placeholder="Buscar empleado"
+                        oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
+                    <div id="sugerenciasEmpleado" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto hidden">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="filtroFechaRegistro" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
+                        Fecha Registro
+                    </label>
+                    <input
+                        type="date"
+                        id="filtroFechaRegistro"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                     >
                 </div>
 
                 <div>
-                    <label for="filtroFecha" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-calendar-alt text-gray-500 mr-1"></i>
-                        Fecha
+                    <label for="filtroFechaResolucion" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-calendar-check text-gray-500 mr-1"></i>
+                        Fecha Resolución
                     </label>
-                    <select id="filtroFecha" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Seleccionar fecha</option>
-                        <option>Hoy</option>
-                        <option>Ayer</option>
-                        <option>Últimos 7 días</option>
-                        <option>Últimos 30 días</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="filtroCategoria" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-tags text-gray-500 mr-1"></i>
-                        Categoría
-                    </label>
-                    <select id="filtroCategoria" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Todas las categorías</option>
-                        <option>Técnica</option>
-                        <option>Administrativa</option>
-                        <option>Infraestructura</option>
-                        <option>Equipamiento</option>
-                        <option>Personal</option>
-                    </select>
+                    <input
+                        type="date"
+                        id="filtroFechaResolucion"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                    >
                 </div>
 
                 <div>
@@ -140,11 +149,13 @@
                     </select>
                 </div>
 
+
+
                 <div class="flex items-end gap-2">
-                    <button id="btnLimpiar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
+                    <button id="btnLimpiar" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
                         <i class="fas fa-broom"></i>
                     </button>
-                    <button type="submit" id="btnBuscar" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
+                    <button type="submit" id="btnBuscar" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
@@ -157,115 +168,17 @@
                 <table class="admin-table w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Paciente</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Incidencia</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Registro</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Paciente</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Trabajador</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Prioridad</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Categoría</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Responsable</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
                         </tr>
                     </thead>
                     <tbody id="tablaIncidencias" class="divide-y divide-gray-200">
-                        <!-- Ejemplo de registros -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">INC-001</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">María González Pérez</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">21/10/2025</div>
-                                <div class="text-gray-500 text-xs">14:30</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Error en sistema de citas médicas</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-abierta text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Abierta
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-alta text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Alta
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Técnica</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Carlos Ramírez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-800 mx-1 transition-colors" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-resolver text-green-600 hover:text-green-800 mx-1 transition-colors" title="Resolver">
-                                    <i class="fas fa-check-circle text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">INC-002</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Juan Rodríguez López</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">20/10/2025</div>
-                                <div class="text-gray-500 text-xs">10:15</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Demora en atención de recepción</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-en-proceso text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    En proceso
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-media text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Media
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Administrativa</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Ana Martínez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-800 mx-1 transition-colors" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-resolver text-green-600 hover:text-green-800 mx-1 transition-colors" title="Resolver">
-                                    <i class="fas fa-check-circle text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">INC-003</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Pedro Sánchez García</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">19/10/2025</div>
-                                <div class="text-gray-500 text-xs">16:45</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Fallo en aire acondicionado sala de espera</td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-resuelta text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Resuelta
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="badge-baja text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Baja
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Infraestructura</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Luis Torres</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-800 mx-1 transition-colors" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn-editar text-blue-600 hover:text-blue-800 mx-1 transition-colors" title="Editar">
-                                    <i class="fas fa-edit text-lg"></i>
-                                </button>
-                                <button class="btn-resolver text-green-600 hover:text-green-800 mx-1 transition-colors" title="Resolver">
-                                    <i class="fas fa-check-circle text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
+
                     </tbody>
                 </table>
             </div>
@@ -296,10 +209,7 @@
                         <p class="text-xs text-gray-600 mb-1 font-semibold">Fecha y Hora</p>
                         <p id="detalleFecha" class="font-bold text-gray-900">21/10/2025 14:30</p>
                     </div>
-                    <div class="bg-gray-50 p-3 rounded-lg">
-                        <p class="text-xs text-gray-600 mb-1 font-semibold">Categoría</p>
-                        <p id="detalleCategoria" class="font-bold text-gray-900">Técnica</p>
-                    </div>
+
                     <div class="col-span-2 bg-gray-50 p-3 rounded-lg">
                         <p class="text-xs text-gray-600 mb-1 font-semibold">Descripción</p>
                         <p id="detalleDescripcion" class="font-bold text-gray-900">Error en sistema de citas médicas</p>
@@ -308,10 +218,7 @@
                         <p class="text-xs text-orange-700 mb-1 font-semibold">Estado</p>
                         <p id="detalleEstado" class="font-bold text-orange-600">Abierta</p>
                     </div>
-                    <div class="bg-red-50 p-3 rounded-lg border border-red-200">
-                        <p class="text-xs text-red-700 mb-1 font-semibold">Prioridad</p>
-                        <p id="detallePrioridad" class="font-bold text-red-600">Alta</p>
-                    </div>
+
                     <div class="bg-gray-50 p-3 rounded-lg">
                         <p class="text-xs text-gray-600 mb-1 font-semibold">Responsable</p>
                         <p id="detalleResponsable" class="font-bold text-gray-900">Carlos Ramírez</p>
@@ -340,6 +247,7 @@
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formEditar" class="space-y-4">
+                <input type="hidden" id="editId">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -360,30 +268,7 @@
                             <option>Cerrada</option>
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-exclamation-circle text-gray-500 mr-1"></i>
-                            Prioridad
-                        </label>
-                        <select id="editPrioridad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-                            <option>Alta</option>
-                            <option>Media</option>
-                            <option>Baja</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-tags text-gray-500 mr-1"></i>
-                            Categoría
-                        </label>
-                        <select id="editCategoria" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-                            <option>Técnica</option>
-                            <option>Administrativa</option>
-                            <option>Infraestructura</option>
-                            <option>Equipamiento</option>
-                            <option>Personal</option>
-                        </select>
-                    </div>
+
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-user-tie text-gray-500 mr-1"></i>
@@ -423,128 +308,35 @@
                 </h2>
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
-            <p class="text-gray-600 mb-6">¿Desea marcar esta incidencia como resuelta?</p>
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-comment text-gray-500 mr-1"></i>
-                    Comentario de resolución (opcional)
-                </label>
-                <textarea id="comentarioResolucion" rows="3" placeholder="Ingrese detalles de la solución..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
-            </div>
-            <div class="flex gap-4">
-                <button id="btnCancelarResolver" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Cancelar
-                </button>
-                <button id="btnConfirmarResolver" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-                    <i class="fas fa-check mr-2"></i>
-                    Resolver
-                </button>
-            </div>
+            <form id="formResolver">
+                <input type="hidden" id="resolverId">
+                <p class="text-gray-600 mb-6">¿Desea marcar esta incidencia como resuelta?</p>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-comment text-gray-500 mr-1"></i>
+                        Comentario de resolución (opcional)
+                    </label>
+                    <textarea id="comentarioResolucion" name="comentarioResolucion" rows="3" placeholder="Ingrese detalles de la solución..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" id="btnCancelarResolver" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btnConfirmarResolver" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-check mr-2"></i>
+                        Resolver
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <script>
-        // Funcionalidad de modales
-        const modales = ['modalDetalle', 'modalEditar', 'modalResolver'];
-        
-        modales.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                const closeBtn = modal.querySelector('.close');
-                if (closeBtn) {
-                    closeBtn.onclick = function() {
-                        modal.classList.remove('show');
-                    }
-                }
-            }
-        });
 
-        window.onclick = function(event) {
-            modales.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal && event.target == modal) {
-                    modal.classList.remove('show');
-                }
-            });
-        }
 
-        // Botones de ver detalle
-        document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalDetalle').classList.add('show');
-            }
-        });
 
-        // Botones de editar
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalEditar').classList.add('show');
-            }
-        });
 
-        // Botones de resolver
-        document.querySelectorAll('.btn-resolver').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalResolver').classList.add('show');
-            }
-        });
-
-        // Formulario de edición
-        const formEditar = document.getElementById('formEditar');
-        if (formEditar) {
-            formEditar.onsubmit = function(e) {
-                e.preventDefault();
-                document.getElementById('modalEditar').classList.remove('show');
-                alert('Incidencia actualizada exitosamente');
-            }
-            
-            // Botón cancelar
-            const btnCancelar = formEditar.querySelector('button[type="button"]');
-            if (btnCancelar) {
-                btnCancelar.onclick = function() {
-                    document.getElementById('modalEditar').classList.remove('show');
-                }
-            }
-        }
-
-        // Botones de resolver modal
-        const btnCancelarResolver = document.getElementById('btnCancelarResolver');
-        if (btnCancelarResolver) {
-            btnCancelarResolver.onclick = function() {
-                document.getElementById('modalResolver').classList.remove('show');
-            }
-        }
-
-        const btnConfirmarResolver = document.getElementById('btnConfirmarResolver');
-        if (btnConfirmarResolver) {
-            btnConfirmarResolver.onclick = function() {
-                document.getElementById('modalResolver').classList.remove('show');
-                alert('Incidencia marcada como resuelta');
-            }
-        }
-
-        // Botón limpiar filtros
-        const btnLimpiar = document.getElementById('btnLimpiar');
-        if (btnLimpiar) {
-            btnLimpiar.onclick = function() {
-                document.getElementById('filtroPaciente').value = '';
-                document.getElementById('filtroFecha').value = '';
-                document.getElementById('filtroCategoria').value = '';
-                document.getElementById('filtroEstado').value = '';
-            }
-        }
-
-        // Botón buscar
-        const btnBuscar = document.getElementById('btnBuscar');
-        if (btnBuscar) {
-            document.getElementById('formFiltros').addEventListener('submit', function(e) {
-                e.preventDefault(); // Prevenir el envío real para este ejemplo
-                console.log('Buscando incidencias...');
-                // Aquí ejecutarías la búsqueda
-            });
-        }
-    </script>
+    <script src="/static/js/consultarIncidencia.js"></script>
 
     {% include 'footer.html' %}
 </body>

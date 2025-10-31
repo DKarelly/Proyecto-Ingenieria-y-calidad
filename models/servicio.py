@@ -195,3 +195,25 @@ class Servicio:
                 return cursor.fetchall()
         finally:
             conexion.close()
+
+    @staticmethod
+    def obtener_activos():
+        """Obtiene todos los servicios activos"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = """
+                    SELECT s.*,
+                           ts.nombre as tipo_servicio,
+                           ts.descripcion as descripcion_tipo,
+                           esp.nombre as especialidad
+                    FROM SERVICIO s
+                    LEFT JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
+                    LEFT JOIN ESPECIALIDAD esp ON s.id_especialidad = esp.id_especialidad
+                    WHERE s.estado = 'activo'
+                    ORDER BY s.nombre
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        finally:
+            conexion.close()
