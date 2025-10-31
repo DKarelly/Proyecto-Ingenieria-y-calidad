@@ -112,8 +112,8 @@ def consultar_incidencia():
 @seguridad_bp.route('/api/incidencias', methods=['GET'])
 def api_obtener_incidencias():
     """API para obtener todas las incidencias"""
-    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 401
+    # if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+    #     return jsonify({'error': 'No autorizado'}), 401
 
     incidencias = Incidencia.obtener_todas()
     return jsonify(incidencias)
@@ -128,10 +128,8 @@ def api_buscar_incidencias():
     filtros = {
         'paciente': data.get('paciente', ''),
         'empleado': data.get('empleado', ''),
-        'fecha_registro_desde': data.get('fecha_registro_desde', ''),
-        'fecha_registro_hasta': data.get('fecha_registro_hasta', ''),
-        'fecha_resolucion_desde': data.get('fecha_resolucion_desde', ''),
-        'fecha_resolucion_hasta': data.get('fecha_resolucion_hasta', ''),
+        'fecha_registro': data.get('fecha_registro', ''),
+        'fecha_resolucion': data.get('fecha_resolucion', ''),
         'estado': data.get('estado', '')
     }
 
@@ -157,3 +155,23 @@ def api_buscar_empleados():
     termino = request.args.get('termino', '')
     empleados = Incidencia.buscar_empleados(termino)
     return jsonify(empleados)
+
+@seguridad_bp.route('/api/incidencias/<int:id_incidencia>', methods=['PUT'])
+def api_actualizar_incidencia(id_incidencia):
+    """API para actualizar una incidencia"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    descripcion = data.get('descripcion', '')
+    estado = data.get('estado', '')
+    observaciones = data.get('observaciones', '')
+
+    if not estado:
+        return jsonify({'error': 'El estado es requerido'}), 400
+
+    exito = Incidencia.actualizar(id_incidencia, descripcion, estado, observaciones)
+    if exito:
+        return jsonify({'mensaje': 'Incidencia actualizada exitosamente'})
+    else:
+        return jsonify({'error': 'Error al actualizar la incidencia'}), 500

@@ -128,7 +128,7 @@ CREATE TABLE SERVICIO (
   id_servicio INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100),
   descripcion TEXT,
-  estado VARCHAR(20),
+  estado VARCHAR(20),  /* 'Activo' */
   id_tipo_servicio INT,
   id_especialidad INT,
   FOREIGN KEY (id_tipo_servicio) REFERENCES TIPO_SERVICIO(id_tipo_servicio),
@@ -275,7 +275,7 @@ CREATE TABLE INCIDENCIA (
 CREATE TABLE ASIGNAR_EMPLEADO_INCIDENCIA (
   id_historial INT AUTO_INCREMENT PRIMARY KEY,
   observaciones VARCHAR(200),
-  estado_historial VARCHAR(20),
+  estado_historial VARCHAR(20), /* 'Activada' 'En proceso' , etc */
   fecha_resolucion DATE,
   id_empleado INT,
   id_incidencia INT,
