@@ -65,6 +65,17 @@ def logout():
     flash('Sesión cerrada correctamente', 'success')
     return redirect(url_for('usuarios.login'))
 
+@usuarios_bp.route('/recuperar-contrasena', methods=['GET'])
+def recuperar_contrasena_vista():
+    """Página para iniciar recuperación de contraseña"""
+    # Algunos sistemas de archivos tienen nombres con caracteres especiales
+    # El template se llama recuperarContraseña.html
+    try:
+        return render_template('recuperarContraseña.html')
+    except Exception:
+        # Fallback por si el nombre del archivo difiere en acentos
+        return render_template('recuperarContrasena.html')
+
 @usuarios_bp.route('/perfil')
 @login_required
 def perfil():
@@ -533,8 +544,10 @@ def api_forgot_password():
             cursor.execute("SELECT id_usuario FROM USUARIO WHERE correo = %s AND estado = 'activo'", (correo,))
             usuario = cursor.fetchone()
 
+            # Para evitar enumeración de correos, siempre respondemos éxito;
+            # si el usuario no existe, no generamos código ni enviamos email.
             if not usuario:
-                return jsonify({'error': 'No se encontró una cuenta con ese correo electrónico'}), 404
+                return jsonify({'success': True, 'message': 'Si el correo existe, se enviará un código de recuperación.'})
 
             # Generar código de recuperación
             codigo = ''.join(random.choices(string.digits, k=6))
@@ -605,6 +618,133 @@ Sistema de Gestion Medica
                 pass
         print(f"Error en forgot-password: {str(e)}")
         return jsonify({'error': 'Error al procesar la solicitud de recuperación de contraseña'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+@usuarios_bp.route('/api/verify-code', methods=['POST'])
+def api_verify_code():
+    """API: Verificar código de recuperación de contraseña"""
+    from bd import obtener_conexion
+
+    data = request.get_json()
+    correo = data.get('correo')
+    codigo = data.get('codigo')
+
+    if not correo or not codigo:
+        return jsonify({'error': 'Correo y código son requeridos'}), 400
+
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Obtener usuario por correo
+            cursor.execute("SELECT id_usuario FROM USUARIO WHERE correo = %s AND estado = 'activo'", (correo,))
+            usuario = cursor.fetchone()
+            if not usuario:
+                return jsonify({'error': 'Usuario no encontrado'}), 404
+
+            # Validar código no usado y con vigencia de 15 minutos
+            cursor.execute(
+                """
+                SELECT id_recuperacion
+                FROM RECUPERACION_CONTRASENA
+                WHERE id_usuario = %s
+                  AND codigo = %s
+                  AND usado = FALSE
+                  AND TIMESTAMPDIFF(MINUTE, fecha_creacion, NOW()) <= 15
+                ORDER BY id_recuperacion DESC
+                LIMIT 1
+                """,
+                (usuario['id_usuario'], codigo)
+            )
+            rec = cursor.fetchone()
+            if not rec:
+                return jsonify({'valid': False, 'error': 'Código inválido o expirado'}), 400
+
+            return jsonify({'valid': True})
+    except Exception as e:
+        print(f"Error en verify-code: {str(e)}")
+        return jsonify({'error': 'Error al verificar el código'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+@usuarios_bp.route('/api/reset-password', methods=['POST'])
+def api_reset_password():
+    """API: Restablecer contraseña usando código de recuperación"""
+    from bd import obtener_conexion
+
+    data = request.get_json()
+    correo = data.get('correo')
+    codigo = data.get('codigo')
+    nueva_contrasena = data.get('nueva_contrasena')
+
+    if not correo or not codigo or not nueva_contrasena:
+        return jsonify({'error': 'Correo, código y nueva contraseña son requeridos'}), 400
+
+    if len(nueva_contrasena) < 6:
+        return jsonify({'error': 'La contraseña debe tener al menos 6 caracteres'}), 400
+
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Obtener usuario por correo
+            cursor.execute("SELECT id_usuario FROM USUARIO WHERE correo = %s AND estado = 'activo'", (correo,))
+            usuario = cursor.fetchone()
+            if not usuario:
+                return jsonify({'error': 'Usuario no encontrado'}), 404
+
+            # Validar código vigente y no usado
+            cursor.execute(
+                """
+                SELECT id_recuperacion
+                FROM RECUPERACION_CONTRASENA
+                WHERE id_usuario = %s
+                  AND codigo = %s
+                  AND usado = FALSE
+                  AND TIMESTAMPDIFF(MINUTE, fecha_creacion, NOW()) <= 15
+                ORDER BY id_recuperacion DESC
+                LIMIT 1
+                """,
+                (usuario['id_usuario'], codigo)
+            )
+            rec = cursor.fetchone()
+            if not rec:
+                return jsonify({'error': 'Código inválido o expirado'}), 400
+
+            # Actualizar contraseña
+            resultado = Usuario.actualizar(id_usuario=usuario['id_usuario'], contrasena=nueva_contrasena)
+            if 'error' in resultado:
+                return jsonify({'error': 'No se pudo actualizar la contraseña'}), 500
+
+            # Marcar código como usado y limpiar otros códigos antiguos
+            cursor.execute(
+                "UPDATE RECUPERACION_CONTRASENA SET usado = TRUE WHERE id_recuperacion = %s",
+                (rec['id_recuperacion'],)
+            )
+            cursor.execute(
+                "DELETE FROM RECUPERACION_CONTRASENA WHERE id_usuario = %s AND usado = FALSE",
+                (usuario['id_usuario'],)
+            )
+            conexion.commit()
+
+            return jsonify({'success': True, 'message': 'Contraseña actualizada exitosamente'})
+    except Exception as e:
+        if conexion:
+            try:
+                conexion.rollback()
+            except:
+                pass
+        print(f"Error en reset-password: {str(e)}")
+        return jsonify({'error': 'Error al restablecer la contraseña'}), 500
     finally:
         if conexion:
             try:
