@@ -116,7 +116,8 @@
                 </div>
             </div>
 
-            <div class="flex justify-end mt-4">
+            <div class="flex justify-end gap-3 mt-4">
+                
                 <button id="btnExportar" class="btn btn-outline text-emerald-600 hover:text-white hover:bg-emerald-500">
                     <i class="fas fa-file-export mr-2"></i>
                     Exportar
@@ -140,74 +141,11 @@
                         </tr>
                     </thead>
                     <tbody id="tablaRegistros" class="divide-y divide-gray-200">
-                        <!-- Ejemplo de registros -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">ACT-001</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Dr. Juan Pérez</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Inicio de sesión en el sistema</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">21/10/2025</div>
-                                <div class="text-gray-500 text-xs">14:30:45</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 font-mono">192.168.1.100</td>
-                            <td class="px-6 py-4">
-                                <span class="badge-exitoso text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Exitoso
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline btn-ver-detalle text-cyan-600 hover:text-white hover:bg-cyan-500 mx-1" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn btn-outline btn-eliminar text-red-600 hover:text-white hover:bg-red-500 mx-1" title="Eliminar">
-                                    <i class="fas fa-trash-alt text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">ACT-002</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Dra. María García</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Actualización de registro de paciente</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">21/10/2025</div>
-                                <div class="text-gray-500 text-xs">13:15:22</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 font-mono">192.168.1.105</td>
-                            <td class="px-6 py-4">
-                                <span class="badge-exitoso text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Exitoso
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline btn-ver-detalle text-cyan-600 hover:text-white hover:bg-cyan-500 mx-1" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn btn-outline btn-eliminar text-red-600 hover:text-white hover:bg-red-500 mx-1" title="Eliminar">
-                                    <i class="fas fa-trash-alt text-lg"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-gray-900 font-medium">ACT-003</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">Enf. Carlos Rodríguez</td>
-                            <td class="px-6 py-4 text-sm text-gray-600">Intento de acceso no autorizado</td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                <div class="font-medium">21/10/2025</div>
-                                <div class="text-gray-500 text-xs">12:45:10</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 font-mono">192.168.1.120</td>
-                            <td class="px-6 py-4">
-                                <span class="badge-fallido text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Fallido
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline btn-ver-detalle text-cyan-600 hover:text-white hover:bg-cyan-500 mx-1" title="Ver detalle">
-                                    <i class="fas fa-eye text-lg"></i>
-                                </button>
-                                <button class="btn btn-outline btn-eliminar text-red-600 hover:text-white hover:bg-red-500 mx-1" title="Eliminar">
-                                    <i class="fas fa-trash-alt text-lg"></i>
-                                </button>
+                        <!-- Los registros se cargarán dinámicamente desde la BD -->
+                        <tr>
+                            <td colspan="7" class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-4xl mb-2"></i>
+                                <p>Cargando registros de actividad...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -324,90 +262,125 @@
         </div>
     </div>
 
-    <script>
-        // Funcionalidad de modales
-        const modales = ['modalDetalle', 'modalEliminar', 'modalExportacion'];
-        
-        modales.forEach(modalId => {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                const closeBtn = modal.querySelector('.close');
-                if (closeBtn) {
-                    closeBtn.onclick = function() {
-                        modal.classList.remove('show');
-                    }
-                }
-            }
-        });
+    <!-- Modal de registro de reporte -->
+    <div id="modalRegistrarReporte" class="modal">
+        <div class="modal-content max-w-2xl">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-file-medical text-purple-600 mr-2"></i>
+                    Registrar Reporte de Auditoría
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            
+            <form id="formRegistrarReporte" class="space-y-4">
+                <!-- Información de auditoría seleccionada -->
+                <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-cyan-600 text-xl mt-1"></i>
+                        <div class="flex-1">
+                            <p class="font-semibold text-cyan-900 mb-1">Auditoría Seleccionada</p>
+                            <p id="infoAuditoria" class="text-sm text-cyan-800">Seleccione una actividad de la tabla</p>
+                        </div>
+                    </div>
+                </div>
 
-        window.onclick = function(event) {
-            modales.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal && event.target == modal) {
-                    modal.classList.remove('show');
-                }
-            });
-        }
+                <!-- Nombre del reporte -->
+                <div>
+                    <label for="nombreReporte" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-heading mr-1"></i>
+                        Nombre del Reporte <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="nombreReporte" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors" 
+                        placeholder="Ej: Reporte de acceso no autorizado"
+                        required
+                    >
+                </div>
 
-        // Botones de ver detalle
-        document.querySelectorAll('.btn-ver-detalle').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalDetalle').classList.add('show');
-            }
-        });
+                <!-- Descripción -->
+                <div>
+                    <label for="descripcionReporte" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-align-left mr-1"></i>
+                        Descripción / Observaciones <span class="text-red-500">*</span>
+                    </label>
+                    <textarea 
+                        id="descripcionReporte" 
+                        rows="4" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors resize-none" 
+                        placeholder="Describa los hallazgos y detalles relevantes del reporte"
+                        required
+                    ></textarea>
+                </div>
 
-        // Botones de eliminar
-        document.querySelectorAll('.btn-eliminar').forEach(btn => {
-            btn.onclick = function() {
-                document.getElementById('modalEliminar').classList.add('show');
-            }
-        });
+                <!-- Tipo de reporte -->
+                <div>
+                    <label for="tipoReporte" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-1"></i>
+                        Tipo de Reporte <span class="text-red-500">*</span>
+                    </label>
+                    <select 
+                        id="tipoReporte" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors bg-white"
+                        required
+                    >
+                        <option value="">Seleccione un tipo</option>
+                        <option value="Incidente de Seguridad">Incidente de Seguridad</option>
+                        <option value="Acceso No Autorizado">Acceso No Autorizado</option>
+                        <option value="Actividad Sospechosa">Actividad Sospechosa</option>
+                        <option value="Uso Indebido">Uso Indebido</option>
+                        <option value="Error de Sistema">Error de Sistema</option>
+                        <option value="Auditoría Regular">Auditoría Regular</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
 
-        // Botón cancelar eliminar
-        const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
-        if (btnCancelarEliminar) {
-            btnCancelarEliminar.onclick = function() {
-                document.getElementById('modalEliminar').classList.remove('show');
-            }
-        }
+                <!-- Adjuntar archivo (opcional) -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-paperclip mr-1"></i>
+                        Adjuntar Evidencia (Opcional)
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-400 transition-colors">
+                        <input type="file" id="archivoReporte" class="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,image/*">
+                        <label for="archivoReporte" class="cursor-pointer">
+                            <i class="fas fa-cloud-upload-alt text-gray-400 text-4xl mb-2"></i>
+                            <p class="text-gray-600 font-medium">Click para seleccionar archivo</p>
+                            <p class="text-gray-400 text-sm mt-1">PDF, Word, Excel o Imágenes</p>
+                        </label>
+                        <div id="archivoReporteSeleccionado" class="mt-4 hidden">
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fas fa-file text-purple-600 text-2xl"></i>
+                                    <span id="nombreArchivoReporte" class="text-sm font-medium text-gray-800"></span>
+                                </div>
+                                <button type="button" onclick="document.getElementById('archivoReporte').value=''; document.getElementById('archivoReporteSeleccionado').classList.add('hidden');" class="text-red-500 hover:text-red-700">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        // Botón confirmar eliminar
-        const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
-        if (btnConfirmarEliminar) {
-            btnConfirmarEliminar.onclick = function() {
-                document.getElementById('modalEliminar').classList.remove('show');
-                // Aquí ejecutarías la eliminación
-                alert('Registro eliminado exitosamente');
-            }
-        }
+                <!-- Botones -->
+                <div class="flex gap-4 pt-4 border-t">
+                    <button type="button" id="btnCancelarReporte" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btnGuardarReporte" class="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        <span id="textoGuardarReporte">Guardar Reporte</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        // Botón exportar
-        const btnExportar = document.getElementById('btnExportar');
-        if (btnExportar) {
-            btnExportar.onclick = function() {
-                document.getElementById('modalExportacion').classList.add('show');
-            }
-        }
-
-        // Opciones de exportación
-        document.querySelectorAll('.btn-export-option').forEach(btn => {
-            btn.onclick = function() {
-                const formato = this.dataset.formato;
-                console.log('Exportando en formato:', formato);
-                document.getElementById('modalExportacion').classList.remove('show');
-                // Aquí ejecutarías la exportación
-            }
-        });
-
-        // Botón buscar
-        const btnBuscar = document.getElementById('btnBuscar');
-        if (btnBuscar) {
-            btnBuscar.onclick = function() {
-                console.log('Buscando registros...');
-                // Aquí ejecutarías la búsqueda
-            }
-        }
-    </script>
+    <!-- Script externo con funcionalidad completa -->
+    <script src="{{ url_for('static', filename='js/consultar_actividad.js') }}"></script>
 
     {% include 'footer.html' %}
 </body>

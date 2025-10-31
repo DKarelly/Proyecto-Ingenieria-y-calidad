@@ -16,22 +16,43 @@ class Reporte:
         self.id_recurso = id_recurso
 
     @staticmethod
-    def crear(codigo, nombre, tipo, id_categoria, id_empleado, 
+    def crear(id_categoria, tipo, descripcion, contenido_json=None, id_empleado=None, 
               id_servicio=None, id_recurso=None):
         """Crea un nuevo reporte"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                sql = """INSERT INTO REPORTE (codigo, nombre, tipo, fecha_creacion, 
-                         id_categoria, id_empleado, id_servicio, id_recurso) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (codigo, nombre, tipo, datetime.now(), 
-                                   id_categoria, id_empleado, id_servicio, id_recurso))
+                # Generar código único
+                codigo = Reporte.generar_codigo()
+                
+                # Insertar reporte con todas las columnas
+                sql = """INSERT INTO REPORTE (codigo, nombre, tipo, descripcion, contenido_json, 
+                         estado, fecha_creacion, id_categoria, id_empleado, id_servicio, id_recurso) 
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                cursor.execute(sql, (
+                    codigo, 
+                    descripcion[:100] if descripcion else tipo,  # nombre: primeros 100 chars de descripcion
+                    tipo, 
+                    descripcion,
+                    contenido_json,
+                    'Pendiente',
+                    datetime.now(),
+                    id_categoria, 
+                    id_empleado, 
+                    id_servicio, 
+                    id_recurso
+                ))
+                
                 conexion.commit()
-                return {'success': True, 'id_reporte': cursor.lastrowid}
+                return {
+                    'success': True, 
+                    'id_reporte': cursor.lastrowid,
+                    'codigo': codigo,
+                    'message': 'Reporte creado exitosamente'
+                }
         except Exception as e:
             conexion.rollback()
-            return {'error': str(e)}
+            return {'success': False, 'error': str(e)}
         finally:
             conexion.close()
 
@@ -64,6 +85,15 @@ class Reporte:
         """Obtiene un reporte por su ID"""
         conexion = obtener_conexion()
         try:
+            # Validar y convertir id_reporte a entero
+            try:
+                id_reporte = int(id_reporte) if id_reporte else None
+                if not id_reporte:
+                    return None
+            except (ValueError, TypeError):
+                print(f"Error: id_reporte inválido: {id_reporte}")
+                return None
+            
             with conexion.cursor() as cursor:
                 sql = """
                     SELECT r.*,
@@ -239,3 +269,171 @@ class Reporte:
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         random_num = randint(1000, 9999)
         return f"REP-{timestamp}-{random_num}"
+
+    @staticmethod
+    def agregar_archivo(id_reporte, nombre_archivo, ruta_archivo, tipo_archivo, tamano_bytes):
+        """Agrega un archivo adjunto a un reporte"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = """INSERT INTO REPORTE_ARCHIVO 
+                         (id_reporte, nombre_archivo, ruta_archivo, tipo_archivo, tamano_bytes)
+                         VALUES (%s, %s, %s, %s, %s)"""
+                cursor.execute(sql, (id_reporte, nombre_archivo, ruta_archivo, tipo_archivo, tamano_bytes))
+                conexion.commit()
+                return {'success': True, 'id_archivo': cursor.lastrowid}
+        except Exception as e:
+            conexion.rollback()
+            return {'success': False, 'error': str(e)}
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def obtener_archivos(id_reporte):
+        """Obtiene todos los archivos adjuntos de un reporte"""
+        conexion = obtener_conexion()
+        try:
+            # Validar y convertir id_reporte a entero
+            try:
+                id_reporte = int(id_reporte) if id_reporte else None
+                if not id_reporte:
+                    return []
+            except (ValueError, TypeError) as e:
+                print(f"Error: id_reporte inválido: {id_reporte}, error: {e}")
+                return []
+            
+            with conexion.cursor() as cursor:
+                sql = """SELECT id_archivo, nombre_archivo, ruta_archivo, tipo_archivo, 
+                         CAST(tamano_bytes AS SIGNED) as tamano_bytes, 
+                         DATE_FORMAT(fecha_subida, '%%d/%%m/%%Y %%H:%%i') as fecha_subida
+                         FROM REPORTE_ARCHIVO 
+                         WHERE id_reporte = %s
+                         ORDER BY fecha_subida DESC"""
+                cursor.execute(sql, (id_reporte,))
+                resultados = cursor.fetchall()
+                return resultados if resultados else []
+        except Exception as e:
+            print(f"Error en obtener_archivos (id_reporte={id_reporte}): {type(e).__name__}: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def eliminar_archivo(id_archivo):
+        """Elimina un archivo adjunto"""
+        conexion = obtener_conexion()
+        try:
+            # Validar y convertir id_archivo a entero
+            try:
+                id_archivo = int(id_archivo) if id_archivo else None
+                if not id_archivo:
+                    return False
+            except (ValueError, TypeError):
+                print(f"Error: id_archivo inválido: {id_archivo}")
+                return False
+            
+            with conexion.cursor() as cursor:
+                # Primero obtener la ruta del archivo
+                cursor.execute("SELECT ruta_archivo FROM REPORTE_ARCHIVO WHERE id_archivo = %s", (id_archivo,))
+                resultado = cursor.fetchone()
+                
+                if resultado:
+                    # Eliminar el registro de la BD
+                    cursor.execute("DELETE FROM REPORTE_ARCHIVO WHERE id_archivo = %s", (id_archivo,))
+                    conexion.commit()
+                    return {'success': True, 'ruta_archivo': resultado['ruta_archivo']}
+                return {'success': False, 'error': 'Archivo no encontrado'}
+        except Exception as e:
+            conexion.rollback()
+            return {'success': False, 'error': str(e)}
+        finally:
+            conexion.close()
+            conexion.close()
+
+    @staticmethod
+    def buscar_reportes(filtros):
+        """Busca reportes con filtros en tiempo real"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                # Query optimizada para MySQL con subconsulta para contar archivos
+                sql = """
+                    SELECT r.id_reporte,
+                           r.codigo,
+                           r.nombre,
+                           r.tipo,
+                           r.descripcion,
+                           r.contenido_json,
+                           r.estado,
+                           r.fecha_creacion,
+                           r.id_categoria,
+                           r.id_empleado,
+                           r.id_servicio,
+                           r.id_recurso,
+                           c.nombre as categoria,
+                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
+                           s.nombre as servicio,
+                           DATE_FORMAT(r.fecha_creacion, '%d/%m/%Y %H:%i') as fecha_formateada,
+                           COALESCE((SELECT COUNT(*) FROM REPORTE_ARCHIVO ra WHERE ra.id_reporte = r.id_reporte), 0) as num_archivos
+                    FROM REPORTE r
+                    LEFT JOIN CATEGORIA c ON r.id_categoria = c.id_categoria
+                    LEFT JOIN EMPLEADO e ON r.id_empleado = e.id_empleado
+                    LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
+                    WHERE 1=1
+                """
+                
+                params = []
+                
+                # Filtro por texto (busca en código, nombre, tipo)
+                if filtros.get('busqueda'):
+                    sql += " AND (r.codigo LIKE %s OR r.nombre LIKE %s OR r.tipo LIKE %s)"
+                    busqueda = f"%{filtros['busqueda']}%"
+                    params.extend([busqueda, busqueda, busqueda])
+                
+                # Filtro por categoría (asegurar que sea entero o None)
+                if filtros.get('id_categoria'):
+                    try:
+                        id_cat = int(filtros['id_categoria']) if filtros['id_categoria'] else None
+                        if id_cat:
+                            sql += " AND r.id_categoria = %s"
+                            params.append(id_cat)
+                    except (ValueError, TypeError):
+                        pass  # Ignorar si no se puede convertir a entero
+                
+                # Filtro por tipo
+                if filtros.get('tipo'):
+                    sql += " AND r.tipo = %s"
+                    params.append(str(filtros['tipo']))
+                
+                # Filtro por rango de fechas
+                if filtros.get('fecha_inicio'):
+                    sql += " AND DATE(r.fecha_creacion) >= %s"
+                    params.append(str(filtros['fecha_inicio']))
+                
+                if filtros.get('fecha_fin'):
+                    sql += " AND DATE(r.fecha_creacion) <= %s"
+                    params.append(str(filtros['fecha_fin']))
+                
+                sql += " ORDER BY r.fecha_creacion DESC"
+                
+                # Límite de resultados para búsqueda en tiempo real
+                if filtros.get('limite'):
+                    try:
+                        limite = int(filtros['limite'])
+                        sql += f" LIMIT {limite}"
+                    except (ValueError, TypeError):
+                        sql += " LIMIT 50"  # Límite por defecto
+                else:
+                    sql += " LIMIT 50"  # Límite por defecto si no se especifica
+                
+                # Ejecutar la consulta
+                if params:
+                    cursor.execute(sql, tuple(params))
+                else:
+                    cursor.execute(sql)
+                    
+                return cursor.fetchall()
+        finally:
+            conexion.close()
