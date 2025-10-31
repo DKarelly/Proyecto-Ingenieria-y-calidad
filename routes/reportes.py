@@ -407,10 +407,12 @@ def api_detalle_recurso(id_recurso):
         conexion, cursor = obtener_conexion_dict()
         print("[API DETALLE-RECURSO] Conexión establecida")
         
-        # Query con JOINs para obtener empleados, operaciones y servicios
+        # Query para listar OPERACION_RECURSO: muestra qué operaciones usaron este recurso
+        # y qué empleado realizó cada operación
         sql = """
             SELECT 
-                o.id_operacion,
+                ore.id_operacion_recurso,
+                ore.id_operacion,
                 o.fecha_operacion,
                 o.hora_inicio,
                 o.hora_fin,
@@ -422,12 +424,13 @@ def api_detalle_recurso(id_recurso):
                 COALESCE(s.nombre, 'Sin servicio') as servicio,
                 COALESCE(res.estado, 'N/A') as estado_reserva
             FROM OPERACION_RECURSO ore
-            JOIN OPERACION o ON ore.id_operacion = o.id_operacion
+            INNER JOIN OPERACION o ON ore.id_operacion = o.id_operacion
+            INNER JOIN RECURSO r ON ore.id_recurso = r.id_recurso
+            INNER JOIN TIPO_RECURSO tr ON r.id_tipo_recurso = tr.id_tipo_recurso
             LEFT JOIN EMPLEADO e ON o.id_empleado = e.id_empleado
-            JOIN RECURSO r ON ore.id_recurso = r.id_recurso
-            JOIN TIPO_RECURSO tr ON r.id_tipo_recurso = tr.id_tipo_recurso
             LEFT JOIN RESERVA res ON o.id_reserva = res.id_reserva
-            LEFT JOIN SERVICIO s ON res.id_servicio = s.id_servicio
+            LEFT JOIN PROGRAMACION prog ON res.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
             WHERE ore.id_recurso = %s
             ORDER BY o.fecha_operacion DESC, o.hora_inicio DESC
             LIMIT 100

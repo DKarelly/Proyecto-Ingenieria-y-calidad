@@ -6,8 +6,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Iniciando página de generar incidencia...');
     
-    // Cargar pacientes al iniciar
+    // Cargar pacientes y empleados al iniciar
     cargarPacientes();
+    cargarEmpleados();
     
     // Configurar fecha actual
     configurarFechaActual();
@@ -94,6 +95,58 @@ async function cargarPacientes() {
 }
 
 /**
+ * Cargar lista de empleados desde la BD
+ */
+async function cargarEmpleados() {
+    console.log('Cargando empleados...');
+    const selectEmpleado = document.getElementById('selectEmpleado');
+    
+    if (!selectEmpleado) {
+        console.error('No se encontró el select de empleados');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/reportes/api/empleados', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('Respuesta API empleados status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Empleados recibidos:', data);
+        
+        if (data.success && Array.isArray(data.empleados)) {
+            // Limpiar opciones anteriores (excepto la primera)
+            selectEmpleado.innerHTML = '<option value="">Asignar después</option>';
+            
+            // Agregar empleados
+            data.empleados.forEach(empleado => {
+                const option = document.createElement('option');
+                option.value = empleado.id_empleado;
+                option.textContent = `${empleado.nombres} ${empleado.apellidos} - ${empleado.cargo}`;
+                selectEmpleado.appendChild(option);
+            });
+            
+            console.log(`${data.empleados.length} empleados cargados exitosamente`);
+        } else {
+            console.error('Formato de datos inesperado:', data);
+            console.warn('No se pudieron cargar los empleados (campo opcional)');
+        }
+    } catch (error) {
+        console.error('Error al cargar empleados:', error);
+        console.warn('Campo de empleado será opcional');
+    }
+}
+
+/**
  * Enviar formulario de incidencia
  */
 async function enviarFormulario(e) {
@@ -107,11 +160,13 @@ async function enviarFormulario(e) {
     const idPaciente = document.getElementById('selectPaciente').value;
     const descripcion = document.getElementById('descripcion').value.trim();
     const categoria = document.getElementById('categoria').value;
+    const idEmpleado = document.getElementById('selectEmpleado').value;
     
     console.log('Datos del formulario:', {
         id_paciente: idPaciente,
         descripcion: descripcion,
-        categoria: categoria
+        categoria: categoria,
+        id_empleado: idEmpleado || 'Sin asignar'
     });
     
     // Validación
@@ -135,16 +190,23 @@ async function enviarFormulario(e) {
     btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
     
     try {
+        const payload = {
+            id_paciente: parseInt(idPaciente),
+            descripcion: descripcion,
+            categoria: categoria
+        };
+        
+        // Solo incluir id_empleado si se seleccionó uno
+        if (idEmpleado) {
+            payload.id_empleado = parseInt(idEmpleado);
+        }
+        
         const response = await fetch('/seguridad/api/incidencias/crear', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                id_paciente: parseInt(idPaciente),
-                descripcion: descripcion,
-                categoria: categoria
-            })
+            body: JSON.stringify(payload)
         });
         
         console.log('Respuesta del servidor status:', response.status);

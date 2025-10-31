@@ -86,7 +86,7 @@
                     </div>
 
                     <!-- Categoría -->
-                    <div class="md:col-span-2 flex flex-col">
+                    <div class="flex flex-col">
                         <label class="text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-tags text-cyan-600 mr-2"></i>
                             Categoría <span class="text-red-500">*</span>
@@ -106,6 +106,25 @@
                             <option value="Insumos">Insumos</option>
                             <option value="Otro">Otro</option>
                         </select>
+                    </div>
+
+                    <!-- Empleado Responsable (opcional) -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-tie text-cyan-600 mr-2"></i>
+                            Empleado Responsable
+                        </label>
+                        <select 
+                            id="selectEmpleado"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white"
+                        >
+                            <option value="">Asignar después</option>
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Puede asignar un responsable ahora o hacerlo después
+                        </p>
                     </div>
                 </div>
 

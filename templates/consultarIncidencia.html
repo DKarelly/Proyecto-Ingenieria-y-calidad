@@ -306,7 +306,9 @@
                             <i class="fas fa-user-tie text-gray-500 mr-1"></i>
                             Responsable
                         </label>
-                        <input type="text" id="editResponsable" value="Carlos Ramírez" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                        <select id="editResponsable" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                            <option value="">Seleccionar responsable...</option>
+                        </select>
                     </div>
                     <div class="col-span-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -364,6 +366,8 @@
     <script>
         // Variables globales
         let incidenciasData = [];
+        let empleadosData = [];
+        let incidenciaActual = null;
 
         // Funcionalidad de modales
         const modales = ['modalDetalle', 'modalEditar', 'modalResolver'];
@@ -389,6 +393,21 @@
             });
         }
 
+        // Cargar empleados para dropdown
+        async function cargarEmpleados() {
+            try {
+                const response = await fetch('/reportes/api/empleados');
+                if (response.ok) {
+                    empleadosData = await response.json();
+                    console.log('[EMPLEADOS] Cargados:', empleadosData.length);
+                } else {
+                    console.error('Error al cargar empleados');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
         // Cargar incidencias al inicio
         async function cargarIncidencias() {
             try {
@@ -402,6 +421,52 @@
             } catch (error) {
                 console.error('Error:', error);
             }
+        }
+
+        // Aplicar filtros locales (búsqueda en tiempo real)
+        function aplicarFiltrosLocales() {
+            const paciente = document.getElementById('filtroPaciente').value.toLowerCase().trim();
+            const empleado = document.getElementById('filtroEmpleado').value.toLowerCase().trim();
+            const fechaRegistro = document.getElementById('filtroFechaRegistro').value;
+            const fechaResolucion = document.getElementById('filtroFechaResolucion').value;
+            const estado = document.getElementById('filtroEstado').value;
+
+            let incidenciasFiltradas = incidenciasData;
+
+            // Filtrar por paciente
+            if (paciente) {
+                incidenciasFiltradas = incidenciasFiltradas.filter(inc => 
+                    (inc.paciente || '').toLowerCase().includes(paciente)
+                );
+            }
+
+            // Filtrar por empleado
+            if (empleado) {
+                incidenciasFiltradas = incidenciasFiltradas.filter(inc => 
+                    (inc.empleado || '').toLowerCase().includes(empleado)
+                );
+            }
+
+            // Filtrar por fecha de registro
+            if (fechaRegistro) {
+                incidenciasFiltradas = incidenciasFiltradas.filter(inc => {
+                    if (!inc.fecha_registro) return false;
+                    const fechaInc = inc.fecha_registro.split(' ')[0]; // Obtener solo la fecha
+                    const partes = fechaInc.split('/');
+                    const fechaFormat = `${partes[2]}-${partes[1]}-${partes[0]}`; // yyyy-mm-dd
+                    return fechaFormat === fechaRegistro;
+                });
+            }
+
+            // Filtrar por estado
+            if (estado) {
+                incidenciasFiltradas = incidenciasFiltradas.filter(inc => 
+                    (inc.estado || 'Abierta') === estado
+                );
+            }
+
+            console.log('[FILTROS] Incidencias filtradas:', incidenciasFiltradas.length);
+            mostrarIncidencias(incidenciasFiltradas);
         }
 
         // Mostrar incidencias en la tabla
@@ -421,15 +486,15 @@
             }
 
             incidencias.forEach(incidencia => {
-                const estadoClass = incidencia.estado ? incidencia.estado.toLowerCase().replace(' ', '-') : 'abierta';
+                const estadoClass = (incidencia.estado || 'Abierta').toLowerCase().replace(' ', '-');
 
                 const row = `
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${incidencia.id_incidencia}</td>
                         <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${incidencia.descripcion}">${incidencia.descripcion}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.fecha_registro}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.paciente}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.empleado}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.fecha_registro || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.paciente || 'No asignado'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.empleado || 'No asignado'}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-${estadoClass}">
                                 ${incidencia.estado || 'Abierta'}
@@ -489,13 +554,13 @@
             const incidencia = incidenciasData.find(inc => inc.id_incidencia == id);
             if (incidencia) {
                 document.getElementById('detalleId').textContent = incidencia.id_incidencia;
-                document.getElementById('detallePaciente').textContent = incidencia.paciente;
-                document.getElementById('detalleFecha').textContent = incidencia.fecha_registro;
-                document.getElementById('detalleCategoria').textContent = incidencia.categoria;
+                document.getElementById('detallePaciente').textContent = incidencia.paciente || 'No asignado';
+                document.getElementById('detalleFecha').textContent = incidencia.fecha_registro || 'N/A';
+                document.getElementById('detalleCategoria').textContent = incidencia.categoria || 'General';
                 document.getElementById('detalleDescripcion').textContent = incidencia.descripcion;
                 document.getElementById('detalleEstado').textContent = incidencia.estado || 'Abierta';
-                document.getElementById('detallePrioridad').textContent = incidencia.prioridad;
-                document.getElementById('detalleResponsable').textContent = incidencia.empleado;
+                document.getElementById('detallePrioridad').textContent = incidencia.prioridad || 'Media';
+                document.getElementById('detalleResponsable').textContent = incidencia.empleado || 'No asignado';
                 document.getElementById('detalleFechaResolucion').textContent = incidencia.fecha_resolucion || 'Pendiente';
                 document.getElementById('detalleObservaciones').textContent = incidencia.observaciones || 'Sin observaciones';
                 document.getElementById('modalDetalle').classList.add('show');
@@ -504,20 +569,36 @@
 
         // Mostrar editar incidencia
         function mostrarEditarIncidencia(id) {
-            const incidencia = incidenciasData.find(inc => inc.id_incidencia == id);
-            if (incidencia) {
-                document.getElementById('editDescripcion').value = incidencia.descripcion;
-                document.getElementById('editEstado').value = incidencia.estado || 'Abierta';
-                document.getElementById('editPrioridad').value = incidencia.prioridad;
-                document.getElementById('editCategoria').value = incidencia.categoria;
-                document.getElementById('editResponsable').value = incidencia.empleado;
-                document.getElementById('editObservaciones').value = incidencia.observaciones || '';
+            incidenciaActual = incidenciasData.find(inc => inc.id_incidencia == id);
+            if (incidenciaActual) {
+                document.getElementById('editDescripcion').value = incidenciaActual.descripcion;
+                document.getElementById('editEstado').value = incidenciaActual.estado || 'Abierta';
+                document.getElementById('editPrioridad').value = incidenciaActual.prioridad || 'Media';
+                document.getElementById('editCategoria').value = incidenciaActual.categoria || 'Técnica';
+                document.getElementById('editObservaciones').value = incidenciaActual.observaciones || '';
+                
+                // Cargar empleados en el dropdown
+                const selectEmpleado = document.getElementById('editResponsable');
+                selectEmpleado.innerHTML = '<option value="">Seleccionar responsable...</option>';
+                
+                empleadosData.forEach(emp => {
+                    const option = document.createElement('option');
+                    option.value = emp.id_empleado;
+                    option.textContent = `${emp.nombres} ${emp.apellidos}`;
+                    if (incidenciaActual.id_empleado && incidenciaActual.id_empleado == emp.id_empleado) {
+                        option.selected = true;
+                    }
+                    selectEmpleado.appendChild(option);
+                });
+                
                 document.getElementById('modalEditar').classList.add('show');
             }
         }
 
         // Mostrar resolver incidencia
         function mostrarResolverIncidencia(id) {
+            incidenciaActual = incidenciasData.find(inc => inc.id_incidencia == id);
+            document.getElementById('comentarioResolucion').value = '';
             document.getElementById('modalResolver').classList.add('show');
         }
 
@@ -527,6 +608,9 @@
             clearTimeout(timeoutPaciente);
             const termino = this.value.trim();
 
+            // Filtrado en tiempo real sin esperar
+            aplicarFiltrosLocales();
+
             if (termino.length < 2) {
                 document.getElementById('sugerenciasPaciente').classList.add('hidden');
                 return;
@@ -534,18 +618,10 @@
 
             timeoutPaciente = setTimeout(async () => {
                 try {
-                    const response = await fetch(`/seguridad/api/incidencias/buscar-pacientes?termino=${encodeURIComponent(termino)}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'same-origin'
-                    });
+                    const response = await fetch(`/seguridad/api/incidencias/buscar-pacientes?termino=${encodeURIComponent(termino)}`);
                     if (response.ok) {
                         const pacientes = await response.json();
                         mostrarSugerenciasPaciente(pacientes);
-                    } else {
-                        console.error('Error en respuesta:', response.status);
                     }
                 } catch (error) {
                     console.error('Error:', error);
@@ -569,6 +645,7 @@
                 div.onclick = function() {
                     document.getElementById('filtroPaciente').value = paciente.nombre_completo;
                     contenedor.classList.add('hidden');
+                    aplicarFiltrosLocales();
                 };
                 contenedor.appendChild(div);
             });
@@ -582,6 +659,9 @@
             clearTimeout(timeoutEmpleado);
             const termino = this.value.trim();
 
+            // Filtrado en tiempo real
+            aplicarFiltrosLocales();
+
             if (termino.length < 2) {
                 document.getElementById('sugerenciasEmpleado').classList.add('hidden');
                 return;
@@ -589,18 +669,10 @@
 
             timeoutEmpleado = setTimeout(async () => {
                 try {
-                    const response = await fetch(`/seguridad/api/incidencias/buscar-empleados?termino=${encodeURIComponent(termino)}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'same-origin'
-                    });
+                    const response = await fetch(`/seguridad/api/incidencias/buscar-empleados?termino=${encodeURIComponent(termino)}`);
                     if (response.ok) {
                         const empleados = await response.json();
                         mostrarSugerenciasEmpleado(empleados);
-                    } else {
-                        console.error('Error en respuesta:', response.status);
                     }
                 } catch (error) {
                     console.error('Error:', error);
@@ -624,12 +696,18 @@
                 div.onclick = function() {
                     document.getElementById('filtroEmpleado').value = empleado.nombre_completo;
                     contenedor.classList.add('hidden');
+                    aplicarFiltrosLocales();
                 };
                 contenedor.appendChild(div);
             });
 
             contenedor.classList.remove('hidden');
         }
+
+        // Event listeners para filtros en tiempo real
+        document.getElementById('filtroFechaRegistro').addEventListener('change', aplicarFiltrosLocales);
+        document.getElementById('filtroFechaResolucion').addEventListener('change', aplicarFiltrosLocales);
+        document.getElementById('filtroEstado').addEventListener('change', aplicarFiltrosLocales);
 
         // Ocultar sugerencias al hacer clic fuera
         document.addEventListener('click', function(e) {
@@ -644,11 +722,54 @@
         // Formulario de edición
         const formEditar = document.getElementById('formEditar');
         if (formEditar) {
-            formEditar.onsubmit = function(e) {
+            formEditar.onsubmit = async function(e) {
                 e.preventDefault();
-                document.getElementById('modalEditar').classList.remove('show');
-                alert('Incidencia actualizada exitosamente');
-                // Aquí iría la lógica para actualizar la incidencia
+                
+                if (!incidenciaActual || !incidenciaActual.id_historial) {
+                    alert('Error: No se puede actualizar esta incidencia');
+                    return;
+                }
+
+                const estado = document.getElementById('editEstado').value;
+                const observaciones = document.getElementById('editObservaciones').value;
+                const idEmpleado = document.getElementById('editResponsable').value;
+
+                try {
+                    // Actualizar estado
+                    const responseEstado = await fetch('/seguridad/api/incidencias/actualizar-estado', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            id_historial: incidenciaActual.id_historial,
+                            estado: estado,
+                            observaciones: observaciones
+                        })
+                    });
+
+                    // Si se cambió el responsable, actualizar asignación
+                    if (idEmpleado && idEmpleado != incidenciaActual.id_empleado) {
+                        await fetch('/seguridad/api/incidencias/asignar', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                id_incidencia: incidenciaActual.id_incidencia,
+                                id_empleado: idEmpleado,
+                                observaciones: observaciones
+                            })
+                        });
+                    }
+
+                    if (responseEstado.ok) {
+                        document.getElementById('modalEditar').classList.remove('show');
+                        alert('Incidencia actualizada exitosamente');
+                        await cargarIncidencias(); // Recargar datos
+                    } else {
+                        alert('Error al actualizar la incidencia');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al actualizar la incidencia');
+                }
             }
 
             // Botón cancelar
@@ -670,10 +791,36 @@
 
         const btnConfirmarResolver = document.getElementById('btnConfirmarResolver');
         if (btnConfirmarResolver) {
-            btnConfirmarResolver.onclick = function() {
-                document.getElementById('modalResolver').classList.remove('show');
-                alert('Incidencia marcada como resuelta');
-                // Aquí iría la lógica para resolver la incidencia
+            btnConfirmarResolver.onclick = async function() {
+                if (!incidenciaActual || !incidenciaActual.id_historial) {
+                    alert('Error: No se puede resolver esta incidencia');
+                    return;
+                }
+
+                const comentario = document.getElementById('comentarioResolucion').value;
+
+                try {
+                    const response = await fetch('/seguridad/api/incidencias/actualizar-estado', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            id_historial: incidenciaActual.id_historial,
+                            estado: 'Resuelta',
+                            observaciones: comentario || 'Incidencia marcada como resuelta'
+                        })
+                    });
+
+                    if (response.ok) {
+                        document.getElementById('modalResolver').classList.remove('show');
+                        alert('Incidencia marcada como resuelta');
+                        await cargarIncidencias(); // Recargar datos
+                    } else {
+                        alert('Error al resolver la incidencia');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error al resolver la incidencia');
+                }
             }
         }
 
@@ -688,47 +835,20 @@
                 document.getElementById('filtroEstado').value = '';
                 document.getElementById('sugerenciasPaciente').classList.add('hidden');
                 document.getElementById('sugerenciasEmpleado').classList.add('hidden');
-                cargarIncidencias(); // Recargar todas las incidencias
+                mostrarIncidencias(incidenciasData); // Mostrar todas
             }
         }
 
-        // Formulario de búsqueda
-        document.getElementById('formFiltros').addEventListener('submit', async function(e) {
+        // Formulario de búsqueda (ya no necesario con búsqueda en tiempo real, pero mantener por si acaso)
+        document.getElementById('formFiltros').addEventListener('submit', function(e) {
             e.preventDefault();
-
-            const filtros = {
-                paciente: document.getElementById('filtroPaciente').value.trim(),
-                empleado: document.getElementById('filtroEmpleado').value.trim(),
-                fecha_registro_desde: document.getElementById('filtroFechaRegistro').value,
-                fecha_registro_hasta: document.getElementById('filtroFechaRegistro').value, // Para rango simple
-                fecha_resolucion_desde: document.getElementById('filtroFechaResolucion').value,
-                fecha_resolucion_hasta: document.getElementById('filtroFechaResolucion').value, // Para rango simple
-                estado: document.getElementById('filtroEstado').value
-            };
-
-            try {
-                const response = await fetch('/seguridad/api/incidencias/buscar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(filtros)
-                });
-
-                if (response.ok) {
-                    const incidenciasFiltradas = await response.json();
-                    mostrarIncidencias(incidenciasFiltradas);
-                } else {
-                    console.error('Error en la búsqueda');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            aplicarFiltrosLocales();
         });
 
         // Inicializar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            cargarIncidencias();
+        document.addEventListener('DOMContentLoaded', async function() {
+            await cargarEmpleados(); // Cargar empleados primero
+            await cargarIncidencias(); // Luego cargar incidencias
         });
     </script>
 

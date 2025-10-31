@@ -15,6 +15,7 @@ class Incidencia:
                     DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
                     p.nombres as paciente_nombres,
                     p.apellidos as paciente_apellidos,
+                    aei.id_historial,
                     aei.estado_historial as estado,
                     aei.fecha_resolucion,
                     e.nombres as empleado_nombres,
@@ -60,6 +61,7 @@ class Incidencia:
                     DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
                     p.nombres as paciente_nombres,
                     p.apellidos as paciente_apellidos,
+                    aei.id_historial,
                     aei.estado_historial as estado,
                     aei.fecha_resolucion,
                     e.nombres as empleado_nombres,
@@ -236,15 +238,16 @@ class Incidencia:
 
             id_incidencia = cursor.lastrowid
 
-            # Si se proporciona un empleado, crear la asignación automática
-            if id_empleado:
-                query_asignar = """
-                    INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA 
-                    (id_incidencia, id_empleado, estado_historial, observaciones)
-                    VALUES (%s, %s, 'Abierta', 'Incidencia creada')
-                """
-                cursor.execute(query_asignar, (id_incidencia, id_empleado))
-                conexion.commit()
+            # SIEMPRE crear el registro de historial (permite editar/resolver después)
+            query_asignar = """
+                INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA 
+                (id_incidencia, id_empleado, estado_historial, observaciones)
+                VALUES (%s, %s, 'Abierta', %s)
+            """
+            
+            observacion_inicial = 'Incidencia creada y asignada' if id_empleado else 'Incidencia creada - Sin asignar'
+            cursor.execute(query_asignar, (id_incidencia, id_empleado, observacion_inicial))
+            conexion.commit()
 
             return {
                 'success': True,
