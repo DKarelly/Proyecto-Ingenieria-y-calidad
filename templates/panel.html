@@ -322,19 +322,16 @@
         // Cargar información del usuario desde la sesión del servidor
         document.addEventListener('DOMContentLoaded', async function() {
             try {
-                const response = await fetch('/usuarios/api/session');
-                const data = await response.json();
-                
-                if (data.logged_in && data.usuario) {
-                    if (data.usuario.nombre) {
-                        document.getElementById('admin-username').textContent = data.usuario.nombre;
-                    }
-                    if (data.usuario.rol) {
-                        document.getElementById('admin-role').textContent = data.usuario.rol;
-                    }
+                if (window.usuario) {
+                    const u = window.usuario;
+                    const nameEl = document.getElementById('admin-username');
+                    const roleEl = document.getElementById('admin-role');
+                    if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                    if (roleEl && u.rol) roleEl.textContent = u.rol;
                 } else {
-                    // Si no hay sesión, redirigir al inicio
-                    window.location.href = '/';
+                    // Si esta página requiere sesión, el server debe haber redirigido.
+                    // Para comportamiento redundante: uncomment para forzar redirect cliente
+                    // window.location.href = '/';
                 }
             } catch (error) {
                 console.error('Error al cargar datos de sesión:', error);

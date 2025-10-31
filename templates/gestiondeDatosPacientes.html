@@ -133,10 +133,11 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        <!-- Ejemplo de paciente 1 -->
+                        {% if pacientes %}
+                            {% for paciente in pacientes %}
                         <tr class="hover:bg-gray-50 transition-all duration-200">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-bold text-gray-900">#PAC-001</div>
+                                <div class="text-sm font-bold text-gray-900">#PAC-{{ '%03d'|format(paciente.id_paciente) }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
@@ -146,17 +147,17 @@
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-semibold text-gray-900">Carlos Gonzalez Pérez</div>
+                                        <div class="text-sm font-semibold text-gray-900">{{ paciente.nombres }} {{ paciente.apellidos }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-600">72345678</div>
+                                <div class="text-sm text-gray-600">{{ paciente.documento_identidad }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-600">
                                     <i class="fa-solid fa-envelope text-gray-400 mr-2"></i>
-                                    carlos.gonzalez@email.com
+                                    {{ paciente.correo or 'No especificado' }}
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -167,101 +168,27 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                 <div class="flex items-center justify-center gap-3">
-                                    <button class="text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar">
+                                    <a href="/cuentas/editar-paciente/{{ paciente.id_paciente }}" class="text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar">
                                         <i class="fa-solid fa-pen-to-square text-lg"></i>
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar">
+                                    </a>
+                                    <button onclick="eliminarPaciente({{ paciente.id_paciente }})" class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar">
                                         <i class="fa-solid fa-trash-can text-lg"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
-                        <!-- Ejemplo de paciente 2 -->
-                        <tr class="hover:bg-gray-50 transition-all duration-200">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-bold text-gray-900">#PAC-002</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10">
-                                        <div class="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center">
-                                            <i class="fa-solid fa-user text-pink-600"></i>
-                                        </div>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-semibold text-gray-900">María López García</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-600">45678901</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-600">
-                                    <i class="fa-solid fa-envelope text-gray-400 mr-2"></i>
-                                    maria.lopez@email.com
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                    <i class="fa-solid fa-circle-check mr-1.5"></i>
-                                    Activo
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button class="text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar">
-                                        <i class="fa-solid fa-pen-to-square text-lg"></i>
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar">
-                                        <i class="fa-solid fa-trash-can text-lg"></i>
-                                    </button>
-                                </div>
+                            {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <i class="fa-solid fa-inbox text-4xl text-gray-300 mb-3"></i>
+                                <p class="text-gray-500">No se encontraron pacientes</p>
+                                {% if query %}
+                                <p class="text-sm text-gray-400 mt-2">Intenta con otros términos de búsqueda</p>
+                                {% endif %}
                             </td>
                         </tr>
-                        <!-- Ejemplo de paciente 3 -->
-                        <tr class="hover:bg-gray-50 transition-all duration-200">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-bold text-gray-900">#PAC-003</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10">
-                                        <div class="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                            <i class="fa-solid fa-user text-purple-600"></i>
-                                        </div>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-semibold text-gray-900">Luis Ramírez Torres</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-600">78901234</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-600">
-                                    <i class="fa-solid fa-envelope text-gray-400 mr-2"></i>
-                                    luis.ramirez@email.com
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
-                                    <i class="fa-solid fa-clock mr-1.5"></i>
-                                    Pendiente
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button class="text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar">
-                                        <i class="fa-solid fa-pen-to-square text-lg"></i>
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar">
-                                        <i class="fa-solid fa-trash-can text-lg"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -272,16 +199,17 @@
 
     <script>
         // Validación de sesión
-        fetch('/usuarios/api/session')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.logged_in) {
-                    window.location.href = '/usuarios/login';
-                }
-            })
-            .catch(error => {
-                console.error('Error al verificar la sesión:', error);
-            });
+            // Usar sesión provista por server (window.usuario)
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            } else {
+                // Si la página requiere sesión, el servidor debería redirigir.
+                // window.location.href = '/';
+            }
 
         // Modal de registro de paciente
         const modal = document.getElementById('modal-registro-paciente');
@@ -310,6 +238,34 @@
                 modal.classList.remove('flex');
             }
         });
+
+        // Función para eliminar paciente
+        async function eliminarPaciente(idPaciente) {
+            if (!confirm('¿Está seguro de que desea eliminar este paciente? Esta acción desactivará su cuenta.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/cuentas/eliminar-paciente/${idPaciente}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Paciente eliminado exitosamente');
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo eliminar el paciente'));
+                }
+            } catch (error) {
+                console.error('Error al eliminar:', error);
+                alert('Error al eliminar el paciente');
+            }
+        }
     </script>
 </body>
 </html>

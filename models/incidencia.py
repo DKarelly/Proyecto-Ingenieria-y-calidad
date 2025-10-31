@@ -37,11 +37,6 @@ class Incidencia:
             for inc in incidencias:
                 inc['paciente'] = f"{inc['paciente_nombres']} {inc['paciente_apellidos']}" if inc['paciente_nombres'] else 'No asignado'
                 inc['empleado'] = f"{inc['empleado_nombres']} {inc['empleado_apellidos']}" if inc['empleado_nombres'] else 'No asignado'
-                # Usar valores de BD o defaults
-                if not inc.get('prioridad'):
-                    inc['prioridad'] = 'Media'
-                if not inc.get('categoria'):
-                    inc['categoria'] = 'General'
 
             return incidencias
 
@@ -63,9 +58,7 @@ class Incidencia:
                 SELECT
                     i.id_incidencia,
                     i.descripcion,
-                    i.categoria,
-                    i.prioridad,
-                    DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
+                    CONCAT(LPAD(DAY(i.fecha_registro), 2, '0'), '/', LPAD(MONTH(i.fecha_registro), 2, '0'), '/', YEAR(i.fecha_registro)) as fecha_registro,
                     p.nombres as paciente_nombres,
                     p.apellidos as paciente_apellidos,
                     aei.id_historial,
@@ -84,47 +77,34 @@ class Incidencia:
             params = []
 
             # Filtro por paciente
-            if filtros.get('paciente'):
-                query += " AND (CONCAT(p.nombres, ' ', p.apellidos) LIKE %s)"
-                params.append(f"%{filtros['paciente']}%")
+            if filtros.get('paciente') and filtros['paciente'].strip():
+                terminos_paciente = filtros['paciente'].strip().split()
+                for termino in terminos_paciente:
+                    query += " AND LOWER(CONCAT(p.nombres, ' ', p.apellidos)) LIKE LOWER(%s)"
+                    params.append(f"%{termino}%")
 
             # Filtro por empleado
-            if filtros.get('empleado'):
-                query += " AND (CONCAT(e.nombres, ' ', e.apellidos) LIKE %s)"
-                params.append(f"%{filtros['empleado']}%")
+            if filtros.get('empleado') and filtros['empleado'].strip():
+                terminos_empleado = filtros['empleado'].strip().split()
+                for termino in terminos_empleado:
+                    query += " AND LOWER(CONCAT(e.nombres, ' ', e.apellidos)) LIKE LOWER(%s)"
+                    params.append(f"%{termino}%")
 
             # Filtro por fecha de registro
-            if filtros.get('fecha_registro_desde'):
-                query += " AND i.fecha_registro >= %s"
-                params.append(filtros['fecha_registro_desde'])
-
-            if filtros.get('fecha_registro_hasta'):
-                query += " AND i.fecha_registro <= %s"
-                params.append(filtros['fecha_registro_hasta'])
+            if filtros.get('fecha_registro') and filtros['fecha_registro']:
+                query += " AND DATE(i.fecha_registro) = %s"
+                params.append(filtros['fecha_registro'])
 
             # Filtro por fecha de resolución
-            if filtros.get('fecha_resolucion_desde'):
-                query += " AND aei.fecha_resolucion >= %s"
-                params.append(filtros['fecha_resolucion_desde'])
-
-            if filtros.get('fecha_resolucion_hasta'):
-                query += " AND aei.fecha_resolucion <= %s"
-                params.append(filtros['fecha_resolucion_hasta'])
+            if filtros.get('fecha_resolucion') and filtros['fecha_resolucion']:
+                query += " AND DATE(aei.fecha_resolucion) = %s"
+                params.append(filtros['fecha_resolucion'])
 
             # Filtro por estado
-            if filtros.get('estado') and filtros['estado'] != '':
+            if filtros.get('estado') and filtros['estado'].strip() and filtros['estado'] != '':
                 query += " AND aei.estado_historial = %s"
-                params.append(filtros['estado'])
+                params.append(filtros['estado'].strip())
 
-            # Filtro por prioridad
-            if filtros.get('prioridad') and filtros['prioridad'] != '':
-                query += " AND i.prioridad = %s"
-                params.append(filtros['prioridad'])
-
-            # Filtro por categoría
-            if filtros.get('categoria') and filtros['categoria'] != '':
-                query += " AND i.categoria = %s"
-                params.append(filtros['categoria'])
 
             query += " ORDER BY i.id_incidencia ASC"
 
@@ -135,11 +115,6 @@ class Incidencia:
             for inc in incidencias:
                 inc['paciente'] = f"{inc['paciente_nombres']} {inc['paciente_apellidos']}" if inc['paciente_nombres'] else 'No asignado'
                 inc['empleado'] = f"{inc['empleado_nombres']} {inc['empleado_apellidos']}" if inc['empleado_nombres'] else 'No asignado'
-                # Usar valores de BD o defaults
-                if not inc.get('prioridad'):
-                    inc['prioridad'] = 'Media'
-                if not inc.get('categoria'):
-                    inc['categoria'] = 'General'
 
             return incidencias
 
@@ -160,7 +135,7 @@ class Incidencia:
             query = """
                 SELECT id_paciente, nombres, apellidos
                 FROM PACIENTE
-                WHERE CONCAT(nombres, ' ', apellidos) LIKE %s
+                WHERE LOWER(CONCAT(nombres, ' ', apellidos)) LIKE LOWER(%s)
                 LIMIT 10
             """
 
@@ -220,7 +195,7 @@ class Incidencia:
             query = """
                 SELECT id_empleado, nombres, apellidos
                 FROM EMPLEADO
-                WHERE CONCAT(nombres, ' ', apellidos) LIKE %s
+                WHERE LOWER(CONCAT(nombres, ' ', apellidos)) LIKE LOWER(%s)
                 LIMIT 10
             """
 

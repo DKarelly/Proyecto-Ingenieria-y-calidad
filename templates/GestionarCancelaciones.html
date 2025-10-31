@@ -32,17 +32,86 @@
         <!-- Título principal -->
         <h1 class="text-3xl font-bold text-gray-800 mb-8">Gestionar Cancelaciones</h1>
 
-        <!-- Sección de Búsqueda -->
-        <div class="admin-card shadow-sm p-6 mb-8 max-w-lg">
-            <label for="search-dni" class="block text-sm font-semibold text-gray-700 mb-2">Buscar Reserva</label>
-            <div class="relative">
-                <input 
-                    type="text" 
-                    id="search-dni" 
-                    placeholder="Buscar por DNI" 
-                    class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
-                >
-                <i class="fas fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+        <!-- Estadísticas Rápidas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Reservas Activas</p>
+                        <p id="total-activas" class="text-3xl font-bold text-gray-900">0</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <i class="fas fa-calendar-check text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Pendientes</p>
+                        <p id="total-pendientes" class="text-3xl font-bold text-gray-900">0</p>
+                    </div>
+                    <div class="bg-yellow-100 rounded-full p-3">
+                        <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Confirmadas</p>
+                        <p id="total-confirmadas" class="text-3xl font-bold text-gray-900">0</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Búsqueda y Filtros -->
+        <div class="admin-card shadow-sm p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="search-dni" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-id-card mr-1"></i>Buscar por DNI
+                    </label>
+                    <div class="relative">
+                        <input
+                            type="text"
+                            id="search-dni"
+                            placeholder="Ej: 12345678"
+                            maxlength="8"
+                            class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
+                        >
+                        <i class="fas fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                <div>
+                    <label for="filtro-estado" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-filter mr-1"></i>Filtrar por Estado
+                    </label>
+                    <select
+                        id="filtro-estado"
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="completada">Completada</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button
+                        id="btn-buscar"
+                        class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg">
+                        <i class="fas fa-search mr-2"></i>Buscar
+                    </button>
+                    <button
+                        id="btn-limpiar"
+                        class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg">
+                        <i class="fas fa-eraser mr-2"></i>Limpiar
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -51,83 +120,21 @@
             <table class="admin-table w-full">
                 <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Id</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">ID Reserva</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">DNI</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Paciente</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Servicio</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Médico</th>
                         <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha y Hora</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Acción</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                    <!-- Fila de ejemplo 1 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">001</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Juan Carlos Pérez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Consulta General</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Luis Gonzalez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">21/10/2025 09:00 AM</td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-red-100 hover:bg-red-500 hover:text-white text-red-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancelar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 2 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">002</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">María Rodriguez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Examen de Sangre</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dra. Ana Martínez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">21/10/2025 10:30 AM</td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-red-100 hover:bg-red-500 hover:text-white text-red-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancelar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 3 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">003</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Carlos Sánchez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Radiografía</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Carlos Sánchez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">21/10/2025 11:00 AM</td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-red-100 hover:bg-red-500 hover:text-white text-red-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancelar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 4 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">004</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Laura Fernández</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Consulta General</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dra. Laura Fernández</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">22/10/2025 08:15 AM</td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-red-100 hover:bg-red-500 hover:text-white text-red-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancelar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 5 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">005</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Pedro Ramirez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Terapia Física</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Juan Pérez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">22/10/2025 09:45 AM</td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-red-100 hover:bg-red-500 hover:text-white text-red-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-times mr-2"></i>
-                                Cancelar
-                            </button>
+                <tbody id="tbody-reservas" class="divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Cargando reservas...
                         </td>
                     </tr>
                 </tbody>
@@ -139,30 +146,406 @@
 
     </div>
 
+    <!-- Modal de Cancelación -->
+    <div id="modal-cancelacion" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full transform transition-all">
+            <div class="bg-red-600 text-white px-6 py-4 rounded-t-lg">
+                <h3 class="text-xl font-bold flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Cancelar Reserva
+                </h3>
+            </div>
+            <div class="p-6">
+                <div id="modal-info" class="mb-4 bg-gray-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600 mb-2"><strong>Paciente:</strong> <span id="modal-paciente"></span></p>
+                    <p class="text-sm text-gray-600 mb-2"><strong>Servicio:</strong> <span id="modal-servicio"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Fecha:</strong> <span id="modal-fecha"></span></p>
+                </div>
+                <div class="mb-4">
+                    <label for="motivo-cancelacion" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Motivo de Cancelación <span class="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        id="motivo-cancelacion"
+                        rows="4"
+                        minlength="10"
+                        maxlength="500"
+                        placeholder="Ingrese el motivo de la cancelación (mínimo 10 caracteres)..."
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all resize-none"
+                    ></textarea>
+                    <div class="flex justify-between items-center mt-1">
+                        <p id="error-motivo" class="text-red-500 text-sm hidden">Debe ingresar un motivo de cancelación (mínimo 10 caracteres)</p>
+                        <p id="contador-caracteres" class="text-gray-500 text-xs">0/500 caracteres</p>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Esta acción no se puede deshacer. La reserva será cancelada permanentemente.
+                    </p>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex gap-3 justify-end">
+                <button
+                    id="btn-modal-cerrar"
+                    class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </button>
+                <button
+                    id="btn-modal-confirmar"
+                    class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors shadow-md hover:shadow-lg">
+                    <i class="fas fa-check mr-2"></i>Confirmar Cancelación
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- AlpineJS para interactividad del dropdown -->
     <script src="//unpkg.com/alpinejs" defer></script>
-    
+
     <script>
-        // Cargar información del usuario desde la sesión del servidor
-        document.addEventListener('DOMContentLoaded', async function() {
+        let reservasData = [];
+        let reservaActual = null;
+        let reservasFiltradas = [];
+
+        // Función para formatear fecha y hora
+        function formatearFechaHora(fecha, horaInicio, horaFin) {
+            const f = new Date(fecha + 'T00:00:00');
+            const opciones = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            const fechaFormateada = f.toLocaleDateString('es-PE', opciones);
+
+            // Convertir hora de formato 24h a 12h
+            const formatearHora = (hora) => {
+                if (!hora) return '';
+                const [h, m] = hora.split(':');
+                const hNum = parseInt(h);
+                const periodo = hNum >= 12 ? 'PM' : 'AM';
+                const h12 = hNum % 12 || 12;
+                return `${h12}:${m} ${periodo}`;
+            };
+
+            return `${fechaFormateada} ${formatearHora(horaInicio)} - ${formatearHora(horaFin)}`;
+        }
+
+        // Función para obtener badge de estado
+        function obtenerBadgeEstado(estado) {
+            const estados = {
+                'pendiente': '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800"><i class="fas fa-clock mr-1"></i>Pendiente</span>',
+                'confirmada': '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"><i class="fas fa-check-circle mr-1"></i>Confirmada</span>',
+                'completada': '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"><i class="fas fa-check-double mr-1"></i>Completada</span>',
+                'cancelada': '<span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800"><i class="fas fa-times-circle mr-1"></i>Cancelada</span>'
+            };
+            return estados[estado] || estado;
+        }
+
+        // Función para actualizar estadísticas
+        function actualizarEstadisticas() {
+            const total = reservasFiltradas.length;
+            const pendientes = reservasFiltradas.filter(r => r.estado === 'pendiente').length;
+            const confirmadas = reservasFiltradas.filter(r => r.estado === 'confirmada').length;
+
+            document.getElementById('total-activas').textContent = total;
+            document.getElementById('total-pendientes').textContent = pendientes;
+            document.getElementById('total-confirmadas').textContent = confirmadas;
+        }
+
+        // Función para aplicar filtros
+        function aplicarFiltros() {
+            const filtroEstado = document.getElementById('filtro-estado').value;
+
+            reservasFiltradas = reservasData.filter(reserva => {
+                if (filtroEstado && reserva.estado !== filtroEstado) {
+                    return false;
+                }
+                return true;
+            });
+
+            renderizarTabla();
+            actualizarEstadisticas();
+        }
+
+        // Función para renderizar la tabla
+        function renderizarTabla() {
+            const tbody = document.getElementById('tbody-reservas');
+
+            if (reservasFiltradas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-info-circle mr-2"></i>No se encontraron reservas con los filtros aplicados</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = reservasFiltradas.map(reserva => `
+                <tr class="hover:bg-cyan-50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-800 font-bold text-sm">#${reserva.id_reserva}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-600 font-mono text-sm">${reserva.documento_identidad}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-cyan-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-user text-cyan-600"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-gray-900">${reserva.nombre_paciente}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm text-gray-600">${reserva.servicio}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-md text-cyan-600 mr-2"></i>
+                            <span class="text-sm text-gray-600">${reserva.nombre_empleado}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-600">
+                            <i class="fas fa-calendar mr-1 text-cyan-600"></i>
+                            ${formatearFechaHora(reserva.fecha_cita, reserva.hora_inicio, reserva.hora_fin)}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">${obtenerBadgeEstado(reserva.estado)}</td>
+                    <td class="px-6 py-4 text-center whitespace-nowrap">
+                        <button
+                            onclick="abrirModalCancelacion(${reserva.id_reserva})"
+                            class="bg-red-100 hover:bg-red-600 hover:text-white text-red-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all transform hover:scale-105 shadow-sm hover:shadow-md">
+                            <i class="fas fa-ban mr-2"></i>
+                            Cancelar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Función para cargar reservas
+        async function cargarReservas(dni = null) {
+            const tbody = document.getElementById('tbody-reservas');
+            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando reservas...</td></tr>';
+
             try {
-                const response = await fetch('/usuarios/api/session');
+                const url = dni
+                    ? `/reservas/api/reservas-activas?dni=${encodeURIComponent(dni)}`
+                    : '/reservas/api/reservas-activas';
+
+                const response = await fetch(url);
                 const data = await response.json();
-                
-                if (data.logged_in && data.usuario) {
-                    if (data.usuario.nombre) {
-                        document.getElementById('admin-username').textContent = data.usuario.nombre;
-                    }
-                    if (data.usuario.rol) {
-                        document.getElementById('admin-role').textContent = data.usuario.rol;
-                    }
+
+                if (data.error) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>${data.error}</td></tr>`;
+                    return;
+                }
+
+                reservasData = data.reservas || [];
+                aplicarFiltros();
+
+            } catch (error) {
+                console.error('Error al cargar reservas:', error);
+                tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-8 text-center text-red-600"><i class="fas fa-exclamation-circle mr-2"></i>Error al cargar las reservas: ${error.message}</td></tr>`;
+            }
+        }
+
+        // Función para abrir modal de cancelación
+        function abrirModalCancelacion(idReserva) {
+            reservaActual = reservasFiltradas.find(r => r.id_reserva === idReserva);
+            if (!reservaActual) return;
+
+            // Llenar información del modal
+            document.getElementById('modal-paciente').textContent = reservaActual.nombre_paciente;
+            document.getElementById('modal-servicio').textContent = reservaActual.servicio;
+            document.getElementById('modal-fecha').textContent = formatearFechaHora(
+                reservaActual.fecha_cita,
+                reservaActual.hora_inicio,
+                reservaActual.hora_fin
+            );
+            document.getElementById('motivo-cancelacion').value = '';
+            document.getElementById('error-motivo').classList.add('hidden');
+
+            // Mostrar modal
+            document.getElementById('modal-cancelacion').classList.remove('hidden');
+        }
+
+        // Función para cerrar modal
+        function cerrarModal() {
+            document.getElementById('modal-cancelacion').classList.add('hidden');
+            reservaActual = null;
+        }
+
+        // Función para confirmar cancelación
+        async function confirmarCancelacion() {
+            const motivo = document.getElementById('motivo-cancelacion').value.trim();
+            const errorMotivo = document.getElementById('error-motivo');
+
+            // Validar motivo
+            if (!motivo || motivo.length < 10) {
+                errorMotivo.textContent = 'Debe ingresar un motivo de cancelación (mínimo 10 caracteres)';
+                errorMotivo.classList.remove('hidden');
+                return;
+            }
+
+            if (motivo.length > 500) {
+                errorMotivo.textContent = 'El motivo no puede exceder 500 caracteres';
+                errorMotivo.classList.remove('hidden');
+                return;
+            }
+
+            errorMotivo.classList.add('hidden');
+
+            if (!reservaActual) return;
+
+            // Deshabilitar botón para evitar doble click
+            const btnConfirmar = document.getElementById('btn-modal-confirmar');
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cancelando...';
+
+            try {
+                const response = await fetch('/reservas/api/cancelar-reserva', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_reserva: reservaActual.id_reserva,
+                        motivo: motivo
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert('Error al cancelar la reserva: ' + data.error);
+                    return;
+                }
+
+                // Mostrar notificación de éxito
+                mostrarNotificacion('Reserva cancelada exitosamente', 'success');
+
+                // Cerrar modal
+                cerrarModal();
+
+                // Recargar las reservas
+                const dni = document.getElementById('search-dni').value.trim();
+                await cargarReservas(dni || null);
+
+            } catch (error) {
+                console.error('Error al cancelar reserva:', error);
+                alert('Error al cancelar la reserva: ' + error.message);
+            } finally {
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = '<i class="fas fa-check mr-2"></i>Confirmar Cancelación';
+            }
+        }
+
+        // Función para mostrar notificaciones
+        function mostrarNotificacion(mensaje, tipo = 'info') {
+            const colores = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+
+            const notif = document.createElement('div');
+            notif.className = `fixed top-4 right-4 ${colores[tipo]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all`;
+            notif.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${mensaje}`;
+            document.body.appendChild(notif);
+
+            setTimeout(() => {
+                notif.remove();
+            }, 3000);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar todas las reservas al inicio
+            cargarReservas();
+
+            // Validar solo números en DNI
+            document.getElementById('search-dni').addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+
+            // Botón buscar
+            document.getElementById('btn-buscar').addEventListener('click', function() {
+                const dni = document.getElementById('search-dni').value.trim();
+                if (dni && dni.length === 8) {
+                    cargarReservas(dni);
+                } else if (dni) {
+                    alert('El DNI debe tener 8 dígitos');
                 } else {
-                    // Si no hay sesión, redirigir al inicio
-                    window.location.href = '/';
+                    alert('Ingrese un DNI para buscar');
+                }
+            });
+
+            // Botón limpiar
+            document.getElementById('btn-limpiar').addEventListener('click', function() {
+                document.getElementById('search-dni').value = '';
+                document.getElementById('filtro-estado').value = '';
+                cargarReservas();
+            });
+
+            // Filtro de estado
+            document.getElementById('filtro-estado').addEventListener('change', aplicarFiltros);
+
+            // Buscar con Enter
+            document.getElementById('search-dni').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const dni = this.value.trim();
+                    if (dni && dni.length === 8) {
+                        cargarReservas(dni);
+                    } else if (dni) {
+                        alert('El DNI debe tener 8 dígitos');
+                    }
+                }
+            });
+
+            // Modal - Botón cerrar
+            document.getElementById('btn-modal-cerrar').addEventListener('click', cerrarModal);
+
+            // Modal - Botón confirmar
+            document.getElementById('btn-modal-confirmar').addEventListener('click', confirmarCancelacion);
+
+            // Contador de caracteres para el motivo
+            document.getElementById('motivo-cancelacion').addEventListener('input', function() {
+                const contador = document.getElementById('contador-caracteres');
+                const longitud = this.value.length;
+                contador.textContent = `${longitud}/500 caracteres`;
+
+                // Cambiar color según la longitud
+                if (longitud < 10) {
+                    contador.className = 'text-red-500 text-xs';
+                } else if (longitud > 450) {
+                    contador.className = 'text-orange-500 text-xs';
+                } else {
+                    contador.className = 'text-green-500 text-xs';
+                }
+            });
+
+            // Cerrar modal al hacer click fuera
+            document.getElementById('modal-cancelacion').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    cerrarModal();
+                }
+            });
+
+            // Cerrar modal con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cerrarModal();
+                }
+            });
+
+            // Cargar información del usuario desde la sesión del servidor
+            try {
+                if (window.usuario) {
+                    const u = window.usuario;
+                    const nameEl = document.getElementById('admin-username');
+                    const roleEl = document.getElementById('admin-role');
+                    if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                    if (roleEl && u.rol) roleEl.textContent = u.rol;
                 }
             } catch (error) {
                 console.error('Error al cargar datos de sesión:', error);
-                window.location.href = '/';
             }
         });
     </script>

@@ -123,20 +123,11 @@
     <!-- Footer -->
     {% include 'footer.html' %}
 
-    <!-- Script de validación de sesión -->
+    <!-- Script de validación de sesión (server-side) -->
     <script>
-        // Validar sesión al cargar la página
-        fetch('/usuarios/api/session')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.logged_in) {
-                    window.location.href = '/';
-                }
-            })
-            .catch(error => {
-                console.error('Error al validar sesión:', error);
-                window.location.href = '/';
-            });
+        if (!window.usuario) {
+            window.location.href = '/';
+        }
     </script>
 </body>
 </html>

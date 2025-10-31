@@ -4,6 +4,7 @@ from models.catalogos import TipoServicio, TipoRecurso
 from models.recurso import Recurso
 from models.horario import Horario
 from models.empleado import Empleado
+from models.agenda import Agenda
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -477,3 +478,45 @@ def api_eliminar_horario(id_horario):
         return jsonify({'success': True, 'message': 'Horario dado de baja exitosamente'})
     else:
         return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+# API Routes for Consultar Agenda Medica
+
+@admin_bp.route('/api/empleados/buscar-agenda', methods=['GET'])
+def api_buscar_empleados_agenda():
+    """API para obtener empleados para agenda (autocomplete)"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    empleados = Empleado.obtener_todos()
+    empleados_activos = [e for e in empleados if e.get('estado', '').lower() == 'activo']
+    return jsonify(empleados_activos)
+
+@admin_bp.route('/api/servicios/buscar-agenda', methods=['GET'])
+def api_buscar_servicios_agenda():
+    """API para obtener servicios activos para agenda"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    servicios = Servicio.obtener_todos()
+    servicios_activos = [s for s in servicios if s.get('estado', '').lower() == 'activo']
+    return jsonify(servicios_activos)
+
+@admin_bp.route('/api/agenda/consultar', methods=['POST'])
+def api_consultar_agenda():
+    """API para consultar la agenda médica con filtros"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    id_empleado = data.get('id_empleado')
+    fecha = data.get('fecha')
+    id_servicio = data.get('id_servicio')
+
+    # Convertir a int si no son None
+    if id_empleado:
+        id_empleado = int(id_empleado)
+    if id_servicio:
+        id_servicio = int(id_servicio)
+
+    agenda = Agenda.consultar_agenda(id_empleado=id_empleado, fecha=fecha, id_servicio=id_servicio)
+    return jsonify(agenda)
