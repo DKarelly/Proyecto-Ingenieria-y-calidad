@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar mi Perfil - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="text-gray-700 bg-gray-50">
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-3xl mx-auto p-6 md:p-10">
+        <div class="mb-6">
+            <a href="/usuarios/perfil" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Volver a mi perfil
+            </a>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6">Editar mi perfil</h1>
+
+            <form method="POST" class="space-y-6" id="form-editar-perfil">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="nombres" class="block text-sm font-semibold text-gray-700 mb-2">Nombres</label>
+                        <input
+                            type="text"
+                            id="nombres"
+                            name="nombres"
+                            value="{% if usuario.tipo_usuario == 'paciente' %}{{ (usuario.nombre_paciente or '').split(' ', 1)[0] }}{% else %}{{ (usuario.nombre_empleado or '').split(' ', 1)[0] }}{% endif %}"
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            placeholder="Tus nombres"
+                        >
+                    </div>
+                    <div>
+                        <label for="apellidos" class="block text-sm font-semibold text-gray-700 mb-2">Apellidos</label>
+                        <input
+                            type="text"
+                            id="apellidos"
+                            name="apellidos"
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            placeholder="Tus apellidos"
+                        >
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="departamento" class="block text-sm font-semibold text-gray-700 mb-2">Departamento</label>
+                        <select id="departamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"></select>
+                    </div>
+                    <div>
+                        <label for="provincia" class="block text-sm font-semibold text-gray-700 mb-2">Provincia</label>
+                        <select id="provincia" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"></select>
+                    </div>
+                    <div>
+                        <label for="distrito" class="block text-sm font-semibold text-gray-700 mb-2">Distrito</label>
+                        <select id="distrito" name="distrito_nombre" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"></select>
+                        <input type="hidden" id="id_distrito" name="id_distrito" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="correo" class="block text-sm font-semibold text-gray-700 mb-2">Correo</label>
+                        <input
+                            type="email"
+                            id="correo"
+                            name="correo"
+                            value="{{ usuario.correo or '' }}"
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            placeholder="usted@ejemplo.com"
+                        >
+                    </div>
+                    <div>
+                        <label for="telefono" class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                        <input
+                            type="tel"
+                            id="telefono"
+                            name="telefono"
+                            value="{{ usuario.telefono or '' }}"
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            placeholder="987654321"
+                        >
+                    </div>
+                </div>
+
+                <div class="pt-2 flex gap-4">
+                    <button type="submit" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors inline-flex items-center justify-center">
+                        <i class="fa-solid fa-save mr-2"></i>
+                        Guardar Cambios
+                    </button>
+                    <a href="/usuarios/perfil" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors text-center inline-flex items-center justify-center">
+                        <i class="fa-solid fa-times mr-2"></i>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+    <script>
+        // Carga en cascada de ubicación con preselección por nombres
+        const usuarioDepartamento = "{{ usuario.departamento or '' }}";
+        const usuarioProvincia = "{{ usuario.provincia or '' }}";
+        const usuarioDistrito = "{{ usuario.distrito or '' }}";
+
+        async function cargarDepartamentos() {
+            const selDep = document.getElementById('departamento');
+            selDep.innerHTML = '<option value="">Seleccione</option>';
+            const res = await fetch('/usuarios/api/departamentos');
+            const datos = await res.json();
+            datos.forEach(dep => {
+                const opt = document.createElement('option');
+                opt.value = dep.id_departamento;
+                opt.textContent = dep.nombre;
+                if (dep.nombre === usuarioDepartamento) opt.selected = true;
+                selDep.appendChild(opt);
+            });
+            if (selDep.value) await cargarProvincias(selDep.value);
+        }
+
+        async function cargarProvincias(idDepartamento) {
+            const selProv = document.getElementById('provincia');
+            const selDist = document.getElementById('distrito');
+            selProv.innerHTML = '<option value="">Seleccione</option>';
+            selDist.innerHTML = '<option value="">Seleccione</option>';
+            if (!idDepartamento) return;
+            const res = await fetch(`/usuarios/api/provincias/${idDepartamento}`);
+            const datos = await res.json();
+            datos.forEach(prov => {
+                const opt = document.createElement('option');
+                opt.value = prov.id_provincia;
+                opt.textContent = prov.nombre;
+                if (prov.nombre === usuarioProvincia) opt.selected = true;
+                selProv.appendChild(opt);
+            });
+            if (selProv.value) await cargarDistritos(selProv.value);
+        }
+
+        async function cargarDistritos(idProvincia) {
+            const selDist = document.getElementById('distrito');
+            selDist.innerHTML = '<option value="">Seleccione</option>';
+            if (!idProvincia) return;
+            const res = await fetch(`/usuarios/api/distritos/${idProvincia}`);
+            const datos = await res.json();
+            datos.forEach(dist => {
+                const opt = document.createElement('option');
+                opt.value = dist.id_distrito;
+                opt.textContent = dist.nombre;
+                if (dist.nombre === usuarioDistrito) opt.selected = true;
+                selDist.appendChild(opt);
+            });
+            // Actualizar hidden con id seleccionado
+            document.getElementById('id_distrito').value = selDist.value || '';
+        }
+
+        document.getElementById('departamento').addEventListener('change', e => cargarProvincias(e.target.value));
+        document.getElementById('provincia').addEventListener('change', e => cargarDistritos(e.target.value));
+        document.getElementById('distrito').addEventListener('change', e => {
+            document.getElementById('id_distrito').value = e.target.value || '';
+        });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await cargarDepartamentos();
+        });
+    </script>
+</body>
+</html>

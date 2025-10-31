@@ -36,7 +36,7 @@ class Paciente:
 
     @staticmethod
     def obtener_todos():
-        """Obtiene todos los pacientes"""
+        """Obtiene todos los pacientes activos"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -51,6 +51,7 @@ class Paciente:
                     LEFT JOIN DISTRITO d ON p.id_distrito = d.id_distrito
                     LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
                     LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+                    WHERE u.estado = 'activo'
                     ORDER BY p.apellidos, p.nombres
                 """
                 cursor.execute(sql)
@@ -174,20 +175,23 @@ class Paciente:
 
     @staticmethod
     def eliminar(id_paciente):
-        """Elimina un paciente (elimina también su usuario asociado)"""
+        """Elimina un paciente (desactiva su usuario asociado)"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 # Primero obtener el id_usuario
                 cursor.execute("SELECT id_usuario FROM PACIENTE WHERE id_paciente = %s", (id_paciente,))
-                paciente = cursor.fetchone()
+                resultado = cursor.fetchone()
                 
-                if not paciente:
+                if not resultado:
                     return {'error': 'Paciente no encontrado'}
+                
+                # resultado es un diccionario (DictCursor), acceder por clave
+                id_usuario = resultado['id_usuario']
                 
                 # Desactivar el usuario
                 cursor.execute("UPDATE USUARIO SET estado = 'inactivo' WHERE id_usuario = %s", 
-                             (paciente['id_usuario'],))
+                             (id_usuario,))
                 
                 conexion.commit()
                 return {'success': True}
@@ -199,7 +203,7 @@ class Paciente:
 
     @staticmethod
     def buscar(termino):
-        """Busca pacientes por nombre, apellido o documento"""
+        """Busca pacientes activos por nombre, apellido, correo o documento"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -210,13 +214,15 @@ class Paciente:
                     FROM PACIENTE p
                     INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
                     LEFT JOIN DISTRITO d ON p.id_distrito = d.id_distrito
-                    WHERE p.nombres LIKE %s 
-                       OR p.apellidos LIKE %s 
-                       OR p.documento_identidad LIKE %s
+                    WHERE u.estado = 'activo'
+                      AND (p.nombres LIKE %s 
+                           OR p.apellidos LIKE %s 
+                           OR p.documento_identidad LIKE %s
+                           OR u.correo LIKE %s)
                     ORDER BY p.apellidos, p.nombres
                 """
                 termino_busqueda = f"%{termino}%"
-                cursor.execute(sql, (termino_busqueda, termino_busqueda, termino_busqueda))
+                cursor.execute(sql, (termino_busqueda, termino_busqueda, termino_busqueda, termino_busqueda))
                 return cursor.fetchall()
         finally:
             conexion.close()
