@@ -318,6 +318,8 @@ def api_crear_incidencia():
         id_paciente = data.get('id_paciente')
         descripcion = data.get('descripcion')
         categoria = data.get('categoria')
+        prioridad = data.get('prioridad', 'Media')  # Valor por defecto
+        id_empleado = data.get('id_empleado')  # Opcional
         
         # Validaciones
         if not id_paciente:
@@ -338,12 +340,13 @@ def api_crear_incidencia():
                 'message': 'Debe seleccionar una categoría'
             }), 400
         
-        # Crear la incidencia (sin asignar empleado por defecto)
+        # Crear la incidencia
         resultado = Incidencia.crear(
             descripcion=descripcion.strip(),
             id_paciente=id_paciente,
             categoria=categoria,
-            id_empleado=None  # No asignar empleado automáticamente
+            prioridad=prioridad,
+            id_empleado=id_empleado  # Puede ser None si no se asigna
         )
         
         print('[API CREAR INCIDENCIA] Resultado:', resultado)

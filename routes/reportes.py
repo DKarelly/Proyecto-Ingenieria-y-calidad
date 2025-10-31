@@ -158,18 +158,30 @@ def api_obtener_empleados():
     try:
         conexion, cursor = obtener_conexion_dict()
         cursor.execute("""
-            SELECT e.id_empleado, e.nombres, e.apellidos, esp.nombre as especialidad
+            SELECT 
+                e.id_empleado, 
+                e.nombres, 
+                e.apellidos, 
+                COALESCE(esp.nombre, r.nombre, 'Sin cargo') as cargo
             FROM EMPLEADO e
             LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            LEFT JOIN ROL r ON e.id_rol = r.id_rol
             WHERE e.estado = 'Activo'
             ORDER BY e.nombres, e.apellidos
         """)
         empleados = cursor.fetchall()
         cursor.close()
         conexion.close()
-        return jsonify(empleados)
+        
+        return jsonify({
+            'success': True,
+            'empleados': empleados
+        })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"[API EMPLEADOS] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @reportes_bp.route("/api/tipos-recursos", methods=["GET"])
 def api_obtener_tipos_recursos():

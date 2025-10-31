@@ -160,12 +160,14 @@ async function enviarFormulario(e) {
     const idPaciente = document.getElementById('selectPaciente').value;
     const descripcion = document.getElementById('descripcion').value.trim();
     const categoria = document.getElementById('categoria').value;
+    const prioridad = document.getElementById('prioridad').value;
     const idEmpleado = document.getElementById('selectEmpleado').value;
     
     console.log('Datos del formulario:', {
         id_paciente: idPaciente,
         descripcion: descripcion,
         categoria: categoria,
+        prioridad: prioridad,
         id_empleado: idEmpleado || 'Sin asignar'
     });
     
@@ -185,6 +187,11 @@ async function enviarFormulario(e) {
         return;
     }
     
+    if (!prioridad) {
+        mostrarError('Debe seleccionar una prioridad');
+        return;
+    }
+    
     // Deshabilitar botón durante el envío
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
@@ -193,7 +200,8 @@ async function enviarFormulario(e) {
         const payload = {
             id_paciente: parseInt(idPaciente),
             descripcion: descripcion,
-            categoria: categoria
+            categoria: categoria,
+            prioridad: prioridad
         };
         
         // Solo incluir id_empleado si se seleccionó uno

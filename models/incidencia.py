@@ -12,6 +12,8 @@ class Incidencia:
                 SELECT
                     i.id_incidencia,
                     i.descripcion,
+                    i.categoria,
+                    i.prioridad,
                     DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
                     p.nombres as paciente_nombres,
                     p.apellidos as paciente_apellidos,
@@ -35,8 +37,11 @@ class Incidencia:
             for inc in incidencias:
                 inc['paciente'] = f"{inc['paciente_nombres']} {inc['paciente_apellidos']}" if inc['paciente_nombres'] else 'No asignado'
                 inc['empleado'] = f"{inc['empleado_nombres']} {inc['empleado_apellidos']}" if inc['empleado_nombres'] else 'No asignado'
-                inc['prioridad'] = 'Media'  # Por defecto, se puede agregar campo en BD después
-                inc['categoria'] = 'General'  # Por defecto, se puede agregar campo en BD después
+                # Usar valores de BD o defaults
+                if not inc.get('prioridad'):
+                    inc['prioridad'] = 'Media'
+                if not inc.get('categoria'):
+                    inc['categoria'] = 'General'
 
             return incidencias
 
@@ -58,6 +63,8 @@ class Incidencia:
                 SELECT
                     i.id_incidencia,
                     i.descripcion,
+                    i.categoria,
+                    i.prioridad,
                     DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
                     p.nombres as paciente_nombres,
                     p.apellidos as paciente_apellidos,
@@ -109,6 +116,16 @@ class Incidencia:
                 query += " AND aei.estado_historial = %s"
                 params.append(filtros['estado'])
 
+            # Filtro por prioridad
+            if filtros.get('prioridad') and filtros['prioridad'] != '':
+                query += " AND i.prioridad = %s"
+                params.append(filtros['prioridad'])
+
+            # Filtro por categoría
+            if filtros.get('categoria') and filtros['categoria'] != '':
+                query += " AND i.categoria = %s"
+                params.append(filtros['categoria'])
+
             query += " ORDER BY i.id_incidencia ASC"
 
             cursor.execute(query, params)
@@ -118,8 +135,11 @@ class Incidencia:
             for inc in incidencias:
                 inc['paciente'] = f"{inc['paciente_nombres']} {inc['paciente_apellidos']}" if inc['paciente_nombres'] else 'No asignado'
                 inc['empleado'] = f"{inc['empleado_nombres']} {inc['empleado_apellidos']}" if inc['empleado_nombres'] else 'No asignado'
-                inc['prioridad'] = 'Media'  # Por defecto
-                inc['categoria'] = 'General'  # Por defecto
+                # Usar valores de BD o defaults
+                if not inc.get('prioridad'):
+                    inc['prioridad'] = 'Media'
+                if not inc.get('categoria'):
+                    inc['categoria'] = 'General'
 
             return incidencias
 
@@ -221,7 +241,7 @@ class Incidencia:
                 conexion.close()
 
     @staticmethod
-    def crear(descripcion, id_paciente, categoria=None, id_empleado=None):
+    def crear(descripcion, id_paciente, categoria=None, prioridad=None, id_empleado=None):
         """Crea una nueva incidencia"""
         try:
             conexion = obtener_conexion()
@@ -229,11 +249,11 @@ class Incidencia:
 
             # Insertar la incidencia
             query = """
-                INSERT INTO INCIDENCIA (descripcion, id_paciente, fecha_registro, categoria)
-                VALUES (%s, %s, NOW(), %s)
+                INSERT INTO INCIDENCIA (descripcion, id_paciente, fecha_registro, categoria, prioridad)
+                VALUES (%s, %s, NOW(), %s, %s)
             """
 
-            cursor.execute(query, (descripcion, id_paciente, categoria))
+            cursor.execute(query, (descripcion, id_paciente, categoria, prioridad))
             conexion.commit()
 
             id_incidencia = cursor.lastrowid
@@ -242,11 +262,14 @@ class Incidencia:
             query_asignar = """
                 INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA 
                 (id_incidencia, id_empleado, estado_historial, observaciones)
-                VALUES (%s, %s, 'Abierta', %s)
+                VALUES (%s, %s, %s, %s)
             """
             
-            observacion_inicial = 'Incidencia creada y asignada' if id_empleado else 'Incidencia creada - Sin asignar'
-            cursor.execute(query_asignar, (id_incidencia, id_empleado, observacion_inicial))
+            # Si hay empleado asignado, estado "En proceso", sino "Abierta"
+            estado_inicial = 'En proceso' if id_empleado else 'Abierta'
+            observacion_inicial = None  # Sin observaciones automáticas
+            
+            cursor.execute(query_asignar, (id_incidencia, id_empleado, estado_inicial, observacion_inicial))
             conexion.commit()
 
             return {
@@ -288,7 +311,7 @@ class Incidencia:
                     UPDATE ASIGNAR_EMPLEADO_INCIDENCIA
                     SET id_empleado = %s, 
                         observaciones = %s,
-                        estado_historial = 'Asignada'
+                        estado_historial = 'En proceso'
                     WHERE id_incidencia = %s
                 """
                 cursor.execute(query_update, (id_empleado, observaciones, id_incidencia))
@@ -297,7 +320,7 @@ class Incidencia:
                 query_insert = """
                     INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA 
                     (id_incidencia, id_empleado, estado_historial, observaciones)
-                    VALUES (%s, %s, 'Asignada', %s)
+                    VALUES (%s, %s, 'En proceso', %s)
                 """
                 cursor.execute(query_insert, (id_incidencia, id_empleado, observaciones))
 
