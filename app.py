@@ -1,4 +1,5 @@
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template, session, redirect, url_for, g, request
+from models.usuario import Usuario
 from routes.usuarios import usuarios_bp
 from routes.cuentas import cuentas_bp
 from routes.admin import admin_bp
@@ -27,6 +28,36 @@ app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
 @app.route("/")
 def home():
     return render_template('home.html')
+
+
+# Cargar información del usuario completo en `g.user` antes de cada petición
+@app.before_request
+def load_logged_in_user():
+    user_id = session.get('usuario_id')
+    if user_id is None:
+        g.user = None
+    else:
+        try:
+            # Obtener el usuario completo desde el modelo
+            g.user = Usuario.obtener_por_id(user_id)
+        except Exception:
+            # En caso de error (DB, etc.) no romper la app; dejar sin usuario
+            g.user = None
+
+
+def is_auth():
+    return g.get('user') is not None
+
+
+@app.context_processor
+def inject_globals():
+    # Inyecta is_auth y user en todas las plantillas.
+    # También inyectamos `usuario` por compatibilidad con templates existentes.
+    return {
+        'is_auth': is_auth(),
+        'user': g.get('user'),
+        'usuario': g.get('user')
+    }
 
 @app.route("/admin/panel")
 def admin_panel():

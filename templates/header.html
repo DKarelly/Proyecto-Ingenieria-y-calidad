@@ -1,4 +1,8 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+<!-- Exponer usuario en JS (desde sesión) -->
+<script>
+    window.usuario = {{ usuario|tojson if usuario else 'null' }};
+</script>
 <!-- Header Fijo -->
 <header id="main-header" class="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-sm transition-shadow duration-300">
     <div class="container mx-auto px-4 flex justify-between items-center py-4">

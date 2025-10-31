@@ -267,13 +267,44 @@ class Empleado:
             conexion.close()
 
     @staticmethod
+    def obtener_medicos():
+        """Obtiene solo empleados que son médicos (roles 2 y 3) y tienen especialidad asignada"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                sql = """
+                    SELECT e.*,
+                           u.correo, u.telefono, u.estado as estado_usuario,
+                           r.nombre as rol,
+                           esp.nombre as especialidad,
+                           d.nombre as distrito,
+                           prov.nombre as provincia,
+                           dep.nombre as departamento
+                    FROM EMPLEADO e
+                    INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+                    LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    LEFT JOIN DISTRITO d ON e.id_distrito = d.id_distrito
+                    LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
+                    LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+                    WHERE e.id_rol IN (2)
+                      AND e.id_especialidad IS NOT NULL
+                      AND e.estado = 'activo'
+                    ORDER BY e.apellidos, e.nombres
+                """
+                cursor.execute(sql)
+                return cursor.fetchall()
+        finally:
+            conexion.close()
+
+    @staticmethod
     def buscar(termino):
         """Busca empleados por nombre, apellido o documento"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 sql = """
-                    SELECT e.*, 
+                    SELECT e.*,
                            u.correo, u.telefono,
                            r.nombre as rol,
                            esp.nombre as especialidad
@@ -281,8 +312,8 @@ class Empleado:
                     INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
                     LEFT JOIN ROL r ON e.id_rol = r.id_rol
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                    WHERE e.nombres LIKE %s 
-                       OR e.apellidos LIKE %s 
+                    WHERE e.nombres LIKE %s
+                       OR e.apellidos LIKE %s
                        OR e.documento_identidad LIKE %s
                     ORDER BY e.apellidos, e.nombres
                 """

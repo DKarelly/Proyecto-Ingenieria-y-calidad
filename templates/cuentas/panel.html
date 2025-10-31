@@ -77,27 +77,19 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     
     <script>
-        // Cargar información del usuario desde la sesión del servidor
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const response = await fetch('/usuarios/api/session');
-                const data = await response.json();
-                
-                if (data.logged_in && data.usuario) {
-                    if (data.usuario.nombre) {
-                        document.getElementById('admin-username').textContent = data.usuario.nombre;
-                    }
-                    if (data.usuario.rol) {
-                        document.getElementById('admin-role').textContent = data.usuario.rol;
-                    }
-                } else {
-                    window.location.href = '/';
-                }
-            } catch (error) {
-                console.error('Error al cargar datos de sesión:', error);
-                window.location.href = '/';
+        // Sesión provista por servidor. Actualiza UI usando window.usuario (inyectado en header).
+        (function(){
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            } else {
+                // Si la página requiere sesión, el server debe redirigir.
+                // window.location.href = '/';
             }
-        });
+        })();
     </script>
 </body>
 </html>

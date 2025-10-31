@@ -419,7 +419,13 @@ function logout() {
 // Verificar si hay usuario logueado al cargar la página
 async function checkUserSession() {
     try {
-        // Obtener datos del usuario desde el servidor
+        // Preferir usuario ya inyectado por el servidor (window.usuario)
+        if (window.usuario) {
+            updateUserButton(window.usuario);
+            return;
+        }
+
+        // Fallback: consultar la API si no se inyectó el usuario (p.ej. páginas sin header)
         const response = await fetch('/usuarios/api/session');
         if (response.ok) {
             const data = await response.json();

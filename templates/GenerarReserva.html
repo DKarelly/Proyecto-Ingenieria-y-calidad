@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +18,7 @@
     <div class="container mx-auto">
         {% include 'header_admin.html' %}
 
-    <div class="max-w-6xl mx-auto p-6 md:p-10">
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
             <a href="/reservas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
@@ -28,151 +28,235 @@
                 Volver a Reservas
             </a>
         </div>
-        
-        <!-- Título principal -->
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">Generar Nueva Reserva</h1>
 
-        <!-- Sección del formulario -->
-        <div class="admin-card shadow-sm p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 items-end">
-                <!-- Buscar Paciente -->
-                <div class="md:col-span-2 lg:col-span-1">
-                    <label for="search-dni" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">BUSCAR PACIENTE</label>
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            id="search-dni" 
-                            placeholder="Buscar Dni" 
-                            class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
-                        >
-                        <i class="fas fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+        <!-- Título principal -->
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">
+            <i class="fas fa-calendar-plus text-cyan-600 mr-3"></i>
+            Generar Nueva Reserva
+        </h1>
+
+        <!-- Dashboard de Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Total Servicios -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-sm font-semibold uppercase tracking-wide">Servicios</p>
+                        <p class="text-3xl font-bold text-blue-800 mt-2">{{ servicios|length }}</p>
+                    </div>
+                    <div class="bg-blue-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-stethoscope text-blue-600 text-2xl"></i>
                     </div>
                 </div>
-                <!-- Servicio -->
-                <div class="lg:col-span-2">
-                    <label for="select-service" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">SERVICIO</label>
-                    <select 
-                        id="select-service" 
-                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all appearance-none"
-                        style="background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem;"
+            </div>
+
+            <!-- Total Médicos -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Médicos</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2">{{ medicos|length }}</p>
+                    </div>
+                    <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-user-md text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Horarios Disponibles -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Horarios</p>
+                        <p class="text-3xl font-bold text-purple-800 mt-2" id="horarios-count">0</p>
+                    </div>
+                    <div class="bg-purple-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-clock text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado Reserva -->
+            <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border-l-4 border-cyan-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-cyan-600 text-sm font-semibold uppercase tracking-wide">Estado</p>
+                        <p class="text-sm font-bold text-cyan-800 mt-2" id="estado-reserva">Sin iniciar</p>
+                    </div>
+                    <div class="bg-cyan-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-info-circle text-cyan-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 1: Buscar Paciente -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-cyan-500 text-white rounded-full font-bold mr-3">1</div>
+                <h2 class="text-lg font-semibold text-gray-800">Buscar Paciente</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="dni-paciente" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-id-card mr-1"></i>
+                        DNI DEL PACIENTE
+                    </label>
+                    <div class="flex gap-2">
+                        <input
+                            id="dni-paciente"
+                            type="text"
+                            maxlength="8"
+                            placeholder="Ingrese 8 dígitos"
+                            class="flex-1 px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-lg transition-all"
+                        />
+                        <button
+                            id="btn-buscar-paciente"
+                            class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center transition-all shadow-md hover:shadow-lg">
+                            <i class="fas fa-search mr-2"></i>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-user mr-1"></i>
+                        INFORMACIÓN DEL PACIENTE
+                    </label>
+                    <div id="paciente-info" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg min-h-[60px] flex items-center justify-center">
+                        <p class="text-sm text-gray-500 text-center">
+                            <i class="fas fa-user-circle text-3xl text-gray-400 mb-2 block"></i>
+                            Busque un paciente por DNI
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paso 2: Seleccionar Servicio y Médico -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-cyan-500 text-white rounded-full font-bold mr-3">2</div>
+                <h2 class="text-lg font-semibold text-gray-800">Seleccionar Servicio y Médico</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="select-service" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-stethoscope mr-1"></i>
+                        SERVICIO
+                    </label>
+                    <select
+                        id="select-service"
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                     >
-                        <option>Seleccione Servicio</option>
-                        <option>Consulta General</option>
-                        <option>Examen de Sangre</option>
-                        <option>Radiografía</option>
+                        <option value="">Seleccione un servicio</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.id_servicio }}">{{ s.nombre }}{% if s.especialidad %} — {{ s.especialidad }}{% endif %}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                <!-- Medico -->
-                <div class="lg:col-span-1">
-                    <label for="select-medic" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">MEDICO</label>
-                    <select 
-                        id="select-medic" 
-                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all appearance-none"
-                        style="background-image: url(&quot;data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e&quot;); background-position: right 0.75rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem;"
+
+                <div>
+                    <label for="select-medic" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-user-doctor mr-1"></i>
+                        MÉDICO (OPCIONAL)
+                    </label>
+                    <select
+                        id="select-medic"
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                     >
-                        <option>Seleccione Medico</option>
-                        <option>Dr. Juan Pérez</option>
-                        <option>Dra. María Rodriguez</option>
+                        <option value="">Cualquier médico disponible</option>
+                        {% for m in medicos %}
+                        <option value="{{ m.id_empleado }}">{{ m.nombres }} {{ m.apellidos }}{% if m.especialidad %} — {{ m.especialidad }}{% endif %}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                <!-- Icono de limpieza -->
-                <div class="text-center flex items-end justify-center pb-3">
-                    <button class="text-purple-400 hover:text-purple-600 transition-colors" title="Limpiar formulario">
-                        <i class="fas fa-broom text-3xl"></i>
+
+                <div class="flex items-end">
+                    <button
+                        id="btn-buscar-horarios"
+                        class="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-clock mr-2"></i>
+                        Buscar Horarios
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Sección de la tabla de reservas -->
-        <div>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold text-gray-800">Listado General de Reservas</h2>
-                <button class="btn btn-primary">
-                    <i class="fas fa-calendar-plus mr-2"></i>
-                    Registrar Reserva
+        <!-- Paso 3: Seleccionar Horario -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-cyan-500 text-white rounded-full font-bold mr-3">3</div>
+                    <h2 class="text-lg font-semibold text-gray-800">Seleccionar Horario</h2>
+                </div>
+                <button
+                    id="btn-limpiar-todo"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center transition-all">
+                    <i class="fas fa-redo mr-2"></i>
+                    Limpiar Todo
                 </button>
             </div>
-            <div class="overflow-x-auto admin-card shadow-md">
-                <table class="admin-table w-full">
-                    <thead>
-                        <tr>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Id</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Paciente</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Servicio</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Medico</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Horario</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <!-- Fila de ejemplo 1 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">001</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Juan Carlos Pérez</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Consulta General</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Luis Gonzalez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline text-cyan-700 hover:text-white hover:bg-cyan-500">
-                                    <i class="fas fa-clock mr-2"></i>
-                                    Horario
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 2 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">002</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">María Rodriguez</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Examen de Sangre</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dra. Ana Martínez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline text-cyan-700 hover:text-white hover:bg-cyan-500">
-                                    <i class="fas fa-clock mr-2"></i>
-                                    Horario
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 3 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">003</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Carlos Sánchez</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Radiografía</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Carlos Sánchez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline text-cyan-700 hover:text-white hover:bg-cyan-500">
-                                    <i class="fas fa-clock mr-2"></i>
-                                    Horario
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 4 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">004</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Laura Fernández</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Consulta General</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dra. Laura Fernández</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline text-cyan-700 hover:text-white hover:bg-cyan-500">
-                                    <i class="fas fa-clock mr-2"></i>
-                                    Horario
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 5 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">005</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Pedro Ramirez</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Terapia Física</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Juan Pérez</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="btn btn-outline text-cyan-700 hover:text-white hover:bg-cyan-500">
-                                    <i class="fas fa-clock mr-2"></i>
-                                    Horario
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+
+            <!-- Mensaje inicial -->
+            <div id="horarios-placeholder" class="text-center py-12">
+                <i class="fas fa-clock text-gray-300 text-6xl mb-4"></i>
+                <p class="text-gray-600 font-semibold text-lg">Busque horarios disponibles</p>
+                <p class="text-gray-500 text-sm mt-2">Primero seleccione un servicio y haga clic en "Buscar Horarios"</p>
             </div>
+
+            <!-- Loading -->
+            <div id="horarios-loading" class="hidden text-center py-12">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-500 mx-auto mb-4"></div>
+                <p class="text-gray-600 font-medium">Cargando horarios disponibles...</p>
+            </div>
+
+            <!-- Sin resultados -->
+            <div id="horarios-vacio" class="hidden text-center py-12">
+                <i class="fas fa-calendar-times text-gray-300 text-6xl mb-4"></i>
+                <p class="text-gray-600 font-semibold text-lg">No hay horarios disponibles</p>
+                <p class="text-gray-500 text-sm mt-2">Intente con otro servicio o médico</p>
+            </div>
+
+            <!-- Grid de horarios -->
+            <div id="horarios-picker" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+        </div>
+
+        <!-- Paso 4: Confirmar Reserva -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-6">
+            <div class="flex items-center mb-4">
+                <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-cyan-500 text-white rounded-full font-bold mr-3">4</div>
+                <h2 class="text-lg font-semibold text-gray-800">Confirmar y Crear Reserva</h2>
+            </div>
+
+            <!-- Resumen de la reserva -->
+            <div id="resumen-reserva" class="hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 class="font-semibold text-gray-800 mb-3">
+                    <i class="fas fa-clipboard-check mr-2 text-blue-600"></i>
+                    Resumen de la Reserva
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-600"><strong>Paciente:</strong> <span id="resumen-paciente">-</span></p>
+                        <p class="text-gray-600"><strong>DNI:</strong> <span id="resumen-dni">-</span></p>
+                    </div>
+                    <div>
+                        <p class="text-gray-600"><strong>Servicio:</strong> <span id="resumen-servicio">-</span></p>
+                        <p class="text-gray-600"><strong>Horario:</strong> <span id="resumen-horario">-</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <button
+                id="btn-crear-reserva"
+                disabled
+                class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg">
+                <i class="fas fa-check-circle mr-2 text-xl"></i>
+                <span class="text-lg">Crear Reserva</span>
+            </button>
         </div>
     </div>
 
@@ -182,32 +266,353 @@
 
     <!-- AlpineJS para interactividad del dropdown -->
     <script src="//unpkg.com/alpinejs" defer></script>
-    
+
     <script>
-        // Cargar información del usuario desde la sesión del servidor
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const response = await fetch('/usuarios/api/session');
-                const data = await response.json();
-                
-                if (data.logged_in && data.usuario) {
-                    if (data.usuario.nombre) {
-                        document.getElementById('admin-username').textContent = data.usuario.nombre;
-                    }
-                    if (data.usuario.rol) {
-                        document.getElementById('admin-role').textContent = data.usuario.rol;
-                    }
-                } else {
-                    // Si no hay sesión, redirigir al inicio
-                    window.location.href = '/';
-                }
-            } catch (error) {
-                console.error('Error al cargar datos de sesión:', error);
-                window.location.href = '/';
-            }
+        // Variables globales
+        let pacienteSeleccionado = null;
+        let horarioSeleccionado = null;
+        let horarioData = null;
+
+        // Elementos del DOM
+        const dniInput = document.getElementById('dni-paciente');
+        const btnBuscarPaciente = document.getElementById('btn-buscar-paciente');
+        const pacienteInfo = document.getElementById('paciente-info');
+
+        const servicioSelect = document.getElementById('select-service');
+        const medicoSelect = document.getElementById('select-medic');
+        const btnBuscarHorarios = document.getElementById('btn-buscar-horarios');
+
+        const horariosPlaceholder = document.getElementById('horarios-placeholder');
+        const horariosLoading = document.getElementById('horarios-loading');
+        const horariosVacio = document.getElementById('horarios-vacio');
+        const horariosPicker = document.getElementById('horarios-picker');
+
+        const btnCrearReserva = document.getElementById('btn-crear-reserva');
+        const btnLimpiarTodo = document.getElementById('btn-limpiar-todo');
+
+        const horariosCount = document.getElementById('horarios-count');
+        const estadoReserva = document.getElementById('estado-reserva');
+        const resumenReserva = document.getElementById('resumen-reserva');
+
+        // Event listeners
+        btnBuscarPaciente.addEventListener('click', buscarPaciente);
+        btnBuscarHorarios.addEventListener('click', buscarHorarios);
+        btnCrearReserva.addEventListener('click', crearReserva);
+        btnLimpiarTodo.addEventListener('click', limpiarTodo);
+
+        // Enter en DNI
+        dniInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') buscarPaciente();
         });
+
+        // Función para buscar paciente
+        async function buscarPaciente() {
+            const dni = dniInput.value.trim();
+
+            if (!dni) {
+                mostrarNotificacion('Ingrese un DNI', 'error');
+                return;
+            }
+
+            if (dni.length !== 8 || !/^\d+$/.test(dni)) {
+                mostrarNotificacion('El DNI debe tener 8 dígitos numéricos', 'error');
+                return;
+            }
+
+            pacienteInfo.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin text-2xl text-cyan-500"></i><p class="text-sm text-gray-600 mt-2">Buscando...</p></div>';
+
+            try {
+                const resp = await fetch(`/reservas/api/paciente-por-dni?dni=${encodeURIComponent(dni)}`);
+                const data = await resp.json();
+
+                if (!data.paciente) {
+                    pacienteInfo.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-user-slash text-3xl text-red-400 mb-2 block"></i>
+                            <p class="text-sm text-red-600 font-semibold">Paciente no encontrado</p>
+                            <a href="/cuentas/registrar-cuenta-paciente" class="text-xs text-blue-600 hover:underline">Registrar nuevo paciente</a>
+                        </div>
+                    `;
+                    pacienteSeleccionado = null;
+                    estadoReserva.textContent = 'Sin paciente';
+                    actualizarBotonCrear();
+                } else {
+                    pacienteSeleccionado = data.paciente;
+                    pacienteInfo.innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-user-check text-3xl text-green-500 mb-2 block"></i>
+                            <p class="text-sm font-semibold text-gray-800">${data.paciente.nombres} ${data.paciente.apellidos}</p>
+                            <p class="text-xs text-gray-500">DNI: ${data.paciente.documento_identidad} | ID: ${data.paciente.id_paciente}</p>
+                        </div>
+                    `;
+                    estadoReserva.textContent = 'Paciente OK';
+                    mostrarNotificacion('Paciente encontrado correctamente', 'success');
+                    actualizarResumen();
+                }
+            } catch (err) {
+                pacienteInfo.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-400 mb-2 block"></i>
+                        <p class="text-sm text-red-600">Error al buscar paciente</p>
+                    </div>
+                `;
+                pacienteSeleccionado = null;
+                mostrarNotificacion('Error al buscar paciente', 'error');
+            }
+        }
+
+        // Función para buscar horarios
+        async function buscarHorarios() {
+            const id_servicio = servicioSelect.value;
+
+            if (!id_servicio) {
+                mostrarNotificacion('Seleccione un servicio', 'error');
+                return;
+            }
+
+            const id_empleado = medicoSelect.value;
+
+            // Mostrar loading
+            horariosPlaceholder.classList.add('hidden');
+            horariosVacio.classList.add('hidden');
+            horariosPicker.classList.add('hidden');
+            horariosLoading.classList.remove('hidden');
+
+            const params = new URLSearchParams();
+            if (id_empleado) params.set('id_empleado', id_empleado);
+            else if (id_servicio) params.set('id_servicio', id_servicio);
+
+            try {
+                const resp = await fetch(`/reservas/api/horarios-disponibles?${params.toString()}`);
+                if (!resp.ok) throw new Error('Error al cargar horarios');
+
+                const data = await resp.json();
+                const horarios = data.horarios || [];
+
+                horariosLoading.classList.add('hidden');
+
+                if (horarios.length === 0) {
+                    horariosVacio.classList.remove('hidden');
+                    horariosCount.textContent = '0';
+                    estadoReserva.textContent = 'Sin horarios';
+                    return;
+                }
+
+                // Renderizar horarios
+                horariosPicker.innerHTML = '';
+                horarios.forEach(h => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-gradient-to-br from-white to-gray-50 border-2 border-gray-300 rounded-lg p-4 text-center hover:border-cyan-500 hover:shadow-lg transition-all duration-200 cursor-pointer horario-card';
+                    div.dataset.id = h.id_horario;
+                    div.dataset.fecha = h.fecha || '';
+                    div.dataset.horaInicio = h.hora_inicio || '';
+                    div.dataset.horaFin = h.hora_fin || '';
+                    div.dataset.empleado = h.empleado || '';
+
+                    const hora = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
+                    const horaFin = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
+
+                    div.innerHTML = `
+                        <i class="fas fa-clock text-cyan-600 text-2xl mb-2"></i>
+                        <p class="font-bold text-gray-800 text-lg">${hora}</p>
+                        <p class="text-xs text-gray-600">a ${horaFin}</p>
+                        ${h.fecha ? `<p class="text-xs text-gray-500 mt-1">${h.fecha}</p>` : ''}
+                    `;
+
+                    div.addEventListener('click', () => seleccionarHorario(div, h));
+                    horariosPicker.appendChild(div);
+                });
+
+                horariosPicker.classList.remove('hidden');
+                horariosCount.textContent = horarios.length;
+                estadoReserva.textContent = `${horarios.length} horarios`;
+                mostrarNotificacion(`Se encontraron ${horarios.length} horarios disponibles`, 'success');
+
+            } catch (err) {
+                horariosLoading.classList.add('hidden');
+                horariosVacio.classList.remove('hidden');
+                mostrarNotificacion('Error al cargar horarios', 'error');
+            }
+        }
+
+        // Función para seleccionar horario
+        function seleccionarHorario(elemento, data) {
+            // Remover selección anterior
+            document.querySelectorAll('.horario-card').forEach(card => {
+                card.classList.remove('border-green-500', 'bg-green-50');
+                card.classList.add('border-gray-300');
+            });
+
+            // Marcar seleccionado
+            elemento.classList.remove('border-gray-300');
+            elemento.classList.add('border-green-500', 'bg-green-50');
+
+            horarioSeleccionado = elemento.dataset.id;
+            horarioData = data;
+
+            estadoReserva.textContent = 'Horario seleccionado';
+            actualizarResumen();
+            actualizarBotonCrear();
+        }
+
+        // Actualizar resumen
+        function actualizarResumen() {
+            if (pacienteSeleccionado && horarioSeleccionado) {
+                document.getElementById('resumen-paciente').textContent =
+                    `${pacienteSeleccionado.nombres} ${pacienteSeleccionado.apellidos}`;
+                document.getElementById('resumen-dni').textContent = pacienteSeleccionado.documento_identidad;
+
+                const servicioText = servicioSelect.options[servicioSelect.selectedIndex]?.text || '-';
+                document.getElementById('resumen-servicio').textContent = servicioText;
+
+                const fecha = horarioData?.fecha || '';
+                const horaInicio = horarioData?.hora_inicio?.substring(0, 5) || '';
+                const horaFin = horarioData?.hora_fin?.substring(0, 5) || '';
+                document.getElementById('resumen-horario').textContent =
+                    fecha ? `${fecha} de ${horaInicio} a ${horaFin}` : `${horaInicio} a ${horaFin}`;
+
+                resumenReserva.classList.remove('hidden');
+            } else {
+                resumenReserva.classList.add('hidden');
+            }
+        }
+
+        // Actualizar botón crear
+        function actualizarBotonCrear() {
+            if (pacienteSeleccionado && horarioSeleccionado && servicioSelect.value) {
+                btnCrearReserva.disabled = false;
+            } else {
+                btnCrearReserva.disabled = true;
+            }
+        }
+
+        // Crear reserva
+        async function crearReserva() {
+            if (!pacienteSeleccionado) {
+                mostrarNotificacion('Seleccione un paciente', 'error');
+                return;
+            }
+
+            if (!horarioSeleccionado) {
+                mostrarNotificacion('Seleccione un horario', 'error');
+                return;
+            }
+
+            const id_servicio = servicioSelect.value;
+            if (!id_servicio) {
+                mostrarNotificacion('Seleccione un servicio', 'error');
+                return;
+            }
+
+            btnCrearReserva.disabled = true;
+            btnCrearReserva.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-xl"></i><span class="text-lg">Creando...</span>';
+
+            const payload = {
+                id_paciente: pacienteSeleccionado.id_paciente,
+                id_horario: horarioSeleccionado,
+                id_servicio: id_servicio
+            };
+
+            try {
+                const resp = await fetch('/reservas/api/crear-reserva', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.error || 'No se pudo crear la reserva');
+                }
+
+                mostrarNotificacion(`Reserva creada exitosamente (ID: ${data.id_reserva})`, 'success');
+                estadoReserva.textContent = 'Reserva creada';
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+
+            } catch (err) {
+                btnCrearReserva.disabled = false;
+                btnCrearReserva.innerHTML = '<i class="fas fa-check-circle mr-2 text-xl"></i><span class="text-lg">Crear Reserva</span>';
+                mostrarNotificacion(err.message, 'error');
+            }
+        }
+
+        // Limpiar todo
+        function limpiarTodo() {
+            dniInput.value = '';
+            servicioSelect.value = '';
+            medicoSelect.value = '';
+
+            pacienteInfo.innerHTML = '<p class="text-sm text-gray-500 text-center"><i class="fas fa-user-circle text-3xl text-gray-400 mb-2 block"></i>Busque un paciente por DNI</p>';
+
+            horariosPicker.innerHTML = '';
+            horariosPicker.classList.add('hidden');
+            horariosPlaceholder.classList.remove('hidden');
+            horariosVacio.classList.add('hidden');
+            horariosLoading.classList.add('hidden');
+            resumenReserva.classList.add('hidden');
+
+            pacienteSeleccionado = null;
+            horarioSeleccionado = null;
+            horarioData = null;
+
+            horariosCount.textContent = '0';
+            estadoReserva.textContent = 'Sin iniciar';
+
+            actualizarBotonCrear();
+            mostrarNotificacion('Formulario limpiado', 'success');
+        }
+
+        // Mostrar notificación
+        function mostrarNotificacion(mensaje, tipo) {
+            const toast = document.createElement('div');
+            const bgColor = tipo === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = tipo === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center animate-fade-in`;
+            toast.innerHTML = `
+                <i class="fas ${icon} mr-3 text-xl"></i>
+                <span>${mensaje}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Sesión provista por servidor
+        (function(){
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            }
+        })();
     </script>
+
+    <style>
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+    </style>
 
 </body>
 </html>
-

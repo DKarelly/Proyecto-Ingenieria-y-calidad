@@ -30,109 +30,207 @@
         </div>
         
         <!-- Título principal -->
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">Consultar Servicio Por Tipo</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">
+            <i class="fas fa-clipboard-list text-cyan-600 mr-3"></i>
+            Consultar Servicio Por Tipo
+        </h1>
 
-        <!-- Sección de búsqueda -->
-        <div class="mb-8">
-            <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm">
-                <label for="search-service-type" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">TIPO DE SERVICIO</label>
-                <div class="relative">
-                    <input 
-                        type="text" 
-                        id="search-service-type" 
-                        placeholder="Buscar Tipo de servicio" 
-                        class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
-                    >
-                    <span class="absolute inset-y-0 right-0 flex items-center pr-4">
-                        <i class="fas fa-search text-gray-400"></i>
-                    </span>
+        <!-- Dashboard de Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Tipos -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-sm font-semibold uppercase tracking-wide">Total Tipos</p>
+                        <p class="text-3xl font-bold text-blue-800 mt-2" id="total-tipos">0</p>
+                    </div>
+                    <div class="bg-blue-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-layer-group text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Servicios -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Total Servicios</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2" id="total-servicios">0</p>
+                    </div>
+                    <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-briefcase-medical text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultados Filtrados -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Resultados</p>
+                        <p class="text-3xl font-bold text-purple-800 mt-2" id="resultados-filtrados">0</p>
+                    </div>
+                    <div class="bg-purple-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-filter text-purple-600 text-2xl"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sección de la tabla de servicios -->
+        <!-- Sección de búsqueda y filtros -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-search text-cyan-600 text-xl mr-3"></i>
+                <h2 class="text-lg font-semibold text-gray-800">Buscar y Filtrar</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Búsqueda por nombre -->
+                <div>
+                    <label for="search-service-type" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-text-width mr-1"></i>
+                        BUSCAR POR NOMBRE
+                    </label>
+                    <div class="relative">
+                        <input
+                            type="text"
+                            id="search-service-type"
+                            placeholder="Ej: Consulta, Laboratorio, etc."
+                            class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
+                        >
+                        <span class="absolute inset-y-0 right-0 flex items-center pr-4">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Botón Limpiar -->
+                <div class="flex items-end">
+                    <button
+                        id="btn-limpiar"
+                        class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                    >
+                        <i class="fas fa-eraser mr-2"></i>
+                        Limpiar Filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de la tabla de tipos de servicio -->
         <div>
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Listado General de Tipos de Servicio</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800">
+                    <i class="fas fa-table text-cyan-600 mr-2"></i>
+                    Listado de Tipos de Servicio
+                </h2>
+            </div>
+
             <div class="overflow-x-auto bg-white rounded-lg shadow-md border border-gray-200">
                 <table class="w-full">
-                    <!-- Cabecera de la tabla -->
-                    <thead class="bg-gray-50 border-b-2 border-gray-300">
+                    <thead class="bg-gradient-to-r from-cyan-50 to-blue-50 border-b-2 border-cyan-300">
                         <tr>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Nombre del Tipo</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Descripción</th>
-                            <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-hashtag mr-2 text-cyan-600"></i>ID
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-tag mr-2 text-cyan-600"></i>Nombre del Tipo
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-align-left mr-2 text-cyan-600"></i>Descripción
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-cog mr-2 text-cyan-600"></i>Acciones
+                            </th>
                         </tr>
                     </thead>
-                    <!-- Cuerpo de la tabla -->
-                    <tbody class="divide-y divide-gray-200">
-                        <!-- Fila de ejemplo 1 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">Consulta General</td>
-                            <td class="px-6 py-4 text-gray-600">Atención médica primaria para diagnóstico y tratamiento.</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-sm hover:shadow-md">
-                                    <i class="fas fa-list-ul mr-2"></i>
-                                    Ver Servicios
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 2 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">Examen de Sangre</td>
-                            <td class="px-6 py-4 text-gray-600">Análisis de muestra de sangre para evaluar la salud.</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-sm hover:shadow-md">
-                                    <i class="fas fa-list-ul mr-2"></i>
-                                    Ver Servicios
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 3 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">Radiografía</td>
-                            <td class="px-6 py-4 text-gray-600">Uso de rayos X para obtener imágenes del interior del cuerpo.</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-sm hover:shadow-md">
-                                    <i class="fas fa-list-ul mr-2"></i>
-                                    Ver Servicios
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 4 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">Terapia Física</td>
-                            <td class="px-6 py-4 text-gray-600">Rehabilitación de lesiones y trastornos del movimiento.</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-sm hover:shadow-md">
-                                    <i class="fas fa-list-ul mr-2"></i>
-                                    Ver Servicios
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 5 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">Ecografía</td>
-                            <td class="px-6 py-4 text-gray-600">Imágenes de órganos internos mediante ondas sonoras.</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-sm hover:shadow-md">
-                                    <i class="fas fa-list-ul mr-2"></i>
-                                    Ver Servicios
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Fila de ejemplo 6 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">Endoscopia</td>
-                            <td class="px-6 py-4 text-gray-600">Examen visual del tracto digestivo superior.</td>
-                            <td class="px-6 py-4 text-center">
-                                <button class="bg-cyan-100 hover:bg-cyan-200 text-cyan-700 font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-sm hover:shadow-md">
-                                    <i class="fas fa-list-ul mr-2"></i>
-                                    Ver Servicios
-                                </button>
-                            </td>
-                        </tr>
+                    <tbody class="divide-y divide-gray-200" id="tipos-table-body">
+                        {% if tipos %}
+                            {% for t in tipos %}
+                            <tr class="hover:bg-cyan-50 transition-all duration-200 tipo-row" data-nombre="{{ t.nombre|lower }}" data-id="{{ t.id_tipo_servicio }}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">
+                                        {{ t.id_tipo_servicio }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg">
+                                            <i class="fas fa-layer-group text-cyan-600"></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-semibold text-gray-800">{{ t.nombre }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-sm text-gray-600 max-w-md">{{ t.descripcion or 'Sin descripción' }}</p>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <button
+                                        data-id="{{ t.id_tipo_servicio }}"
+                                        data-nombre="{{ t.nombre }}"
+                                        class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-2 px-6 rounded-lg inline-flex items-center transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 ver-por-tipo-btn">
+                                        <i class="fas fa-list-ul mr-2"></i>
+                                        Ver Servicios
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-8 text-center">
+                                    <div class="flex flex-col items-center justify-center text-gray-400">
+                                        <i class="fas fa-inbox text-4xl mb-3"></i>
+                                        <p class="text-gray-500">No hay tipos de servicio registrados</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Mensaje cuando no hay resultados filtrados -->
+            <div id="no-resultados" class="hidden mt-4 p-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl mb-2"></i>
+                <p class="text-gray-700 font-medium">No se encontraron tipos de servicio que coincidan con tu búsqueda</p>
+                <p class="text-gray-500 text-sm mt-1">Intenta con otros términos o limpia los filtros</p>
+            </div>
+        </div>
+
+        <!-- Modal para mostrar servicios por tipo -->
+        <div id="servicios-tipo-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <!-- Header del Modal -->
+                <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
+                    <div class="flex items-center">
+                        <i class="fas fa-briefcase-medical text-2xl mr-3"></i>
+                        <h3 class="text-xl font-bold" id="servicios-tipo-modal-title">Servicios</h3>
+                    </div>
+                    <button
+                        id="close-servicios-tipo-modal"
+                        class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-all">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Contenido del Modal -->
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div id="servicios-tipo-list" class="space-y-4">
+                        <!-- Lista poblada por JS -->
+                    </div>
+                </div>
+
+                <!-- Footer del Modal -->
+                <div class="border-t border-gray-200 px-6 py-4 bg-gray-50 rounded-b-xl">
+                    <button
+                        id="close-servicios-tipo-modal-footer"
+                        class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-lg transition-all">
+                        <i class="fas fa-times mr-2"></i>
+                        Cerrar
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -145,28 +243,239 @@
     <script src="//unpkg.com/alpinejs" defer></script>
     
     <script>
-        // Cargar información del usuario desde la sesión del servidor
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const response = await fetch('/usuarios/api/session');
-                const data = await response.json();
-                
-                if (data.logged_in && data.usuario) {
-                    if (data.usuario.nombre) {
-                        document.getElementById('admin-username').textContent = data.usuario.nombre;
-                    }
-                    if (data.usuario.rol) {
-                        document.getElementById('admin-role').textContent = data.usuario.rol;
-                    }
-                } else {
-                    // Si no hay sesión, redirigir al inicio
-                    window.location.href = '/';
-                }
-            } catch (error) {
-                console.error('Error al cargar datos de sesión:', error);
-                window.location.href = '/';
-            }
+        // Variables globales
+        let tiposData = [];
+        let serviciosCounts = new Map();
+        let totalServicios = 0;
+
+        // Cargar datos y configurar listeners al cargar la página
+        document.addEventListener('DOMContentLoaded', function(){
+            // Inicializar datos desde el servidor
+            inicializarDatos();
+
+            // Configurar listeners
+            configurarBusqueda();
+            configurarModal();
+
+            // Actualizar estadísticas iniciales
+            actualizarEstadisticas();
         });
+
+        // Inicializar datos del servidor
+        function inicializarDatos() {
+            const filas = document.querySelectorAll('.tipo-row');
+            filas.forEach(fila => {
+                tiposData.push({
+                    id: fila.dataset.id,
+                    nombre: fila.dataset.nombre
+                });
+            });
+        }
+
+        // Configurar búsqueda y filtros
+        function configurarBusqueda() {
+            const searchInput = document.getElementById('search-service-type');
+            const btnLimpiar = document.getElementById('btn-limpiar');
+
+            // Búsqueda en tiempo real
+            searchInput.addEventListener('input', aplicarFiltros);
+
+            // Limpiar filtros
+            btnLimpiar.addEventListener('click', function() {
+                searchInput.value = '';
+                aplicarFiltros();
+            });
+        }
+
+        // Aplicar filtros de búsqueda
+        function aplicarFiltros() {
+            const busqueda = document.getElementById('search-service-type').value.toLowerCase().trim();
+            const filas = document.querySelectorAll('.tipo-row');
+            const noResultados = document.getElementById('no-resultados');
+            let visibles = 0;
+
+            filas.forEach(fila => {
+                const nombre = fila.dataset.nombre;
+                const cumpleBusqueda = !busqueda || nombre.includes(busqueda);
+
+                if (cumpleBusqueda) {
+                    fila.style.display = '';
+                    visibles++;
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+
+            // Mostrar/ocultar mensaje de no resultados
+            if (visibles === 0 && filas.length > 0) {
+                noResultados.classList.remove('hidden');
+            } else {
+                noResultados.classList.add('hidden');
+            }
+
+            // Actualizar estadísticas
+            actualizarEstadisticas();
+        }
+
+        // Actualizar estadísticas del dashboard
+        function actualizarEstadisticas() {
+            const filas = document.querySelectorAll('.tipo-row');
+            const filasVisibles = Array.from(filas).filter(f => f.style.display !== 'none');
+
+            document.getElementById('total-tipos').textContent = filas.length;
+            document.getElementById('resultados-filtrados').textContent = filasVisibles.length;
+
+            // Nota: total-servicios se actualiza al abrir modales
+        }
+
+        // Configurar modal
+        function configurarModal() {
+            const modal = document.getElementById('servicios-tipo-modal');
+            const serviciosList = document.getElementById('servicios-tipo-list');
+            const closeBtn = document.getElementById('close-servicios-tipo-modal');
+            const closeBtnFooter = document.getElementById('close-servicios-tipo-modal-footer');
+
+            function openModal(){
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeModal(){
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+
+            // Cerrar con botones
+            closeBtn.addEventListener('click', closeModal);
+            closeBtnFooter.addEventListener('click', closeModal);
+
+            // Cerrar con ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+
+            // Cerrar al hacer click fuera del modal
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // Configurar botones "Ver Servicios"
+            document.querySelectorAll('.ver-por-tipo-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = btn.getAttribute('data-id');
+                    const nombre = btn.getAttribute('data-nombre');
+
+                    // Actualizar título del modal
+                    document.getElementById('servicios-tipo-modal-title').textContent =
+                        `Servicios de tipo: ${nombre}`;
+
+                    // Mostrar indicador de carga
+                    serviciosList.innerHTML = `
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-500 mb-4"></div>
+                            <p class="text-gray-600 font-medium">Cargando servicios...</p>
+                        </div>
+                    `;
+
+                    openModal();
+
+                    try {
+                        const resp = await fetch(`/reservas/api/servicios-por-tipo/${id}`);
+                        if (!resp.ok) throw new Error('Error al obtener servicios');
+
+                        const data = await resp.json();
+
+                        if (data.error){
+                            serviciosList.innerHTML = `
+                                <div class="text-center py-8">
+                                    <i class="fas fa-exclamation-circle text-red-500 text-4xl mb-4"></i>
+                                    <p class="text-red-600 font-semibold">${data.error}</p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        const servicios = data.servicios || [];
+
+                        if (servicios.length === 0){
+                            serviciosList.innerHTML = `
+                                <div class="text-center py-12">
+                                    <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+                                    <p class="text-gray-600 font-semibold text-lg">No hay servicios para este tipo</p>
+                                    <p class="text-gray-500 text-sm mt-2">Aún no se han registrado servicios para esta categoría</p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        // Actualizar contador total de servicios
+                        if (!serviciosCounts.has(id)) {
+                            serviciosCounts.set(id, servicios.length);
+                            totalServicios += servicios.length;
+                            document.getElementById('total-servicios').textContent = totalServicios;
+                        }
+
+                        // Renderizar servicios en formato de tarjetas
+                        serviciosList.innerHTML = `
+                            <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-sm text-blue-800">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Se encontraron <strong>${servicios.length}</strong> servicio(s) para este tipo
+                                </p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${servicios.map(s => `
+                                    <div class="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md transition-all duration-200">
+                                        <div class="flex items-start mb-3">
+                                            <div class="flex-shrink-0 h-12 w-12 flex items-center justify-center bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg mr-3">
+                                                <i class="fas fa-stethoscope text-cyan-600 text-xl"></i>
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-gray-800 text-base mb-1">${s.nombre}</h4>
+                                                ${s.especialidad ? `
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                                                        <i class="fas fa-user-md mr-1"></i>
+                                                        ${s.especialidad}
+                                                    </span>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        ${s.descripcion ? `
+                                            <p class="text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+                                                ${s.descripcion}
+                                            </p>
+                                        ` : '<p class="text-sm text-gray-400 italic">Sin descripción</p>'}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    } catch(err) {
+                        serviciosList.innerHTML = `
+                            <div class="text-center py-8">
+                                <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                                <p class="text-red-600 font-semibold mb-2">Error al cargar servicios</p>
+                                <p class="text-gray-600 text-sm">${err.message}</p>
+                            </div>
+                        `;
+                    }
+                });
+            });
+        }
+
+        // Sesión provista por servidor
+        (function(){
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            }
+        })();
     </script>
 
 </body>

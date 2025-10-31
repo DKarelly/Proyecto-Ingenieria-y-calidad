@@ -326,16 +326,15 @@
 
         <script>
         // Validacion de sesion
-        fetch('/usuarios/api/session')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.logged_in) {
-                    window.location.href = '/usuarios/login';
-                }
-            })
-            .catch(error => {
-                console.error('Error al verificar la sesion:', error);
-            });
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            } else {
+                // server-side should redirect unauthenticated users
+            }
 
         const modal = document.getElementById('register-employee-modal');
         const openButton = document.getElementById('new-employee-button');

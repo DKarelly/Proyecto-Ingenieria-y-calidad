@@ -272,16 +272,17 @@
 
     <script>
         // Validación de sesión
-        fetch('/usuarios/api/session')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.logged_in) {
-                    window.location.href = '/usuarios/login';
-                }
-            })
-            .catch(error => {
-                console.error('Error al verificar la sesión:', error);
-            });
+            // Usar sesión provista por server (window.usuario)
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            } else {
+                // Si la página requiere sesión, el servidor debería redirigir.
+                // window.location.href = '/';
+            }
 
         // Modal de registro de paciente
         const modal = document.getElementById('modal-registro-paciente');
