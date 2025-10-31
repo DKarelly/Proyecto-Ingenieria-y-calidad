@@ -334,74 +334,11 @@
     <!-- Footer -->
     {% include 'footer.html' %}
 
-    <!-- Script de validación de sesión y completitud -->
+    <!-- Script de validación de sesión (server-side) -->
     <script>
-        // Validar sesión al cargar la página
-        fetch('/usuarios/api/session')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.logged_in) {
-                    window.location.href = '/';
-                }
-            })
-            .catch(error => {
-                console.error('Error al validar sesión:', error);
-                window.location.href = '/';
-            });
-
-        // Calcular completitud del perfil
-        function calcularCompletitud() {
-            const campos = {
-                {% if usuario %}
-                nombre: {{ 'true' if (usuario.nombre_paciente or usuario.nombre_empleado) else 'false' }},
-                documento: {{ 'true' if (usuario.documento_paciente or usuario.documento_empleado) else 'false' }},
-                correo: {{ 'true' if usuario.correo else 'false' }},
-                telefono: {{ 'true' if usuario.telefono else 'false' }},
-                ubicacion: {{ 'true' if (usuario.distrito or usuario.provincia or usuario.departamento) else 'false' }},
-                {% if usuario.tipo_usuario == 'paciente' %}
-                fecha_nacimiento: {{ 'true' if usuario.fecha_nacimiento else 'false' }},
-                sexo: {{ 'true' if usuario.sexo_paciente else 'false' }},
-                {% else %}
-                rol: {{ 'true' if usuario.rol_empleado else 'false' }},
-                {% endif %}
-                {% endif %}
-            };
-
-            const total = Object.keys(campos).length;
-            const completados = Object.values(campos).filter(v => v === true).length;
-            const porcentaje = Math.round((completados / total) * 100);
-
-            // Actualizar UI
-            document.getElementById('profile-percentage').textContent = porcentaje + '%';
-            document.getElementById('profile-progress-bar').style.width = porcentaje + '%';
-
-            // Generar sugerencias
-            const suggestions = [];
-            if (!campos.nombre) suggestions.push({ icon: 'fa-user', text: 'Completa tu nombre completo', color: 'text-orange-600' });
-            if (!campos.documento) suggestions.push({ icon: 'fa-id-card', text: 'Agrega tu documento de identidad', color: 'text-orange-600' });
-            if (!campos.telefono) suggestions.push({ icon: 'fa-phone', text: 'Registra tu número de teléfono', color: 'text-orange-600' });
-            if (!campos.ubicacion) suggestions.push({ icon: 'fa-location-dot', text: 'Completa tu ubicación', color: 'text-orange-600' });
-            {% if usuario and usuario.tipo_usuario == 'paciente' %}
-            if (!campos.fecha_nacimiento) suggestions.push({ icon: 'fa-calendar', text: 'Agrega tu fecha de nacimiento', color: 'text-orange-600' });
-            if (!campos.sexo) suggestions.push({ icon: 'fa-venus-mars', text: 'Especifica tu sexo', color: 'text-orange-600' });
-            {% endif %}
-
-            const suggestionsDiv = document.getElementById('profile-suggestions');
-            if (suggestions.length === 0) {
-                suggestionsDiv.innerHTML = '<p class="text-green-600 font-medium flex items-center"><i class="fa-solid fa-circle-check mr-2"></i>¡Tu perfil está completo!</p>';
-            } else {
-                suggestionsDiv.innerHTML = suggestions.map(s => 
-                    `<p class="${s.color} text-sm flex items-center">
-                        <i class="fa-solid ${s.icon} mr-2"></i>${s.text}
-                    </p>`
-                ).join('');
-            }
+        if (!window.usuario) {
+            window.location.href = '/';
         }
-
-        // Ejecutar al cargar
-        {% if usuario %}
-        calcularCompletitud();
-        {% endif %}
     </script>
 </body>
 </html>

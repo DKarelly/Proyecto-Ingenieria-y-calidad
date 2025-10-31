@@ -1,169 +1,512 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestionar Confirmación de Citas - Clínica Unión</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
         }
     </style>
 </head>
-<body class="text-gray-700">
-    <div class="container mx-auto">
-        {% include 'header_admin.html' %}
+<body class="bg-[#f8fafc]">
+    {% include 'header_admin.html' %}
 
-    <div class="max-w-6xl mx-auto p-6 md:p-10">
-        <!-- Botón de regreso -->
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón Volver -->
         <div class="mb-6">
-            <a href="/notificaciones" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver a Notificaciones
+            <a href="/notificaciones" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                <span class="font-medium">Volver a Notificaciones</span>
             </a>
         </div>
-        
-        <!-- Título principal -->
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">Gestionar Confirmación de Citas</h1>
 
-        <!-- Sección de Búsqueda por fecha -->
-        <div class="admin-card shadow-sm p-6 mb-8 max-w-lg">
-            <label for="search-date" class="block text-sm font-semibold text-gray-700 mb-2">Fecha</label>
-            <div class="relative">
-                <input 
-                    type="text" 
-                    id="search-date" 
-                    placeholder="dd/mm/aaaa" 
-                    class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
-                >
-                <i class="fas fa-calendar-alt absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
+        <!-- Título -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-black text-gray-800">
+                <i class="fas fa-check-circle text-cyan-600 mr-3"></i>
+                Gestionar Confirmación de Citas
+            </h1>
+            <p class="text-gray-600 mt-2">Envía notificaciones automáticas al paciente y médico confirmando la creación de una reserva</p>
+        </div>
+
+        <!-- Dashboard de Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Total Citas -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-sm font-semibold uppercase tracking-wide">Total Citas</p>
+                        <p class="text-3xl font-bold text-blue-800 mt-2" id="total-citas">0</p>
+                    </div>
+                    <div class="bg-blue-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-calendar-alt text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pendientes -->
+            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-yellow-600 text-sm font-semibold uppercase tracking-wide">Pendientes</p>
+                        <p class="text-3xl font-bold text-yellow-800 mt-2" id="total-pendientes">0</p>
+                    </div>
+                    <div class="bg-yellow-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmadas -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Confirmadas</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2" id="total-confirmadas">0</p>
+                    </div>
+                    <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-check-double text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notificaciones Enviadas -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Enviadas</p>
+                        <p class="text-3xl font-bold text-purple-800 mt-2" id="total-enviadas">0</p>
+                    </div>
+                    <div class="bg-purple-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-paper-plane text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- Sección de la tabla de confirmaciones -->
-        <div class="overflow-x-auto admin-card shadow-md">
-            <table class="w-full">
-                <thead class="bg-gray-50 border-b-2 border-gray-300">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha y Hora</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Paciente</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Médico</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado Confirmación</th>
-                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 uppercase tracking-wider">Acción</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    <!-- Fila de ejemplo 1 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">21/10/2025 09:00 AM</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Juan Carlos Pérez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Luis Gonzalez</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="bg-yellow-100 text-yellow-700 font-semibold py-1 px-3 rounded-full text-sm">
-                                Pendiente
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-check mr-2"></i>
-                                Confirmar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 2 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">21/10/2025 10:30 AM</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">María Rodriguez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dra. Ana Martínez</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="bg-green-100 text-green-700 font-semibold py-1 px-3 rounded-full text-sm">
-                                Confirmado
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-check mr-2"></i>
-                                Confirmar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 3 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">21/10/2025 11:00 AM</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Carlos Sánchez</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dr. Carlos Sánchez</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="bg-yellow-100 text-yellow-700 font-semibold py-1 px-3 rounded-full text-sm">
-                                Pendiente
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-check mr-2"></i>
-                                Confirmar
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- Fila de ejemplo 4 -->
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-800 font-medium">22/10/2025 08:15 AM</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Laura Fernández</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-gray-600">Dra. Laura Fernández</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="bg-green-100 text-green-700 font-semibold py-1 px-3 rounded-full text-sm">
-                                Confirmado
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <button class="bg-green-100 hover:bg-green-500 hover:text-white text-green-700 font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition-all">
-                                <i class="fas fa-check mr-2"></i>
-                                Confirmar
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+
+        <!-- Filtros -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-filter text-cyan-600 text-xl mr-3"></i>
+                <h2 class="text-lg font-semibold text-gray-800">Filtros de Búsqueda</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Fecha -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-calendar mr-1"></i>
+                        FECHA
+                    </label>
+                    <input
+                        type="date"
+                        id="fecha-select"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors"
+                    >
+                </div>
+
+                <!-- Estado -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        ESTADO CONFIRMACIÓN
+                    </label>
+                    <select id="estado-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
+                        <option value="">Todos los estados</option>
+                        <option value="pendiente">Pendiente</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="enviada">Notificación Enviada</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-4">
+                <button
+                    id="btn-buscar"
+                    class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-search mr-2"></i>
+                    Buscar
+                </button>
+                <button
+                    id="btn-confirmar-todas"
+                    class="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                    <i class="fas fa-check-double mr-2"></i>
+                    Confirmar Todas
+                </button>
+                <button
+                    id="btn-limpiar"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-sm">
+                    <i class="fas fa-eraser mr-2"></i>
+                    Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <i class="fas fa-list text-cyan-600 text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Lista de Citas</h2>
+                        <p class="text-sm text-gray-500 mt-1" id="subtitulo-tabla">Busca citas para confirmar</p>
+                    </div>
+                </div>
+                <div id="loading-indicator" class="hidden">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-4 border-cyan-500"></div>
+                </div>
+            </div>
+
+            <!-- Placeholder -->
+            <div id="placeholder-mensaje" class="text-center py-16">
+                <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Busca citas para gestionar</h3>
+                <p class="text-gray-500">Selecciona una fecha y presiona "Buscar"</p>
+            </div>
+
+            <!-- Sin resultados -->
+            <div id="no-resultados" class="hidden text-center py-16">
+                <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay citas</h3>
+                <p class="text-gray-500">No se encontraron citas para los criterios seleccionados</p>
+            </div>
+
+            <!-- Tabla -->
+            <div id="tabla-container" class="hidden overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-cyan-50 to-blue-50 border-b-2 border-cyan-300">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-calendar-day mr-2 text-cyan-600"></i>Fecha y Hora
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-user mr-2 text-cyan-600"></i>Paciente
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-user-md mr-2 text-cyan-600"></i>Médico
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-stethoscope mr-2 text-cyan-600"></i>Servicio
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-info-circle mr-2 text-cyan-600"></i>Estado
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-cog mr-2 text-cyan-600"></i>Acción
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="citas-body" class="divide-y divide-gray-200">
+                        <!-- Filas generadas dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     {% include 'footer.html' %}
 
-    </div>
-
-    <!-- AlpineJS para interactividad del dropdown -->
-    <script src="//unpkg.com/alpinejs" defer></script>
-    
     <script>
-        // Cargar información del usuario desde la sesión del servidor
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const response = await fetch('/usuarios/api/session');
-                const data = await response.json();
-                
-                if (data.logged_in && data.usuario) {
-                    if (data.usuario.nombre) {
-                        document.getElementById('admin-username').textContent = data.usuario.nombre;
-                    }
-                    if (data.usuario.rol) {
-                        document.getElementById('admin-role').textContent = data.usuario.rol;
-                    }
-                } else {
-                    // Si no hay sesión, redirigir al inicio
-                    window.location.href = '/';
-                }
-            } catch (error) {
-                console.error('Error al cargar datos de sesión:', error);
-                window.location.href = '/';
-            }
+        // Variables globales
+        const btnBuscar = document.getElementById('btn-buscar');
+        const btnConfirmarTodas = document.getElementById('btn-confirmar-todas');
+        const btnLimpiar = document.getElementById('btn-limpiar');
+        const fechaSelect = document.getElementById('fecha-select');
+        const estadoSelect = document.getElementById('estado-select');
+        const citasBody = document.getElementById('citas-body');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const placeholderMensaje = document.getElementById('placeholder-mensaje');
+        const noResultados = document.getElementById('no-resultados');
+        const tablaContainer = document.getElementById('tabla-container');
+        const subtituloTabla = document.getElementById('subtitulo-tabla');
+
+        let citasData = [];
+
+        // Configurar fecha por defecto (hoy)
+        const hoy = new Date();
+        fechaSelect.value = hoy.toISOString().split('T')[0];
+
+        // Buscar citas
+        btnBuscar.addEventListener('click', async function() {
+            await cargarCitas();
         });
+
+        // Limpiar filtros
+        btnLimpiar.addEventListener('click', function() {
+            fechaSelect.value = hoy.toISOString().split('T')[0];
+            estadoSelect.value = '';
+
+            placeholderMensaje.classList.remove('hidden');
+            noResultados.classList.add('hidden');
+            tablaContainer.classList.add('hidden');
+            btnConfirmarTodas.disabled = true;
+
+            actualizarEstadisticas([]);
+            subtituloTabla.textContent = 'Busca citas para confirmar';
+        });
+
+        // Confirmar todas las pendientes
+        btnConfirmarTodas.addEventListener('click', async function() {
+            const pendientes = citasData.filter(c => c.confirmacion_estado === 'pendiente');
+
+            if (pendientes.length === 0) {
+                mostrarNotificacion('No hay citas pendientes para confirmar', 'error');
+                return;
+            }
+
+            if (!confirm(`¿Confirmar y enviar notificaciones para ${pendientes.length} cita(s)?`)) return;
+
+            let exitosos = 0;
+            let fallidos = 0;
+
+            for (const cita of pendientes) {
+                try {
+                    const resp = await fetch('/notificaciones/api/confirmar-cita', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id_reserva: cita.id_reserva })
+                    });
+
+                    if (resp.ok) exitosos++;
+                    else fallidos++;
+                } catch (err) {
+                    fallidos++;
+                }
+            }
+
+            mostrarNotificacion(`Confirmadas: ${exitosos}, Fallidas: ${fallidos}`, 'success');
+            await cargarCitas();
+        });
+
+        // Cargar citas
+        async function cargarCitas() {
+            const fecha = fechaSelect.value;
+            const estado = estadoSelect.value;
+
+            if (!fecha) {
+                mostrarNotificacion('Selecciona una fecha', 'error');
+                return;
+            }
+
+            const params = new URLSearchParams();
+            params.set('fecha', fecha);
+            if (estado) params.set('estado', estado);
+
+            loadingIndicator.classList.remove('hidden');
+            placeholderMensaje.classList.add('hidden');
+            noResultados.classList.add('hidden');
+            tablaContainer.classList.add('hidden');
+
+            try {
+                const resp = await fetch(`/notificaciones/api/citas-confirmacion?${params.toString()}`);
+
+                if (!resp.ok) throw new Error('Error al cargar citas');
+
+                const data = await resp.json();
+                citasData = data.citas || [];
+
+                loadingIndicator.classList.add('hidden');
+
+                if (citasData.length === 0) {
+                    noResultados.classList.remove('hidden');
+                    btnConfirmarTodas.disabled = true;
+                    actualizarEstadisticas([]);
+                    subtituloTabla.textContent = 'No se encontraron resultados';
+                    return;
+                }
+
+                tablaContainer.classList.remove('hidden');
+
+                const pendientes = citasData.filter(c => c.confirmacion_estado === 'pendiente');
+                btnConfirmarTodas.disabled = pendientes.length === 0;
+
+                actualizarEstadisticas(citasData);
+                subtituloTabla.textContent = `Mostrando ${citasData.length} cita(s)`;
+
+                citasBody.innerHTML = '';
+                citasData.forEach(c => {
+                    citasBody.appendChild(renderRow(c));
+                });
+
+                mostrarNotificacion(`Se encontraron ${citasData.length} cita(s)`, 'success');
+
+            } catch (err) {
+                loadingIndicator.classList.add('hidden');
+                noResultados.classList.remove('hidden');
+                mostrarNotificacion('Error al cargar citas', 'error');
+            }
+        }
+
+        // Renderizar fila
+        function renderRow(c) {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-cyan-50 transition-all duration-200';
+
+            // Fecha y Hora
+            const tdFecha = document.createElement('td');
+            tdFecha.className = 'px-6 py-4 whitespace-nowrap';
+            const hora = c.hora_inicio ? c.hora_inicio.substring(0, 5) : '';
+            tdFecha.innerHTML = `
+                <div class="text-sm font-semibold text-gray-800">${c.fecha || '-'}</div>
+                <div class="text-xs text-gray-600">${hora}</div>
+            `;
+
+            // Paciente
+            const tdPaciente = document.createElement('td');
+            tdPaciente.className = 'px-6 py-4';
+            tdPaciente.innerHTML = `<span class="text-gray-800">${c.paciente || '-'}</span>`;
+
+            // Médico
+            const tdMedico = document.createElement('td');
+            tdMedico.className = 'px-6 py-4';
+            tdMedico.innerHTML = `<span class="text-gray-700">Dr. ${c.medico || '-'}</span>`;
+
+            // Servicio
+            const tdServicio = document.createElement('td');
+            tdServicio.className = 'px-6 py-4';
+            tdServicio.innerHTML = `<span class="text-gray-700">${c.servicio || '-'}</span>`;
+
+            // Estado
+            const tdEstado = document.createElement('td');
+            tdEstado.className = 'px-6 py-4 text-center';
+            const estado = (c.confirmacion_estado || 'pendiente').toLowerCase();
+            let badgeClass = 'bg-yellow-100 text-yellow-700';
+            let iconClass = 'fa-clock';
+            let texto = 'Pendiente';
+
+            if (estado === 'confirmada') {
+                badgeClass = 'bg-green-100 text-green-700';
+                iconClass = 'fa-check-circle';
+                texto = 'Confirmada';
+            } else if (estado === 'enviada') {
+                badgeClass = 'bg-purple-100 text-purple-700';
+                iconClass = 'fa-paper-plane';
+                texto = 'Enviada';
+            }
+
+            tdEstado.innerHTML = `
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${badgeClass}">
+                    <i class="fas ${iconClass} mr-1"></i>
+                    ${texto}
+                </span>
+            `;
+
+            // Acción
+            const tdAccion = document.createElement('td');
+            tdAccion.className = 'px-6 py-4 text-center';
+
+            if (estado === 'pendiente') {
+                const btn = document.createElement('button');
+                btn.className = 'bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg inline-flex items-center transition-all shadow-sm';
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i>Confirmar';
+                btn.addEventListener('click', async function() {
+                    await confirmarCita(c.id_reserva);
+                });
+                tdAccion.appendChild(btn);
+            } else {
+                tdAccion.innerHTML = '<span class="text-gray-400 text-sm">-</span>';
+            }
+
+            tr.appendChild(tdFecha);
+            tr.appendChild(tdPaciente);
+            tr.appendChild(tdMedico);
+            tr.appendChild(tdServicio);
+            tr.appendChild(tdEstado);
+            tr.appendChild(tdAccion);
+
+            return tr;
+        }
+
+        // Confirmar cita individual
+        async function confirmarCita(id_reserva) {
+            if (!confirm('¿Confirmar esta cita y enviar notificaciones?')) return;
+
+            try {
+                const resp = await fetch('/notificaciones/api/confirmar-cita', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id_reserva })
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    throw new Error(data.error || 'No se pudo confirmar');
+                }
+
+                mostrarNotificacion('Cita confirmada y notificaciones enviadas', 'success');
+                await cargarCitas();
+
+            } catch (err) {
+                mostrarNotificacion('Error al confirmar: ' + err.message, 'error');
+            }
+        }
+
+        // Actualizar estadísticas
+        function actualizarEstadisticas(data) {
+            const total = data.length;
+            const pendientes = data.filter(c => (c.confirmacion_estado || 'pendiente') === 'pendiente').length;
+            const confirmadas = data.filter(c => c.confirmacion_estado === 'confirmada').length;
+            const enviadas = data.filter(c => c.confirmacion_estado === 'enviada').length;
+
+            document.getElementById('total-citas').textContent = total;
+            document.getElementById('total-pendientes').textContent = pendientes;
+            document.getElementById('total-confirmadas').textContent = confirmadas;
+            document.getElementById('total-enviadas').textContent = enviadas;
+        }
+
+        // Mostrar notificación
+        function mostrarNotificacion(mensaje, tipo) {
+            const toast = document.createElement('div');
+            const bgColor = tipo === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = tipo === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center animate-fade-in`;
+            toast.innerHTML = `
+                <i class="fas ${icon} mr-3 text-xl"></i>
+                <span>${mensaje}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Sesión de usuario
+        (function() {
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            }
+        })();
     </script>
 
+    <style>
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+    </style>
 </body>
 </html>
-

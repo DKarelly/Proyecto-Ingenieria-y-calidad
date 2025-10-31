@@ -1,5 +1,10 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<!-- Exponer el usuario en JS (proveído por server-side via session/context) -->
+<script>
+    // `usuario` es inyectado por Flask (see app.context_processor)
+    window.usuario = {{ usuario|tojson if usuario else 'null' }};
+</script>
 <!-- Contenido Principal -->
 <div class="bg-white rounded-lg shadow-sm">
     <!-- Encabezado del panel -->
