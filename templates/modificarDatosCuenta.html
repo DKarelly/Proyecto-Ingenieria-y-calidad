@@ -28,25 +28,40 @@
             <p class="text-gray-600 mt-2">Actualiza la información del empleado</p>
         </div>
 
+        <!-- Mensajes flash -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                        <i class="fas {% if category == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %} mr-2"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <!-- Formulario -->
         <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
             <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                
-                <!-- Foto de Perfil -->
+
+                <!-- Foto de Perfil (Opcional - por ahora no funcional) -->
+                <!--
                 <div class="grid grid-cols-1 gap-6">
                     <div>
                         <label for="foto_perfil" class="block text-sm font-semibold text-gray-700 mb-2">
                             Foto de Perfil
                         </label>
-                        <input 
-                            type="file" 
-                            id="foto_perfil" 
-                            name="foto_perfil" 
+                        <input
+                            type="file"
+                            id="foto_perfil"
+                            name="foto_perfil"
                             accept="image/*"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                         >
                     </div>
                 </div>
+                -->
+
 
                 <!-- Nombres y Apellidos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -54,11 +69,12 @@
                         <label for="nombres" class="block text-sm font-semibold text-gray-700 mb-2">
                             Nombres <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
-                            id="nombres" 
-                            name="nombres" 
+                        <input
+                            type="text"
+                            id="nombres"
+                            name="nombres"
                             required
+                            value="{{ empleado.nombres if empleado else '' }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             placeholder="Ej: Juan Carlos"
                         >
@@ -67,14 +83,34 @@
                         <label for="apellidos" class="block text-sm font-semibold text-gray-700 mb-2">
                             Apellidos <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
-                            id="apellidos" 
-                            name="apellidos" 
+                        <input
+                            type="text"
+                            id="apellidos"
+                            name="apellidos"
                             required
+                            value="{{ empleado.apellidos if empleado else '' }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             placeholder="Ej: Pérez López"
                         >
+                    </div>
+                </div>
+
+                <!-- Sexo -->
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="sexo" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Sexo <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="sexo"
+                            name="sexo"
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                        >
+                            <option value="">Seleccione un sexo</option>
+                            <option value="Masculino" {% if empleado and empleado.sexo == 'Masculino' %}selected{% endif %}>Masculino</option>
+                            <option value="Femenino" {% if empleado and empleado.sexo == 'Femenino' %}selected{% endif %}>Femenino</option>
+                        </select>
                     </div>
                 </div>
 
@@ -84,12 +120,13 @@
                         <label for="documento" class="block text-sm font-semibold text-gray-700 mb-2">
                             Documento de Identidad <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
-                            id="documento" 
-                            name="documento" 
+                        <input
+                            type="text"
+                            id="documento"
+                            name="documento"
                             required
                             maxlength="8"
+                            value="{{ empleado.documento_identidad if empleado else '' }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             placeholder="DNI (8 dígitos)"
                         >
@@ -98,44 +135,31 @@
                         <label for="telefono" class="block text-sm font-semibold text-gray-700 mb-2">
                             Teléfono <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="tel" 
-                            id="telefono" 
-                            name="telefono" 
+                        <input
+                            type="tel"
+                            id="telefono"
+                            name="telefono"
                             required
                             maxlength="9"
+                            value="{{ empleado.telefono if empleado else '' }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             placeholder="Ej: 987654321"
                         >
                     </div>
                 </div>
 
-                <!-- Fecha de Nacimiento y Email -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="fecha_nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Fecha de Nacimiento <span class="text-red-500">*</span>
-                        </label>
-                        <div class="relative">
-                            <input 
-                                type="date" 
-                                id="fecha_nacimiento" 
-                                name="fecha_nacimiento" 
-                                required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-                            >
-                            <i class="fas fa-calendar-alt absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                        </div>
-                    </div>
+                <!-- Email (Fecha de nacimiento removida para empleados) -->
+                <div class="grid grid-cols-1 gap-6">
                     <div>
                         <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
                             Correo Electrónico <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
                             required
+                            value="{{ empleado.correo if empleado else '' }}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             placeholder="ejemplo@clinica.com"
                         >
@@ -148,97 +172,157 @@
                         <label for="departamento" class="block text-sm font-semibold text-gray-700 mb-2">
                             Departamento <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
-                            id="departamento" 
-                            name="departamento" 
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-                            placeholder="Ej: Lima"
-                        >
+                        <div class="relative">
+                            <select
+                                id="departamento"
+                                name="departamento"
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors appearance-none cursor-pointer"
+                            >
+                                <option value="">Seleccione un departamento...</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
                     <div>
                         <label for="provincia" class="block text-sm font-semibold text-gray-700 mb-2">
                             Provincia <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
-                            id="provincia" 
-                            name="provincia" 
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-                            placeholder="Ej: Lima"
-                        >
+                        <div class="relative">
+                            <select
+                                id="provincia"
+                                name="provincia"
+                                required
+                                disabled
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <option value="">Seleccione un departamento primero...</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
                     <div>
                         <label for="distrito" class="block text-sm font-semibold text-gray-700 mb-2">
                             Distrito <span class="text-red-500">*</span>
                         </label>
-                        <input 
-                            type="text" 
-                            id="distrito" 
-                            name="distrito" 
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-                            placeholder="Ej: Miraflores"
-                        >
+                        <div class="relative">
+                            <select
+                                id="distrito"
+                                name="distrito"
+                                required
+                                disabled
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <option value="">Seleccione una provincia primero...</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Contraseña y Rol -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Contraseña Anterior, Nueva Contraseña y Confirmación -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Contraseña <span class="text-gray-500 text-xs">(Dejar en blanco para no cambiar)</span>
+                        <label for="password-anterior" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Contraseña Anterior <span class="text-gray-500 text-xs">(Requerida si cambias contraseña)</span>
                         </label>
                         <div class="relative">
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password"
+                            <input
+                                type="password"
+                                id="password-anterior"
+                                name="password_anterior"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors pr-10"
-                                placeholder="Nueva contraseña"
+                                placeholder="Tu contraseña actual"
                             >
-                            <button 
-                                type="button" 
-                                onclick="togglePassword('password')"
+                            <button
+                                type="button"
+                                onclick="togglePasswordField('password-anterior')"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
-                                <i class="fas fa-eye" id="password-eye"></i>
+                                <i class="fas fa-eye" id="password-anterior-eye"></i>
                             </button>
                         </div>
                     </div>
                     <div>
+                        <label for="password-nueva" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Nueva Contraseña <span class="text-gray-500 text-xs">(Dejar en blanco para no cambiar)</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                type="password"
+                                id="password-nueva"
+                                name="password_nueva"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors pr-10"
+                                placeholder="Nueva contraseña"
+                                minlength="6"
+                            >
+                            <button
+                                type="button"
+                                onclick="togglePasswordField('password-nueva')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <i class="fas fa-eye" id="password-nueva-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="password-confirmar" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Confirmar Nueva Contraseña <span class="text-gray-500 text-xs">(Requerida si cambias contraseña)</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                type="password"
+                                id="password-confirmar"
+                                name="password_confirmar"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors pr-10"
+                                placeholder="Confirmar nueva contraseña"
+                                minlength="6"
+                            >
+                            <button
+                                type="button"
+                                onclick="togglePasswordField('password-confirmar')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <i class="fas fa-eye" id="password-confirmar-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rol y Especialidad -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
                         <label for="rol" class="block text-sm font-semibold text-gray-700 mb-2">
                             Rol <span class="text-red-500">*</span>
                         </label>
-                        <select 
-                            id="rol" 
-                            name="rol" 
+                        <select
+                            id="rol"
+                            name="rol"
                             required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                         >
                             <option value="">Seleccione un rol</option>
-                            <option value="administrador">Administrador</option>
-                            <option value="medico">Médico</option>
-                            <option value="enfermero">Enfermero</option>
-                            <option value="recepcionista">Recepcionista</option>
+                            {% if roles %}
+                                {% for rol in roles %}
+                                    <option value="{{ rol.id_rol }}" {% if empleado and empleado.id_rol == rol.id_rol %}selected{% endif %}>
+                                        {{ rol.nombre }}
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
                         </select>
                     </div>
-                </div>
-
-                <!-- Descripción -->
-                <div>
-                    <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Descripción Corta
-                    </label>
-                    <textarea 
-                        id="descripcion" 
-                        name="descripcion" 
-                        rows="4"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors resize-none"
-                        placeholder="Escribe una breve descripción del empleado..."
-                    ></textarea>
+                    <div id="especialidad-container" style="display: none;">
+                        <label for="especialidad" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Especialidad <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            id="especialidad"
+                            name="especialidad"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
+                        >
+                            <option value="">Seleccione una especialidad</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Botones -->
@@ -265,26 +349,84 @@
     {% include 'footer.html' %}
 
     <script>
+        // Variable global para especialidades
+        let especialidadesData = [];
+
         // Toggle password visibility
-        function togglePassword(fieldId) {
+        function togglePasswordField(fieldId) {
             const field = document.getElementById(fieldId);
-            const eye = document.getElementById(fieldId + '-eye');
+            const eyeIcon = document.getElementById(fieldId + '-eye');
             
             if (field.type === 'password') {
                 field.type = 'text';
-                eye.classList.remove('fa-eye');
-                eye.classList.add('fa-eye-slash');
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
             } else {
                 field.type = 'password';
-                eye.classList.remove('fa-eye-slash');
-                eye.classList.add('fa-eye');
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
             }
         }
+
+        // Función para cargar especialidades desde la API
+        async function cargarEspecialidades() {
+            try {
+                const response = await fetch('/cuentas/api/especialidades');
+                especialidadesData = await response.json();
+                
+                const especialidadSelect = document.getElementById('especialidad');
+                especialidadSelect.innerHTML = '<option value="">Seleccione una especialidad</option>';
+                
+                especialidadesData.forEach(esp => {
+                    const option = document.createElement('option');
+                    option.value = esp.id_especialidad;
+                    option.textContent = esp.nombre;
+                    // Seleccionar la especialidad actual del empleado si existe
+                    if (esp.nombre === '{{ empleado.especialidad }}') {
+                        option.selected = true;
+                    }
+                    especialidadSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error al cargar especialidades:', error);
+            }
+        }
+
+        // Función para mostrar/ocultar especialidad según rol
+        function toggleEspecialidadField() {
+            const rolSelect = document.getElementById('rol');
+            const especialidadContainer = document.getElementById('especialidad-container');
+            const rolOptions = rolSelect.querySelectorAll('option');
+            let rolText = '';
+
+            // Obtener el nombre del rol seleccionado
+            for (let option of rolOptions) {
+                if (option.value === rolSelect.value) {
+                    rolText = option.textContent.toLowerCase();
+                    break;
+                }
+            }
+
+            // Mostrar/ocultar especialidad si el rol es médico
+            if (rolText.includes('medico') || rolText.includes('médico')) {
+                especialidadContainer.style.display = 'block';
+                cargarEspecialidades();
+            } else {
+                especialidadContainer.style.display = 'none';
+                document.getElementById('especialidad').value = '';
+            }
+        }
+
+        // Event listener para cambios en el rol
+        document.getElementById('rol').addEventListener('change', toggleEspecialidadField);
 
         // Validación de formulario
         document.querySelector('form').addEventListener('submit', function(e) {
             const documento = document.getElementById('documento').value;
             const telefono = document.getElementById('telefono').value;
+            const passwordNueva = document.getElementById('password-nueva').value;
+            const passwordAnterior = document.getElementById('password-anterior').value;
+            const passwordConfirmar = document.getElementById('password-confirmar').value;
 
             // Validar DNI (8 dígitos)
             if (!/^\d{8}$/.test(documento)) {
@@ -299,6 +441,190 @@
                 alert('El teléfono debe tener 9 dígitos');
                 return;
             }
+
+            // Validaciones de contraseña
+            if (passwordNueva !== '') {
+                // Si hay nueva contraseña, verificar que haya contraseña anterior
+                if (passwordAnterior === '') {
+                    e.preventDefault();
+                    alert('Debes ingresar tu contraseña anterior para cambiar la contraseña');
+                    return;
+                }
+
+                // Verificar que la nueva contraseña tenga al menos 6 caracteres
+                if (passwordNueva.length < 6) {
+                    e.preventDefault();
+                    alert('La nueva contraseña debe tener al menos 6 caracteres');
+                    return;
+                }
+
+                // Verificar que las contraseñas coincidan
+                if (passwordNueva !== passwordConfirmar) {
+                    e.preventDefault();
+                    alert('Las contraseñas no coinciden');
+                    return;
+                }
+            } else {
+                // Si no hay nueva contraseña, limpiar los campos anteriores
+                document.getElementById('password-anterior').value = '';
+                document.getElementById('password-confirmar').value = '';
+            }
+        });
+
+        // Cascading select logic for Departamento -> Provincia -> Distrito
+        const empleadoData = {
+            {% if empleado %}
+            id_departamento: {{ empleado.id_departamento or 0 }},
+            id_provincia: {{ empleado.id_provincia or 0 }},
+            id_distrito: {{ empleado.id_distrito or 0 }},
+            distrito: "{{ empleado.distrito or '' }}",
+            provincia: "{{ empleado.provincia or '' }}",
+            departamento: "{{ empleado.departamento or '' }}"
+            {% else %}
+            id_departamento: 0,
+            id_provincia: 0,
+            id_distrito: 0,
+            distrito: "",
+            provincia: "",
+            departamento: ""
+            {% endif %}
+        };
+
+        let departamentos = [];
+        let provincias = [];
+        let distritos = [];
+
+        // Cargar departamentos al inicio
+        async function cargarDepartamentos() {
+            try {
+                const response = await fetch('/usuarios/api/departamentos');
+                departamentos = await response.json();
+
+                const selectDepartamento = document.getElementById('departamento');
+                selectDepartamento.innerHTML = '<option value="">Seleccione un departamento...</option>';
+
+                departamentos.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id_departamento;
+                    option.textContent = dept.nombre_departamento || dept.nombre;
+                    selectDepartamento.appendChild(option);
+                });
+
+                // Si hay departamento preseleccionado, encontrarlo y seleccionarlo
+                if (empleadoData.departamento) {
+                    const deptEncontrado = departamentos.find(d => (d.nombre_departamento || d.nombre) === empleadoData.departamento);
+                    if (deptEncontrado) {
+                        selectDepartamento.value = deptEncontrado.id_departamento;
+                        await cargarProvincias(deptEncontrado.id_departamento, true);
+                    }
+                } else if (empleadoData.id_departamento) {
+                    selectDepartamento.value = empleadoData.id_departamento;
+                    await cargarProvincias(empleadoData.id_departamento, true);
+                }
+            } catch (error) {
+                console.error('Error al cargar departamentos:', error);
+            }
+        }
+
+        // Cargar provincias según departamento
+        async function cargarProvincias(id_departamento, preseleccionar = false) {
+            try {
+                const response = await fetch(`/usuarios/api/provincias/${id_departamento}`);
+                provincias = await response.json();
+
+                const selectProvincia = document.getElementById('provincia');
+                const selectDistrito = document.getElementById('distrito');
+
+                selectProvincia.innerHTML = '<option value="">Seleccione una provincia...</option>';
+                selectDistrito.innerHTML = '<option value="">Seleccione una provincia primero...</option>';
+                selectDistrito.disabled = true;
+
+                provincias.forEach(prov => {
+                    const option = document.createElement('option');
+                    option.value = prov.id_provincia;
+                    option.textContent = prov.nombre_provincia || prov.nombre;
+                    selectProvincia.appendChild(option);
+                });
+
+                selectProvincia.disabled = false;
+
+                // Si hay provincia preseleccionada, encontrarla y seleccionarla
+                if (preseleccionar && empleadoData.provincia) {
+                    const provEncontrada = provincias.find(p => (p.nombre_provincia || p.nombre) === empleadoData.provincia);
+                    if (provEncontrada) {
+                        selectProvincia.value = provEncontrada.id_provincia;
+                        await cargarDistritos(provEncontrada.id_provincia, true);
+                    }
+                } else if (preseleccionar && empleadoData.id_provincia) {
+                    selectProvincia.value = empleadoData.id_provincia;
+                    await cargarDistritos(empleadoData.id_provincia, true);
+                }
+            } catch (error) {
+                console.error('Error al cargar provincias:', error);
+            }
+        }
+
+        // Cargar distritos según provincia
+        async function cargarDistritos(id_provincia, preseleccionar = false) {
+            try {
+                const response = await fetch(`/usuarios/api/distritos/${id_provincia}`);
+                distritos = await response.json();
+
+                const selectDistrito = document.getElementById('distrito');
+                selectDistrito.innerHTML = '<option value="">Seleccione un distrito...</option>';
+
+                distritos.forEach(dist => {
+                    const option = document.createElement('option');
+                    option.value = dist.id_distrito;
+                    option.textContent = dist.nombre_distrito || dist.nombre;
+                    selectDistrito.appendChild(option);
+                });
+
+                selectDistrito.disabled = false;
+
+                // Si hay distrito preseleccionado, seleccionarlo
+                if (preseleccionar && empleadoData.id_distrito) {
+                    selectDistrito.value = empleadoData.id_distrito;
+                }
+            } catch (error) {
+                console.error('Error al cargar distritos:', error);
+            }
+        }
+
+        // Event Listeners para los cambios
+        document.getElementById('departamento').addEventListener('change', function() {
+            const id_departamento = this.value;
+            const selectProvincia = document.getElementById('provincia');
+            const selectDistrito = document.getElementById('distrito');
+
+            if (id_departamento) {
+                cargarProvincias(id_departamento);
+            } else {
+                selectProvincia.innerHTML = '<option value="">Seleccione un departamento primero...</option>';
+                selectProvincia.disabled = true;
+                selectDistrito.innerHTML = '<option value="">Seleccione una provincia primero...</option>';
+                selectDistrito.disabled = true;
+            }
+        });
+
+        document.getElementById('provincia').addEventListener('change', function() {
+            const id_provincia = this.value;
+            const selectDistrito = document.getElementById('distrito');
+
+            if (id_provincia) {
+                cargarDistritos(id_provincia);
+            } else {
+                selectDistrito.innerHTML = '<option value="">Seleccione una provincia primero...</option>';
+                selectDistrito.disabled = true;
+            }
+        });
+
+        // Inicializar carga de departamentos
+        cargarDepartamentos();
+
+        // Inicializar especialidad al cargar la página
+        window.addEventListener('DOMContentLoaded', function() {
+            toggleEspecialidadField();
         });
     </script>
 </body>

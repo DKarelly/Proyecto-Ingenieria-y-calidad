@@ -1,20 +1,33 @@
 // Gestion Recursos Fisicos - JavaScript
+let todosLosRecursos = []; // Almacena todos los recursos para búsqueda dinámica
+
 document.addEventListener('DOMContentLoaded', function() {
-    cargarTiposRecurso();
     cargarRecursos();
 
-    // Event listeners para filtros
-    document.getElementById('btnBuscar').addEventListener('click', buscarRecursos);
-    document.getElementById('btnLimpiar').addEventListener('click', limpiarFiltros);
+    // Event listener para búsqueda dinámica
+    const searchInput = document.getElementById('search-recurso');
+    const clearSearchBtn = document.getElementById('clear-search-recurso');
 
-    // Debounced search for input field
-    let debounceTimer;
-    document.getElementById('filtroRecurso').addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(buscarRecursos, 300);
+    searchInput.addEventListener('input', function() {
+        const termino = this.value.trim();
+
+        // Mostrar/ocultar botón de limpiar
+        if (termino) {
+            clearSearchBtn.classList.remove('hidden');
+        } else {
+            clearSearchBtn.classList.add('hidden');
+        }
+
+        // Búsqueda dinámica en tiempo real
+        filtrarRecursos(termino);
     });
 
-    document.getElementById('filtroTipo').addEventListener('change', buscarRecursos);
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        this.classList.add('hidden');
+        filtrarRecursos('');
+        searchInput.focus();
+    });
 
     // Event listeners para modales
     document.getElementById('btnRegistrarRecurso').addEventListener('click', function() {

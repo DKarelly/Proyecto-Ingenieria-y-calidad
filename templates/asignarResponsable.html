@@ -13,6 +13,53 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .badge-abierta {
+            background: #fbbf24;
+            color: #92400e;
+        }
+        .badge-en-progreso {
+            background: #3b82f6;
+            color: white;
+        }
+        .badge-en-proceso {
+            background: #3b82f6;
+            color: white;
+        }
+        .badge-resuelta {
+            background: #10b981;
+            color: white;
+        }
+        .badge-cerrada {
+            background: #d1d5db;
+            color: #374151;
+        }
+        .fila-modificada {
+            background-color: #fef3c7 !important;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        .animate-fade-out {
+            animation: fadeOut 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-[#f8fafc]">
@@ -27,162 +74,188 @@
             </a>
         </div>
         <div class="mb-8">
-            <h1 class="text-3xl font-black text-gray-800">Incidencias Reportadas</h1>
-            <p class="text-gray-600 mt-2">Gestione el estado, prioridad y responsables de las incidencias</p>
+            <h1 class="text-3xl font-black text-gray-800">Asignar Responsables</h1>
+            <p class="text-gray-600 mt-2">Asigne responsables a las incidencias pendientes</p>
+        </div>
+
+        <!-- Filtros y Búsqueda -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Búsqueda general -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-search mr-2 text-cyan-600"></i>
+                        Buscar Incidencia
+                    </label>
+                    <input
+                        type="text"
+                        id="inputBusqueda"
+                        placeholder="Buscar por ID, descripción, paciente, empleado..."
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                    >
+                </div>
+
+                <!-- Filtro de prioridad -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-filter mr-2 text-cyan-600"></i>
+                        Filtrar por Prioridad
+                    </label>
+                    <select
+                        id="filtroPrioridad"
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all bg-white"
+                    >
+                        <option value="">Todas las prioridades</option>
+                        <option value="Baja">🟢 Baja</option>
+                        <option value="Media">🟡 Media</option>
+                        <option value="Alta">🔴 Alta</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Indicador de resultados -->
+            <div class="mt-4 text-sm text-gray-600">
+                <i class="fas fa-info-circle mr-1 text-blue-500"></i>
+                <span id="contadorResultados">Mostrando todas las incidencias sin asignar</span>
+            </div>
         </div>
 
         <!-- Tabla de Incidencias -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden admin-card">
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="admin-table w-full">
-                    <thead class="bg-gray-50 border-b border-gray-200">
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Incidencia</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Categoría</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Prioridad</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Paciente</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Responsable</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Fecha Registro</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Categoría</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Prioridad</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Paciente</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <!-- Incidencia 1 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm font-semibold text-cyan-600">#INC-001</td>
-                            <td class="px-6 py-4 text-sm text-gray-700">2023-10-27</td>
-                            <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">El sistema funciona con lentitud al cargar...</td>
-                            <td class="px-6 py-4 text-sm text-gray-700">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Técnico</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="resuelta" class="text-green-600">✓ Resuelta</option>
-                                    <option value="en-progreso" selected class="text-yellow-600">⏳ En Progreso</option>
-                                    <option value="abierta" class="text-red-600">◯ Abierta</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="alta" class="text-red-600">🔴 Alta</option>
-                                    <option value="media" selected class="text-yellow-600">🟡 Media</option>
-                                    <option value="baja" class="text-green-600">🟢 Baja</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-700">Juan Pérez</td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="garcia">Dr. García</option>
-                                    <option value="lopez" selected>Dra. López</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-cyan-600 transition-colors" title="Ver detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="p-2 rounded-lg hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors" title="Eliminar">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Incidencia 2 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm font-semibold text-cyan-600">#INC-002</td>
-                            <td class="px-6 py-4 text-sm text-gray-700">2023-10-26</td>
-                            <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">No se puede acceder al historial del paciente</td>
-                            <td class="px-6 py-4 text-sm text-gray-700">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">Acceso</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="resuelta" class="text-green-600">✓ Resuelta</option>
-                                    <option value="en-progreso" class="text-yellow-600">⏳ En Progreso</option>
-                                    <option value="abierta" selected class="text-red-600">◯ Abierta</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="alta" selected class="text-red-600">🔴 Alta</option>
-                                    <option value="media" class="text-yellow-600">🟡 Media</option>
-                                    <option value="baja" class="text-green-600">🟢 Baja</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-700">Maria Rodriguez</td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="garcia" selected>Dr. García</option>
-                                    <option value="lopez">Dra. López</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-cyan-600 transition-colors" title="Ver detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="p-2 rounded-lg hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors" title="Eliminar">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-
-                        <!-- Incidencia 3 -->
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 text-sm font-semibold text-cyan-600">#INC-003</td>
-                            <td class="px-6 py-4 text-sm text-gray-700">2023-10-25</td>
-                            <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">Error en la facturación del paciente</td>
-                            <td class="px-6 py-4 text-sm text-gray-700">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Facturación</span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="resuelta" selected class="text-green-600">✓ Resuelta</option>
-                                    <option value="en-progreso" class="text-yellow-600">⏳ En Progreso</option>
-                                    <option value="abierta" class="text-red-600">◯ Abierta</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="alta" class="text-red-600">🔴 Alta</option>
-                                    <option value="media" class="text-yellow-600">🟡 Media</option>
-                                    <option value="baja" selected class="text-green-600">🟢 Baja</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-700">Carlos Sánchez</td>
-                            <td class="px-6 py-4">
-                                <select class="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white">
-                                    <option value="garcia">Dr. García</option>
-                                    <option value="lopez" selected>Dra. López</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-600 hover:text-cyan-600 transition-colors" title="Ver detalles">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="p-2 rounded-lg hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors" title="Eliminar">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                    <tbody id="tablaIncidencias" class="divide-y divide-gray-200">
+                        <!-- Los datos se cargarán dinámicamente -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Botones de Acción -->
-        <div class="flex justify-end gap-4 mt-6">
-            <button class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-md hover:shadow-lg">
-                <i class="fas fa-save"></i>
-                Guardar Cambios
+        <!-- Información adicional -->
+        <div class="mt-6 text-sm text-gray-600 bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+            <span class="font-medium">Instrucciones:</span> Seleccione una incidencia de la tabla y busque el empleado responsable para asignarlo. Los cambios se guardan inmediatamente.
+        </div>
+    </div>
+
+    <!-- Modal para asignar responsable -->
+    <div id="modalAsignarResponsable" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden my-4">
+            <!-- Header del modal -->
+            <div class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-6 py-4">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fas fa-user-plus"></i>
+                    Asignar Responsable a Incidencia
+                </h3>
+            </div>
+
+            <!-- Contenido del modal -->
+            <div class="p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <!-- Información de la incidencia seleccionada -->
+                <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-exclamation-circle text-cyan-600"></i>
+                        Incidencia Seleccionada
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <span class="text-gray-600">ID:</span>
+                            <span id="modalIncidenciaId" class="font-semibold text-gray-800 ml-2"></span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Fecha:</span>
+                            <span id="modalIncidenciaFecha" class="font-medium text-gray-800 ml-2"></span>
+                        </div>
+                        <div class="col-span-2">
+                            <span class="text-gray-600">Descripción:</span>
+                            <p id="modalIncidenciaDescripcion" class="font-medium text-gray-800 mt-1"></p>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Paciente:</span>
+                            <span id="modalIncidenciaPaciente" class="font-medium text-gray-800 ml-2"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Búsqueda de empleado -->
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-search mr-2 text-cyan-600"></i>
+                        Buscar Empleado Responsable
+                    </label>
+                    <input
+                        type="text"
+                        id="buscarEmpleadoInput"
+                        placeholder="Buscar por nombre del empleado..."
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                    >
+                </div>
+
+                <!-- Lista de empleados -->
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-users mr-2 text-cyan-600"></i>
+                        Seleccionar Empleado
+                    </label>
+                    <div id="listaEmpleados" class="border border-gray-300 rounded-lg max-h-96 min-h-40 overflow-y-auto p-2 bg-gray-50">
+                        <!-- Los empleados se cargarán aquí -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="contadorEmpleados">0 empleados disponibles</span>
+                    </p>
+                </div>
+
+                <!-- Empleado seleccionado -->
+                <div id="empleadoSeleccionadoDiv" class="hidden mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-sm text-gray-700">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        <span class="font-semibold">Empleado seleccionado:</span>
+                        <span id="empleadoSeleccionadoNombre" class="ml-2 text-gray-800"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer del modal -->
+            <div class="bg-gray-50 px-6 py-4 flex justify-end gap-3">
+                <button onclick="cerrarModalAsignar()" class="px-5 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-all">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button id="btnConfirmarAsignacion" class="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-check mr-2"></i>
+                    Asignar Responsable
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de éxito -->
+    <div id="modalExito" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center animate-slide-in">
+            <div class="mb-4">
+                <i class="fas fa-check-circle text-6xl text-green-500"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Responsable Asignado!</h3>
+            <p id="modalExitoMensaje" class="text-gray-600 mb-6">El responsable ha sido asignado correctamente a la incidencia</p>
+            <button onclick="cerrarModalExito()"
+                    class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all">
+                Aceptar
             </button>
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='js/asignarResponsable.js') }}"></script>
 </body>
 </html>

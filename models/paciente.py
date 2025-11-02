@@ -36,13 +36,13 @@ class Paciente:
 
     @staticmethod
     def obtener_todos():
-        """Obtiene todos los pacientes activos"""
+        """Obtiene todos los pacientes (activos e inactivos)"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 sql = """
                     SELECT p.*, 
-                           u.correo, u.telefono, u.estado as estado_usuario,
+                           u.correo, u.telefono, u.estado,
                            d.nombre as distrito, 
                            prov.nombre as provincia,
                            dep.nombre as departamento
@@ -51,7 +51,6 @@ class Paciente:
                     LEFT JOIN DISTRITO d ON p.id_distrito = d.id_distrito
                     LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
                     LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
-                    WHERE u.estado = 'activo'
                     ORDER BY p.apellidos, p.nombres
                 """
                 cursor.execute(sql)

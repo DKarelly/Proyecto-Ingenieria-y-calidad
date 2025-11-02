@@ -4,7 +4,7 @@ from datetime import datetime, date
 
 class Usuario:
     def __init__(self, id_usuario=None, contrasena=None, correo=None, 
-                 telefono=None, estado='activo', fecha_creacion=None):
+                 telefono=None, estado='Activo', fecha_creacion=None):
         self.id_usuario = id_usuario
         self.contrasena = contrasena
         self.correo = correo
@@ -23,7 +23,8 @@ class Usuario:
                 
                 sql = """INSERT INTO USUARIO (correo, contrasena, telefono, estado, fecha_creacion) 
                          VALUES (%s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (correo, contrasena_hash, telefono, 'activo', date.today()))
+                # Guardar cuenta nueva con estado 'Activo' (mayúscula) por requerimiento
+                cursor.execute(sql, (correo, contrasena_hash, telefono, 'Activo', date.today()))
                 conexion.commit()
                 return {'success': True, 'id_usuario': cursor.lastrowid}
         except Exception as e:
@@ -209,7 +210,8 @@ class Usuario:
         if not usuario:
             return {'error': 'Usuario no encontrado'}
         
-        if usuario['estado'] != 'activo':
+        # Aceptar variantes de mayúsculas/minúsculas en el campo estado
+        if not usuario['estado'] or usuario['estado'].lower() != 'activo':
             return {'error': 'Usuario inactivo'}
         
         if not Usuario.verificar_contrasena(usuario['contrasena'], contrasena):

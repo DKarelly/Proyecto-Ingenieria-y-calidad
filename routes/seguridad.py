@@ -162,16 +162,226 @@ def api_actualizar_incidencia(id_incidencia):
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
         return jsonify({'error': 'No autorizado'}), 401
 
-    data = request.get_json()
-    descripcion = data.get('descripcion', '')
-    estado = data.get('estado', '')
-    observaciones = data.get('observaciones', '')
+    try:
+        data = request.get_json()
+        descripcion = data.get('descripcion', '')
+        estado = data.get('estado', '')
+        prioridad = data.get('prioridad', '')
+        categoria = data.get('categoria', '')
+        observaciones = data.get('observaciones', '')
 
-    if not estado:
-        return jsonify({'error': 'El estado es requerido'}), 400
+        if not estado:
+            return jsonify({'error': 'El estado es requerido'}), 400
 
-    exito = Incidencia.actualizar(id_incidencia, descripcion, estado, observaciones)
-    if exito:
-        return jsonify({'mensaje': 'Incidencia actualizada exitosamente'})
+        # Validar prioridad si se proporciona
+        if prioridad:
+            prioridades_validas = ['Baja', 'Media', 'Alta']
+            if prioridad not in prioridades_validas:
+                return jsonify({'error': 'Prioridad inválida'}), 400
+
+        # Validar categoría si se proporciona
+        if categoria:
+            categorias_validas = ['Hardware', 'Software', 'Equipamiento Médico', 'Infraestructura', 'Insumos', 'Otro']
+            if categoria not in categorias_validas:
+                return jsonify({'error': 'Categoría inválida'}), 400
+
+        exito = Incidencia.actualizar_completa(
+            id_incidencia,
+            descripcion,
+            estado,
+            prioridad,
+            categoria,
+            observaciones
+        )
+
+        if exito:
+            return jsonify({'mensaje': 'Incidencia actualizada exitosamente'})
+        else:
+            return jsonify({'error': 'Error al actualizar la incidencia'}), 500
+    except Exception as e:
+        print(f"Error en api_actualizar_incidencia: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@seguridad_bp.route('/api/incidencias/<int:id_incidencia>/resolver', methods=['POST'])
+def api_resolver_incidencia(id_incidencia):
+    """API para marcar una incidencia como resuelta"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    try:
+        data = request.get_json()
+        comentario = data.get('comentario', '')
+
+        # Marcar como resuelta
+        exito = Incidencia.resolver_incidencia(id_incidencia, comentario)
+
+        if exito:
+            return jsonify({'mensaje': 'Incidencia resuelta exitosamente'})
+        else:
+            return jsonify({'error': 'Error al resolver la incidencia'}), 500
+    except Exception as e:
+        print(f"Error en api_resolver_incidencia: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@seguridad_bp.route('/incidencias/generar-incidencia', methods=['POST'])
+def crear_incidencia():
+    """Crear Nueva Incidencia"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+
+    descripcion = request.form.get('descripcion')
+    categoria = request.form.get('categoria')
+    prioridad = request.form.get('prioridad', 'Media')
+    id_paciente = request.form.get('paciente')  # Obtener del formulario
+    
+    if not id_paciente:
+        id_paciente = session.get('id_paciente')  # Fallback a sesión si existe
+
+    if not descripcion or not categoria or not id_paciente:
+        return jsonify({'error': 'Descripción, categoría y paciente son requeridos'}), 400
+
+    id_incidencia = Incidencia.crear(id_paciente, descripcion, categoria, prioridad)
+
+    if id_incidencia:
+        return redirect(url_for('seguridad.incidencias'))
     else:
-        return jsonify({'error': 'Error al actualizar la incidencia'}), 500
+        return jsonify({'error': 'Error al crear la incidencia'}), 500
+
+@seguridad_bp.route('/api/incidencias/sin-asignar', methods=['GET'])
+def api_incidencias_sin_asignar():
+    """API para obtener incidencias sin asignar"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    incidencias = Incidencia.obtener_sin_asignar()
+    return jsonify(incidencias)
+
+@seguridad_bp.route('/api/empleados', methods=['GET'])
+def api_obtener_empleados():
+    """API para obtener empleados disponibles"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    empleados = Incidencia.obtener_empleados_disponibles()
+    return jsonify(empleados)
+
+@seguridad_bp.route('/api/incidencias/<int:id_incidencia>/asignar', methods=['POST'])
+def api_asignar_empleado_incidencia(id_incidencia):
+    """API para asignar empleado a incidencia"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    try:
+        data = request.get_json()
+
+        # Validar que se recibieron datos
+        if not data:
+            return jsonify({'error': 'No se recibieron datos'}), 400
+
+        id_empleado = data.get('id_empleado')
+        prioridad = data.get('prioridad', 'Media')
+        
+        # Al asignar un empleado, el estado siempre es "En proceso"
+        estado = 'En proceso'
+
+        # Validaciones de entrada
+        if not id_empleado:
+            return jsonify({'error': 'El empleado es requerido'}), 400
+
+        # Validar que id_empleado sea un número
+        try:
+            id_empleado = int(id_empleado)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'ID de empleado inválido'}), 400
+
+        # Validar que id_incidencia sea válido
+        if id_incidencia <= 0:
+            return jsonify({'error': 'ID de incidencia inválido'}), 400
+
+        # Validar prioridad
+        prioridades_validas = ['Baja', 'Media', 'Alta']
+        if prioridad not in prioridades_validas:
+            return jsonify({'error': f'Prioridad inválida. Debe ser una de: {", ".join(prioridades_validas)}'}), 400
+
+        # Verificar que la incidencia existe
+        from bd import obtener_conexion
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+
+        cursor.execute("SELECT id_incidencia FROM INCIDENCIA WHERE id_incidencia = %s", (id_incidencia,))
+        incidencia = cursor.fetchone()
+
+        if not incidencia:
+            conexion.close()
+            return jsonify({'error': 'La incidencia no existe'}), 404
+
+        # Verificar que el empleado existe
+        cursor.execute("SELECT id_empleado, nombres, apellidos FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+        empleado = cursor.fetchone()
+
+        if not empleado:
+            conexion.close()
+            return jsonify({'error': 'El empleado no existe'}), 404
+
+        conexion.close()
+
+        # Actualizar la asignación
+        exito = Incidencia.actualizar_asignacion(id_incidencia, id_empleado, estado, prioridad)
+
+        if exito:
+            return jsonify({
+                'mensaje': 'Empleado asignado exitosamente',
+                'empleado': f"{empleado['nombres']} {empleado['apellidos']}",
+                'estado': estado,
+                'prioridad': prioridad
+            }), 200
+        else:
+            return jsonify({'error': 'Error al asignar empleado. Por favor, intente nuevamente.'}), 500
+
+    except Exception as e:
+        print(f"Error en api_asignar_empleado_incidencia: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+
+@seguridad_bp.route('/api/incidencias/informe', methods=['POST'])
+def api_generar_informe():
+    """API para generar informe de incidencias"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    filtros = {
+        'paciente': data.get('paciente', ''),
+        'fecha': data.get('fecha', ''),
+        'categoria': data.get('categoria', ''),
+        'estado': data.get('estado', '')
+    }
+
+    incidencias = Incidencia.generar_informe(filtros)
+    return jsonify(incidencias)
+
+@seguridad_bp.route('/api/pacientes', methods=['GET'])
+def api_obtener_pacientes():
+    """API para obtener todos los pacientes"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    from bd import obtener_conexion
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        query = "SELECT id_paciente, nombres, apellidos FROM PACIENTE ORDER BY nombres"
+        cursor.execute(query)
+        pacientes = cursor.fetchall()
+
+        for p in pacientes:
+            p['nombre_completo'] = f"{p['nombres']} {p['apellidos']}"
+
+        return jsonify(pacientes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conexion' in locals():
+            conexion.close()
