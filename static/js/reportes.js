@@ -167,55 +167,35 @@ class ReportesManager {
 
     mostrarModalDetalle(reporte) {
         const modal = document.getElementById('modalDetalle');
-
-        // Log para depuración
-        console.log('Datos del reporte:', reporte);
-
+        
         // Formatear fecha y hora desde fecha_creacion (MySQL datetime)
         const fechaCompleta = reporte.fecha_creacion || '';
         let fecha = 'N/A';
         let hora = 'N/A';
-
+        
         if (fechaCompleta) {
             try {
                 // Si viene en formato MySQL: "2025-10-31 14:30:00"
-                const fechaStr = String(fechaCompleta);
-                if (fechaStr.includes('-') && fechaStr.includes(':')) {
-                    const [fechaParte, horaParte] = fechaStr.split(' ');
+                if (fechaCompleta.includes('-') && fechaCompleta.includes(':')) {
+                    const [fechaParte, horaParte] = fechaCompleta.split(' ');
                     const [anio, mes, dia] = fechaParte.split('-');
                     fecha = `${dia}/${mes}/${anio}`;
-                    hora = horaParte ? horaParte.substring(0, 8) : 'N/A'; // HH:MM:SS
-                } else if (fechaStr.includes('/')) {
-                    // Si ya viene formateada
-                    fecha = fechaStr.split(' ')[0] || fechaStr;
-                    hora = fechaStr.split(' ')[1] || 'N/A';
+                    hora = horaParte.substring(0, 8); // HH:MM:SS
                 }
             } catch (e) {
-                console.error('Error formateando fecha:', e, fechaCompleta);
-                fecha = String(fechaCompleta).substring(0, 10);
+                console.error('Error formateando fecha:', e);
+                fecha = fechaCompleta;
             }
         }
-
-        // Rellenar datos básicos
-        const elementos = {
-            'detalleCodigo': reporte.codigo,
-            'detalleCategoria': reporte.categoria,
-            'detalleTipo': reporte.tipo,
-            'detalleFecha': fecha,
-            'detalleHora': hora,
-            'detalleEmpleado': reporte.empleado,
-            'detalleDescripcion': reporte.descripcion
-        };
-
-        // Actualizar cada elemento con validación
-        for (const [id, valor] of Object.entries(elementos)) {
-            const elemento = document.getElementById(id);
-            if (elemento) {
-                elemento.textContent = valor || 'No especificado';
-            } else {
-                console.warn(`Elemento ${id} no encontrado en el DOM`);
-            }
-        }
+        
+        // Rellenar datos básicos (sin Estado, sin Nombre)
+        document.getElementById('detalleCodigo').textContent = reporte.codigo || 'N/A';
+        document.getElementById('detalleCategoria').textContent = reporte.categoria || 'N/A';
+        document.getElementById('detalleTipo').textContent = reporte.tipo || 'N/A';
+        document.getElementById('detalleFecha').textContent = fecha;
+        document.getElementById('detalleHora').textContent = hora;
+        document.getElementById('detalleEmpleado').textContent = reporte.empleado || 'No asignado';
+        document.getElementById('detalleDescripcion').textContent = reporte.descripcion || 'Sin descripción';
 
         // Renderizar archivos adjuntos con vista previa
         const listaArchivos = document.getElementById('listaArchivos');

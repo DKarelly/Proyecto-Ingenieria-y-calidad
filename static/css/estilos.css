@@ -1,0 +1,113 @@
+/* ================================================
+   ESTILOS PARA MÓDULO DE REPORTES
+   ================================================ */
+
+/* Badges de estado */
+.badge-completado {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.badge-pendiente {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.badge-revisado {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.badge-activo {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.badge-inactivo {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+.badge-disponible {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.badge-ocupado {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.badge-mantenimiento {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* Modales */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 1rem;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Animaciones para toasts */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+    transition: opacity 0.3s ease-out;
+}
+
+/* Animación para barras de progreso */
+@keyframes progress-bar {
+    0% {
+        width: 0%;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+.carga-previa {
+    animation: progress-bar 1.5s ease-in-out infinite alternate;
+}
+
+.descarga-progreso {
+    animation: progress-bar 2s ease-in-out;
+}
+
+/* Animación de rebote para iconos de descarga */
+.fa-bounce {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}

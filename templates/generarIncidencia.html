@@ -33,50 +33,54 @@
 
         <!-- Formulario -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 admin-card">
-            <form id="formIncidencia" method="POST" action="{{ url_for('seguridad.crear_incidencia') }}">
+            <form id="formIncidencia">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Fecha de Reporte -->
+                    <!-- Fecha de Reporte (automática) -->
                     <div class="flex flex-col">
                         <label class="text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-calendar text-cyan-600 mr-2"></i>
+                            <i class="fas fa-calendar-alt text-cyan-600 mr-2"></i>
                             Fecha de Reporte
                         </label>
-                        <input
-                            type="text"
+                        <input 
+                            type="text" 
                             id="fechaReporte"
-                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-600 cursor-not-allowed focus:outline-none"
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed focus:outline-none" 
                             readonly
                         >
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            La fecha se registra automáticamente
+                        </p>
                     </div>
 
-                    <!-- Paciente -->
+                    <!-- Paciente (seleccionable) -->
                     <div class="flex flex-col">
                         <label class="text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-user-injured text-cyan-600 mr-2"></i>
                             Paciente <span class="text-red-500">*</span>
                         </label>
-                        <select
-                            id="paciente"
-                            name="paciente"
+                        <select 
+                            id="selectPaciente"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white"
                             required
                         >
                             <option value="">Seleccione un paciente</option>
+                            <!-- Opciones cargadas dinámicamente -->
                         </select>
                     </div>
 
                     <!-- Descripción -->
                     <div class="md:col-span-2 flex flex-col">
                         <label class="text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-align-left text-cyan-600 mr-2"></i>
+                            <i class="fas fa-comment-alt text-cyan-600 mr-2"></i>
                             Descripción <span class="text-red-500">*</span>
                         </label>
-                        <textarea
+                        <textarea 
                             id="descripcion"
                             name="descripcion"
                             rows="6"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
-                            placeholder="Ingrese una descripción detallada de la incidencia"
+                            placeholder="Ingrese una descripción detallada de la incidencia (ej: Aire acondicionado del consultorio 3 no funciona)"
                             required
                         ></textarea>
                     </div>
@@ -87,7 +91,7 @@
                             <i class="fas fa-tags text-cyan-600 mr-2"></i>
                             Categoría <span class="text-red-500">*</span>
                         </label>
-                        <select
+                        <select 
                             id="categoria"
                             name="categoria"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white"
@@ -96,8 +100,9 @@
                             <option value="">Seleccione una categoría</option>
                             <option value="Hardware">Hardware</option>
                             <option value="Software">Software</option>
-                            <option value="Equipamiento Médico">Equipamiento Médico</option>
+                            <option value="Red">Red</option>
                             <option value="Infraestructura">Infraestructura</option>
+                            <option value="Equipamiento Médico">Equipamiento Médico</option>
                             <option value="Insumos">Insumos</option>
                             <option value="Otro">Otro</option>
                         </select>
@@ -106,19 +111,39 @@
                     <!-- Prioridad -->
                     <div class="flex flex-col">
                         <label class="text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-exclamation-circle text-cyan-600 mr-2"></i>
+                            <i class="fas fa-exclamation-triangle text-cyan-600 mr-2"></i>
                             Prioridad <span class="text-red-500">*</span>
                         </label>
-                        <select
+                        <select 
                             id="prioridad"
                             name="prioridad"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white"
                             required
                         >
-                            <option value="Baja">🟢 Baja</option>
-                            <option value="Media" selected>🟡 Media</option>
-                            <option value="Alta">🔴 Alta</option>
+                            <option value="">Seleccione una prioridad</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Baja">Baja</option>
                         </select>
+                    </div>
+
+                    <!-- Empleado Responsable (opcional) -->
+                    <div class="flex flex-col">
+                        <label class="text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-user-tie text-cyan-600 mr-2"></i>
+                            Empleado Responsable
+                        </label>
+                        <select 
+                            id="selectEmpleado"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white"
+                        >
+                            <option value="">Asignar después</option>
+                            <!-- Opciones cargadas dinámicamente -->
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Puede asignar un responsable ahora o hacerlo después
+                        </p>
                     </div>
                 </div>
 
@@ -141,21 +166,7 @@
         </div>
     </div>
 
-    <!-- Modal de éxito -->
-    <div id="modalExito" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 text-center">
-            <div class="mb-4">
-                <i class="fas fa-check-circle text-6xl text-green-500"></i>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Incidencia Creada!</h3>
-            <p class="text-gray-600 mb-6">La incidencia ha sido registrada exitosamente en el sistema</p>
-            <button onclick="window.location.href='{{ url_for('seguridad.incidencias') }}'"
-                    class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all">
-                Ir al Panel de Incidencias
-            </button>
-        </div>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/generarIncidencia.js') }}"></script>
+    <!-- Script para funcionalidad dinámica -->
+    <script src="{{ url_for('static', filename='js/generar_incidencia.js') }}"></script>
 </body>
 </html>
