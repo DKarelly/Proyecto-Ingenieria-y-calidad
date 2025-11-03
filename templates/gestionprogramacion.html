@@ -1,11 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Gestionar Programación - Clínica Unión</title>
+    <!-- Estilos compartidos con otras plantillas admin -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
-<body>
-    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+<body class="text-gray-700">
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <div class="mb-6">
+            <a href="/admin" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al panel
+            </a>
+        </div>
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">Gestionar Programación</h1>
+
+        <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
+            <!-- Contenido provisional: reemplaza con la interfaz de gestión -->
+            <p class="text-gray-600">Aquí irá la interfaz para gestionar la programación (horarios, turnos, asignaciones).</p>
+            <p class="mt-4 text-sm text-gray-500">Contenido de prueba: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</p>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
 </body>
 </html>
