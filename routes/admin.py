@@ -68,6 +68,17 @@ def gestionar_catalogo_servicios():
     
     return render_template('gestionCatalogoServicio.html')
 
+@admin_bp.route('/gestionar-programacion')
+def gestionar_programacion():
+    """Gestionar programación"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    return render_template('gestionprogramacion.html')
+
 @admin_bp.route('/gestionar-horarios-laborales')
 def gestionar_horarios_laborales():
     """Gestionar Horarios Laborales"""
