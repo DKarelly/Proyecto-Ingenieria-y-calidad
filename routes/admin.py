@@ -5,6 +5,7 @@ from models.recurso import Recurso
 from models.horario import Horario
 from models.empleado import Empleado
 from models.agenda import Agenda
+from models.programacion import Programacion
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -531,3 +532,149 @@ def api_consultar_agenda():
 
     agenda = Agenda.consultar_agenda(id_empleado=id_empleado, fecha=fecha, id_servicio=id_servicio)
     return jsonify(agenda)
+
+# API Routes for Gestion Programacion
+
+@admin_bp.route('/api/programaciones', methods=['GET'])
+def api_obtener_programaciones():
+    """API para obtener todas las programaciones"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    programaciones = Programacion.obtener_todos()
+
+    # Convertir objetos datetime a strings para JSON serialization
+    for prog in programaciones:
+        if 'hora_inicio' in prog and prog['hora_inicio']:
+            prog['hora_inicio'] = str(prog['hora_inicio'])
+        if 'hora_fin' in prog and prog['hora_fin']:
+            prog['hora_fin'] = str(prog['hora_fin'])
+        if 'fecha' in prog and prog['fecha']:
+            prog['fecha'] = prog['fecha'].isoformat()
+
+    return jsonify(programaciones)
+
+@admin_bp.route('/api/programaciones/buscar', methods=['POST'])
+def api_buscar_programaciones():
+    """API para buscar programaciones con filtros"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    fecha = data.get('fecha', '')
+    id_empleado = data.get('id_empleado', '')
+    estado = data.get('estado', '')
+    id_servicio = data.get('id_servicio', '')
+
+    # Convertir a int si no están vacíos
+    if id_empleado:
+        id_empleado = int(id_empleado)
+    if id_servicio:
+        id_servicio = int(id_servicio)
+
+    programaciones_filtradas = Programacion.buscar_por_filtros(fecha=fecha, id_empleado=id_empleado, estado=estado, id_servicio=id_servicio)
+
+    # Convertir objetos datetime a strings para JSON serialization
+    for prog in programaciones_filtradas:
+        if 'hora_inicio' in prog and prog['hora_inicio']:
+            prog['hora_inicio'] = str(prog['hora_inicio'])
+        if 'hora_fin' in prog and prog['hora_fin']:
+            prog['hora_fin'] = str(prog['hora_fin'])
+        if 'fecha' in prog and prog['fecha']:
+            prog['fecha'] = prog['fecha'].isoformat()
+
+    return jsonify(programaciones_filtradas)
+
+@admin_bp.route('/api/programaciones', methods=['POST'])
+def api_crear_programacion():
+    """API para crear una nueva programación"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    fecha = data.get('fecha')
+    hora_inicio = data.get('hora_inicio')
+    hora_fin = data.get('hora_fin')
+    id_servicio = data.get('id_servicio')
+    id_horario = data.get('id_horario')
+
+    if not fecha or not hora_inicio or not hora_fin or not id_servicio or not id_horario:
+        return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
+
+    resultado = Programacion.crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Programación creada exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/programaciones/<int:id_programacion>', methods=['PUT'])
+def api_actualizar_programacion(id_programacion):
+    """API para actualizar una programación"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    data = request.get_json()
+    fecha = data.get('fecha')
+    hora_inicio = data.get('hora_inicio')
+    hora_fin = data.get('hora_fin')
+    id_servicio = data.get('id_servicio')
+    id_horario = data.get('id_horario')
+    estado = data.get('estado')
+
+    resultado = Programacion.actualizar(id_programacion, fecha=fecha, hora_inicio=hora_inicio,
+                                       hora_fin=hora_fin, id_servicio=id_servicio,
+                                       id_horario=id_horario, estado=estado)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Programación actualizada exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/programaciones/<int:id_programacion>', methods=['GET'])
+def api_obtener_programacion(id_programacion):
+    """API para obtener una programación específica"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    programacion = Programacion.obtener_por_id(id_programacion)
+    if programacion:
+        # Convertir objetos datetime a strings para JSON serialization
+        if 'hora_inicio' in programacion and programacion['hora_inicio']:
+            programacion['hora_inicio'] = str(programacion['hora_inicio'])
+        if 'hora_fin' in programacion and programacion['hora_fin']:
+            programacion['hora_fin'] = str(programacion['hora_fin'])
+        if 'fecha' in programacion and programacion['fecha']:
+            programacion['fecha'] = programacion['fecha'].isoformat()
+        return jsonify(programacion)
+    else:
+        return jsonify({'error': 'Programación no encontrada'}), 404
+
+@admin_bp.route('/api/programaciones/<int:id_programacion>', methods=['DELETE'])
+def api_eliminar_programacion(id_programacion):
+    """API para eliminar una programación"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    resultado = Programacion.eliminar(id_programacion)
+    if 'success' in resultado:
+        return jsonify({'success': True, 'message': 'Programación eliminada exitosamente'})
+    else:
+        return jsonify({'success': False, 'message': resultado.get('error', 'Error desconocido')}), 500
+
+@admin_bp.route('/api/horarios/empleados/<int:id_empleado>', methods=['GET'])
+def api_obtener_horarios_por_empleado(id_empleado):
+    """API para obtener horarios de un empleado específico"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    horarios = Horario.obtener_por_empleado(id_empleado)
+
+    # Convertir objetos datetime a strings para JSON serialization
+    for horario in horarios:
+        if 'hora_inicio' in horario and horario['hora_inicio']:
+            horario['hora_inicio'] = str(horario['hora_inicio'])
+        if 'hora_fin' in horario and horario['hora_fin']:
+            horario['hora_fin'] = str(horario['hora_fin'])
+        if 'fecha' in horario and horario['fecha']:
+            horario['fecha'] = horario['fecha'].isoformat()
+
+    return jsonify(horarios)
