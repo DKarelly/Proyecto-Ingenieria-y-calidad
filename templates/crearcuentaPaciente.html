@@ -34,161 +34,285 @@
         <h1 class="text-3xl font-bold text-gray-800 mb-8">Crear Cuenta de Paciente</h1>
 
         <!-- Form Card -->
-        <div class="bg-white rounded-lg shadow-md border border-gray-200 p-6 md:p-8 admin-card">
-            <form method="POST" class="space-y-6">
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 md:p-10 transform transition-all hover:shadow-2xl">
+            <!-- Encabezado del formulario con ícono -->
+            <div class="flex items-center gap-4 mb-8 pb-6 border-b border-gray-200">
+                <div class="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-4 shadow-lg">
+                    <i class="fa-solid fa-user-plus text-white text-3xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Datos del Nuevo Paciente</h2>
+                    <p class="text-gray-600 text-sm mt-1">Complete todos los campos requeridos con (*)</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('cuentas.registrar_cuenta_paciente') }}" class="space-y-6" id="formRegistroPaciente">
                 <!-- Nombres y Apellidos -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="nombres">Nombres</label>
-                        <input 
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                            id="nombres" 
-                            name="nombres" 
-                            placeholder="John" 
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="nombres">
+                            <i class="fa-solid fa-user text-cyan-600"></i>
+                            Nombres <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                            id="nombres"
+                            name="nombres"
+                            placeholder="Ej: Juan Carlos"
                             type="text"
                             required
                         />
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="apellidos">Apellidos</label>
-                        <input 
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                            id="apellidos" 
-                            name="apellidos" 
-                            placeholder="Doe" 
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="apellidos">
+                            <i class="fa-solid fa-user text-cyan-600"></i>
+                            Apellidos <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                            id="apellidos"
+                            name="apellidos"
+                            placeholder="Ej: Pérez López"
                             type="text"
                             required
                         />
                     </div>
                 </div>
 
-                <!-- Documento de Identidad -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="documento-identidad">Documento de Identidad</label>
-                    <input 
-                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                        id="documento-identidad" 
-                        name="documento-identidad" 
-                        placeholder="12345678" 
-                        type="text"
-                        required
-                    />
+                <!-- Documento de Identidad y Sexo -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="documento-identidad">
+                            <i class="fa-solid fa-id-card text-cyan-600"></i>
+                            Documento de Identidad (DNI) <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                            id="documento-identidad"
+                            name="documento-identidad"
+                            placeholder="12345678"
+                            type="text"
+                            maxlength="8"
+                            pattern="[0-9]{8}"
+                            required
+                        />
+                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-info-circle"></i>
+                            Ingrese 8 dígitos sin espacios
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="sexo">
+                            <i class="fa-solid fa-venus-mars text-cyan-600"></i>
+                            Sexo <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select
+                                class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                                id="sexo"
+                                name="sexo"
+                                required
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Teléfono y Fecha de Nacimiento -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="telefono">Teléfono</label>
-                        <input 
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                            id="telefono" 
-                            name="telefono" 
-                            placeholder="987654321" 
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="telefono">
+                            <i class="fa-solid fa-phone text-cyan-600"></i>
+                            Teléfono <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                            id="telefono"
+                            name="telefono"
+                            placeholder="987654321"
                             type="tel"
+                            maxlength="9"
+                            pattern="[0-9]{9}"
                             required
                         />
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="fecha-nacimiento">Fecha de Nacimiento</label>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="fecha-nacimiento">
+                            <i class="fa-solid fa-calendar text-cyan-600"></i>
+                            Fecha de Nacimiento <span class="text-red-500">*</span>
+                        </label>
                         <div class="relative">
-                            <input 
-                                class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                                id="fecha-nacimiento" 
-                                name="fecha-nacimiento" 
-                                placeholder="dd/mm/aaaa" 
-                                type="text"
+                            <input
+                                class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                                id="fecha-nacimiento"
+                                name="fecha-nacimiento"
+                                type="date"
                                 required
                             />
-                            <i class="fa-regular fa-calendar absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Correo Electrónico -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="email">Correo Electrónico</label>
-                    <input 
-                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                        id="email" 
-                        name="email" 
-                        placeholder="tu@email.com" 
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="email">
+                        <i class="fa-solid fa-envelope text-cyan-600"></i>
+                        Correo Electrónico <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                        id="email"
+                        name="email"
+                        placeholder="tu@email.com"
                         type="email"
                         required
                     />
                 </div>
 
                 <!-- Departamento, Provincia, Distrito -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="departamento">Departamento</label>
-                        <input 
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                            id="departamento" 
-                            name="departamento" 
-                            placeholder="Ej: Lima" 
-                            type="text"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="provincia">Provincia</label>
-                        <input 
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                            id="provincia" 
-                            name="provincia" 
-                            placeholder="Ej: Lima" 
-                            type="text"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2" for="distrito">Distrito</label>
-                        <input 
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                            id="distrito" 
-                            name="distrito" 
-                            placeholder="Ej: Miraflores" 
-                            type="text"
-                            required
-                        />
+                <div class="bg-gradient-to-br from-blue-50 to-cyan-50 p-6 rounded-2xl border-2 border-blue-100">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-blue-600"></i>
+                        Dirección
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="departamento">Departamento <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <select
+                                    class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                                    id="departamento"
+                                    name="departamento"
+                                    required
+                                >
+                                    <option value="">Seleccione un departamento...</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="provincia">Provincia <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <select
+                                    class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    id="provincia"
+                                    name="provincia"
+                                    required
+                                    disabled
+                                >
+                                    <option value="">Seleccione un departamento primero...</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2" for="distrito">Distrito <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <select
+                                    class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                                    id="distrito"
+                                    name="distrito"
+                                    required
+                                    disabled
+                                >
+                                    <option value="">Seleccione una provincia primero...</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Contraseña -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2" for="password">Contraseña</label>
-                    <input 
-                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
-                        id="password" 
-                        name="password" 
-                        placeholder="••••••••" 
-                        type="password"
-                        required
-                    />
+                <!-- Contraseña y Confirmar Contraseña -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="password">
+                            <i class="fa-solid fa-lock text-cyan-600"></i>
+                            Contraseña <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                                id="password"
+                                name="password"
+                                placeholder="••••••••"
+                                type="password"
+                                minlength="6"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onclick="togglePassword()"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Mostrar/Ocultar contraseña"
+                            >
+                                <i class="fa-solid fa-eye" id="password-toggle-icon"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-info-circle"></i>
+                            Mínimo 6 caracteres
+                        </p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="confirm-password">
+                            <i class="fa-solid fa-lock text-cyan-600"></i>
+                            Confirmar Contraseña <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                                id="confirm-password"
+                                name="confirm-password"
+                                placeholder="••••••••"
+                                type="password"
+                                minlength="6"
+                                required
+                            />
+                            <button
+                                type="button"
+                                onclick="toggleConfirmPassword()"
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                title="Mostrar/Ocultar contraseña"
+                            >
+                                <i class="fa-solid fa-eye" id="confirm-password-toggle-icon"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                            <i class="fa-solid fa-info-circle"></i>
+                            Debe coincidir con la contraseña
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Términos y Condiciones -->
-                <div class="flex items-center">
-                    <input 
-                        class="h-4 w-4 text-cyan-500 focus:ring-cyan-500 border-gray-300 rounded" 
-                        id="terms" 
-                        name="terms" 
-                        type="checkbox"
-                        required
-                    />
-                    <label class="ml-2 block text-sm text-gray-700" for="terms">
-                        Acepto los <a class="font-medium text-cyan-600 hover:text-cyan-700 hover:underline" href="#">Términos y Condiciones</a>
+                <div class="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
+                    <label class="flex items-start gap-3 cursor-pointer group">
+                        <input
+                            class="mt-1 h-5 w-5 text-cyan-500 focus:ring-cyan-500 border-gray-300 rounded transition-all"
+                            id="terms"
+                            name="terms"
+                            type="checkbox"
+                            required
+                        />
+                        <span class="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
+                            Acepto los <a class="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline" href="#">Términos y Condiciones</a> y la <a class="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline" href="#">Política de Privacidad</a>
+                        </span>
                     </label>
                 </div>
 
                 <!-- Botón Registrarse -->
-                <div class="pt-4">
-                    <button 
-                        class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors inline-flex items-center justify-center btn btn-primary" 
+                <div class="pt-6">
+                    <button
+                        class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 inline-flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         type="submit"
                     >
-                        <i class="fa-solid fa-user-plus mr-2"></i>
-                        Registrarse
+                        <i class="fa-solid fa-user-plus mr-2 text-xl"></i>
+                        Crear Cuenta de Paciente
                     </button>
                 </div>
             </form>
@@ -205,6 +329,261 @@
         if (!window.usuario) {
             window.location.href = '/';
         }
+
+        // Mostrar mensajes flash si existen
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showNotification('{{ message }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        // Función para mostrar notificaciones
+        function showNotification(message, type = 'info') {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg text-white font-medium animate-slide-in max-w-md`;
+            
+            let bgColor = 'bg-blue-500';
+            let icon = 'fa-info-circle';
+            
+            if (type === 'success') {
+                bgColor = 'bg-green-500';
+                icon = 'fa-check-circle';
+            } else if (type === 'error' || type === 'danger') {
+                bgColor = 'bg-red-500';
+                icon = 'fa-exclamation-circle';
+            } else if (type === 'warning') {
+                bgColor = 'bg-amber-500';
+                icon = 'fa-exclamation-triangle';
+            }
+            
+            notificationDiv.className += ` ${bgColor}`;
+            notificationDiv.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas ${icon} text-xl"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-2 hover:opacity-75">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notificationDiv);
+            
+            setTimeout(() => {
+                notificationDiv.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notificationDiv.remove(), 300);
+            }, 5000);
+        }
+
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('password-toggle-icon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Toggle confirm password visibility
+        function toggleConfirmPassword() {
+            const confirmPasswordInput = document.getElementById('confirm-password');
+            const toggleIcon = document.getElementById('confirm-password-toggle-icon');
+
+            if (confirmPasswordInput.type === 'password') {
+                confirmPasswordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                confirmPasswordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Validación del formulario
+        document.getElementById('formRegistroPaciente').addEventListener('submit', function(e) {
+            const dni = document.getElementById('documento-identidad').value;
+            const telefono = document.getElementById('telefono').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const sexo = document.getElementById('sexo').value;
+            const distrito = document.getElementById('distrito').value;
+            const terms = document.getElementById('terms').checked;
+
+            // Validar DNI (8 dígitos)
+            if (!/^\d{8}$/.test(dni)) {
+                e.preventDefault();
+                showNotification('El DNI debe tener exactamente 8 dígitos', 'error');
+                document.getElementById('documento-identidad').focus();
+                return;
+            }
+
+            // Validar sexo
+            if (!sexo) {
+                e.preventDefault();
+                showNotification('Debe seleccionar el sexo', 'error');
+                document.getElementById('sexo').focus();
+                return;
+            }
+
+            // Validar teléfono (9 dígitos)
+            if (!/^\d{9}$/.test(telefono)) {
+                e.preventDefault();
+                showNotification('El teléfono debe tener exactamente 9 dígitos', 'error');
+                document.getElementById('telefono').focus();
+                return;
+            }
+
+            // Validar ubicación
+            if (!distrito) {
+                e.preventDefault();
+                showNotification('Debe seleccionar un distrito', 'error');
+                document.getElementById('distrito').focus();
+                return;
+            }
+
+            // Validar contraseña (mínimo 6 caracteres)
+            if (password.length < 6) {
+                e.preventDefault();
+                showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
+                document.getElementById('password').focus();
+                return;
+            }
+
+            // Validar que las contraseñas coincidan
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                showNotification('Las contraseñas no coinciden', 'error');
+                document.getElementById('confirm-password').focus();
+                return;
+            }
+
+            // Validar términos y condiciones
+            if (!terms) {
+                e.preventDefault();
+                showNotification('Debe aceptar los términos y condiciones', 'warning');
+                document.getElementById('terms').focus();
+                return;
+            }
+
+            // Mostrar indicador de carga
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Registrando...';
+        });
+
+        // Cascading select logic for Departamento -> Provincia -> Distrito
+        const departamentoSelect = document.getElementById('departamento');
+        const provinciaSelect = document.getElementById('provincia');
+        const distritoSelect = document.getElementById('distrito');
+
+        // Load departamentos on page load
+        async function loadDepartamentos() {
+            try {
+                const response = await fetch('/usuarios/api/departamentos');
+                const departamentos = await response.json();
+
+                departamentoSelect.innerHTML = '<option value="">Seleccione un departamento...</option>';
+                departamentos.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id_departamento;
+                    option.textContent = dept.nombre;
+                    departamentoSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading departamentos:', error);
+                showNotification('Error al cargar departamentos', 'error');
+            }
+        }
+
+        // Load provincias when departamento changes
+        departamentoSelect.addEventListener('change', async function() {
+            const departamentoId = this.value;
+
+            // Reset provincia and distrito
+            provinciaSelect.innerHTML = '<option value="">Seleccione una provincia...</option>';
+            provinciaSelect.disabled = true;
+            distritoSelect.innerHTML = '<option value="">Seleccione una provincia primero...</option>';
+            distritoSelect.disabled = true;
+
+            if (departamentoId) {
+                try {
+                    const response = await fetch(`/usuarios/api/provincias/${departamentoId}`);
+                    const provincias = await response.json();
+
+                    provincias.forEach(prov => {
+                        const option = document.createElement('option');
+                        option.value = prov.id_provincia;
+                        option.textContent = prov.nombre;
+                        provinciaSelect.appendChild(option);
+                    });
+
+                    provinciaSelect.disabled = false;
+                } catch (error) {
+                    console.error('Error loading provincias:', error);
+                    showNotification('Error al cargar provincias', 'error');
+                }
+            }
+        });
+
+        // Load distritos when provincia changes
+        provinciaSelect.addEventListener('change', async function() {
+            const provinciaId = this.value;
+
+            // Reset distrito
+            distritoSelect.innerHTML = '<option value="">Seleccione un distrito...</option>';
+            distritoSelect.disabled = true;
+
+            if (provinciaId) {
+                try {
+                    const response = await fetch(`/usuarios/api/distritos/${provinciaId}`);
+                    const distritos = await response.json();
+
+                    distritos.forEach(dist => {
+                        const option = document.createElement('option');
+                        option.value = dist.id_distrito;
+                        option.textContent = dist.nombre;
+                        distritoSelect.appendChild(option);
+                    });
+
+                    distritoSelect.disabled = false;
+                } catch (error) {
+                    console.error('Error loading distritos:', error);
+                    showNotification('Error al cargar distritos', 'error');
+                }
+            }
+        });
+
+        // Agregar estilos para animación
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slide-in {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            .animate-slide-in {
+                animation: slide-in 0.3s ease-out;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Load departamentos on page load
+        loadDepartamentos();
     </script>
 </body>
 </html>

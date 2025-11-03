@@ -96,11 +96,20 @@ class Reporte:
             
             with conexion.cursor() as cursor:
                 sql = """
-                    SELECT r.*,
+                    SELECT r.id_reporte,
+                           r.codigo,
+                           r.nombre,
+                           r.tipo,
+                           r.descripcion,
+                           r.estado,
+                           r.fecha_creacion,
+                           r.id_categoria,
+                           r.id_empleado,
+                           r.id_servicio,
+                           r.id_recurso,
                            c.nombre as categoria,
                            c.descripcion as descripcion_categoria,
                            CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           e.id_empleado,
                            s.nombre as servicio,
                            s.descripcion as descripcion_servicio,
                            rec.nombre as recurso,

@@ -1,6 +1,45 @@
 // Variables globales
 let incidenciasData = [];
 
+// Función para mostrar notificaciones toast
+function showToast(message, type = 'success') {
+    // Remover toasts existentes
+    const existingToasts = document.querySelectorAll('.toast');
+    existingToasts.forEach(toast => toast.remove());
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    let icon = '';
+    if (type === 'success') {
+        icon = '<i class="fas fa-check-circle text-green-500 text-xl"></i>';
+    } else if (type === 'error') {
+        icon = '<i class="fas fa-times-circle text-red-500 text-xl"></i>';
+    } else if (type === 'warning') {
+        icon = '<i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>';
+    }
+
+    toast.innerHTML = `
+        ${icon}
+        <div class="flex-1">
+            <p class="font-semibold text-gray-900">${message}</p>
+        </div>
+        <button class="text-gray-400 hover:text-gray-600 ml-2" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 5000);
+}
+
 // Funcionalidad de modales
 const modales = ['modalDetalle', 'modalEditar', 'modalResolver'];
 
@@ -45,11 +84,25 @@ function mostrarIncidencias(incidencias) {
     const tbody = document.getElementById('tablaIncidencias');
     tbody.innerHTML = '';
 
+    // Actualizar contador de resultados
+    const contadorResultados = document.getElementById('contadorResultados');
+    if (contadorResultados) {
+        const texto = incidencias.length === 1 ? 'incidencia encontrada' : 'incidencias encontradas';
+        contadorResultados.textContent = `${incidencias.length} ${texto}`;
+    }
+
+    // Actualizar badge de filtros activos
+    actualizarBadgeFiltros();
+
     if (incidencias.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                    No se encontraron incidencias
+                <td colspan="9" class="px-6 py-8 text-center">
+                    <div class="flex flex-col items-center gap-3">
+                        <i class="fas fa-search text-gray-300 text-4xl"></i>
+                        <p class="text-gray-500 font-medium">No se encontraron incidencias</p>
+                        <p class="text-gray-400 text-sm">Intenta ajustar los filtros de búsqueda</p>
+                    </div>
                 </td>
             </tr>
         `;
@@ -58,30 +111,62 @@ function mostrarIncidencias(incidencias) {
 
     incidencias.forEach(incidencia => {
         const estadoClass = incidencia.estado ? incidencia.estado.toLowerCase().replace(' ', '-') : 'abierta';
+        const categoria = incidencia.categoria || 'Sin categoría';
+        const prioridad = incidencia.prioridad || 'Media';
+        const estado = incidencia.estado || 'Abierta';
+
+        let prioridadBadge = '';
+        if (prioridad === 'Alta') {
+            prioridadBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">🔴 Alta</span>';
+        } else if (prioridad === 'Media') {
+            prioridadBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">🟡 Media</span>';
+        } else {
+            prioridadBadge = '<span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">🟢 Baja</span>';
+        }
+
+        // Determinar si mostrar botón de resolver
+        // Solo mostrar en estados: Abierta, En Progreso, En proceso
+        // NO mostrar en: Resuelta, Cerrada
+        const estadosResueltos = ['Resuelta', 'Cerrada'];
+        const puedeResolver = !estadosResueltos.includes(estado);
+        
+        let btnResolver = '';
+        if (puedeResolver) {
+            btnResolver = `
+                <button class="btn-resolver action-btn action-btn-resolve" data-id="${incidencia.id_incidencia}" data-estado="${estado}">
+                    <i class="fas fa-check"></i>
+                    <span class="tooltip">Resolver</span>
+                </button>
+            `;
+        }
 
         const row = `
             <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${incidencia.id_incidencia}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-cyan-600">#${incidencia.id_incidencia}</td>
                 <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${incidencia.descripcion}">${incidencia.descripcion}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.fecha_registro}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.paciente}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${categoria}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">${prioridadBadge}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.empleado}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-${estadoClass}">
-                        ${incidencia.estado || 'Abierta'}
+                        ${estado}
                     </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <div class="flex justify-center space-x-2">
-                        <button class="btn-ver-detalle text-cyan-600 hover:text-cyan-900 p-1" data-id="${incidencia.id_incidencia}">
+                        <button class="btn-ver-detalle action-btn action-btn-view" data-id="${incidencia.id_incidencia}">
                             <i class="fas fa-eye"></i>
+                            <span class="tooltip">Ver Detalle</span>
                         </button>
-                        <button class="btn-editar text-blue-600 hover:text-blue-900 p-1" data-id="${incidencia.id_incidencia}">
+                        <button class="btn-editar action-btn action-btn-edit" data-id="${incidencia.id_incidencia}">
                             <i class="fas fa-edit"></i>
+                            <span class="tooltip">Editar</span>
                         </button>
-                        <button class="btn-resolver text-green-600 hover:text-green-900 p-1" data-id="${incidencia.id_incidencia}">
-                            <i class="fas fa-check"></i>
-                        </button>
+                        ${btnResolver}
                     </div>
                 </td>
             </tr>
@@ -127,10 +212,10 @@ function mostrarDetalleIncidencia(id) {
         document.getElementById('detalleId').textContent = incidencia.id_incidencia;
         document.getElementById('detallePaciente').textContent = incidencia.paciente;
         document.getElementById('detalleFecha').textContent = incidencia.fecha_registro;
-        document.getElementById('detalleCategoria').textContent = 'N/A'; // No hay categoria en la DB
+        document.getElementById('detalleCategoria').textContent = incidencia.categoria || 'Sin categoría';
         document.getElementById('detalleDescripcion').textContent = incidencia.descripcion;
         document.getElementById('detalleEstado').textContent = incidencia.estado || 'Abierta';
-        document.getElementById('detallePrioridad').textContent = 'N/A'; // No hay prioridad en la DB
+        document.getElementById('detallePrioridad').textContent = incidencia.prioridad || 'Media';
         document.getElementById('detalleResponsable').textContent = incidencia.empleado;
         document.getElementById('detalleFechaResolucion').textContent = incidencia.fecha_resolucion || 'Pendiente';
         document.getElementById('detalleObservaciones').textContent = incidencia.observaciones || 'Sin observaciones';
@@ -142,10 +227,11 @@ function mostrarDetalleIncidencia(id) {
 function mostrarEditarIncidencia(id) {
     const incidencia = incidenciasData.find(inc => inc.id_incidencia == id);
     if (incidencia) {
+        document.getElementById('editId').value = id;
         document.getElementById('editDescripcion').value = incidencia.descripcion;
         document.getElementById('editEstado').value = incidencia.estado || 'Abierta';
-        document.getElementById('editPrioridad').value = 'N/A'; // No hay prioridad en la DB
-        document.getElementById('editCategoria').value = 'N/A'; // No hay categoria en la DB
+        document.getElementById('editPrioridad').value = incidencia.prioridad || 'Media';
+        document.getElementById('editCategoria').value = incidencia.categoria || 'Otro';
         document.getElementById('editResponsable').value = incidencia.empleado;
         document.getElementById('editObservaciones').value = incidencia.observaciones || '';
         document.getElementById('modalEditar').classList.add('show');
@@ -154,6 +240,22 @@ function mostrarEditarIncidencia(id) {
 
 // Mostrar resolver incidencia
 function mostrarResolverIncidencia(id) {
+    const incidencia = incidenciasData.find(inc => inc.id_incidencia == id);
+    
+    if (!incidencia) {
+        showToast('No se encontró la incidencia', 'error');
+        return;
+    }
+
+    // Verificar que la incidencia no esté ya resuelta o cerrada
+    const estado = incidencia.estado || 'Abierta';
+    if (estado === 'Resuelta' || estado === 'Cerrada') {
+        showToast('Esta incidencia ya está resuelta o cerrada', 'warning');
+        return;
+    }
+
+    document.getElementById('resolverId').value = id;
+    document.getElementById('comentarioResolucion').value = '';
     document.getElementById('modalResolver').classList.add('show');
 }
 
@@ -280,11 +382,54 @@ document.addEventListener('click', function(e) {
 // Formulario de edición
 const formEditar = document.getElementById('formEditar');
 if (formEditar) {
-    formEditar.onsubmit = function(e) {
+    formEditar.onsubmit = async function(e) {
         e.preventDefault();
-        document.getElementById('modalEditar').classList.remove('show');
-        alert('Incidencia actualizada exitosamente');
-        // Aquí iría la lógica para actualizar la incidencia
+
+        const btnGuardar = formEditar.querySelector('button[type="submit"]');
+        const btnGuardarOriginal = btnGuardar.innerHTML;
+
+        // Deshabilitar botón y mostrar loader
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '<span class="btn-loader"></span> Guardando...';
+
+        const idIncidencia = document.getElementById('editId').value;
+        const datos = {
+            id_incidencia: idIncidencia,
+            descripcion: document.getElementById('editDescripcion').value,
+            estado: document.getElementById('editEstado').value,
+            prioridad: document.getElementById('editPrioridad').value,
+            categoria: document.getElementById('editCategoria').value,
+            observaciones: document.getElementById('editObservaciones').value
+        };
+
+        try {
+            const response = await fetch(`/seguridad/api/incidencias/${idIncidencia}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(datos)
+            });
+
+            if (response.ok) {
+                await response.json();
+                document.getElementById('modalEditar').classList.remove('show');
+                showToast('Incidencia actualizada exitosamente', 'success');
+
+                // Recargar las incidencias para reflejar los cambios
+                await cargarIncidencias();
+            } else {
+                const error = await response.json();
+                showToast(error.error || 'Error al actualizar la incidencia', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Error de conexión al actualizar la incidencia', 'error');
+        } finally {
+            // Restaurar botón
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = btnGuardarOriginal;
+        }
     }
 
     // Botón cancelar
@@ -304,14 +449,158 @@ if (btnCancelarResolver) {
     }
 }
 
-const btnConfirmarResolver = document.getElementById('btnConfirmarResolver');
-if (btnConfirmarResolver) {
-    btnConfirmarResolver.onclick = function() {
-        document.getElementById('modalResolver').classList.remove('show');
-        alert('Incidencia marcada como resuelta');
-        // Aquí iría la lógica para resolver la incidencia
+// Formulario de resolver incidencia
+const formResolver = document.getElementById('formResolver');
+if (formResolver) {
+    formResolver.onsubmit = async function(e) {
+        e.preventDefault();
+
+        const btnConfirmar = document.getElementById('btnConfirmarResolver');
+        const btnConfirmarOriginal = btnConfirmar.innerHTML;
+
+        // Deshabilitar botón y mostrar loader
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerHTML = '<span class="btn-loader"></span> Resolviendo...';
+
+        const idIncidencia = document.getElementById('resolverId').value;
+        const comentario = document.getElementById('comentarioResolucion').value;
+
+        try {
+            const url = `/seguridad/api/incidencias/${idIncidencia}/resolver`;
+            console.log('Enviando a URL:', url);
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    comentario: comentario
+                })
+            });
+
+            console.log('Respuesta:', response.status);
+
+            if (response.ok) {
+                await response.json();
+                document.getElementById('modalResolver').classList.remove('show');
+                showToast('Incidencia marcada como resuelta exitosamente', 'success');
+
+                // Recargar las incidencias para reflejar los cambios
+                await cargarIncidencias();
+            } else {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                let errorMessage = 'Error al resolver la incidencia';
+                try {
+                    const error = JSON.parse(errorText);
+                    errorMessage = error.error || errorMessage;
+                } catch (e) {
+                    // Si no es JSON, usar el texto como está
+                }
+                showToast(errorMessage, 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Error de conexión al resolver la incidencia', 'error');
+        } finally {
+            // Restaurar botón
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = btnConfirmarOriginal;
+        }
     }
 }
+
+// Función para contar filtros activos
+function contarFiltrosActivos() {
+    let count = 0;
+    const filtros = {
+        paciente: document.getElementById('filtroPaciente').value.trim(),
+        empleado: document.getElementById('filtroEmpleado').value.trim(),
+        fecha_registro: document.getElementById('filtroFechaRegistro').value,
+        fecha_resolucion: document.getElementById('filtroFechaResolucion').value,
+        estado: document.getElementById('filtroEstado').value,
+        categoria: document.getElementById('filtroCategoria').value,
+        prioridad: document.getElementById('filtroPrioridad').value
+    };
+
+    Object.values(filtros).forEach(valor => {
+        if (valor && valor.trim() !== '') count++;
+    });
+
+    return count;
+}
+
+// Función para actualizar badge de filtros activos
+function actualizarBadgeFiltros() {
+    const count = contarFiltrosActivos();
+    const badge = document.getElementById('badgeFiltrosActivos');
+    const numFiltros = document.getElementById('numFiltrosActivos');
+
+    if (count > 0) {
+        badge.classList.remove('hidden');
+        numFiltros.textContent = count;
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+// Función para aplicar filtros dinámicamente
+let timeoutFiltros;
+async function aplicarFiltrosDinamicos() {
+    clearTimeout(timeoutFiltros);
+
+    timeoutFiltros = setTimeout(async () => {
+        const filtros = {
+            paciente: document.getElementById('filtroPaciente').value.trim(),
+            empleado: document.getElementById('filtroEmpleado').value.trim(),
+            fecha_registro: document.getElementById('filtroFechaRegistro').value,
+            fecha_resolucion: document.getElementById('filtroFechaResolucion').value,
+            estado: document.getElementById('filtroEstado').value,
+            categoria: document.getElementById('filtroCategoria').value,
+            prioridad: document.getElementById('filtroPrioridad').value
+        };
+
+        // Actualizar badge de filtros
+        actualizarBadgeFiltros();
+
+        try {
+            const response = await fetch('/seguridad/api/incidencias/buscar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(filtros)
+            });
+
+            if (response.ok) {
+                const incidenciasFiltradas = await response.json();
+                mostrarIncidencias(incidenciasFiltradas);
+            } else {
+                console.error('Error en la búsqueda');
+                showToast('Error al aplicar filtros', 'error');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Error de conexión al filtrar', 'error');
+        }
+    }, 300); // Esperar 300ms después de que el usuario deje de escribir
+}
+
+// Agregar eventos dinámicos a todos los filtros
+document.getElementById('filtroPaciente').addEventListener('change', aplicarFiltrosDinamicos);
+document.getElementById('filtroEmpleado').addEventListener('change', aplicarFiltrosDinamicos);
+document.getElementById('filtroFechaRegistro').addEventListener('change', aplicarFiltrosDinamicos);
+document.getElementById('filtroFechaResolucion').addEventListener('change', aplicarFiltrosDinamicos);
+document.getElementById('filtroEstado').addEventListener('change', aplicarFiltrosDinamicos);
+document.getElementById('filtroCategoria').addEventListener('change', aplicarFiltrosDinamicos);
+document.getElementById('filtroPrioridad').addEventListener('change', aplicarFiltrosDinamicos);
+
+// También aplicar filtros al escribir en los campos de texto
+document.getElementById('filtroPaciente').addEventListener('input', aplicarFiltrosDinamicos);
+document.getElementById('filtroEmpleado').addEventListener('input', aplicarFiltrosDinamicos);
 
 // Botón limpiar filtros
 const btnLimpiar = document.getElementById('btnLimpiar');
@@ -322,44 +611,18 @@ if (btnLimpiar) {
         document.getElementById('filtroFechaRegistro').value = '';
         document.getElementById('filtroFechaResolucion').value = '';
         document.getElementById('filtroEstado').value = '';
+        document.getElementById('filtroCategoria').value = '';
+        document.getElementById('filtroPrioridad').value = '';
         document.getElementById('sugerenciasPaciente').classList.add('hidden');
         document.getElementById('sugerenciasEmpleado').classList.add('hidden');
         cargarIncidencias(); // Recargar todas las incidencias
     }
 }
 
-// Formulario de búsqueda
-document.getElementById('formFiltros').addEventListener('submit', async function(e) {
+// Formulario de búsqueda - Prevenir comportamiento por defecto
+document.getElementById('formFiltros').addEventListener('submit', function(e) {
     e.preventDefault();
-
-    const filtros = {
-        paciente: document.getElementById('filtroPaciente').value.trim(),
-        empleado: document.getElementById('filtroEmpleado').value.trim(),
-        fecha_registro: document.getElementById('filtroFechaRegistro').value,
-        fecha_resolucion: document.getElementById('filtroFechaResolucion').value,
-        estado: document.getElementById('filtroEstado').value,
-        categoria: document.getElementById('filtroCategoria') ? document.getElementById('filtroCategoria').value : '',
-        prioridad: document.getElementById('filtroPrioridad') ? document.getElementById('filtroPrioridad').value : ''
-    };
-
-    try {
-        const response = await fetch('/seguridad/api/incidencias/buscar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(filtros)
-        });
-
-        if (response.ok) {
-            const incidenciasFiltradas = await response.json();
-            mostrarIncidencias(incidenciasFiltradas);
-        } else {
-            console.error('Error en la búsqueda');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
+    // Los filtros ya se aplican dinámicamente, así que no necesitamos hacer nada aquí
 });
 
 // Inicializar la página

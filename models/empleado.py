@@ -17,15 +17,16 @@ class Empleado:
 
     @staticmethod
     def crear(nombres, apellidos, documento_identidad, sexo, id_usuario, 
-              id_rol, id_distrito=None, id_especialidad=None):
+              id_rol, id_distrito=None, id_especialidad=None, fecha_nacimiento=None):
         """Crea un nuevo empleado"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                sql = """INSERT INTO EMPLEADO (nombres, apellidos, documento_identidad, 
+                # Insert including fecha_nacimiento (column added to table)
+                sql = """INSERT INTO EMPLEADO (nombres, apellidos, fecha_nacimiento, documento_identidad, 
                          sexo, estado, id_usuario, id_rol, id_distrito, id_especialidad) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (nombres, apellidos, documento_identidad, sexo, 
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                cursor.execute(sql, (nombres, apellidos, fecha_nacimiento, documento_identidad, sexo, 
                                    'activo', id_usuario, id_rol, id_distrito, id_especialidad))
                 conexion.commit()
                 return {'success': True, 'id_empleado': cursor.lastrowid}
@@ -184,7 +185,8 @@ class Empleado:
 
     @staticmethod
     def actualizar(id_empleado, nombres=None, apellidos=None, documento_identidad=None,
-                  sexo=None, estado=None, id_rol=None, id_distrito=None, id_especialidad=None):
+                  sexo=None, estado=None, id_rol=None, id_distrito=None, id_especialidad=None,
+                  fecha_nacimiento=None):
         """Actualiza un empleado existente"""
         conexion = obtener_conexion()
         try:
@@ -207,6 +209,11 @@ class Empleado:
                 if sexo:
                     campos.append("sexo = %s")
                     valores.append(sexo)
+
+                # Fecha de nacimiento (aceptar None explícito para eliminar)
+                if fecha_nacimiento is not None:
+                    campos.append("fecha_nacimiento = %s")
+                    valores.append(fecha_nacimiento)
                 
                 if estado:
                     campos.append("estado = %s")
@@ -316,11 +323,15 @@ class Empleado:
                     INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
                     LEFT JOIN ROL r ON e.id_rol = r.id_rol
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                    WHERE e.nombres LIKE %s
+                    LEFT JOIN DISTRITO d ON e.id_distrito = d.id_distrito
+                    LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
+                    LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+                    WHERE (e.nombres LIKE %s
                        OR e.apellidos LIKE %s
                        OR e.documento_identidad LIKE %s
                        OR u.correo LIKE %s
                        OR r.nombre LIKE %s)
+                    AND u.estado = 'activo'
                     ORDER BY e.apellidos, e.nombres
                 """
                 termino_busqueda = f"%{termino}%"
