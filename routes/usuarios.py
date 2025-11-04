@@ -54,6 +54,17 @@ def login():
         session['id_empleado'] = usuario.get('id_empleado')
         
         flash(f'Bienvenido {usuario["nombre"]}', 'success')
+        
+        # Redirigir según el tipo de usuario y rol
+        if usuario['tipo_usuario'] == 'empleado':
+            if usuario.get('id_rol') == 1:
+                # Administrador - ir al panel de admin
+                return redirect(url_for('admin_panel'))
+            elif usuario.get('id_rol') in [2, 3, 4, 5]:
+                # Otros empleados - ir al panel de trabajador
+                return redirect(url_for('trabajador_panel'))
+        
+        # Pacientes u otros - ir al perfil
         return redirect(url_for('usuarios.perfil'))
     
     return render_template('home.html')
@@ -333,6 +344,17 @@ def api_login():
     session['id_rol'] = usuario.get('id_rol')
     session['id_paciente'] = usuario.get('id_paciente')
     session['id_empleado'] = usuario.get('id_empleado')
+    
+    # Agregar información de redirección según el rol
+    if usuario['tipo_usuario'] == 'empleado':
+        if usuario.get('id_rol') == 1:
+            resultado['redirect'] = '/admin/panel'
+        elif usuario.get('id_rol') in [2, 3, 4, 5]:
+            resultado['redirect'] = '/trabajador/panel'
+        else:
+            resultado['redirect'] = '/perfil'
+    else:
+        resultado['redirect'] = '/perfil'
     
     return jsonify(resultado)
 
