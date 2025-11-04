@@ -18,9 +18,70 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Variable para almacenar la fila seleccionada
+    let filaSeleccionada = null;
+    let idProgramacionSeleccionada = null;
+    let programaciones = []; // Array global para almacenar las programaciones
+
     // Abrir modal registrar
-    document.getElementById('btnRegistrarBloqueo')?.addEventListener('click', () => {
+    document.getElementById('btnRegistrarBloqueo')?.addEventListener('click', async () => {
         document.getElementById('modalRegistrarBloqueo')?.classList.add('show');
+        // Limpiar campos al abrir
+        document.getElementById('fechaProgramacion').value = '';
+        document.getElementById('idProgramacion').value = '';
+        document.getElementById('fechaBloqueo').value = '';
+        document.getElementById('estadoBloqueo').value = '';
+        document.getElementById('horaInicioBloqueo').value = '';
+        document.getElementById('horaFinBloqueo').value = '';
+        document.getElementById('motivoBloqueo').value = '';
+        // Limpiar tabla
+        document.getElementById('tablaProgramacionesModal').innerHTML = '';
+        document.getElementById('paginaInfo').textContent = 'Página 1';
+        document.getElementById('btnAnterior').disabled = true;
+        document.getElementById('btnSiguiente').disabled = true;
+        // Resetear selección
+        filaSeleccionada = null;
+        idProgramacionSeleccionada = null;
+
+        // Cargar todas las programaciones
+        try {
+            const res = await fetch('/admin/api/programaciones');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            programaciones = await res.json();
+            poblarTablaProgramacionesModal(programaciones);
+        } catch (err) {
+            console.warn('Fetch /admin/api/programaciones falló: ', err);
+            // Limpiar tabla en caso de error
+            document.getElementById('tablaProgramacionesModal').innerHTML = '';
+        }
+    });
+
+    // Actualizar tabla de programaciones al cambiar fecha de bloqueo
+    document.getElementById('fechaBloqueo')?.addEventListener('change', async () => {
+        const fechaBloqueo = document.getElementById('fechaBloqueo').value;
+        if (!fechaBloqueo) {
+            // Limpiar tabla si no hay fecha
+            document.getElementById('tablaProgramacionesModal').innerHTML = '';
+            document.getElementById('paginaInfo').textContent = 'Página 1';
+            document.getElementById('btnAnterior').disabled = true;
+            document.getElementById('btnSiguiente').disabled = true;
+            return;
+        }
+
+        try {
+            const res = await fetch(`/admin/api/programaciones?fecha=${encodeURIComponent(fechaBloqueo)}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            programaciones = await res.json();
+            poblarTablaProgramacionesModal(programaciones);
+            // Reset pagination
+            document.getElementById('paginaInfo').textContent = 'Página 1';
+            document.getElementById('btnAnterior').disabled = true;
+            document.getElementById('btnSiguiente').disabled = true;
+        } catch (err) {
+            console.warn('Fetch /admin/api/programaciones falló: ', err);
+            // Limpiar tabla en caso de error
+            document.getElementById('tablaProgramacionesModal').innerHTML = '';
+        }
     });
 
     // Abrir modal editar
@@ -98,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (fechaProgramacion) {
             try {
                 // Ejemplo de petición — ajusta la URL según tu backend
-                const res = await fetch(`/api/programaciones?fecha=${encodeURIComponent(fechaProgramacion)}`);
+                const res = await fetch(`/admin/api/programaciones?fecha=${encodeURIComponent(fechaProgramacion)}`);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const programaciones = await res.json();
 
@@ -114,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             } catch (err) {
-                console.warn('Fetch /api/programaciones falló: ', err);
+                console.warn('Fetch /admin/api/programaciones falló: ', err);
                 // fallback: continuar con lógica local (si existe)
             }
         }
@@ -147,6 +208,46 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    function poblarTablaProgramacionesModal(programaciones = []) {
+        // llenar tbody#tablaProgramacionesModal con programaciones
+        const tbody = document.getElementById('tablaProgramacionesModal');
+        if (!tbody) return;
+        tbody.innerHTML = ''; // limpiar
+
+        programaciones.forEach(p => {
+            // Ajusta campos según la respuesta real de tu API
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition-colors cursor-pointer';
+            tr.addEventListener('click', () => seleccionarFila(tr, p.id_programacion));
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">${escapeHtml(p.id_programacion ?? '')}</td>
+                <td class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">${escapeHtml(p.fecha ?? '')}</td>
+                <td class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">${escapeHtml(p.hora_inicio ?? '')}</td>
+                <td class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">${escapeHtml(p.hora_fin ?? '')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function seleccionarFila(fila, idProgramacion) {
+        // Remover selección anterior
+        if (filaSeleccionada) {
+            filaSeleccionada.classList.remove('bg-blue-100');
+        }
+        // Seleccionar nueva fila
+        fila.classList.add('bg-blue-100');
+        filaSeleccionada = fila;
+        idProgramacionSeleccionada = idProgramacion;
+
+        // Llenar campos con la programación seleccionada
+        const programacion = programaciones.find(p => p.id_programacion == idProgramacion);
+        if (programacion) {
+            document.getElementById('idProgramacion').value = programacion.id_programacion;
+            document.getElementById('fechaProgramacion').value = programacion.fecha;
+            document.getElementById('fechaBloqueo').value = programacion.fecha;
+        }
     }
 
     function filtrarTablaBloqueosPorFecha(fecha) {
@@ -187,3 +288,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, "&#039;");
     }
 });
+
+
+
