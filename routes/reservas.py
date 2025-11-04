@@ -5,6 +5,7 @@ from models.catalogos import TipoServicio
 from models.horario import Horario
 from models.paciente import Paciente
 from models.reserva import Reserva
+from models.programacion import Programacion
 from bd import obtener_conexion
 
 reservas_bp = Blueprint('reservas', __name__)
@@ -190,7 +191,8 @@ def generar_reserva():
     if session.get('tipo_usuario') == 'empleado':
         servicios = Servicio.obtener_todos()
         medicos = Empleado.obtener_medicos()
-        return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos)
+        programaciones = Programacion.obtener_todos()
+        return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos, programaciones=programaciones)
     
     # Si no es ni empleado ni paciente, redirigir al home
     return redirect(url_for('home'))
