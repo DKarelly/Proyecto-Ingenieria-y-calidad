@@ -81,19 +81,7 @@
                 <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
             </div>
 
-            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label for="filtroEstado" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
-                        Estado
-                    </label>
-                    <select id="filtroEstado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Todos los estados</option>
-                        <option value="completado">Completado</option>
-                        <option value="pendiente">Pendiente</option>
-                    </select>
-                </div>
-
+            <form id="formFiltros" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label for="filtroMedicamento" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-pills text-gray-500 mr-1"></i>
@@ -104,8 +92,13 @@
                         id="filtroMedicamento"
                         minlength="2"
                         placeholder="Buscar medicamento"
+                        list="medicamentos-list"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                     >
+                    <datalist id="medicamentos-list">
+                        <option value="Paracetamol">
+                        <option value="Ibuprofeno">
+                    </datalist>
                 </div>
 
                 <div class="flex items-end">
@@ -130,59 +123,45 @@
                 <table class="admin-table w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Recepción</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Medicamento</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Cantidad</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Proveedor</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Stock</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Registro</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Vencimiento</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-recepciones-body" class="divide-y divide-gray-200">
-                        <tr>
+                        <tr data-id="REC-001" data-id-medicamento="1" data-medicamento="Paracetamol" data-descripcion="Analgésico y antipirético" data-cantidad="100" data-fecha-registro="2023-10-01" data-fecha-vencimiento="2024-10-01">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">REC-001</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Paracetamol</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Analgésico y antipirético</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Proveedor A</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2023-10-01</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-completado text-white">
-                                    Completado
-                                </span>
-                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-10-01</td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                 <button class="text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 <button class="text-blue-600 hover:text-blue-900 mr-3 btn-editar" title="Editar">
                                     <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-900 btn-eliminar" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
-                        <tr>
+                        <tr data-id="REC-002" data-id-medicamento="2" data-medicamento="Ibuprofeno" data-descripcion="Antiinflamatorio no esteroideo" data-cantidad="50" data-fecha-registro="2023-09-28" data-fecha-vencimiento="2024-09-28">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">REC-002</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Ibuprofeno</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Antiinflamatorio no esteroideo</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">50</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Proveedor B</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2023-09-28</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-pendiente text-white">
-                                    Pendiente
-                                </span>
-                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-09-28</td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                 <button class="text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 <button class="text-blue-600 hover:text-blue-900 mr-3 btn-editar" title="Editar">
                                     <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-900 btn-eliminar" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
@@ -203,50 +182,42 @@
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formRegistrarRecepcion" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-pills text-gray-500 mr-1"></i>
-                            Medicamento
-                        </label>
-                        <select id="medicamento" name="medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option value="" disabled selected>Seleccionar medicamento</option>
-                            <option value="paracetamol">Paracetamol</option>
-                            <option value="ibuprofeno">Ibuprofeno</option>
-                            <option value="amoxicilina">Amoxicilina</option>
-                            <option value="omeprazol">Omeprazol</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                            Cantidad
-                        </label>
-                        <input type="number" id="cantidad" name="cantidad" min="1" placeholder="Ingrese la cantidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                    </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-pills text-gray-500 mr-1"></i>
+                        Nombre del Medicamento
+                    </label>
+                    <input type="text" id="nombreMedicamento" name="nombreMedicamento" placeholder="Nombre del medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-info-circle text-gray-500 mr-1"></i>
+                        Descripción
+                    </label>
+                    <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-truck text-gray-500 mr-1"></i>
-                            Proveedor
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            Stock
                         </label>
-                        <input type="text" id="proveedor" name="proveedor" placeholder="Nombre del proveedor" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="number" id="stock" name="stock" min="1" placeholder="Cantidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-calendar text-gray-500 mr-1"></i>
-                            Fecha de Recepción
+                            Fecha de Registro
                         </label>
-                        <input type="date" id="fechaRecepcion" name="fechaRecepcion" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="date" id="fecha_registro" name="fecha_registro" value="{{ current_date }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-comment text-gray-500 mr-1"></i>
-                        Observaciones
+                        <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
+                        Fecha de Vencimiento
                     </label>
-                    <textarea id="observaciones" name="observaciones" rows="3" placeholder="Observaciones adicionales" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
+                    <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                 </div>
                 <div class="flex gap-4 pt-4">
                     <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
@@ -262,77 +233,62 @@
         </div>
     </div>
 
-    <!-- Modal Modificar Recepción -->
+    <!-- Modal Modificar Medicamento -->
     <div id="modalModificarRecepcion" class="modal">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
                 <h2 class="text-2xl font-bold text-gray-800">
                     <i class="fas fa-pen-to-square text-blue-600 mr-2"></i>
-                    Modificar Recepción
+                    Modificar Medicamento
                 </h2>
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formModificarRecepcion" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                        Código de Recepción
-                    </label>
-                    <input type="text" id="codigoRecepcion" value="REC-001" placeholder="Código de recepción" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-pills text-gray-500 mr-1"></i>
-                            Medicamento
-                        </label>
-                        <select id="medicamentoEdit" name="medicamentoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option value="paracetamol" selected>Paracetamol</option>
-                            <option value="ibuprofeno">Ibuprofeno</option>
-                            <option value="amoxicilina">Amoxicilina</option>
-                            <option value="omeprazol">Omeprazol</option>
-                        </select>
-                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                            Cantidad
+                            ID Medicamento
                         </label>
-                        <input type="number" id="cantidadEdit" name="cantidadEdit" value="100" min="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="text" id="idMedicamento" value="1" placeholder="ID del medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-pills text-gray-500 mr-1"></i>
+                            Nombre del Medicamento
+                        </label>
+                        <input type="text" id="nombreMedicamentoEdit" name="nombreMedicamentoEdit" value="Paracetamol" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-truck text-gray-500 mr-1"></i>
-                            Proveedor
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            Stock
                         </label>
-                        <input type="text" id="proveedorEdit" name="proveedorEdit" value="Proveedor A" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="number" id="stockEdit" name="stockEdit" value="100" min="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-calendar text-gray-500 mr-1"></i>
-                            Fecha de Recepción
+                            Fecha de Registro
                         </label>
-                        <input type="date" id="fechaRecepcionEdit" name="fechaRecepcionEdit" value="2023-10-01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="date" id="fechaRegistroEdit" name="fechaRegistroEdit" value="2023-10-01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
-                        Estado
+                        <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
+                        Fecha de Vencimiento
                     </label>
-                    <select id="estadoEdit" name="estadoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                        <option value="completado" selected>Completado</option>
-                        <option value="pendiente">Pendiente</option>
-                    </select>
+                    <input type="date" id="fechaVencimientoEdit" name="fechaVencimientoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-comment text-gray-500 mr-1"></i>
-                        Observaciones
+                        <i class="fas fa-info-circle text-gray-500 mr-1"></i>
+                        Descripción
                     </label>
-                    <textarea id="observacionesEdit" name="observacionesEdit" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
+                    <textarea id="descripcionEdit" name="descripcionEdit" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
                 </div>
                 <div class="flex gap-4 pt-4">
                     <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
@@ -372,11 +328,81 @@
         </div>
     </div>
 
+    <!-- Modal Ver Detalles -->
+    <div id="modalVerDetalles" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-eye text-cyan-600 mr-2"></i>
+                    Detalles de la Recepción
+                </h2>
+                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+            </div>
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            ID
+                        </label>
+                        <p id="detalleId" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-pills text-gray-500 mr-1"></i>
+                            Nombre
+                        </label>
+                        <p id="detalleNombre" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-info-circle text-gray-500 mr-1"></i>
+                            Descripción
+                        </label>
+                        <p id="detalleDescripcion" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                            Stock
+                        </label>
+                        <p id="detalleStock" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-calendar text-gray-500 mr-1"></i>
+                            Fecha Registro
+                        </label>
+                        <p id="detalleFechaRegistro" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
+                            Fecha Vencimiento
+                        </label>
+                        <p id="detalleFechaVencimiento" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-4 pt-4">
+                <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors close">
+                    <i class="fas fa-times mr-2"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Funcionalidad de modales
         const modalRegistrar = document.getElementById('modalRegistrarRecepcion');
         const modalModificar = document.getElementById('modalModificarRecepcion');
         const modalEliminar = document.getElementById('modalEliminar');
+        const modalVerDetalles = document.getElementById('modalVerDetalles');
         const btnRegistrar = document.getElementById('btnRegistrarRecepcion');
 
         // Abrir modal de registro
@@ -390,6 +416,7 @@
                 modalRegistrar.classList.remove('show');
                 modalModificar.classList.remove('show');
                 modalEliminar.classList.remove('show');
+                modalVerDetalles.classList.remove('show');
             });
         });
 
@@ -398,11 +425,45 @@
             if (e.target === modalRegistrar) modalRegistrar.classList.remove('show');
             if (e.target === modalModificar) modalModificar.classList.remove('show');
             if (e.target === modalEliminar) modalEliminar.classList.remove('show');
+            if (e.target === modalVerDetalles) modalVerDetalles.classList.remove('show');
+        });
+
+        // Botones de ver detalles
+        document.querySelectorAll('button[title="Ver detalles"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                const id = row.getAttribute('data-id');
+                const nombre = row.getAttribute('data-medicamento');
+                const descripcion = row.getAttribute('data-descripcion');
+                const stock = row.getAttribute('data-cantidad');
+                const fechaRegistro = row.getAttribute('data-fecha-registro');
+                const fechaVencimiento = row.getAttribute('data-fecha-vencimiento');
+
+                document.getElementById('detalleId').textContent = id;
+                document.getElementById('detalleNombre').textContent = nombre;
+                document.getElementById('detalleDescripcion').textContent = descripcion;
+                document.getElementById('detalleStock').textContent = stock;
+                document.getElementById('detalleFechaRegistro').textContent = fechaRegistro;
+                document.getElementById('detalleFechaVencimiento').textContent = fechaVencimiento;
+
+                modalVerDetalles.classList.add('show');
+            });
         });
 
         // Botones de editar
         document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                const idMedicamento = row.getAttribute('data-id-medicamento');
+                const nombre = row.getAttribute('data-medicamento');
+                const stock = row.getAttribute('data-cantidad');
+
+                document.getElementById('idMedicamento').value = idMedicamento;
+                document.getElementById('nombreMedicamentoEdit').value = nombre;
+                document.getElementById('stockEdit').value = stock;
+                // Nota: descripcion, fechaRegistroEdit, fechaVencimientoEdit no están disponibles en la tabla estática
+                // Se pueden dejar con valores por defecto o vacíos
+
                 modalModificar.classList.add('show');
             });
         });
