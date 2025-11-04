@@ -27,6 +27,8 @@ app.register_blueprint(reservas_bp, url_prefix='/reservas')
 app.register_blueprint(notificaciones_bp, url_prefix='/notificaciones')
 app.register_blueprint(reportes_bp, url_prefix='/reportes')
 app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
+app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
+app.register_blueprint(paciente_bp, url_prefix='/paciente')
 
 
 @app.route("/")
