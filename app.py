@@ -33,6 +33,50 @@ app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
 def home():
     return render_template('home.html')
 
+@app.route("/doctores")
+def lista_doctores():
+    """Página que muestra la lista de doctores agrupados por especialidad"""
+    import bd
+    from collections import defaultdict
+    
+    conexion = bd.obtener_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            # Consultar todos los médicos (id_rol = 2) activos con sus especialidades
+            sql = """
+                SELECT 
+                    e.id_empleado,
+                    e.nombres,
+                    e.apellidos,
+                    e.documento_identidad,
+                    e.fotoPerfil,
+                    esp.nombre as especialidad,
+                    u.telefono
+                FROM EMPLEADO e
+                INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE e.id_rol = 2 
+                  AND e.estado = 'activo' 
+                  AND u.estado = 'activo'
+                ORDER BY esp.nombre, e.apellidos, e.nombres
+            """
+            cursor.execute(sql)
+            doctores = cursor.fetchall()
+            
+            # Agrupar doctores por especialidad
+            doctores_por_especialidad = defaultdict(list)
+            for doctor in doctores:
+                especialidad = doctor['especialidad'] or 'Medicina General'
+                doctores_por_especialidad[especialidad].append(doctor)
+            
+            # Convertir defaultdict a dict normal para el template
+            doctores_por_especialidad = dict(doctores_por_especialidad)
+            
+    finally:
+        conexion.close()
+    
+    return render_template('lista_doctores.html', doctores_por_especialidad=doctores_por_especialidad)
+
 
 # Cargar información del usuario completo en `g.user` antes de cada petición
 @app.before_request

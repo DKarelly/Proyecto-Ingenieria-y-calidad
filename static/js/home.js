@@ -201,6 +201,7 @@ function initializeAuthModals() {
             nombres: document.getElementById('register-nombres').value,
             apellidos: document.getElementById('register-apellidos').value,
             documento_identidad: document.getElementById('register-documento').value,
+            sexo: document.getElementById('register-sexo').value,
             telefono: document.getElementById('register-telefono').value,
             correo: document.getElementById('register-email').value,
             fecha_nacimiento: document.getElementById('register-nacimiento').value,

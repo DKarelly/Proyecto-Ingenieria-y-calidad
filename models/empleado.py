@@ -3,7 +3,8 @@ from bd import obtener_conexion
 class Empleado:
     def __init__(self, id_empleado=None, nombres=None, apellidos=None,
                  documento_identidad=None, sexo=None, estado='activo',
-                 id_usuario=None, id_rol=None, id_distrito=None, id_especialidad=None):
+                 id_usuario=None, id_rol=None, id_distrito=None, id_especialidad=None,
+                 fotoPerfil=None):
         self.id_empleado = id_empleado
         self.nombres = nombres
         self.apellidos = apellidos
@@ -14,20 +15,21 @@ class Empleado:
         self.id_rol = id_rol
         self.id_distrito = id_distrito
         self.id_especialidad = id_especialidad
+        self.fotoPerfil = fotoPerfil
 
     @staticmethod
     def crear(nombres, apellidos, documento_identidad, sexo, id_usuario, 
-              id_rol, id_distrito=None, id_especialidad=None, fecha_nacimiento=None):
+              id_rol, id_distrito=None, id_especialidad=None, fecha_nacimiento=None, fotoPerfil=None):
         """Crea un nuevo empleado"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                # Insert including fecha_nacimiento (column added to table)
+                # Insert including fecha_nacimiento and fotoPerfil
                 sql = """INSERT INTO EMPLEADO (nombres, apellidos, fecha_nacimiento, documento_identidad, 
-                         sexo, estado, id_usuario, id_rol, id_distrito, id_especialidad) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                         sexo, estado, id_usuario, id_rol, id_distrito, id_especialidad, fotoPerfil) 
+                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
                 cursor.execute(sql, (nombres, apellidos, fecha_nacimiento, documento_identidad, sexo, 
-                                   'activo', id_usuario, id_rol, id_distrito, id_especialidad))
+                                   'activo', id_usuario, id_rol, id_distrito, id_especialidad, fotoPerfil))
                 conexion.commit()
                 return {'success': True, 'id_empleado': cursor.lastrowid}
         except Exception as e:
@@ -186,7 +188,7 @@ class Empleado:
     @staticmethod
     def actualizar(id_empleado, nombres=None, apellidos=None, documento_identidad=None,
                   sexo=None, estado=None, id_rol=None, id_distrito=None, id_especialidad=None,
-                  fecha_nacimiento=None):
+                  fecha_nacimiento=None, fotoPerfil=None):
         """Actualiza un empleado existente"""
         conexion = obtener_conexion()
         try:
@@ -230,6 +232,10 @@ class Empleado:
                 if id_especialidad is not None:  # Permite None explícito
                     campos.append("id_especialidad = %s")
                     valores.append(id_especialidad)
+                
+                if fotoPerfil is not None:  # Permite None explícito o nueva ruta
+                    campos.append("fotoPerfil = %s")
+                    valores.append(fotoPerfil)
                 
                 if not campos:
                     return {'error': 'No hay campos para actualizar'}

@@ -40,6 +40,9 @@
     {% include 'auth_modals.html' %}
 
     {% block extra_js %}
+    <!-- Validaciones globales -->
+    <script src="{{ url_for('static', filename='js/validaciones.js') }}"></script>
+    
     <!-- Swiper JS (defer for better performance) -->
     <script src="https://unpkg.com/swiper@8/swiper-bundle.min.js" defer></script>
     
