@@ -1,9 +1,0 @@
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_EMAIL=trukitlv16@gmail.com
-# ⚠️ REEMPLAZA esto con la contraseña de aplicación de Gmail (NO uses la contraseña normal)
-SMTP_PASSWORD=hdks vteg cepa clck
-
-# Configuración de la aplicación
-SECRET_KEY=tu_clave_secreta_super_segura_12345
-FLASK_ENV=development
