@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Clínico - Clínica Unión</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .expandable-content.expanded {
+            max-height: 500px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    {% include 'header.html' %}
+
+    <div class="container mx-auto px-4 pt-24 pb-12">
+
+        <!-- Header Section -->
+        <div class="max-w-6xl mx-auto mb-8">
+            <a href="/" class="inline-flex items-center text-cyan-600 hover:text-cyan-700 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+                </svg>
+                Volver al inicio
+            </a>
+
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Historial Clínico</h1>
+                        <p class="text-gray-600">Revisa tus consultas y diagnósticos médicos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial Container -->
+        <div class="max-w-6xl mx-auto">
+            <!-- Loading State -->
+            <div id="loadingState" class="bg-white rounded-2xl shadow-lg p-12 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+                <p class="text-gray-600">Cargando historial clínico...</p>
+            </div>
+
+            <!-- Historial Cards -->
+            <div id="historialContainer" class="hidden space-y-4">
+                <!-- Las citas se cargarán aquí dinámicamente -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden bg-white rounded-2xl shadow-lg p-12 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-300 mb-4">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">No hay historial clínico</h3>
+                <p class="text-gray-600 mb-6">Aún no tienes consultas médicas con diagnósticos registrados.</p>
+                <a href="/reservas/paciente/nueva-cita" class="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/>
+                        <path d="M3 10h18"/><path d="M10 16h4"/><path d="M12 14v4"/>
+                    </svg>
+                    Agendar Primera Cita
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        let historialData = [];
+
+        // Cargar historial al iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarHistorial();
+        });
+
+        // Función para cargar el historial clínico
+        async function cargarHistorial() {
+            try {
+                const response = await fetch('/paciente/api/historial-clinico');
+                const data = await response.json();
+
+                if (data.error) {
+                    mostrarError(data.error);
+                    return;
+                }
+
+                historialData = data.historial || [];
+                mostrarHistorial(historialData);
+
+            } catch (error) {
+                console.error('Error al cargar historial:', error);
+                mostrarError('Error al cargar el historial clínico. Por favor, intenta nuevamente.');
+            }
+        }
+
+        // Función para mostrar el historial
+        function mostrarHistorial(historial) {
+            const container = document.getElementById('historialContainer');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+
+            loadingState.classList.add('hidden');
+
+            if (!historial || historial.length === 0) {
+                container.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            container.innerHTML = historial.map((cita, index) => {
+                const fecha = new Date(cita.fecha_cita + 'T00:00:00');
+                const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
+                        <!-- Header del Card -->
+                        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 border-b border-gray-100">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                            ID: #${cita.id_cita}
+                                        </span>
+                                        <span class="text-sm text-gray-600">${fechaFormateada}</span>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-1">${cita.servicio}</h3>
+                                    <p class="text-cyan-600 font-medium">${cita.especialidad || 'Consulta General'}</p>
+                                </div>
+                                <button onclick="toggleExpand(${index})" class="flex items-center gap-2 bg-white text-cyan-600 font-semibold py-2 px-4 rounded-lg hover:bg-cyan-50 transition-all duration-200 border border-cyan-200">
+                                    <span id="btnText-${index}">Ver Detalles</span>
+                                    <svg id="chevron-${index}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform transition-transform duration-200">
+                                        <path d="m6 9 6 6 6-6"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Información Básica (siempre visible) -->
+                        <div class="p-6">
+                            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
+                                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">Médico Tratante</p>
+                                        <p class="font-semibold text-gray-800">${cita.medico_nombres ? 'Dr(a). ' + cita.medico_nombres + ' ' + cita.medico_apellidos : 'No especificado'}</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">Horario de Consulta</p>
+                                        <p class="font-semibold text-gray-800">${cita.hora_inicio} - ${cita.hora_fin}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contenido Expandible -->
+                            <div id="content-${index}" class="expandable-content">
+                                <div class="border-t border-gray-100 pt-4 mt-4">
+                                    <!-- Diagnóstico -->
+                                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded">
+                                        <div class="flex items-start gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600 flex-shrink-0 mt-1">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                            </svg>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-gray-800 mb-2">Diagnóstico</h4>
+                                                <p class="text-gray-700 leading-relaxed">${cita.diagnostico || 'No se ha registrado un diagnóstico para esta consulta.'}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Observaciones -->
+                                    ${cita.observaciones ? `
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                                        <div class="flex items-start gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0 mt-1">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                                            </svg>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold text-gray-800 mb-2">Observaciones y Recomendaciones</h4>
+                                                <p class="text-gray-700 leading-relaxed">${cita.observaciones}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+
+                                    <!-- Estado de la Cita -->
+                                    <div class="mt-4 flex items-center gap-2 text-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-400">
+                                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                        </svg>
+                                        <span class="text-gray-600">Estado: <span class="font-semibold">${cita.estado_cita || 'Completada'}</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Función para expandir/contraer el contenido
+        function toggleExpand(index) {
+            const content = document.getElementById(`content-${index}`);
+            const chevron = document.getElementById(`chevron-${index}`);
+            const btnText = document.getElementById(`btnText-${index}`);
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                chevron.classList.remove('rotate-180');
+                btnText.textContent = 'Ver Detalles';
+            } else {
+                content.classList.add('expanded');
+                chevron.classList.add('rotate-180');
+                btnText.textContent = 'Ocultar Detalles';
+            }
+        }
+
+        // Función para mostrar errores
+        function mostrarError(mensaje) {
+            const container = document.getElementById('historialContainer');
+            const loadingState = document.getElementById('loadingState');
+            const emptyState = document.getElementById('emptyState');
+
+            loadingState.classList.add('hidden');
+            container.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+
+            emptyState.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-red-300 mb-4">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Error al cargar</h3>
+                <p class="text-gray-600 mb-6">${mensaje}</p>
+                <button onclick="cargarHistorial()" class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                    Intentar Nuevamente
+                </button>
+            `;
+        }
+    </script>
+
+</body>
+</html>
