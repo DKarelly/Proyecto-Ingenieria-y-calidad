@@ -8,6 +8,7 @@ from routes.notificaciones import notificaciones_bp
 from routes.reportes import reportes_bp
 from routes.seguridad import seguridad_bp
 from routes.farmacia import farmacia_bp
+from routes.paciente import paciente_bp
 
 import os
 from dotenv import load_dotenv
@@ -26,7 +27,6 @@ app.register_blueprint(reservas_bp, url_prefix='/reservas')
 app.register_blueprint(notificaciones_bp, url_prefix='/notificaciones')
 app.register_blueprint(reportes_bp, url_prefix='/reportes')
 app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
-app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
 
 
 @app.route("/")

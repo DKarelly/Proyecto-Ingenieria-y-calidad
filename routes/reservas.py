@@ -782,3 +782,70 @@ def paciente_crear_reserva():
             conexion.close()
         except:
             pass
+
+
+@reservas_bp.route('/paciente/historial')
+def paciente_historial_reservas():
+    """Vista del historial de reservas del paciente"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('HistorialReservasPaciente.html')
+
+
+@reservas_bp.route('/api/paciente/mis-reservas')
+def api_paciente_mis_reservas():
+    """API que retorna todas las reservas del paciente autenticado"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    try:
+        # Obtener el id_paciente del usuario
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT r.id_reserva,
+                       r.fecha_registro,
+                       r.estado as estado_reserva,
+                       p.fecha as fecha_cita,
+                       p.hora_inicio,
+                       p.hora_fin,
+                       s.nombre as servicio,
+                       e.nombres as medico_nombres,
+                       e.apellidos as medico_apellidos,
+                       esp.nombre as especialidad
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE r.id_paciente = %s
+                ORDER BY p.fecha DESC, p.hora_inicio DESC
+            """
+            cursor.execute(sql, (id_paciente,))
+            reservas = cursor.fetchall()
+
+            return jsonify({'reservas': reservas})
+
+    except Exception as e:
+        return jsonify({'error': f'Error al obtener reservas: {str(e)}'}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
