@@ -55,29 +55,57 @@ def gestionar_recordatorio_cambios():
 def api_no_leidas_count():
     """Retorna el número de notificaciones no leídas del usuario"""
     if 'usuario_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
+        return jsonify({'error': 'No autenticado', 'count': 0}), 401
 
     if session.get('tipo_usuario') != 'paciente':
         return jsonify({'count': 0})
 
     try:
+        # Obtener id_paciente desde la sesión o desde la BD
+        id_paciente = session.get('id_paciente')
+        
+        if not id_paciente:
+            # Si no está en sesión, buscar en la BD usando id_usuario
+            conexion = obtener_conexion()
+            if not conexion:
+                return jsonify({'error': 'Error de conexión', 'count': 0}), 500
+            
+            with conexion.cursor() as cursor:
+                cursor.execute("SELECT id_paciente FROM PACIENTE WHERE id_usuario = %s", (session['usuario_id'],))
+                resultado = cursor.fetchone()
+                if resultado:
+                    id_paciente = resultado['id_paciente']
+                else:
+                    return jsonify({'count': 0})
+            conexion.close()
+        
         conexion = obtener_conexion()
+        if not conexion:
+            return jsonify({'error': 'Error de conexión', 'count': 0}), 500
+            
         with conexion.cursor() as cursor:
+            # La tabla NOTIFICACION tiene id_paciente, fecha_envio, hora_envio
             sql = """
                 SELECT COUNT(*) as count
                 FROM NOTIFICACION
-                WHERE id_usuario = %s AND leida = 0 AND estado = 'activa'
+                WHERE id_paciente = %s 
+                AND fecha_envio >= CURDATE()
             """
-            cursor.execute(sql, (session['usuario_id'],))
+            cursor.execute(sql, (id_paciente,))
             resultado = cursor.fetchone()
 
-            return jsonify({'count': resultado['count'] if resultado else 0})
+            count = resultado['count'] if resultado else 0
+            return jsonify({'count': count})
 
     except Exception as e:
+        print(f"Error en api_no_leidas_count: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e), 'count': 0}), 500
     finally:
         try:
-            conexion.close()
+            if conexion:
+                conexion.close()
         except:
             pass
 
@@ -92,16 +120,30 @@ def api_recientes():
         return jsonify({'notificaciones': []})
 
     try:
+        # Obtener id_paciente
+        id_paciente = session.get('id_paciente')
+        
+        if not id_paciente:
+            conexion = obtener_conexion()
+            with conexion.cursor() as cursor:
+                cursor.execute("SELECT id_paciente FROM PACIENTE WHERE id_usuario = %s", (session['usuario_id'],))
+                resultado = cursor.fetchone()
+                if resultado:
+                    id_paciente = resultado['id_paciente']
+                else:
+                    return jsonify({'notificaciones': []})
+            conexion.close()
+        
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             sql = """
-                SELECT id_notificacion, titulo, mensaje, fecha_creacion, leida, tipo
+                SELECT id_notificacion, titulo, mensaje, fecha_envio, hora_envio, tipo
                 FROM NOTIFICACION
-                WHERE id_usuario = %s AND estado = 'activa'
-                ORDER BY fecha_creacion DESC
+                WHERE id_paciente = %s
+                ORDER BY fecha_envio DESC, hora_envio DESC
                 LIMIT 10
             """
-            cursor.execute(sql, (session['usuario_id'],))
+            cursor.execute(sql, (id_paciente,))
             notificaciones = cursor.fetchall()
 
             return jsonify({'notificaciones': notificaciones})

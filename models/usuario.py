@@ -82,6 +82,7 @@ class Usuario:
                            CONCAT(e.nombres, ' ', e.apellidos) as nombre_empleado,
                            e.documento_identidad as documento_empleado,
                            e.sexo as sexo_empleado,
+                           e.fecha_nacimiento as fecha_nacimiento_empleado,
                            e.id_distrito as id_distrito_empleado,
                            r.nombre as rol_empleado,
                            r.id_rol,

@@ -178,15 +178,22 @@ def api_servicios_por_tipo(id_tipo):
 
 @reservas_bp.route('/generar-reserva')
 def generar_reserva():
-    """Generar Nueva Reserva"""
+    """Generar Nueva Reserva - Para empleados y pacientes"""
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
 
-    if session.get('tipo_usuario') != 'empleado':
-        return redirect(url_for('home'))
-    servicios = Servicio.obtener_todos()
-    medicos = Empleado.obtener_medicos()
-    return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos)
+    # Si es paciente, renderizar el formulario de paciente
+    if session.get('tipo_usuario') == 'paciente':
+        return render_template('RegistrarCitaPaciente.html')
+    
+    # Si es empleado, renderizar el formulario de empleado
+    if session.get('tipo_usuario') == 'empleado':
+        servicios = Servicio.obtener_todos()
+        medicos = Empleado.obtener_medicos()
+        return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos)
+    
+    # Si no es ni empleado ni paciente, redirigir al home
+    return redirect(url_for('home'))
 
 
 @reservas_bp.route('/api/paciente-por-dni')
@@ -690,6 +697,49 @@ def api_medicos_por_servicio(id_servicio):
             conexion.close()
         except:
             pass
+
+
+@reservas_bp.route('/api/medico/<int:id_medico>')
+def api_medico(id_medico):
+    """Retorna información detallada de un médico incluyendo un servicio que puede ofrecer"""
+    try:
+        # Obtener empleado
+        empleado = Empleado.obtener_por_id(id_medico)
+        if not empleado:
+            return jsonify({'error': 'Médico no encontrado'}), 404
+
+        # Verificar que sea médico
+        id_rol = empleado.get('id_rol')
+        if id_rol not in [2, 3]:
+            return jsonify({'error': 'El empleado no es un médico'}), 400
+
+        # Obtener un servicio de la especialidad del médico
+        id_especialidad = empleado.get('id_especialidad')
+        servicio = None
+        servicio_nombre = None
+        id_servicio = None
+        
+        if id_especialidad:
+            servicios = Servicio.obtener_por_especialidad(id_especialidad)
+            if servicios and len(servicios) > 0:
+                servicio = servicios[0]
+                id_servicio = servicio.get('id_servicio')
+                servicio_nombre = servicio.get('nombre')
+
+        # Construir respuesta
+        respuesta = {
+            'id_empleado': empleado.get('id_empleado'),
+            'nombres': empleado.get('nombres'),
+            'apellidos': empleado.get('apellidos'),
+            'id_servicio': id_servicio,
+            'servicio_nombre': servicio_nombre,
+            'especialidad': empleado.get('especialidad')
+        }
+
+        return jsonify(respuesta)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @reservas_bp.route('/paciente/crear-reserva', methods=['POST'])

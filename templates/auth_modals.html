@@ -1,115 +1,182 @@
 <!-- Modals de Autenticación -->
 <!-- Login Modal -->
-<div id="login-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-        <button id="close-login-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+<div id="login-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-fadeIn">
+        <button id="close-login-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
-        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Iniciar Sesión</h2>
+        
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Iniciar Sesión</h2>
+            <p class="text-sm text-gray-600 mt-1">Accede a tu cuenta</p>
+        </div>
+        
         <form>
             <div class="mb-4">
-                <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" id="login-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="tu@email.com" required>
+                <label for="login-email" class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                <input type="email" id="login-email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="tu@email.com" required>
             </div>
             <div class="mb-6">
-                <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                <input type="password" id="login-password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" required>
+                <label for="login-password" class="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
+                <input type="password" id="login-password" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="••••••••" required>
             </div>
-            <button type="submit" class="w-full bg-cyan-500 text-white font-bold py-3 rounded-lg hover:bg-cyan-600 transition-colors">Ingresar</button>
+            <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-3 rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
+                Ingresar
+            </button>
         </form>
         <div class="mt-4 text-center">
-            <button id="forgot-password-link" class="text-sm text-cyan-600 hover:underline">¿Olvidaste tu contraseña?</button>
+            <button id="forgot-password-link" class="text-sm text-cyan-600 hover:text-cyan-700 font-medium hover:underline">¿Olvidaste tu contraseña?</button>
         </div>
-        <p class="text-center text-sm text-gray-600 mt-6">
-            ¿No tienes una cuenta? <button id="go-to-register" class="font-medium text-cyan-600 hover:underline">Regístrate</button>
-        </p>
+        <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+            <p class="text-sm text-gray-600">
+                ¿No tienes una cuenta? 
+                <button id="go-to-register" class="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">Regístrate aquí</button>
+            </p>
+        </div>
     </div>
 </div>
 
 <!-- Forgot Password Modal -->
-<div id="forgot-password-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
-        <button id="close-forgot-password-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+<div id="forgot-password-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative animate-fadeIn">
+        <button id="close-forgot-password-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
-        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Recuperar Contraseña</h2>
-        <form>
-            <div class="mb-4">
-                <label for="forgot-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input type="email" id="forgot-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="tu@email.com" required>
+        
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
             </div>
-            <button type="submit" class="w-full bg-cyan-500 text-white font-bold py-3 rounded-lg hover:bg-cyan-600 transition-colors">Enviar Código de Recuperación</button>
+            <h2 class="text-2xl font-bold text-gray-800">Recuperar Contraseña</h2>
+            <p class="text-sm text-gray-600 mt-1">Te enviaremos un código de recuperación</p>
+        </div>
+        
+        <form>
+            <div class="mb-6">
+                <label for="forgot-email" class="block text-sm font-semibold text-gray-700 mb-2">Correo Electrónico</label>
+                <input type="email" id="forgot-email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="tu@email.com" required>
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-3 rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
+                Enviar Código
+            </button>
         </form>
-        <p class="text-center text-sm text-gray-600 mt-6">
-            <button id="back-to-login" class="font-medium text-cyan-600 hover:underline">Volver al Inicio de Sesión</button>
-        </p>
+        <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+            <button id="back-to-login" class="text-sm font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">← Volver al Inicio de Sesión</button>
+        </div>
     </div>
 </div>
 
 <!-- Register Modal -->
-<div id="register-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 relative">
-        <button id="close-register-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+<div id="register-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 auth-modal backdrop-blur-sm overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8 relative my-8 animate-fadeIn">
+        <button id="close-register-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
-        <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Crear Cuenta de Paciente</h2>
-        <form>
+        
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800">Crear Cuenta</h2>
+            <p class="text-sm text-gray-600 mt-1">Completa tus datos para registrarte</p>
+        </div>
+        
+        <form class="max-h-[70vh] overflow-y-auto px-2">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label for="register-nombres" class="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
-                    <input type="text" id="register-nombres" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="John" required>
+                    <label for="register-nombres" class="block text-sm font-semibold text-gray-700 mb-2">Nombres *</label>
+                    <input type="text" id="register-nombres" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="Juan Carlos" required>
                 </div>
                 <div>
-                    <label for="register-apellidos" class="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
-                    <input type="text" id="register-apellidos" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Doe" required>
+                    <label for="register-apellidos" class="block text-sm font-semibold text-gray-700 mb-2">Apellidos *</label>
+                    <input type="text" id="register-apellidos" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="Pérez López" required>
                 </div>
             </div>
             <div class="mb-4">
-                <label for="register-documento" class="block text-sm font-medium text-gray-700 mb-1">Documento de Identidad</label>
-                <input type="text" id="register-documento" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="12345678" required pattern="[0-9]{8}" title="Debe contener 8 dígitos.">
+                <label for="register-documento" class="block text-sm font-semibold text-gray-700 mb-2">DNI *</label>
+                <input type="text" id="register-documento" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="12345678" required pattern="[0-9]{8}" title="Debe contener 8 dígitos." inputmode="numeric" maxlength="8">
             </div>
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label for="register-telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                    <input type="tel" id="register-telefono" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="987654321" pattern="[0-9]{9}" title="Debe contener 9 dígitos.">
+                    <label for="register-sexo" class="block text-sm font-semibold text-gray-700 mb-2">Sexo *</label>
+                    <select id="register-sexo" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all bg-white" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
                 </div>
                 <div>
-                    <label for="register-nacimiento" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
-                    <input type="date" id="register-nacimiento" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+                    <label for="register-nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento *</label>
+                    <input type="date" id="register-nacimiento" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" required>
                 </div>
             </div>
             <div class="mb-4">
-                <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                <input type="email" id="register-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="tu@email.com" required>
+                <label for="register-telefono" class="block text-sm font-semibold text-gray-700 mb-2">Teléfono *</label>
+                <input type="tel" id="register-telefono" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="987654321" pattern="[0-9]{9}" title="Debe contener 9 dígitos." inputmode="numeric" maxlength="9" required>
+            </div>
+            <div class="mb-4">
+                <label for="register-email" class="block text-sm font-semibold text-gray-700 mb-2">Correo Electrónico *</label>
+                <input type="email" id="register-email" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="tu@email.com" required>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                    <label for="register-departamento" class="block text-sm font-medium text-gray-700 mb-1">Departamento *</label>
-                    <select id="register-departamento" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+                    <label for="register-departamento" class="block text-sm font-semibold text-gray-700 mb-2">Departamento *</label>
+                    <select id="register-departamento" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all bg-white" required>
                         <option value="">Seleccione...</option>
                     </select>
                 </div>
                 <div>
-                    <label for="register-provincia" class="block text-sm font-medium text-gray-700 mb-1">Provincia *</label>
-                    <select id="register-provincia" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" required disabled>
-                        <option value="">Seleccione departamento primero</option>
+                    <label for="register-provincia" class="block text-sm font-semibold text-gray-700 mb-2">Provincia *</label>
+                    <select id="register-provincia" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all bg-white" required disabled>
+                        <option value="">Seleccione departamento</option>
                     </select>
                 </div>
                 <div>
-                    <label for="register-distrito" class="block text-sm font-medium text-gray-700 mb-1">Distrito *</label>
-                    <select id="register-distrito" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" required disabled>
-                        <option value="">Seleccione provincia primero</option>
+                    <label for="register-distrito" class="block text-sm font-semibold text-gray-700 mb-2">Distrito *</label>
+                    <select id="register-distrito" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all bg-white" required disabled>
+                        <option value="">Seleccione provincia</option>
                     </select>
                 </div>
             </div>
             <div class="mb-6">
-                <label for="register-password" class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-                <input type="password" id="register-password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" required minlength="6">
+                <label for="register-password" class="block text-sm font-semibold text-gray-700 mb-2">Contraseña *</label>
+                <input type="password" id="register-password" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all" placeholder="Mínimo 6 caracteres" required minlength="6">
+                <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
             </div>
-            <button type="submit" class="w-full bg-cyan-500 text-white font-bold py-3 rounded-lg hover:bg-cyan-600 transition-colors">Registrarse</button>
+            <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold py-3 rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
+                Crear Cuenta
+            </button>
         </form>
-        <p class="text-center text-sm text-gray-600 mt-6">
-            ¿Ya tienes una cuenta? <button id="go-to-login" class="font-medium text-cyan-600 hover:underline">Inicia Sesión</button>
-        </p>
+        <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+            <p class="text-sm text-gray-600">
+                ¿Ya tienes una cuenta? 
+                <button id="go-to-login" class="font-semibold text-cyan-600 hover:text-cyan-700 hover:underline">Inicia Sesión</button>
+            </p>
+        </div>
     </div>
 </div>
+
+<style>
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.auth-modal {
+    backdrop-filter: blur(8px);
+}
+</style>
+```

@@ -454,6 +454,15 @@ if (employeeForm) {
         }
     });
 
+    // Validación de solo números en documento y teléfono
+    document.getElementById('employee-documento')?.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+    
+    document.getElementById('employee-telefono')?.addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
     /**
      * Manejo del envío del formulario
      */

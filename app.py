@@ -9,6 +9,7 @@ from routes.reportes import reportes_bp
 from routes.seguridad import seguridad_bp
 from routes.farmacia import farmacia_bp
 from routes.paciente import paciente_bp
+from routes.trabajador import trabajador_bp
 
 import os
 from dotenv import load_dotenv
@@ -29,12 +30,11 @@ app.register_blueprint(reportes_bp, url_prefix='/reportes')
 app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
 app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
 app.register_blueprint(paciente_bp, url_prefix='/paciente')
-
+app.register_blueprint(trabajador_bp, url_prefix='/trabajador')
 
 @app.route("/")
 def home():
     return render_template('home.html')
-
 
 # Cargar información del usuario completo en `g.user` antes de cada petición
 @app.before_request
