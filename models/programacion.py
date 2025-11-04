@@ -50,14 +50,16 @@ class Programacion:
                 sql = """
                     SELECT p.*,
                            s.nombre as servicio,
-                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           h.fecha as fecha_horario,
-                           h.hora_inicio as hora_inicio_horario,
-                           h.hora_fin as hora_fin_horario
+                           ts.nombre as tipo_servicio,
+                           ts.id_tipo_servicio as id_tipo_servicio,
+                           e.id_empleado as id_empleado,
+                           h.id_horario as id_horario,
+                           CONCAT(e.nombres, ' ', e.apellidos) as empleado
                     FROM PROGRAMACION p
                     INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
-                    INNER JOIN EMPLEADO e ON p.id_empleado = e.id_empleado
+                    INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
                     LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     ORDER BY p.id_programacion ASC
                 """
                 cursor.execute(sql)
@@ -74,15 +76,16 @@ class Programacion:
                 sql = """
                     SELECT p.*,
                            s.nombre as servicio,
-                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           e.documento_identidad,
-                           h.fecha as fecha_horario,
-                           h.hora_inicio as hora_inicio_horario,
-                           h.hora_fin as hora_fin_horario
+                           ts.nombre as tipo_servicio,
+                           ts.id_tipo_servicio as id_tipo_servicio,
+                           e.id_empleado as id_empleado,
+                           h.id_horario as id_horario,
+                           CONCAT(e.nombres, ' ', e.apellidos) as empleado
                     FROM PROGRAMACION p
                     INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
-                    INNER JOIN EMPLEADO e ON p.id_empleado = e.id_empleado
-                    LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     WHERE p.id_programacion = %s
                 """
                 cursor.execute(sql, (id_programacion,))
@@ -163,7 +166,7 @@ class Programacion:
             conexion.close()
 
     @staticmethod
-    def buscar_por_filtros(fecha=None, id_empleado=None, estado=None, id_servicio=None):
+    def buscar_por_filtros(fecha=None, id_empleado=None, estado=None, id_servicio=None, id_tipo_servicio=None):
         """Busca programaciones por filtros"""
         conexion = obtener_conexion()
         try:
@@ -171,10 +174,14 @@ class Programacion:
                 sql = """
                     SELECT p.*,
                            s.nombre as servicio,
+                           ts.nombre as tipo_servicio,
+                           ts.id_tipo_servicio as id_tipo_servicio,
                            CONCAT(e.nombres, ' ', e.apellidos) as empleado
                     FROM PROGRAMACION p
                     INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
-                    INNER JOIN EMPLEADO e ON p.id_empleado = e.id_empleado
+                    INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
+                    LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     WHERE 1=1
                 """
                 params = []
@@ -194,6 +201,10 @@ class Programacion:
                 if id_servicio:
                     sql += " AND p.id_servicio = %s"
                     params.append(id_servicio)
+
+                if id_tipo_servicio:
+                    sql += " AND ts.id_tipo_servicio = %s"
+                    params.append(id_tipo_servicio)
 
                 sql += " ORDER BY p.fecha DESC, p.hora_inicio"
                 cursor.execute(sql, tuple(params))
