@@ -238,7 +238,7 @@ async function verDetalleRecurso(idRecurso, nombreRecurso, tipoRecurso, totalUso
                     <td class="px-4 py-3 text-sm text-gray-600">${uso.hora_inicio_formateada || 'N/A'}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${uso.hora_fin_formateada || 'N/A'}</td>
                     <td class="px-4 py-3 text-sm text-gray-500">
-                        ${uso.observaciones ? `<span class="text-xs">${uso.observaciones.substring(0, 50)}${uso.observaciones.length > 50 ? '...' : ''}</span>` : '-'}
+                        ${uso.observaciones_operacion ? `<span class="text-xs">${uso.observaciones_operacion.substring(0, 50)}${uso.observaciones_operacion.length > 50 ? '...' : ''}</span>` : '-'}
                     </td>
                 </tr>
             `).join('');
@@ -375,6 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectOperacion) {
         selectOperacion.addEventListener('change', function() {
             const infoDiv = document.getElementById('infoOperacion');
+            const observacionesTextarea = document.getElementById('observacionesOperacion');
             
             if (this.value) {
                 const option = this.options[this.selectedIndex];
@@ -387,10 +388,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('infoMedico').textContent = `${operacionSeleccionada.medico} - ${operacionSeleccionada.especialidad}`;
                 document.getElementById('infoServicio').textContent = operacionSeleccionada.servicio;
                 
+                // Mostrar observaciones actuales
+                const observacionesInfo = document.getElementById('infoObservaciones');
+                if (observacionesInfo) {
+                    observacionesInfo.textContent = operacionSeleccionada.observaciones || 'Sin observaciones';
+                }
+                
+                // Cargar observaciones en el textarea para edición
+                if (observacionesTextarea) {
+                    observacionesTextarea.value = operacionSeleccionada.observaciones || '';
+                }
+                
                 infoDiv.classList.remove('hidden');
             } else {
                 infoDiv.classList.add('hidden');
                 operacionSeleccionada = null;
+                if (observacionesTextarea) {
+                    observacionesTextarea.value = '';
+                }
             }
         });
     }
@@ -409,6 +424,7 @@ async function enviarFormularioRecursos(e) {
     
     const idOperacion = document.getElementById('operacionReporte').value;
     const idRecurso = document.getElementById('recursoReporte').value;
+    const observaciones = document.getElementById('observacionesOperacion').value;
     
     // Validaciones
     if (!idOperacion) {
@@ -424,6 +440,7 @@ async function enviarFormularioRecursos(e) {
     const formData = new FormData();
     formData.append('id_operacion', idOperacion);
     formData.append('id_recurso', idRecurso);
+    formData.append('observaciones', observaciones);
     
     try {
         // Mostrar progreso
@@ -446,12 +463,24 @@ async function enviarFormularioRecursos(e) {
             
             cerrarModalGenerarRecursos();
             
-            // Mostrar modal de éxito
-            const exitoTotal = document.getElementById('exitoTotal');
+            // Mostrar modal de éxito con la información de la operación
+            const exitoOperacion = document.getElementById('exitoOperacion');
             const exitoFecha = document.getElementById('exitoFecha');
             
-            if (exitoTotal) exitoTotal.textContent = '1 vinculación';
-            if (exitoFecha) exitoFecha.textContent = new Date().toLocaleDateString('es-PE');
+            if (exitoOperacion && operacionSeleccionada) {
+                // Formatear la información de la operación
+                const infoOperacion = `${operacionSeleccionada.fecha} - ${operacionSeleccionada.paciente} - ${operacionSeleccionada.servicio}`;
+                exitoOperacion.textContent = infoOperacion;
+            }
+            
+            if (exitoFecha) {
+                const fechaActual = new Date();
+                exitoFecha.textContent = fechaActual.toLocaleDateString('es-PE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
             
             document.getElementById('modalExito').classList.add('show');
             
