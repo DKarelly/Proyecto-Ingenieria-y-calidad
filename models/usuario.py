@@ -21,14 +21,23 @@ class Usuario:
                 # Hash de la contraseña
                 contrasena_hash = generate_password_hash(contrasena)
                 
+                print(f'[DEBUG Usuario.crear_usuario] Insertando usuario: correo={correo}, telefono={telefono}')
+                
                 sql = """INSERT INTO USUARIO (correo, contrasena, telefono, estado, fecha_creacion) 
                          VALUES (%s, %s, %s, %s, %s)"""
                 # Guardar cuenta nueva con estado 'Activo' (mayúscula) por requerimiento
                 cursor.execute(sql, (correo, contrasena_hash, telefono, 'Activo', date.today()))
                 conexion.commit()
-                return {'success': True, 'id_usuario': cursor.lastrowid}
+                
+                id_insertado = cursor.lastrowid
+                print(f'[DEBUG Usuario.crear_usuario] Usuario insertado con ID: {id_insertado}')
+                
+                return {'success': True, 'id_usuario': id_insertado}
         except Exception as e:
             conexion.rollback()
+            print(f'[DEBUG Usuario.crear_usuario] ERROR: {str(e)}')
+            import traceback
+            traceback.print_exc()
             return {'error': str(e)}
         finally:
             conexion.close()

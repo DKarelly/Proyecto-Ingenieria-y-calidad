@@ -22,6 +22,8 @@ class Empleado:
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
+                print(f'[DEBUG Empleado.crear] Insertando empleado: nombres={nombres}, apellidos={apellidos}, doc={documento_identidad}, id_usuario={id_usuario}, id_rol={id_rol}, id_distrito={id_distrito}, id_especialidad={id_especialidad}')
+                
                 # Insert including fecha_nacimiento (column added to table)
                 sql = """INSERT INTO EMPLEADO (nombres, apellidos, fecha_nacimiento, documento_identidad, 
                          sexo, estado, id_usuario, id_rol, id_distrito, id_especialidad) 
@@ -29,9 +31,16 @@ class Empleado:
                 cursor.execute(sql, (nombres, apellidos, fecha_nacimiento, documento_identidad, sexo, 
                                    'activo', id_usuario, id_rol, id_distrito, id_especialidad))
                 conexion.commit()
-                return {'success': True, 'id_empleado': cursor.lastrowid}
+                
+                id_insertado = cursor.lastrowid
+                print(f'[DEBUG Empleado.crear] Empleado insertado con ID: {id_insertado}')
+                
+                return {'success': True, 'id_empleado': id_insertado}
         except Exception as e:
             conexion.rollback()
+            print(f'[DEBUG Empleado.crear] ERROR: {str(e)}')
+            import traceback
+            traceback.print_exc()
             return {'error': str(e)}
         finally:
             conexion.close()

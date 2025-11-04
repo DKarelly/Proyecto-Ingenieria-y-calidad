@@ -349,6 +349,7 @@ def gestionar_cuentas_internas():
     # Si es POST, crear nuevo empleado
     if request.method == 'POST':
         try:
+            print('[DEBUG] ========== INICIO REGISTRO EMPLEADO ==========')
             # Obtener datos del formulario
             nombres = request.form.get('nombres', '').strip()
             apellidos = request.form.get('apellidos', '').strip()
@@ -360,16 +361,20 @@ def gestionar_cuentas_internas():
             id_rol = request.form.get('rol')
             sexo = request.form.get('sexo', '')
             fecha_nacimiento = request.form.get('nacimiento', '').strip()
+            
+            print(f'[DEBUG] Datos formulario recibidos: nombres={nombres}, apellidos={apellidos}, doc={documento}, email={email}, rol={id_rol}')
 
             # ===== VALIDACIONES BACKEND =====
 
             # Validar campos requeridos
             if not all([nombres, apellidos, documento, sexo, telefono, fecha_nacimiento, email, password, confirm_password, id_rol]):
+                print('[DEBUG] ERROR: Falta algún campo requerido')
                 flash('Todos los campos son obligatorios', 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
             # Validar longitud de nombres
             if len(nombres) < 2 or len(nombres) > 60:
+                print(f'[DEBUG] ERROR: Nombres inválidos (longitud: {len(nombres)})')
                 flash('El nombre debe tener entre 2 y 60 caracteres', 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
@@ -435,15 +440,18 @@ def gestionar_cuentas_internas():
             from models.usuario import Usuario
             usuario_existente = Usuario.obtener_por_correo(email)
             if usuario_existente:
+                print(f'[DEBUG] ERROR: Correo ya existe: {email}')
                 flash('El correo electrónico ya está registrado', 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
             # Verificar si el documento ya existe
             empleado_existente = Empleado.obtener_por_documento(documento)
             if empleado_existente:
+                print(f'[DEBUG] ERROR: Documento ya existe: {documento}')
                 flash('El documento de identidad ya está registrado', 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
+            print('[DEBUG] Validaciones pasadas, creando usuario...')
             # Crear usuario usando el método correcto
             resultado_usuario = Usuario.crear_usuario(
                 contrasena=password,
@@ -451,55 +459,76 @@ def gestionar_cuentas_internas():
                 telefono=telefono
             )
 
+            print(f'[DEBUG] Resultado crear_usuario: {resultado_usuario}')
+            
             if 'error' in resultado_usuario:
+                print(f'[DEBUG] ERROR al crear usuario: {resultado_usuario["error"]}')
                 flash(f'Error al crear usuario: {resultado_usuario["error"]}', 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
             id_usuario = resultado_usuario['id_usuario']
+            print(f'[DEBUG] Usuario creado con ID: {id_usuario}')
 
             # Obtener ubicación (distrito)
+            # El formulario envía departamento/provincia/distrito; guardamos el id de distrito
             id_distrito = request.form.get('distrito')
-            if id_distrito:
-                try:
-                    id_distrito = int(id_distrito)
-                except (ValueError, TypeError):
-                    id_distrito = None
-            else:
+            try:
+                id_distrito = int(id_distrito) if id_distrito not in (None, '', 'undefined') else None
+            except (ValueError, TypeError):
                 id_distrito = None
 
             # Obtener especialidad si el rol es médico
             id_especialidad = request.form.get('especialidad')
-            if id_especialidad:
-                try:
-                    id_especialidad = int(id_especialidad)
-                except (ValueError, TypeError):
-                    id_especialidad = None
-            else:
+            try:
+                id_especialidad = int(id_especialidad) if id_especialidad not in (None, '', 'undefined') else None
+            except (ValueError, TypeError):
                 id_especialidad = None
 
+            # Log para depuración (se puede eliminar en producción)
+            print('[DEBUG] Registro empleado - datos recibidos:', {
+                'nombres': nombres,
+                'apellidos': apellidos,
+                'documento': documento,
+                'sexo': sexo,
+                'telefono': telefono,
+                'fecha_nacimiento': fecha_nacimiento,
+                'email': email,
+                'id_rol': id_rol,
+                'id_distrito': id_distrito,
+                'id_especialidad': id_especialidad
+            })
+
             # Crear empleado
+            print('[DEBUG] Llamando a Empleado.crear...')
             resultado_empleado = Empleado.crear(
                 nombres=nombres,
                 apellidos=apellidos,
                 documento_identidad=documento,
                 sexo=sexo,
                 id_usuario=id_usuario,
-                id_rol=int(id_rol),
+                id_rol=int(id_rol) if id_rol not in (None, '', 'undefined') else None,
                 id_distrito=id_distrito,
                 id_especialidad=id_especialidad,
                 fecha_nacimiento=fecha_nacimiento
             )
+            
+            print(f'[DEBUG] Resultado Empleado.crear: {resultado_empleado}')
 
             if 'error' in resultado_empleado:
                 # Si falla, eliminar el usuario creado
+                print(f'[DEBUG] ERROR al crear empleado: {resultado_empleado["error"]}, eliminando usuario {id_usuario}')
                 Usuario.eliminar(id_usuario)
                 flash(f'Error al crear empleado: {resultado_empleado["error"]}', 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
+            print(f'[DEBUG] ========== Empleado creado exitosamente con ID: {resultado_empleado.get("id_empleado")} ==========')
             flash('Empleado registrado exitosamente', 'success')
             return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
         except Exception as e:
+            print(f'[DEBUG] ========== EXCEPCIÓN EN REGISTRO: {str(e)} ==========')
+            import traceback
+            traceback.print_exc()
             flash(f'Error al procesar la solicitud: {str(e)}', 'error')
             return redirect(url_for('cuentas.gestionar_cuentas_internas'))
     
