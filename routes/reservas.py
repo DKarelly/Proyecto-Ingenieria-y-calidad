@@ -692,6 +692,49 @@ def api_medicos_por_servicio(id_servicio):
             pass
 
 
+@reservas_bp.route('/api/medico/<int:id_medico>')
+def api_medico(id_medico):
+    """Retorna información detallada de un médico incluyendo un servicio que puede ofrecer"""
+    try:
+        # Obtener empleado
+        empleado = Empleado.obtener_por_id(id_medico)
+        if not empleado:
+            return jsonify({'error': 'Médico no encontrado'}), 404
+
+        # Verificar que sea médico
+        id_rol = empleado.get('id_rol')
+        if id_rol not in [2, 3]:
+            return jsonify({'error': 'El empleado no es un médico'}), 400
+
+        # Obtener un servicio de la especialidad del médico
+        id_especialidad = empleado.get('id_especialidad')
+        servicio = None
+        servicio_nombre = None
+        id_servicio = None
+        
+        if id_especialidad:
+            servicios = Servicio.obtener_por_especialidad(id_especialidad)
+            if servicios and len(servicios) > 0:
+                servicio = servicios[0]
+                id_servicio = servicio.get('id_servicio')
+                servicio_nombre = servicio.get('nombre')
+
+        # Construir respuesta
+        respuesta = {
+            'id_empleado': empleado.get('id_empleado'),
+            'nombres': empleado.get('nombres'),
+            'apellidos': empleado.get('apellidos'),
+            'id_servicio': id_servicio,
+            'servicio_nombre': servicio_nombre,
+            'especialidad': empleado.get('especialidad')
+        }
+
+        return jsonify(respuesta)
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @reservas_bp.route('/paciente/crear-reserva', methods=['POST'])
 def paciente_crear_reserva():
     """Crea una nueva reserva para un paciente autenticado"""

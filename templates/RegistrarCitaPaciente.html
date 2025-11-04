@@ -284,6 +284,10 @@
             hora_fin: ''
         };
 
+        // Obtener parámetros de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const medicoPreseleccionado = urlParams.get('medico');
+
         // Configurar fecha mínima (hoy)
         document.addEventListener('DOMContentLoaded', function() {
             const fechaInput = document.getElementById('fechaCita');
@@ -292,6 +296,14 @@
 
             // Cargar servicios
             cargarServicios();
+            
+            // Si hay médico preseleccionado, avanzar automáticamente al paso 2
+            if (medicoPreseleccionado) {
+                // Esperar a que se carguen los servicios y luego seleccionar médico
+                setTimeout(() => {
+                    preseleccionarMedico(medicoPreseleccionado);
+                }, 1000);
+            }
         });
 
         // Cargar servicios disponibles
@@ -568,6 +580,47 @@
                 this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
             }
         });
+
+        // Función para preseleccionar médico desde la URL
+        async function preseleccionarMedico(idMedico) {
+            try {
+                // Obtener información del médico
+                const response = await fetch(`/reservas/api/medico/${idMedico}`);
+                const data = await response.json();
+                
+                if (data.success && data.medico) {
+                    const medico = data.medico;
+                    
+                    // Si el médico tiene un servicio asociado, seleccionarlo automáticamente
+                    if (medico.id_servicio) {
+                        formData.id_servicio = medico.id_servicio;
+                        formData.servicio_nombre = medico.servicio_nombre;
+                        
+                        // Avanzar al paso 2
+                        goToStep(2);
+                        await cargarMedicos();
+                        
+                        // Seleccionar el médico después de cargar la lista
+                        setTimeout(() => {
+                            formData.id_empleado = idMedico;
+                            formData.empleado_nombre = `${medico.nombres} ${medico.apellidos}`;
+                            document.getElementById('btn-step2-next').disabled = false;
+                            
+                            // Marcar visualmente el médico seleccionado
+                            const medicosCards = document.querySelectorAll('#medicosContainer > div');
+                            medicosCards.forEach(card => {
+                                if (card.onclick.toString().includes(idMedico)) {
+                                    card.classList.add('border-cyan-500', 'bg-cyan-50');
+                                    card.classList.remove('border-gray-200');
+                                }
+                            });
+                        }, 500);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al preseleccionar médico:', error);
+            }
+        }
     </script>
 
 </body>

@@ -54,7 +54,17 @@ def login():
         session['id_empleado'] = usuario.get('id_empleado')
         
         flash(f'Bienvenido {usuario["nombre"]}', 'success')
-        return redirect(url_for('usuarios.perfil'))
+        
+        # Redirigir según el tipo de usuario
+        if usuario['tipo_usuario'] == 'empleado':
+            # Si es empleado, verificar su rol
+            id_rol = usuario.get('id_rol')
+            if id_rol == 1:  # Administrador
+                return redirect(url_for('admin.panel'))
+            else:  # Otros empleados (médico, recepcionista, farmacéutico, laboratorista)
+                return redirect(url_for('trabajador.panel'))
+        else:  # Paciente
+            return redirect(url_for('usuarios.perfil'))
     
     return render_template('home.html')
 
@@ -228,12 +238,18 @@ def editar(id_usuario):
 @login_required
 def editar_perfil():
     """Permite al usuario logueado editar SU propio perfil (correo, teléfono y contraseña)."""
+    from datetime import datetime, timedelta
+    
     id_usuario = session['usuario_id']
     usuario = Usuario.obtener_por_id(id_usuario)
 
     if not usuario:
         flash('Usuario no encontrado', 'danger')
         return redirect(url_for('usuarios.perfil'))
+
+    # Calcular fecha máxima permitida (18 años atrás)
+    fecha_maxima = datetime.now() - timedelta(days=18*365.25)
+    max_fecha = fecha_maxima.strftime('%Y-%m-%d')
 
     if request.method == 'POST':
         correo = request.form.get('correo')
@@ -261,20 +277,38 @@ def editar_perfil():
 
         # Actualizar nombres y ubicación según tipo de usuario
         try:
+            sexo = request.form.get('sexo')
+            fecha_nacimiento = request.form.get('fecha_nacimiento')
+            
+            # Validar edad mínima (18 años) si se proporciona fecha de nacimiento
+            if fecha_nacimiento:
+                from datetime import datetime, timedelta
+                fecha_nac = datetime.strptime(fecha_nacimiento, '%Y-%m-%d')
+                edad_minima = datetime.now() - timedelta(days=18*365.25)
+                if fecha_nac > edad_minima:
+                    flash('Debes ser mayor de 18 años', 'danger')
+                    return render_template('editarPerfil.html', usuario=usuario)
+            
             if usuario['tipo_usuario'] == 'paciente' and usuario.get('id_paciente'):
                 from models.paciente import Paciente
+                
                 Paciente.actualizar(
                     id_paciente=usuario['id_paciente'],
                     nombres=nombres if nombres else None,
                     apellidos=apellidos if apellidos else None,
+                    sexo=sexo if sexo else None,
+                    fecha_nacimiento=fecha_nacimiento if fecha_nacimiento else None,
                     id_distrito=int(id_distrito) if id_distrito else None
                 )
             elif usuario['tipo_usuario'] == 'empleado' and usuario.get('id_empleado'):
                 from models.empleado import Empleado
+                
                 Empleado.actualizar(
                     id_empleado=usuario['id_empleado'],
                     nombres=nombres if nombres else None,
                     apellidos=apellidos if apellidos else None,
+                    sexo=sexo if sexo else None,
+                    fecha_nacimiento=fecha_nacimiento if fecha_nacimiento else None,
                     id_distrito=int(id_distrito) if id_distrito else None
                 )
         except Exception as e:
@@ -290,7 +324,7 @@ def editar_perfil():
         flash('Perfil actualizado exitosamente', 'success')
         return redirect(url_for('usuarios.perfil'))
 
-    return render_template('editarPerfil.html', usuario=usuario)
+    return render_template('editarPerfil.html', usuario=usuario, max_fecha=max_fecha)
 
 @usuarios_bp.route('/eliminar/<int:id_usuario>', methods=['POST'])
 @login_required
@@ -606,6 +640,13 @@ def api_forgot_password():
 
             conexion.commit()
 
+            # MOSTRAR CÓDIGO EN CONSOLA PARA DESARROLLO
+            print("="*60)
+            print(f"CÓDIGO DE RECUPERACIÓN GENERADO")
+            print(f"Email: {correo}")
+            print(f"Código: {codigo}")
+            print("="*60)
+
             # Enviar email usando la API de envío de emails
             email_data = {
                 'to': correo,
@@ -782,3 +823,115 @@ def api_reset_password():
                 conexion.close()
             except:
                 pass
+
+
+@usuarios_bp.route('/medicos')
+def lista_medicos():
+    """Página que muestra todos los médicos (id_rol=2) organizados por especialidad"""
+    import bd
+    
+    try:
+        conexion = bd.obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener todas las especialidades activas
+        cursor.execute("""
+            SELECT id_especialidad, nombre, descripcion
+            FROM ESPECIALIDAD
+            WHERE estado = 'activo'
+            ORDER BY nombre
+        """)
+        especialidades = cursor.fetchall()
+        
+        # Para cada especialidad, obtener sus médicos
+        for especialidad in especialidades:
+            cursor.execute("""
+                SELECT 
+                    e.id_empleado,
+                    e.nombres,
+                    e.apellidos,
+                    e.documento_identidad,
+                    e.sexo,
+                    e.fotoPerfil,
+                    e.id_especialidad
+                FROM EMPLEADO e
+                WHERE e.id_rol = 2 
+                AND e.estado = 'Activo'
+                AND e.id_especialidad = %s
+                ORDER BY e.apellidos, e.nombres
+            """, (especialidad['id_especialidad'],))
+            
+            especialidad['medicos'] = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        return render_template('lista_medicos.html', especialidades=especialidades)
+        
+    except Exception as e:
+        print(f"Error al cargar lista de médicos: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash('Error al cargar la lista de médicos', 'danger')
+        return redirect(url_for('home'))
+
+
+@usuarios_bp.route('/cambiar-contrasena', methods=['GET', 'POST'])
+@login_required
+def cambiar_contrasena():
+    """Cambiar contraseña del usuario logueado"""
+    if request.method == 'POST':
+        contrasena_actual = request.form.get('contrasena_actual')
+        nueva_contrasena = request.form.get('nueva_contrasena')
+        confirmar_contrasena = request.form.get('confirmar_contrasena')
+        
+        # Validaciones
+        if not all([contrasena_actual, nueva_contrasena, confirmar_contrasena]):
+            flash('Todos los campos son obligatorios', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        if nueva_contrasena != confirmar_contrasena:
+            flash('La nueva contraseña y su confirmación no coinciden', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        if len(nueva_contrasena) < 8:
+            flash('La nueva contraseña debe tener al menos 8 caracteres', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        # Validar que la nueva contraseña tenga mayúsculas, minúsculas y números
+        import re
+        if not re.search(r'[A-Z]', nueva_contrasena):
+            flash('La nueva contraseña debe contener al menos una mayúscula', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        if not re.search(r'[a-z]', nueva_contrasena):
+            flash('La nueva contraseña debe contener al menos una minúscula', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        if not re.search(r'\d', nueva_contrasena):
+            flash('La nueva contraseña debe contener al menos un número', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        # Verificar contraseña actual
+        usuario = Usuario.obtener_por_id(session['usuario_id'])
+        if not usuario:
+            flash('Usuario no encontrado', 'error')
+            return redirect(url_for('usuarios.logout'))
+        
+        from werkzeug.security import check_password_hash
+        if not check_password_hash(usuario['contrasena'], contrasena_actual):
+            flash('La contraseña actual es incorrecta', 'error')
+            return render_template('cambiarContrasena.html')
+        
+        # Actualizar contraseña
+        resultado = Usuario.actualizar(id_usuario=session['usuario_id'], contrasena=nueva_contrasena)
+        
+        if 'error' in resultado:
+            flash('Error al cambiar la contraseña: ' + resultado['error'], 'error')
+            return render_template('cambiarContrasena.html')
+        
+        flash('Contraseña cambiada exitosamente', 'success')
+        return redirect(url_for('cuentas.consultar_perfil'))
+    
+    # GET
+    return render_template('cambiarContrasena.html')

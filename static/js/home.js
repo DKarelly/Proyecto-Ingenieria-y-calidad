@@ -192,6 +192,15 @@ function initializeAuthModals() {
         }
     });
 
+    // Validación de solo números en documento y teléfono
+    document.getElementById('register-documento').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+    
+    document.getElementById('register-telefono').addEventListener('input', function(e) {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
     // Manejo del formulario de registro
     const registerForm = document.querySelector('#register-modal form');
     registerForm.addEventListener('submit', async (e) => {
@@ -201,6 +210,7 @@ function initializeAuthModals() {
             nombres: document.getElementById('register-nombres').value,
             apellidos: document.getElementById('register-apellidos').value,
             documento_identidad: document.getElementById('register-documento').value,
+            sexo: document.getElementById('register-sexo').value,
             telefono: document.getElementById('register-telefono').value,
             correo: document.getElementById('register-email').value,
             fecha_nacimiento: document.getElementById('register-nacimiento').value,
@@ -369,6 +379,12 @@ function loadUbicacionSelectors() {
 // Actualizar el botón de usuario cuando está logueado
 function updateUserButton(usuario) {
     const userAuthButton = document.getElementById('user-auth-button');
+    
+    // Verificar que el elemento existe antes de modificarlo
+    if (!userAuthButton) {
+        console.warn('Elemento user-auth-button no encontrado');
+        return;
+    }
 
     if (usuario) {
         // Usuario logueado - mostrar menú desplegable

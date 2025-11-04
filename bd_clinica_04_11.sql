@@ -36,7 +36,7 @@ CREATE TABLE `ASIGNAR_EMPLEADO_INCIDENCIA` (
   KEY `id_incidencia` (`id_incidencia`),
   CONSTRAINT `ASIGNAR_EMPLEADO_INCIDENCIA_ibfk_1` FOREIGN KEY (`id_empleado`) REFERENCES `EMPLEADO` (`id_empleado`),
   CONSTRAINT `ASIGNAR_EMPLEADO_INCIDENCIA_ibfk_2` FOREIGN KEY (`id_incidencia`) REFERENCES `INCIDENCIA` (`id_incidencia`)
-) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -45,7 +45,7 @@ CREATE TABLE `ASIGNAR_EMPLEADO_INCIDENCIA` (
 
 LOCK TABLES `ASIGNAR_EMPLEADO_INCIDENCIA` WRITE;
 /*!40000 ALTER TABLE `ASIGNAR_EMPLEADO_INCIDENCIA` DISABLE KEYS */;
-INSERT INTO `ASIGNAR_EMPLEADO_INCIDENCIA` VALUES (9,'','Resuelta','2025-10-30',5,9),(10,'Reparación programada por plomería mañana.','En proceso',NULL,7,10),(11,'Equipo informático enviado a soporte técnico.','Resuelta','2025-10-27',3,11),(12,'Insumos repuestos por personal de almacén.','Resuelta','2025-10-27',2,12),(13,'Ascensor reportado al proveedor externo.','Abierta',NULL,6,13),(14,'Electricista notificó posible corto circuito, revisión mañana.','En proceso',NULL,1,14),(15,'Soporte de red realizó revisión parcial del router.','En proceso',NULL,4,15),(16,'Puerta ajustada, requiere reemplazo de bisagra.','Resuelta','2025-10-30',5,16),(17,'Incidencia marcada como resuelta','Resuelta','2025-10-31',6,21),(18,'Incidencia marcada como resuelta','Resuelta','2025-10-31',2,22),(19,'Incidencia marcada como resuelta','Resuelta','2025-10-31',2,23),(20,'','En proceso',NULL,7,24),(21,'Incidencia marcada como resuelta','En proceso','2025-10-31',5,25),(22,NULL,'En proceso',NULL,2,26),(23,NULL,'En proceso',NULL,2,27),(24,NULL,'Abierta',NULL,7,28),(25,'','En proceso',NULL,17,33),(26,'','En proceso',NULL,5,32),(27,'','En proceso',NULL,7,31),(28,'','En proceso',NULL,6,30),(29,'','En proceso',NULL,7,29),(30,'','En proceso',NULL,5,20),(31,'','En proceso',NULL,6,19),(32,'','En proceso',NULL,7,18),(33,'','En proceso',NULL,1,17),(34,'','En proceso',NULL,5,34),(35,'Incidencia resuelta','Resuelta','2025-11-02',7,36),(36,'','En proceso',NULL,6,35),(37,'','Resuelta','2025-11-02',1,38);
+INSERT INTO `ASIGNAR_EMPLEADO_INCIDENCIA` VALUES (1,'Revisión inicial realizada','Resuelta','2024-11-21',1,1),(2,'Sistema actualizado correctamente','Resuelta','2024-11-23',1,2),(3,'Incidencia en proceso de resolución','En proceso',NULL,9,3),(4,'Equipo informático reparado','Resuelta','2024-11-27',11,4),(5,'Queja atendida y resuelta','Resuelta','2024-11-28',10,5),(6,'Medicamentos repuestos','Resuelta','2024-11-29',11,6);
 /*!40000 ALTER TABLE `ASIGNAR_EMPLEADO_INCIDENCIA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -75,7 +75,7 @@ CREATE TABLE `AUDITORIA` (
   KEY `idx_tipo_evento` (`tipo_evento`),
   CONSTRAINT `AUDITORIA_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `USUARIO` (`id_usuario`),
   CONSTRAINT `AUDITORIA_ibfk_2` FOREIGN KEY (`id_empleado`) REFERENCES `EMPLEADO` (`id_empleado`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -84,6 +84,7 @@ CREATE TABLE `AUDITORIA` (
 
 LOCK TABLES `AUDITORIA` WRITE;
 /*!40000 ALTER TABLE `AUDITORIA` DISABLE KEYS */;
+INSERT INTO `AUDITORIA` VALUES (1,15,NULL,'Registro','Pacientes','Creación','Nuevo paciente registrado: Juan Carlos Pérez Gómez','127.0.0.1','2024-02-01 10:30:00',NULL),(2,NULL,1,'Creación de Cita','Citas','Creación','Nueva cita creada para paciente ID 1','127.0.0.1','2024-11-10 14:45:00',NULL),(3,NULL,1,'Actualización','Citas','Actualización','Cita ID 1 marcada como completada','127.0.0.1','2024-11-16 09:30:00',NULL),(4,NULL,1,'Registro de Empleado','Empleados','Creación','Nuevo médico registrado: Dr. Carlos García','127.0.0.1','2024-01-15 08:00:00',NULL),(5,15,NULL,'Creación de Reserva','Reservas','Creación','Nueva reserva creada para cita médica','192.168.1.100','2024-11-10 14:30:00',NULL),(6,15,NULL,'Actualización de Perfil','Usuarios','Actualización','Usuario ID 15 actualizó su perfil','192.168.1.100','2024-11-15 16:20:00',NULL),(7,NULL,9,'Registro de Incidencia','Incidencias','Creación','Nueva incidencia registrada por recepcionista','127.0.0.1','2024-11-20 11:00:00',NULL),(8,NULL,5,'Programación de Operación','Operaciones','Creación','Nueva operación programada para el 02/12/2024','127.0.0.1','2024-11-25 15:30:00',NULL);
 /*!40000 ALTER TABLE `AUDITORIA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -115,6 +116,7 @@ CREATE TABLE `AUDITORIA_ARCHIVO` (
 
 LOCK TABLES `AUDITORIA_ARCHIVO` WRITE;
 /*!40000 ALTER TABLE `AUDITORIA_ARCHIVO` DISABLE KEYS */;
+INSERT INTO `AUDITORIA_ARCHIVO` VALUES (1,1,'registro_paciente_001.pdf','uploads/auditoria/registro_paciente_001.pdf','application/pdf',256789,'2024-02-01 10:35:00'),(2,6,'modificacion_perfil_015.log','uploads/auditoria/modificacion_perfil_015.log','text/plain',4567,'2024-11-15 16:25:00');
 /*!40000 ALTER TABLE `AUDITORIA_ARCHIVO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -136,7 +138,7 @@ CREATE TABLE `BLOQUEO_PROGRAMACION` (
   PRIMARY KEY (`id_bloqueo`),
   KEY `id_programacion` (`id_programacion`),
   CONSTRAINT `BLOQUEO_PROGRAMACION_ibfk_1` FOREIGN KEY (`id_programacion`) REFERENCES `PROGRAMACION` (`id_programacion`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -145,6 +147,7 @@ CREATE TABLE `BLOQUEO_PROGRAMACION` (
 
 LOCK TABLES `BLOQUEO_PROGRAMACION` WRITE;
 /*!40000 ALTER TABLE `BLOQUEO_PROGRAMACION` DISABLE KEYS */;
+INSERT INTO `BLOQUEO_PROGRAMACION` VALUES (1,'2024-12-20','08:00:00','12:00:00','Mantenimiento de consultorio','Activo',1),(2,'2024-12-24','08:00:00','18:00:00','Cierre por festividades','Activo',2),(3,'2024-12-25','08:00:00','18:00:00','Cierre por festividades','Activo',3);
 /*!40000 ALTER TABLE `BLOQUEO_PROGRAMACION` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -161,7 +164,7 @@ CREATE TABLE `CATEGORIA` (
   `descripcion` text,
   `estado` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`id_categoria`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -170,7 +173,7 @@ CREATE TABLE `CATEGORIA` (
 
 LOCK TABLES `CATEGORIA` WRITE;
 /*!40000 ALTER TABLE `CATEGORIA` DISABLE KEYS */;
-INSERT INTO `CATEGORIA` VALUES (1,'Citas','Reportes relacionados con citas y agendamiento médico','Activo'),(2,'Usuarios','Reportes de gestión y administración de usuarios del sistema','Activo'),(3,'Servicios','Reportes sobre servicios médicos ofrecidos por la clínica','Activo'),(4,'Recursos','Reportes de ocupación y disponibilidad de recursos físicos','Activo'),(5,'Pacientes','Reportes de datos demográficos y históricos de pacientes','Activo'),(6,'Personal','Reportes de empleados, horarios y especialidades','Activo'),(7,'Incidencias','Reportes de problemas, quejas y eventos reportados','Activo'),(8,'Auditoría','Reportes de actividades del sistema y logs de acceso','Activo');
+INSERT INTO `CATEGORIA` VALUES (1,'Consulta Médica','Consultas médicas generales y especializadas',NULL),(2,'Exámenes','Exámenes de laboratorio y diagnóstico',NULL),(3,'Cirugía','Procedimientos quirúrgicos',NULL),(4,'Emergencia','Atención de emergencias médicas',NULL),(5,'Vacunación','Servicios de vacunación',NULL),(6,'Terapia','Terapias y rehabilitación',NULL),(7,'Imagenología','Estudios de imagen (rayos X, ecografías, etc.)',NULL);
 /*!40000 ALTER TABLE `CATEGORIA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -193,7 +196,7 @@ CREATE TABLE `CITA` (
   PRIMARY KEY (`id_cita`),
   KEY `id_reserva` (`id_reserva`),
   CONSTRAINT `CITA_ibfk_1` FOREIGN KEY (`id_reserva`) REFERENCES `RESERVA` (`id_reserva`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -202,6 +205,7 @@ CREATE TABLE `CITA` (
 
 LOCK TABLES `CITA` WRITE;
 /*!40000 ALTER TABLE `CITA` DISABLE KEYS */;
+INSERT INTO `CITA` VALUES (1,'2024-11-15','09:00:00','09:30:00','Hipertensión arterial controlada','Control cardiológico rutinario','Completada',1),(2,'2024-11-20','10:30:00','11:00:00','Desarrollo normal para la edad','Consulta pediátrica de rutina','Completada',2),(3,'2024-12-01','15:00:00','15:30:00',NULL,'Consulta dermatológica programada','Pendiente',3),(4,'2024-12-05','08:30:00','09:00:00',NULL,'Revisión traumatológica','Confirmada',4),(5,'2024-12-10','16:00:00','16:30:00',NULL,'Control ginecológico prenatal','Pendiente',5),(6,'2024-12-15','09:30:00','10:00:00',NULL,'Examen de vista programado','Confirmada',6);
 /*!40000 ALTER TABLE `CITA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -275,6 +279,7 @@ CREATE TABLE `EMPLEADO` (
   `id_rol` int DEFAULT NULL,
   `id_distrito` int DEFAULT NULL,
   `id_especialidad` int DEFAULT NULL,
+  `fotoPerfil` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id_empleado`),
   UNIQUE KEY `documento_identidad` (`documento_identidad`),
   KEY `id_usuario` (`id_usuario`),
@@ -285,7 +290,7 @@ CREATE TABLE `EMPLEADO` (
   CONSTRAINT `EMPLEADO_ibfk_2` FOREIGN KEY (`id_rol`) REFERENCES `ROL` (`id_rol`),
   CONSTRAINT `EMPLEADO_ibfk_3` FOREIGN KEY (`id_distrito`) REFERENCES `DISTRITO` (`id_distrito`),
   CONSTRAINT `EMPLEADO_ibfk_4` FOREIGN KEY (`id_especialidad`) REFERENCES `ESPECIALIDAD` (`id_especialidad`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -294,7 +299,7 @@ CREATE TABLE `EMPLEADO` (
 
 LOCK TABLES `EMPLEADO` WRITE;
 /*!40000 ALTER TABLE `EMPLEADO` DISABLE KEYS */;
-INSERT INTO `EMPLEADO` VALUES (1,'Karelly','Garcia Inoñan',NULL,'72658837','Femenino','Activo',3,1,140312,1),(2,'Mauricio','Chero',NULL,'73109345','M','activo',1,2,140101,14),(3,'Jose','Fiestas',NULL,'78905642','Masculino','Activo',2,3,130504,2),(4,'María','Salazar Rivas',NULL,'75648921','Femenino','Activo',6,2,140105,4),(5,'Juan','Cáceres Torres',NULL,'74859632','M','activo',7,3,20903,4),(6,'Carlos','Pérez Mendoza',NULL,'72563148','Masculino','Activo',8,4,140201,1),(7,'Ana','Gómez Huamán',NULL,'73924856','Femenino','Activo',9,5,131101,2),(17,'Jasson','Puican (Administrador)',NULL,'72780865','Masculino','ACTIVO',21,1,140312,1),(18,'Manuel','Marrtt',NULL,'98442233','M','activo',27,2,150403,6),(19,'Kata','Moria',NULL,'99993392','Masculino','activo',28,2,150809,8),(20,'Carlos','Montoyo','2007-10-10','72838223','Masculino','activo',29,5,130704,NULL);
+INSERT INTO `EMPLEADO` VALUES (1,'Roberto','Mendoza Silva','1980-05-15','12345678','Masculino','Activo',1,1,140312,NULL,NULL),(2,'Carmen','Vega Torres','1982-08-20','87654321','Femenino','Activo',2,1,140312,NULL,NULL),(3,'Carlos','García Ramírez','1975-03-10','11111001','Masculino','Activo',3,2,140312,1,NULL),(4,'Pedro','Martínez Flores','1978-07-22','11111002','Masculino','Activo',4,2,140312,2,NULL),(5,'Isabel','López Morales','1980-11-05','11111003','Femenino','Activo',5,2,140312,3,NULL),(6,'Miguel','Rodríguez Castro','1977-09-18','11111004','Masculino','Activo',6,2,140312,4,NULL),(7,'Patricia','Fernández Ruiz','1982-04-30','11111005','Femenino','Activo',7,2,140312,5,NULL),(8,'Jorge','Sánchez Vega','1979-12-12','11111006','Masculino','Activo',8,2,140312,6,NULL),(9,'Laura','Campos Rios','1990-06-15','22222001','Femenino','Activo',9,3,140312,NULL,NULL),(10,'Andrea','Torres Muñoz','1992-03-20','22222002','Femenino','Activo',10,3,140312,NULL,NULL),(11,'Ricardo','Paredes León','1985-08-25','33333001','Masculino','Activo',11,4,140312,NULL,NULL),(12,'Mónica','Díaz Silva','1988-11-10','33333002','Femenino','Activo',12,4,140312,NULL,NULL),(13,'Fernando','Gutiérrez Pinto','1987-02-14','44444001','Masculino','Activo',13,5,140312,NULL,NULL),(14,'Gabriela','Rojas Mendoza','1989-05-28','44444002','Femenino','Activo',14,5,140312,NULL,NULL);
 /*!40000 ALTER TABLE `EMPLEADO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -311,7 +316,7 @@ CREATE TABLE `ESPECIALIDAD` (
   `estado` varchar(20) DEFAULT NULL,
   `descripcion` text,
   PRIMARY KEY (`id_especialidad`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -320,7 +325,7 @@ CREATE TABLE `ESPECIALIDAD` (
 
 LOCK TABLES `ESPECIALIDAD` WRITE;
 /*!40000 ALTER TABLE `ESPECIALIDAD` DISABLE KEYS */;
-INSERT INTO `ESPECIALIDAD` VALUES (1,'Medicina General','Activo','Atención médica básica y orientación general para el paciente.'),(2,'Pediatría','Activo','Especialidad dedicada al cuidado y tratamiento de niños y adolescentes.'),(3,'Ginecología','Activo','Atiende la salud del sistema reproductor femenino y control prenatal.'),(4,'Cardiología','Activo','Diagnóstico y tratamiento de enfermedades del corazón y sistema circulatorio.'),(5,'Dermatología','Activo','Tratamiento de enfermedades de la piel, cabello y uñas.'),(6,'Oftalmología','Activo','Estudia y trata los trastornos de la vista y enfermedades oculares.'),(7,'Odontología','Activo','Prevención y tratamiento de enfermedades bucodentales.'),(8,'Neurología','Activo','Diagnóstico y tratamiento de trastornos del sistema nervioso.'),(9,'Traumatología','Activo','Atiende lesiones del sistema músculo-esquelético.'),(10,'Psiquiatría','Activo','Diagnóstico y tratamiento de trastornos mentales y emocionales.'),(11,'Endocrinología','Activo','Diagnóstico y tratamiento de enfermedades hormonales y del metabolismo, como diabetes, tiroides y obesidad.'),(12,'Gastroenterología','Activo','Atiende trastornos del sistema digestivo: estómago, intestinos, hígado, páncreas y vesícula biliar.'),(13,'Otorrinolaringología','Activo','Diagnóstico y tratamiento de enfermedades del oído, nariz, garganta y vías respiratorias superiores.'),(14,'Urología','Activo','Especialidad enfocada en el tratamiento médico y quirúrgico del sistema urinario y aparato reproductor masculino.'),(15,'Cirugía Plástica','Activo','Realiza procedimientos reconstructivos, estéticos y reparadores del cuerpo y rostro.'),(16,'Neurocirugía','Activo','Cirugía del cerebro, médula espinal y sistema nervioso periférico.'),(17,'Cirugía General','Activo','Especialidad quirúrgica que aborda patologías del abdomen, piel, tejidos blandos y órganos internos.');
+INSERT INTO `ESPECIALIDAD` VALUES (1,'Cardiología','Activo','Especialidad médica que se ocupa del corazón y sistema circulatorio'),(2,'Pediatría','Activo','Especialidad médica que se ocupa de la salud de niños y adolescentes'),(3,'Dermatología','Activo','Especialidad médica que se ocupa de la piel, cabello y uñas'),(4,'Traumatología','Activo','Especialidad médica que trata lesiones del sistema músculo-esquelético'),(5,'Ginecología','Activo','Especialidad médica que se ocupa del sistema reproductor femenino'),(6,'Oftalmología','Activo','Especialidad médica que se ocupa de los ojos y la visión'),(7,'Neurología','Activo','Especialidad médica que se ocupa del sistema nervioso'),(8,'Psiquiatría','Activo','Especialidad médica que se ocupa de la salud mental'),(9,'Medicina General','Activo','Atención médica general y preventiva'),(10,'Odontología','Activo','Especialidad que se ocupa de la salud bucal');
 /*!40000 ALTER TABLE `ESPECIALIDAD` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -344,7 +349,7 @@ CREATE TABLE `EXAMEN` (
   KEY `id_reservaServicio` (`id_reservaServicio`),
   CONSTRAINT `EXAMEN_ibfk_1` FOREIGN KEY (`id_reserva`) REFERENCES `RESERVA` (`id_reserva`),
   CONSTRAINT `EXAMEN_ibfk_2` FOREIGN KEY (`id_reservaServicio`) REFERENCES `RESERVA` (`id_reserva`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -353,6 +358,7 @@ CREATE TABLE `EXAMEN` (
 
 LOCK TABLES `EXAMEN` WRITE;
 /*!40000 ALTER TABLE `EXAMEN` DISABLE KEYS */;
+INSERT INTO `EXAMEN` VALUES (1,'2024-11-16','08:00:00','Hemograma completo - Valores normales','Realizado',1,NULL),(2,'2024-11-16','08:30:00','Perfil lipídico - Colesterol ligeramente elevado','Realizado',1,NULL),(3,'2024-11-21','09:00:00','Radiografía de tórax - Sin alteraciones','Realizado',2,NULL),(4,'2024-12-16','10:00:00','Examen de agudeza visual programado','Pendiente',6,NULL);
 /*!40000 ALTER TABLE `EXAMEN` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -374,7 +380,7 @@ CREATE TABLE `HORARIO` (
   PRIMARY KEY (`id_horario`),
   KEY `id_empleado` (`id_empleado`),
   CONSTRAINT `HORARIO_ibfk_1` FOREIGN KEY (`id_empleado`) REFERENCES `EMPLEADO` (`id_empleado`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -383,7 +389,7 @@ CREATE TABLE `HORARIO` (
 
 LOCK TABLES `HORARIO` WRITE;
 /*!40000 ALTER TABLE `HORARIO` DISABLE KEYS */;
-INSERT INTO `HORARIO` VALUES (1,1,'2025-10-27','08:00:00','16:00:00','Disponible','Activo'),(2,1,'2025-10-28','08:00:00','16:00:00','Disponible','Activo'),(3,2,'2025-10-27','09:00:00','13:00:00','Disponible','Activo'),(4,2,'2025-10-29','14:00:00','18:00:00','Disponible','Activo'),(5,2,'2025-10-30','09:00:00','13:00:00','Disponible','Activo'),(6,3,'2025-10-27','07:00:00','15:00:00','Disponible','Activo'),(7,3,'2025-10-28','07:00:00','15:00:00','Disponible','Activo'),(8,3,'2025-10-29','07:00:00','15:00:00','Disponible','Activo'),(9,4,'2025-10-27','10:00:00','14:00:00','Disponible','Activo'),(10,4,'2025-10-28','10:00:00','14:00:00','Disponible','Activo'),(11,4,'2025-10-29','15:00:00','19:00:00','Disponible','Activo'),(12,5,'2025-10-27','13:00:00','21:00:00','Disponible','inactivo'),(13,5,'2025-10-28','13:00:00','21:00:00','Disponible','Activo'),(14,5,'2025-10-29','13:00:00','21:00:00','Disponible','Activo'),(15,6,'2025-10-27','08:00:00','14:00:00','Disponible','Activo'),(16,6,'2025-10-28','14:00:00','20:00:00','Disponible','Activo'),(17,6,'2025-10-29','08:00:00','14:00:00','Disponible','Activo'),(18,7,'2025-10-27','07:30:00','12:30:00','Disponible','Activo'),(19,7,'2025-10-28','07:30:00','12:30:00','Disponible','Activo'),(20,7,'2025-10-29','07:30:00','12:30:00','Disponible','Activo');
+INSERT INTO `HORARIO` VALUES (1,3,'2024-12-02','08:00:00','12:00:00','Disponible','Activo'),(2,3,'2024-12-03','08:00:00','12:00:00','Disponible','Activo'),(3,3,'2024-12-04','14:00:00','18:00:00','Disponible','Activo'),(4,4,'2024-12-02','09:00:00','13:00:00','Disponible','Activo'),(5,4,'2024-12-03','14:00:00','18:00:00','Disponible','Activo'),(6,4,'2024-12-05','09:00:00','13:00:00','Disponible','Activo'),(7,5,'2024-12-02','07:00:00','15:00:00','Disponible','Activo'),(8,5,'2024-12-03','07:00:00','15:00:00','Disponible','Activo'),(9,5,'2024-12-04','07:00:00','15:00:00','Disponible','Activo'),(10,6,'2024-12-02','10:00:00','14:00:00','Disponible','Activo'),(11,6,'2024-12-03','10:00:00','14:00:00','Disponible','Activo'),(12,6,'2024-12-04','15:00:00','19:00:00','Disponible','Activo'),(13,7,'2024-12-02','13:00:00','21:00:00','Disponible','Activo'),(14,7,'2024-12-03','13:00:00','21:00:00','Disponible','Activo'),(15,7,'2024-12-04','13:00:00','21:00:00','Disponible','Activo'),(16,8,'2024-12-02','08:00:00','14:00:00','Disponible','Activo'),(17,8,'2024-12-03','14:00:00','20:00:00','Disponible','Activo'),(18,8,'2024-12-04','08:00:00','14:00:00','Disponible','Activo');
 /*!40000 ALTER TABLE `HORARIO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -404,7 +410,7 @@ CREATE TABLE `INCIDENCIA` (
   PRIMARY KEY (`id_incidencia`),
   KEY `id_paciente` (`id_paciente`),
   CONSTRAINT `INCIDENCIA_ibfk_1` FOREIGN KEY (`id_paciente`) REFERENCES `PACIENTE` (`id_paciente`)
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -413,7 +419,7 @@ CREATE TABLE `INCIDENCIA` (
 
 LOCK TABLES `INCIDENCIA` WRITE;
 /*!40000 ALTER TABLE `INCIDENCIA` DISABLE KEYS */;
-INSERT INTO `INCIDENCIA` VALUES (9,'Aire acondicionado del consultorio 3 no funciona','2025-10-25',1,NULL,NULL),(10,'Fuga de agua en el baño del área de pediatría','2025-10-26',2,NULL,NULL),(11,'Computadora de recepción presenta fallas al encender','2025-10-26',4,NULL,NULL),(12,'Falta de insumos en el área de esterilización','2025-10-27',5,NULL,NULL),(13,'Ascensor principal fuera de servicio','2025-10-27',6,NULL,NULL),(14,'Luz intermitente en el pasillo de emergencias','2025-10-28',3,NULL,NULL),(15,'Problemas con la conexión de red en laboratorio','2025-10-28',7,NULL,NULL),(16,'Puerta del almacén no cierra correctamente','2025-10-29',8,NULL,NULL),(17,'No me atendieron correctamente','2025-10-31',8,'Infraestructura','Media'),(18,'cc','2025-10-31',13,'Insumos','Media'),(19,'vvvv','2025-10-31',1,'Insumos','Media'),(20,'h','2025-10-31',8,'Insumos','Media'),(21,'7','2025-10-31',2,'Insumos',NULL),(22,'..','2025-10-31',8,'Otro',NULL),(23,'JO','2025-10-31',8,'Insumos',NULL),(24,'LO','2025-10-31',8,'Equipamiento Médico','Alta'),(25,'}','2025-10-31',8,'Software','Media'),(26,'k','2025-10-31',1,'Hardware','Alta'),(27,'ss','2025-10-31',9,'Hardware','Media'),(28,'sss','2025-10-31',8,'Equipamiento Médico','Alta'),(29,'Prueba1','2025-11-01',NULL,'Infraestructura','Media'),(30,'Prueba1','2025-11-01',NULL,'Infraestructura','Media'),(31,'Prueba2','2025-11-01',NULL,'Software','Media'),(32,'prueba 3','2025-11-01',NULL,'Infraestructura','Media'),(33,'Prueba 4','2025-11-01',6,'Equipamiento Médico','Media'),(34,'prueba 3','2025-11-02',3,'Infraestructura','Media'),(35,'jjj','2025-11-02',4,'Insumos','Baja'),(36,'jjj','2025-11-02',4,'Insumos','Baja'),(37,'yty','2025-11-02',6,'Infraestructura','Baja'),(38,'Cambio de Descripcion','2025-11-02',6,'Infraestructura','Media');
+INSERT INTO `INCIDENCIA` VALUES (1,'Aire acondicionado del consultorio 101 no funciona correctamente','2024-11-20',1,'Infraestructura','Media'),(2,'Sistema de citas presenta errores al guardar datos','2024-11-22',NULL,'Software','Alta'),(3,'Falta de camillas en sala de emergencias','2024-11-25',3,'Equipamiento Médico','Alta'),(4,'Computadora de recepción muy lenta','2024-11-26',NULL,'Hardware','Media'),(5,'Paciente reporta demora excesiva en atención','2024-11-27',4,'Otro','Baja'),(6,'Falta de medicamentos en farmacia','2024-11-28',NULL,'Insumos','Alta');
 /*!40000 ALTER TABLE `INCIDENCIA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -438,7 +444,7 @@ CREATE TABLE `NOTIFICACION` (
   KEY `id_reserva` (`id_reserva`),
   CONSTRAINT `NOTIFICACION_ibfk_1` FOREIGN KEY (`id_paciente`) REFERENCES `PACIENTE` (`id_paciente`),
   CONSTRAINT `NOTIFICACION_ibfk_2` FOREIGN KEY (`id_reserva`) REFERENCES `RESERVA` (`id_reserva`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -447,6 +453,7 @@ CREATE TABLE `NOTIFICACION` (
 
 LOCK TABLES `NOTIFICACION` WRITE;
 /*!40000 ALTER TABLE `NOTIFICACION` DISABLE KEYS */;
+INSERT INTO `NOTIFICACION` VALUES (1,'Recordatorio de Cita','Tiene una cita mañana a las 09:00 AM con Dr. García','Recordatorio','2024-11-14','18:00:00',1,1),(2,'Cita Confirmada','Su cita ha sido confirmada para el 20/11/2024 a las 10:30 AM','Confirmación','2024-11-15','10:00:00',2,2),(3,'Recordatorio de Cita','Recordatorio: Consulta dermatológica el 01/12/2024','Recordatorio','2024-11-30','16:00:00',3,3),(4,'Cita Confirmada','Cita confirmada para el 05/12/2024 con Dr. Rodríguez','Confirmación','2024-11-28','14:30:00',4,4),(5,'Recordatorio de Cita','Recordatorio: Examen de vista programado para mañana','Recordatorio','2024-12-14','17:00:00',6,6);
 /*!40000 ALTER TABLE `NOTIFICACION` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -473,7 +480,7 @@ CREATE TABLE `OPERACION` (
   CONSTRAINT `OPERACION_ibfk_1` FOREIGN KEY (`id_reserva`) REFERENCES `RESERVA` (`id_reserva`),
   CONSTRAINT `OPERACION_ibfk_2` FOREIGN KEY (`id_empleado`) REFERENCES `EMPLEADO` (`id_empleado`),
   CONSTRAINT `OPERACION_ibfk_3` FOREIGN KEY (`id_cita`) REFERENCES `CITA` (`id_cita`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -482,6 +489,7 @@ CREATE TABLE `OPERACION` (
 
 LOCK TABLES `OPERACION` WRITE;
 /*!40000 ALTER TABLE `OPERACION` DISABLE KEYS */;
+INSERT INTO `OPERACION` VALUES (1,'2024-12-02','14:00:00','15:00:00','Cirugía menor dermatológica - Extirpación de lesión cutánea',3,5,3);
 /*!40000 ALTER TABLE `OPERACION` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -501,7 +509,7 @@ CREATE TABLE `OPERACION_RECURSO` (
   KEY `id_recurso` (`id_recurso`),
   CONSTRAINT `OPERACION_RECURSO_ibfk_1` FOREIGN KEY (`id_operacion`) REFERENCES `OPERACION` (`id_operacion`),
   CONSTRAINT `OPERACION_RECURSO_ibfk_2` FOREIGN KEY (`id_recurso`) REFERENCES `RECURSO` (`id_recurso`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -510,6 +518,7 @@ CREATE TABLE `OPERACION_RECURSO` (
 
 LOCK TABLES `OPERACION_RECURSO` WRITE;
 /*!40000 ALTER TABLE `OPERACION_RECURSO` DISABLE KEYS */;
+INSERT INTO `OPERACION_RECURSO` VALUES (1,1,7),(2,1,10);
 /*!40000 ALTER TABLE `OPERACION_RECURSO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -535,7 +544,7 @@ CREATE TABLE `PACIENTE` (
   KEY `id_distrito` (`id_distrito`),
   CONSTRAINT `PACIENTE_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `USUARIO` (`id_usuario`),
   CONSTRAINT `PACIENTE_ibfk_2` FOREIGN KEY (`id_distrito`) REFERENCES `DISTRITO` (`id_distrito`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -544,7 +553,7 @@ CREATE TABLE `PACIENTE` (
 
 LOCK TABLES `PACIENTE` WRITE;
 /*!40000 ALTER TABLE `PACIENTE` DISABLE KEYS */;
-INSERT INTO `PACIENTE` VALUES (1,'Dana','Garcia','99999999','Femenino','2007-11-02',4,140312),(2,'Paciente','1','14785569',NULL,'2025-09-17',5,140301),(3,'Lucía','Rojas Pérez','74569812','Femenino','1992-04-15',10,140105),(4,'Fernando','López Ramírez','73214567','Masculino','1988-09-22',11,140312),(5,'Karina','Mendoza Torres','75623145','Femenino','1995-11-10',12,140201),(6,'David','Silva Gutiérrez','74891236','Masculino','1990-07-05',13,140101),(7,'Rocío','Torres Campos','76253418','Femenino','1985-01-25',14,130504),(8,'Andrés','Pacheco Ruiz','75361248','Masculino','1998-03-19',15,131101),(9,'María','García León','76984512','Femenino','2000-06-30',16,20903),(10,'Luis','Vargas Moreno','74123689','Masculino','1993-08-14',17,140105),(13,'juan','diez','12236533','Masculino','2004-05-27',22,150201),(14,'Matias','Puican','15687792',NULL,'2025-10-07',23,60101),(15,'Marle','Marzo','94893939','F','2002-10-15',24,101004),(16,'Ñatra','Dertor','93333333','M','2002-11-14',25,160507),(17,'Mancos','Pao','93333332','Masculino','2025-11-17',26,50104);
+INSERT INTO `PACIENTE` VALUES (1,'Juan Carlos','Pérez Gómez','55551001','Masculino','1985-03-15',15,140312),(2,'María Elena','García Ruiz','55551002','Femenino','1990-07-22',16,140312),(3,'Carlos Alberto','López Vega','55551003','Masculino','1978-11-08',17,140312),(4,'Ana Sofía','Martínez Torres','55551004','Femenino','1995-02-14',18,140312),(5,'Luis Miguel','Rodríguez Paredes','55551005','Masculino','1982-09-30',19,140312),(6,'Sofía Valentina','Sánchez Díaz','55551006','Femenino','1993-06-18',20,140312),(7,'Diego Alejandro','Torres Ríos','55551007','Masculino','1988-12-05',21,140312),(8,'Paula Andrea','Díaz Morales','55551008','Femenino','1991-04-27',22,140312),(9,'Jose','Fiestas','78685454',NULL,'2003-02-18',23,150101),(10,'Jasson','Puican Saldaña','72780865',NULL,'2005-07-27',24,140101),(11,'Mauricio Antonio','Chero Gonzales','73109345',NULL,'2004-10-11',26,140101);
 /*!40000 ALTER TABLE `PACIENTE` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -568,7 +577,7 @@ CREATE TABLE `PROGRAMACION` (
   KEY `id_horario` (`id_horario`),
   CONSTRAINT `PROGRAMACION_ibfk_1` FOREIGN KEY (`id_servicio`) REFERENCES `SERVICIO` (`id_servicio`),
   CONSTRAINT `PROGRAMACION_ibfk_2` FOREIGN KEY (`id_horario`) REFERENCES `HORARIO` (`id_horario`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -577,6 +586,7 @@ CREATE TABLE `PROGRAMACION` (
 
 LOCK TABLES `PROGRAMACION` WRITE;
 /*!40000 ALTER TABLE `PROGRAMACION` DISABLE KEYS */;
+INSERT INTO `PROGRAMACION` VALUES (1,'2024-12-02','08:00:00','08:30:00','Activo',NULL,1),(2,'2024-12-02','08:30:00','09:00:00','Activo',NULL,1),(3,'2024-12-02','09:00:00','09:30:00','Activo',NULL,2),(4,'2024-12-02','09:30:00','10:00:00','Activo',NULL,2),(5,'2024-12-03','08:00:00','08:30:00','Activo',NULL,3),(6,'2024-12-03','14:00:00','14:30:00','Activo',NULL,4),(7,'2024-12-04','07:00:00','07:30:00','Activo',NULL,7),(8,'2024-12-04','15:00:00','15:30:00','Activo',NULL,12),(9,'2024-12-05','09:00:00','09:30:00','Activo',NULL,6);
 /*!40000 ALTER TABLE `PROGRAMACION` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -623,7 +633,7 @@ CREATE TABLE `RECUPERACION_CONTRASENA` (
   PRIMARY KEY (`id_recuperacion`),
   KEY `id_usuario` (`id_usuario`),
   CONSTRAINT `RECUPERACION_CONTRASENA_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `USUARIO` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -632,7 +642,7 @@ CREATE TABLE `RECUPERACION_CONTRASENA` (
 
 LOCK TABLES `RECUPERACION_CONTRASENA` WRITE;
 /*!40000 ALTER TABLE `RECUPERACION_CONTRASENA` DISABLE KEYS */;
-INSERT INTO `RECUPERACION_CONTRASENA` VALUES (3,5,'422339','2025-10-28 22:44:01',0),(6,23,'311891','2025-10-31 07:03:27',0);
+INSERT INTO `RECUPERACION_CONTRASENA` VALUES (1,17,'123456','2024-11-15 10:30:00',1),(2,18,'789012','2024-11-20 14:20:00',0);
 /*!40000 ALTER TABLE `RECUPERACION_CONTRASENA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -651,7 +661,7 @@ CREATE TABLE `RECURSO` (
   PRIMARY KEY (`id_recurso`),
   KEY `id_tipo_recurso` (`id_tipo_recurso`),
   CONSTRAINT `RECURSO_ibfk_1` FOREIGN KEY (`id_tipo_recurso`) REFERENCES `TIPO_RECURSO` (`id_tipo_recurso`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -660,7 +670,7 @@ CREATE TABLE `RECURSO` (
 
 LOCK TABLES `RECURSO` WRITE;
 /*!40000 ALTER TABLE `RECURSO` DISABLE KEYS */;
-INSERT INTO `RECURSO` VALUES (1,'Ecógrafo 4D/5D','Activo',1),(2,'Máquina de Rayos X','Activo',1),(3,'Tomógrafo Computarizado','Activo',1),(4,'Electrocardiógrafo','Activo',1),(5,'Monitor Multiparámetro','Activo',1),(6,'Guantes Estériles','Activo',2),(7,'Jeringas Desechables','Activo',2),(8,'Gasas y Vendas','Activo',2),(9,'Mascarillas Quirúrgicas','Activo',2),(10,'Batas Médicas','Activo',2),(11,'Sala de Cirugía Principal','Activo',3),(12,'Sala de Recuperación','Activo',3),(13,'Consultorio Médico General','Activo',3),(14,'Laboratorio Clínico','Activo',3),(15,'Central de Esterilización','Activo',3),(16,'Área de Imagenología','Activo',3),(17,'Sala de Espera de Pacientes','Activo',3),(18,'Área de Toma de Muestras','Activo',3);
+INSERT INTO `RECURSO` VALUES (1,'Consultorio 101','disponible',1),(2,'Consultorio 102','disponible',1),(3,'Consultorio 103','disponible',1),(4,'Consultorio 104','disponible',1),(5,'Consultorio 105','disponible',1),(6,'Consultorio 106','disponible',1),(7,'Quirófano 1','disponible',2),(8,'Quirófano 2','disponible',2),(9,'Emergencia 1','disponible',3),(10,'Lab Principal','disponible',4),(11,'Rayos X 1','disponible',5),(12,'Ecografía 1','disponible',5);
 /*!40000 ALTER TABLE `RECURSO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -683,7 +693,7 @@ CREATE TABLE `RECURSO_ARCHIVO` (
   KEY `idx_recurso` (`id_recurso`),
   KEY `idx_fecha` (`fecha_subida`),
   CONSTRAINT `RECURSO_ARCHIVO_ibfk_1` FOREIGN KEY (`id_recurso`) REFERENCES `RECURSO` (`id_recurso`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -692,6 +702,7 @@ CREATE TABLE `RECURSO_ARCHIVO` (
 
 LOCK TABLES `RECURSO_ARCHIVO` WRITE;
 /*!40000 ALTER TABLE `RECURSO_ARCHIVO` DISABLE KEYS */;
+INSERT INTO `RECURSO_ARCHIVO` VALUES (1,1,'plano_consultorio_101.pdf','uploads/recursos/plano_consultorio_101.pdf','application/pdf',512000,'2024-01-10 09:00:00'),(2,7,'inventario_quirofano_1.xlsx','uploads/recursos/inventario_quirofano_1.xlsx','application/vnd.ms-excel',128456,'2024-01-15 10:30:00');
 /*!40000 ALTER TABLE `RECURSO_ARCHIVO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -724,7 +735,7 @@ CREATE TABLE `REPORTE` (
   CONSTRAINT `REPORTE_ibfk_2` FOREIGN KEY (`id_empleado`) REFERENCES `EMPLEADO` (`id_empleado`),
   CONSTRAINT `REPORTE_ibfk_3` FOREIGN KEY (`id_servicio`) REFERENCES `SERVICIO` (`id_servicio`),
   CONSTRAINT `REPORTE_ibfk_4` FOREIGN KEY (`id_recurso`) REFERENCES `RECURSO` (`id_recurso`)
-) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -733,7 +744,7 @@ CREATE TABLE `REPORTE` (
 
 LOCK TABLES `REPORTE` WRITE;
 /*!40000 ALTER TABLE `REPORTE` DISABLE KEYS */;
-INSERT INTO `REPORTE` VALUES (31,'REP-20251031105500-1787','dd','Auditoría','dd',NULL,'Pendiente','2025-10-31 10:55:01',8,2,NULL,NULL),(32,'REP-20251102-0001','Reporte de Prueba 1','Mensual','Este es un reporte de prueba para validar la funcionalidad del sistema',NULL,'Completado','2025-11-02 01:16:18',1,2,NULL,NULL),(33,'REP-20251102-0002','Reporte de Incidencias','Semanal','Reporte semanal de incidencias registradas en el sistema',NULL,'Completado','2025-11-02 01:16:18',1,2,NULL,NULL),(34,'REP-20251102-0003','Reporte de Recursos','Mensual','Estado actual de los recursos físicos de la clínica',NULL,'Completado','2025-11-02 01:16:18',1,2,NULL,NULL),(35,'REP-20251102-0004','Reporte de Servicios','Trimestral','Análisis de los servicios prestados durante el trimestre',NULL,'Pendiente','2025-11-02 01:16:18',1,2,NULL,NULL),(36,'REP-20251102-0005','Reporte de Auditoría','Anual','Auditoría anual de procesos y procedimientos',NULL,'En Proceso','2025-11-02 01:16:18',1,2,NULL,NULL),(37,'REP-20251102-0001','Reporte de Prueba 1','Mensual','Este es un reporte de prueba para validar la funcionalidad del sistema',NULL,'Completado','2025-11-02 01:16:37',1,2,NULL,NULL),(38,'REP-20251102-0002','Reporte de Incidencias','Semanal','Reporte semanal de incidencias registradas en el sistema',NULL,'Completado','2025-11-02 01:16:37',1,2,NULL,NULL),(39,'REP-20251102-0003','Reporte de Recursos','Mensual','Estado actual de los recursos físicos de la clínica',NULL,'Completado','2025-11-02 01:16:37',1,2,NULL,NULL),(40,'REP-20251102-0004','Reporte de Servicios','Trimestral','Análisis de los servicios prestados durante el trimestre',NULL,'Pendiente','2025-11-02 01:16:37',1,2,NULL,NULL),(41,'REP-20251102-0005','Reporte de Auditoría','Anual','Auditoría anual de procesos y procedimientos',NULL,'En Proceso','2025-11-02 01:16:37',1,2,NULL,NULL);
+INSERT INTO `REPORTE` VALUES (1,'REP-20241201-001','Reporte Mensual de Citas - Noviembre 2024','Mensual','Resumen de citas atendidas en noviembre',NULL,'Completado','2024-12-01 08:00:00',1,1,NULL,NULL),(2,'REP-20241201-002','Reporte de Incidencias - Noviembre 2024','Mensual','Resumen de incidencias reportadas',NULL,'Completado','2024-12-01 09:00:00',7,1,NULL,NULL),(3,'REP-20241201-003','Reporte de Ocupación de Recursos','Mensual','Uso de consultorios y salas en noviembre',NULL,'Completado','2024-12-01 10:00:00',4,2,NULL,1),(4,'REP-20241202-001','Reporte de Atenciones por Especialidad','Mensual','Análisis de consultas por especialidad',NULL,'Completado','2024-12-02 08:30:00',6,1,NULL,NULL);
 /*!40000 ALTER TABLE `REPORTE` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -756,7 +767,7 @@ CREATE TABLE `REPORTE_ARCHIVO` (
   KEY `idx_id_reporte` (`id_reporte`),
   KEY `idx_fecha_subida` (`fecha_subida`),
   CONSTRAINT `fk_reporte_archivo` FOREIGN KEY (`id_reporte`) REFERENCES `REPORTE` (`id_reporte`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -765,7 +776,7 @@ CREATE TABLE `REPORTE_ARCHIVO` (
 
 LOCK TABLES `REPORTE_ARCHIVO` WRITE;
 /*!40000 ALTER TABLE `REPORTE_ARCHIVO` DISABLE KEYS */;
-INSERT INTO `REPORTE_ARCHIVO` VALUES (9,31,'Herramientas_de_Red_-_CLI_GUI.pdf','uploads/reportes\\20251031105501_Herramientas_de_Red_-_CLI_GUI.pdf','application/pdf',954929,'2025-10-31 15:55:01');
+INSERT INTO `REPORTE_ARCHIVO` VALUES (1,1,'reporte_citas_nov_2024.pdf','uploads/reportes/reporte_citas_nov_2024.pdf','application/pdf',1024567,'2024-12-01 08:05:00'),(2,2,'incidencias_nov_2024.xlsx','uploads/reportes/incidencias_nov_2024.xlsx','application/vnd.ms-excel',512345,'2024-12-01 09:05:00');
 /*!40000 ALTER TABLE `REPORTE_ARCHIVO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -790,7 +801,7 @@ CREATE TABLE `RESERVA` (
   KEY `id_programacion` (`id_programacion`),
   CONSTRAINT `RESERVA_ibfk_1` FOREIGN KEY (`id_paciente`) REFERENCES `PACIENTE` (`id_paciente`),
   CONSTRAINT `RESERVA_ibfk_2` FOREIGN KEY (`id_programacion`) REFERENCES `PROGRAMACION` (`id_programacion`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -799,6 +810,7 @@ CREATE TABLE `RESERVA` (
 
 LOCK TABLES `RESERVA` WRITE;
 /*!40000 ALTER TABLE `RESERVA` DISABLE KEYS */;
+INSERT INTO `RESERVA` VALUES (1,'2024-11-10','14:30:00',2,'Confirmada',NULL,1,1),(2,'2024-11-18','16:45:00',1,'Confirmada',NULL,2,2),(3,'2024-11-25','10:20:00',1,'Pendiente',NULL,3,7),(4,'2024-11-28','11:15:00',2,'Confirmada',NULL,4,8),(5,'2024-12-01','09:30:00',2,'Pendiente',NULL,5,5),(6,'2024-12-10','15:00:00',1,'Confirmada',NULL,6,3);
 /*!40000 ALTER TABLE `RESERVA` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -871,7 +883,7 @@ CREATE TABLE `TIPO_RECURSO` (
   `nombre` varchar(50) DEFAULT NULL,
   `descripcion` text,
   PRIMARY KEY (`id_tipo_recurso`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -880,7 +892,7 @@ CREATE TABLE `TIPO_RECURSO` (
 
 LOCK TABLES `TIPO_RECURSO` WRITE;
 /*!40000 ALTER TABLE `TIPO_RECURSO` DISABLE KEYS */;
-INSERT INTO `TIPO_RECURSO` VALUES (1,'Equipamiento Médico','Dispositivos, máquinas y equipos utilizados para diagnóstico, tratamiento y monitoreo de pacientes.'),(2,'Material Médico','Insumos y materiales descartables necesarios para la atención médica y quirúrgica.'),(3,'Infraestructura','Ambientes físicos, áreas clínicas y espacios de apoyo en la clínica.');
+INSERT INTO `TIPO_RECURSO` VALUES (1,'Consultorio Médico','Sala para consultas médicas'),(2,'Sala de Operaciones','Quirófano para cirugías'),(3,'Sala de Emergencias','Área de atención de emergencias'),(4,'Laboratorio','Sala de análisis clínicos'),(5,'Sala de Radiología','Área de estudios radiológicos'),(6,'Farmacia','Área de dispensación de medicamentos'),(7,'Sala de Espera','Área de espera para pacientes');
 /*!40000 ALTER TABLE `TIPO_RECURSO` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -924,7 +936,7 @@ CREATE TABLE `USUARIO` (
   `estado` varchar(20) DEFAULT NULL,
   `fecha_creacion` date DEFAULT NULL,
   PRIMARY KEY (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -933,7 +945,7 @@ CREATE TABLE `USUARIO` (
 
 LOCK TABLES `USUARIO` WRITE;
 /*!40000 ALTER TABLE `USUARIO` DISABLE KEYS */;
-INSERT INTO `USUARIO` VALUES (1,'mauriciochero7@hotmail.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','957984611','activo','2025-10-27'),(2,'jose@gmail.com','scrypt:32768:8:1$PYTSjKkQcuC3ZVF1$66ead60596ccb82aa11fd1040cf817f951c3f507f9cf2e1b3e8933205c09961193fc6bc0547e5c704a5a2dda4cda3943ee4fb362e6aa219b35cdf66ff96c58de','986645443','activo','2025-10-27'),(3,'kare@gmail.com','scrypt:32768:8:1$ukgyQX7k4BmnQkCe$4c89f417f48e3d1a9d853978eb4470ca4173381a4e85c9aedcc0bb59d880f67443b45ce6c7783e6e1638b741f74da5aad733be74fdf3d89d8d416c44c8be3c5b','930472644','activo','2025-10-28'),(4,'dana@gmail.com','scrypt:32768:8:1$QZf9w3fdLaeZk2dk$dde0b5ef33bbf081894b38b26feac14604aa227f4283fa64c27c6ec7d11684269e6f43479d4cfc95fe9f8ee8ca44691a9b1f4a996dff5edf13bcbe5dcef6d935','998989898','Activo','2025-10-28'),(5,'karecuenta01@gmail.com','scrypt:32768:8:1$3HsbgIOYkuGQvF6U$220998da16106a61ef4a8261d56b329ceb9c2e549d821e43213a57ae6a92aacb526349bac2862c06a7bdf35752df2ddce3f94e05818168c965a53536636b9b7a','151651651','inactivo','2025-10-28'),(6,'maria.medico@clinicaunion.com','scrypt:32768:8:1$2IwlsUBP8IGkEaNX$e9d9226a9beeac22bd830d3bb3b00286c7bb03e40199d1fa2edfbfac0983874fc66ebc1aac9cf4c942ea82056ed9f1177dd767f3a99b4b622bf798f5fc4baffe','987654321','activo','2025-10-28'),(7,'juan.recepcionista@clinicaunion.com','scrypt:32768:8:1$INM5hFZBUZRo6VKg$a4b2c951dec80dd50cf71368a07e1fa2158bf241c6b945fafaeb5d544e8a96b8a3ae2bc0b3b6b5c8aa0178a34faed8f64f28c6463a230c38768286537863b27c','976543210','activo','2025-10-28'),(8,'carlos.farmaceutico@clinicaunion.com','scrypt:32768:8:1$G5EBZ7dgM8hIG5be$2202f5464a031fb2f5f8fbad9d9e76626320c66b251e149252979d757ed09709ea364b061af63e4538e574877fe204708c204bc0b1b81e528cdbf18690a0bd60','965432109','activo','2025-10-28'),(9,'ana.laboratorista@clinicaunion.com','scrypt:32768:8:1$2UxrVNTlbbiNUCT4$5e6c95337065d763b7e5e6f39438750e64d4a497d4c5c09cafde4d855040d4aa9ad782369ab5d8fecd9d0456b74add6e3b3051e3020856348969ee6bc1000ac1','954321098','activo','2025-10-28'),(10,'lucia.rojas@correo.com','lucia123','987654300','inactivo','2025-10-29'),(11,'fernando.lopez@correo.com','fernando123','987654301','Activo','2025-10-29'),(12,'karina.mendoza@correo.com','karina123','987654302','Activo','2025-10-29'),(13,'david.silva@correo.com','david123','987654303','Activo','2025-10-29'),(14,'rocio.torres@correo.com','rocio123','987654304','Activo','2025-10-29'),(15,'andres.pacheco@correo.com','andres123','987654305','Activo','2025-10-29'),(16,'maria.garcia@correo.com','maria123','987654306','Activo','2025-10-29'),(17,'luis.vargas@correo.com','luis123','987654307','Activo','2025-10-29'),(21,'jassonpuican@gmail.com','scrypt:32768:8:1$AzTGHDKpsv0mbLxF$96a17273ac77fb9809b270f25d3ee85c4657284ad6920c96cd0ee0ddf84d6d64a5553f4b4047a71c0bb1162359e5033364fa45f2a5a862a9cfe132e6b27b376d','961366430','activo','2025-10-31'),(22,'juandiez@gmail.com','scrypt:32768:8:1$4WUFzP4kkzBrVfx6$96cfa1fcd1a4cf5b63ee203c26324dd769bde3e992b651ce5ae42ecc1925112589455bdc8178057c123ce01a36c8867628520ba410278577df371a4fa9b3ab72','961457890','activo','2025-10-31'),(23,'karecuenta102@gmail.com','scrypt:32768:8:1$hMT2kgotgNh4uhcz$a93a34d11ce9885f5cae83a41f63a50cc247c83b3e5c07485487f349843ed148afb71812406aa23e265bc94ad1e923fae700189e3820cf36ca5e947fcccf20f7','921475644','activo','2025-10-31'),(24,'marta@gmail.com','scrypt:32768:8:1$T5UB4AWwiivO0xvg$ac277971e36e8d46c38556015cf1e7f26e58844cc4f66d2104d12e1cb218a3df6ddbf9aa78a64145cac3c72ac0d6980486dcc499eb241115e8723633f2e3fe59','932323312','activo','2025-11-01'),(25,'joaar@gmail.com','scrypt:32768:8:1$Rx0QLXACMGBRtT5d$d2e02d15f8fd430fe36b6844e15d85d3836f0afd99749cb87a3ed2b875cdd21b0ed1dfccbf83d19c3c5b93fa2eb02b51dd86b2153fb69306af01084992802c71','238239239','Activo','2025-11-01'),(26,'par@gamil.com','scrypt:32768:8:1$6zanTEBMOa61MrI1$8c68618cb91408725796c8e47c592061ef368b2ba410cf17d5d64c07dd2160fb48e0cec6cdfc9fb8639c02242b9537f65640a391e2b5f7d0099348616af74891','928839283','Activo','2025-11-01'),(27,'josewe@gmail.com','scrypt:32768:8:1$3vlTVM9pU3MNQg6b$b30913606493bb1fe2e2342fa5e6246f9636cfff9f67581deab36512900c0e01fe4b6f3f8952931b417931ade93495b0a24c973d82430614291f4cd03c47a516','988328289','activo','2025-11-01'),(28,'josecarloschiclayo@gmail.com','scrypt:32768:8:1$1OZpEZOmfBi7B4M7$e11eeafcbbbb4833f1f100071c10a30465f2af3dfa348008a4258b673611b1f50119ecfe8841ef4468ad640ebe7064151f0ed2a10df35330c51ea8d06ea8152a','893229342','Activo','2025-11-01'),(29,'carlr@gmail.com','scrypt:32768:8:1$CDF0CAw4Iq3yXfoi$9106c93cf3763f4ca3b1e3e47e00a02254b9bee9ad213a7e19f29e6bc9f8cb1207d2ee97c7ef3c32ddd4991ff3703899bb51780c76a4d28737d5d37cbd03226d','992323232','Activo','2025-11-01');
+INSERT INTO `USUARIO` VALUES (1,'admin@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987654321','activo','2024-01-01'),(2,'admin2@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987654322','activo','2024-01-01'),(3,'dr.garcia@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987111001','activo','2024-01-15'),(4,'dr.martinez@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987111002','activo','2024-01-15'),(5,'dra.lopez@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987111003','activo','2024-01-16'),(6,'dr.rodriguez@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987111004','activo','2024-01-16'),(7,'dra.fernandez@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987111005','activo','2024-01-17'),(8,'dr.sanchez@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987111006','activo','2024-01-17'),(9,'recepcion1@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987222001','activo','2024-01-20'),(10,'recepcion2@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987222002','activo','2024-01-20'),(11,'farmacia1@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987333001','activo','2024-01-22'),(12,'farmacia2@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987333002','activo','2024-01-22'),(13,'lab1@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987444001','activo','2024-01-25'),(14,'lab2@clinicaunion.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987444002','activo','2024-01-25'),(15,'juan.perez@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555001','activo','2024-02-01'),(16,'maria.garcia@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555002','activo','2024-02-02'),(17,'carlos.lopez@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555003','activo','2024-02-03'),(18,'ana.martinez@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555004','activo','2024-02-04'),(19,'luis.rodriguez@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555005','activo','2024-02-05'),(20,'sofia.sanchez@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555006','activo','2024-02-06'),(21,'diego.torres@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555007','activo','2024-02-07'),(22,'paula.diaz@email.com','scrypt:32768:8:1$u7vOwM7YqnRsenmN$37c58dc7f3e3ec7ad9e32d6308f9a94b45009c6a756fcf0d08a5abfe0f49e669918ed7290eaa4ae7f0ed988f7cd3b0e97ead4de705c638669c660bb249ff64e3','987555008','activo','2024-02-08'),(23,'jose@gmail.com','scrypt:32768:8:1$sgUUqUPTniVWUSZ2$a2d228664ecbeb391aa396512937a7da8e566ca44d8a1d361bd04f53422bbbea41c2c1c6710f39cc0fa95c410e9900d6f4b0f3faa87301abdc7fdb14e89d943a','986645443','activo','2025-11-04'),(24,'jassonpuican@gmail.com','scrypt:32768:8:1$pQku5sMUxnSGD0PF$54cc0c6708fc0c0f1626cf4218f82d457c22c13d6e9187c0d72167a32f972604cc187020622e031a22e68aad89e2d536207f9ed2c27c8c3952db44222ce68aa9','961366430','activo','2025-11-04'),(25,'admin3@clinicaunion.com','8329f63e608fc18a41e9eb7168530933d744acc27487294c60ff9168425ba5cf','999999999','activo','2025-11-04'),(26,'mauriciochero7@hotmail.com','scrypt:32768:8:1$vyd53lV2bgKBop2s$a95851e837ea1b20e0eeea444f39f50d6c45cbdda0056d4dd4c7d222e9532ea585b581a85d5fdfae63c988a8bbdc1d92c7cf766d2f63191cdf63e6a1298b876e','957984611','activo','2025-11-04');
 /*!40000 ALTER TABLE `USUARIO` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -946,4 +958,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-11-03  0:54:44
+-- Dump completed on 2025-11-04  3:07:59

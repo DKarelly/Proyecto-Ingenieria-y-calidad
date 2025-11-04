@@ -41,6 +41,7 @@
                             type="text"
                             id="apellidos"
                             name="apellidos"
+                            value="{% if usuario.tipo_usuario == 'paciente' %}{% if usuario.nombre_paciente and ' ' in usuario.nombre_paciente %}{{ usuario.nombre_paciente.split(' ', 1)[1] }}{% endif %}{% else %}{% if usuario.nombre_empleado and ' ' in usuario.nombre_empleado %}{{ usuario.nombre_empleado.split(' ', 1)[1] }}{% endif %}{% endif %}"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                             placeholder="Tus apellidos"
                         >
@@ -85,6 +86,37 @@
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                             placeholder="987654321"
                         >
+                    </div>
+                </div>
+
+                <!-- Sexo y Fecha de Nacimiento para TODOS los usuarios -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="fecha_nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Fecha de Nacimiento
+                            <span class="text-xs text-gray-500">(Debes ser mayor de 18 años)</span>
+                        </label>
+                        <input
+                            type="date"
+                            id="fecha_nacimiento"
+                            name="fecha_nacimiento"
+                            value="{% if usuario.tipo_usuario == 'paciente' %}{% if usuario.fecha_nacimiento %}{{ usuario.fecha_nacimiento.strftime('%Y-%m-%d') if usuario.fecha_nacimiento is not string else usuario.fecha_nacimiento }}{% endif %}{% else %}{% if usuario.fecha_nacimiento_empleado %}{{ usuario.fecha_nacimiento_empleado.strftime('%Y-%m-%d') if usuario.fecha_nacimiento_empleado is not string else usuario.fecha_nacimiento_empleado }}{% endif %}{% endif %}"
+                            max="{{ max_fecha }}"
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                        >
+                        <p class="text-xs text-gray-500 mt-1">Edad mínima: 18 años</p>
+                    </div>
+                    <div>
+                        <label for="sexo" class="block text-sm font-semibold text-gray-700 mb-2">Sexo</label>
+                        <select
+                            id="sexo"
+                            name="sexo"
+                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                        >
+                            <option value="">Seleccione</option>
+                            <option value="M" {% if (usuario.tipo_usuario == 'paciente' and usuario.sexo_paciente == 'M') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'M') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'Masculino') %}selected{% endif %}>Masculino</option>
+                            <option value="F" {% if (usuario.tipo_usuario == 'paciente' and usuario.sexo_paciente == 'F') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'F') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'Femenino') %}selected{% endif %}>Femenino</option>
+                        </select>
                     </div>
                 </div>
 
@@ -163,6 +195,52 @@
         document.getElementById('provincia').addEventListener('change', e => cargarDistritos(e.target.value));
         document.getElementById('distrito').addEventListener('change', e => {
             document.getElementById('id_distrito').value = e.target.value || '';
+        });
+
+        // Validación de edad mínima (18 años)
+        const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+        
+        // Calcular fecha máxima permitida (18 años atrás desde hoy)
+        const hoy = new Date();
+        const fechaMaxima = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+        const fechaMaximaStr = fechaMaxima.toISOString().split('T')[0];
+        fechaNacimientoInput.setAttribute('max', fechaMaximaStr);
+
+        // Validación en tiempo real
+        fechaNacimientoInput.addEventListener('change', function() {
+            const fechaSeleccionada = new Date(this.value);
+            
+            if (fechaSeleccionada > fechaMaxima) {
+                alert('Debes ser mayor de 18 años. Por favor, selecciona una fecha válida.');
+                this.value = '';
+            }
+        });
+
+        // Validación antes de enviar el formulario
+        document.getElementById('form-editar-perfil').addEventListener('submit', function(e) {
+            const fechaNacimiento = document.getElementById('fecha_nacimiento').value;
+            
+            if (fechaNacimiento) {
+                const fechaSeleccionada = new Date(fechaNacimiento);
+                const hoy = new Date();
+                const edad = hoy.getFullYear() - fechaSeleccionada.getFullYear();
+                const mesActual = hoy.getMonth();
+                const diaActual = hoy.getDate();
+                const mesNacimiento = fechaSeleccionada.getMonth();
+                const diaNacimiento = fechaSeleccionada.getDate();
+                
+                // Ajustar edad si aún no ha cumplido años este año
+                let edadReal = edad;
+                if (mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
+                    edadReal--;
+                }
+                
+                if (edadReal < 18) {
+                    e.preventDefault();
+                    alert('Debes ser mayor de 18 años para registrarte.');
+                    return false;
+                }
+            }
         });
 
         document.addEventListener('DOMContentLoaded', async () => {

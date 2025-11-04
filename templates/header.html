@@ -54,7 +54,7 @@
             <!-- Menú de Usuario -->
             <div class="relative">
                 <button id="userMenuBtn" class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 shadow-md hover:shadow-lg">
-                    {{ session.get('nombre_usuario', '')[0].upper() }}
+                    {{ (session.get('nombre_usuario', 'U') or 'U')[0].upper() }}
                 </button>
 
                 <!-- Dropdown del Menú de Usuario -->
