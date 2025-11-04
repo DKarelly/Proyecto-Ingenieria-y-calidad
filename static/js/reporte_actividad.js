@@ -350,22 +350,87 @@ function cerrarModalGenerarActividad() {
 }
 
 // Cargar empleados en selector del modal
+let empleadosGlobal = [];
+
 async function cargarEmpleadosModal() {
     try {
-        const response = await fetch('/reportes/api/empleados');
-        const empleados = await response.json();
+        const response = await fetch('/reportes/api/empleados?formato=object');
+        const data = await response.json();
         
-        const selector = document.getElementById('empleadoReporte');
-        selector.innerHTML = '<option value="">Seleccione un empleado</option>';
-        
-        empleados.forEach(empleado => {
-            const option = document.createElement('option');
-            option.value = empleado.id_empleado;
-            option.textContent = `${empleado.nombres} ${empleado.apellidos}${empleado.especialidad ? ' - ' + empleado.especialidad : ''}`;
-            selector.appendChild(option);
-        });
+        if (data.success && data.empleados) {
+            empleadosGlobal = data.empleados;
+            configurarBusquedaEmpleados();
+        } else if (Array.isArray(data)) {
+            // Fallback si devuelve array directo
+            empleadosGlobal = data;
+            configurarBusquedaEmpleados();
+        }
     } catch (error) {
         console.error('Error al cargar empleados:', error);
+    }
+}
+
+// Configurar búsqueda dinámica de empleados
+function configurarBusquedaEmpleados() {
+    const inputBusqueda = document.getElementById('buscarEmpleadoReporte');
+    const inputHidden = document.getElementById('empleadoReporte');
+    const listaEmpleados = document.getElementById('listaEmpleadosReporte');
+    
+    if (!inputBusqueda || !listaEmpleados) return;
+    
+    // Mostrar todos los empleados al hacer clic
+    inputBusqueda.addEventListener('focus', () => {
+        mostrarEmpleados('');
+    });
+    
+    // Búsqueda en tiempo real
+    inputBusqueda.addEventListener('input', function() {
+        const termino = this.value.toLowerCase();
+        mostrarEmpleados(termino);
+    });
+    
+    // Cerrar al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!inputBusqueda.contains(e.target) && !listaEmpleados.contains(e.target)) {
+            listaEmpleados.classList.add('hidden');
+        }
+    });
+    
+    function mostrarEmpleados(termino) {
+        const empleadosFiltrados = empleadosGlobal.filter(emp => {
+            const nombreCompleto = `${emp.nombres} ${emp.apellidos}`.toLowerCase();
+            const cargo = (emp.cargo || '').toLowerCase();
+            return nombreCompleto.includes(termino) || cargo.includes(termino);
+        });
+        
+        if (empleadosFiltrados.length === 0) {
+            listaEmpleados.innerHTML = '<div class="px-4 py-3 text-gray-500 text-center">No se encontraron empleados</div>';
+            listaEmpleados.classList.remove('hidden');
+            return;
+        }
+        
+        listaEmpleados.innerHTML = empleadosFiltrados.map(emp => `
+            <div class="px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors border-b last:border-b-0 empleado-option" 
+                 data-id="${emp.id_empleado}"
+                 data-nombre="${emp.nombres} ${emp.apellidos}">
+                <div class="font-medium text-gray-900">${emp.nombres} ${emp.apellidos}</div>
+                <div class="text-sm text-gray-500">${emp.cargo || 'Sin cargo'}</div>
+            </div>
+        `).join('');
+        
+        listaEmpleados.classList.remove('hidden');
+        
+        // Agregar eventos de clic a las opciones
+        document.querySelectorAll('.empleado-option').forEach(opcion => {
+            opcion.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                const nombre = this.getAttribute('data-nombre');
+                
+                inputHidden.value = id;
+                inputBusqueda.value = nombre;
+                listaEmpleados.classList.add('hidden');
+            });
+        });
     }
 }
 

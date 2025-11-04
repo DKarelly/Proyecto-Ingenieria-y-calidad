@@ -80,8 +80,7 @@
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Recurso</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Ocupación</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="tablaReportes" class="divide-y divide-gray-200">
@@ -143,23 +142,25 @@
                 <div class="border-t pt-4">
                     <h3 class="text-lg font-bold text-gray-800 mb-4">
                         <i class="fas fa-list text-cyan-600 mr-2"></i>
-                        Historial de Uso por Empleados
+                        Historial de Operaciones del Recurso
                     </h3>
                     <div class="overflow-x-auto max-h-96 overflow-y-auto border rounded-lg">
                         <table class="w-full">
                             <thead class="bg-gray-50 sticky top-0">
                                 <tr>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Fecha</th>
-                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Empleado</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Paciente</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Médico</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Especialidad</th>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Servicio</th>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Hora Inicio</th>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Hora Fin</th>
-                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Estado</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase">Observaciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaUsosRecurso" class="divide-y divide-gray-200">
                                 <tr>
-                                    <td colspan="6" class="text-center py-8 text-gray-500">
+                                    <td colspan="8" class="text-center py-8 text-gray-500">
                                         <i class="fas fa-spinner fa-spin text-4xl mb-2"></i>
                                         <p>Cargando historial...</p>
                                     </td>
@@ -250,62 +251,75 @@
         </div>
     </div>
 
-    <!-- Modal de generar reporte de ocupación -->
+    <!-- Modal de vincular operación a recurso -->
     <div id="modalGenerarReporte" class="modal">
-        <div class="modal-content max-w-2xl">
+        <div class="modal-content max-w-3xl">
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
                 <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-plus-circle text-purple-600 mr-2"></i>
-                    Generar Reporte de Ocupación
+                    <i class="fas fa-link text-purple-600 mr-2"></i>
+                    Vincular Operación a Recurso
                 </h2>
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formGenerarReporte" class="space-y-4">
+                
+                <!-- Seleccionar Operación Existente -->
+                <div>
+                    <label for="operacionReporte" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-clipboard-list text-purple-500 mr-1"></i>
+                        Operación (desde Reserva) <span class="text-red-500">*</span>
+                    </label>
+                    <select id="operacionReporte" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors">
+                        <option value="">Cargando operaciones...</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Solo se muestran operaciones con reserva confirmada</p>
+                </div>
+
+                <!-- Información de la operación seleccionada -->
+                <div id="infoOperacion" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-800 mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Detalles de la Operación
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div><strong>Fecha:</strong> <span id="infoFecha"></span></div>
+                        <div><strong>Horario:</strong> <span id="infoHorario"></span></div>
+                        <div><strong>Paciente:</strong> <span id="infoPaciente"></span></div>
+                        <div><strong>Médico:</strong> <span id="infoMedico"></span></div>
+                        <div class="col-span-2"><strong>Servicio:</strong> <span id="infoServicio"></span></div>
+                    </div>
+                </div>
+                
+                <!-- Tipo de Recurso -->
                 <div>
                     <label for="tipoRecursoReporte" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-layer-group mr-1"></i>
-                        Tipo de Recurso <span class="text-red-500">*</span>
+                        <i class="fas fa-layer-group text-purple-500 mr-1"></i>
+                        Tipo de Recurso Utilizado <span class="text-red-500">*</span>
                     </label>
-                    <select id="tipoRecursoReporte" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
+                    <select id="tipoRecursoReporte" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors" required>
                         <option value="">Seleccione un tipo de recurso</option>
                     </select>
                 </div>
                 
                 <div id="contenedorRecurso" style="display: none;">
                     <label for="recursoReporte" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-box mr-1"></i>
-                        Recurso Específico (Opcional)
+                        <i class="fas fa-box text-purple-500 mr-1"></i>
+                        Recurso Específico <span class="text-red-500">*</span>
                     </label>
-                    <select id="recursoReporte" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Todos los recursos del tipo</option>
+                    <select id="recursoReporte" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors">
+                        <option value="">Seleccione el recurso utilizado</option>
                     </select>
-                </div>
-
-                <div>
-                    <label for="fechaOperacionReporte" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-calendar mr-1"></i>
-                        Fecha de Operación (Opcional)
-                    </label>
-                    <input type="date" id="fechaOperacionReporte" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                </div>
-                
-                <div>
-                    <label for="descripcionRecursoReporte" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-align-left mr-1"></i>
-                        Descripción / Notas
-                    </label>
-                    <textarea id="descripcionRecursoReporte" rows="3" placeholder="Observaciones sobre el reporte de ocupación" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"></textarea>
                 </div>
 
                 <!-- Barra de progreso -->
                 <div id="progresoSubidaRecurso" class="hidden">
                     <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-spinner fa-spin text-cyan-600"></i>
-                        <span class="text-sm font-medium text-gray-700">Generando reporte...</span>
-                        <span id="porcentajeProgresoRecurso" class="text-sm font-bold text-cyan-600 ml-auto">0%</span>
+                        <i class="fas fa-spinner fa-spin text-purple-600"></i>
+                        <span class="text-sm font-medium text-gray-700">Vinculando operación...</span>
+                        <span id="porcentajeProgresoRecurso" class="text-sm font-bold text-purple-600 ml-auto">0%</span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div id="barraProgresoRecurso" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        <div id="barraProgresoRecurso" class="bg-gradient-to-r from-purple-500 to-indigo-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                 </div>
 
@@ -315,8 +329,8 @@
                         Cancelar
                     </button>
                     <button type="submit" class="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-                        <i class="fas fa-cog fa-spin mr-2" id="spinnerGenerarRecurso" style="display: none;"></i>
-                        <span id="textoGenerarRecurso">Generar Reporte</span>
+                        <i class="fas fa-link mr-2" id="iconoGenerarRecurso"></i>
+                        <span id="textoGenerarRecurso">Vincular Operación</span>
                     </button>
                 </div>
             </form>

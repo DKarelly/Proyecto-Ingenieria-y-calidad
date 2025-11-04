@@ -288,14 +288,23 @@
             </div>
             
             <form id="formGenerarActividad" class="space-y-6">
-                <div>
-                    <label for="empleadoReporte" class="block text-sm font-semibold text-gray-700 mb-2">
+                <div class="relative">
+                    <label for="buscarEmpleadoReporte" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-user-tie text-purple-500 mr-1"></i>
                         Empleado <span class="text-red-500">*</span>
                     </label>
-                    <select id="empleadoReporte" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors">
-                        <option value="">Seleccione un empleado</option>
-                    </select>
+                    <input 
+                        type="text" 
+                        id="buscarEmpleadoReporte" 
+                        placeholder="Buscar empleado por nombre..."
+                        autocomplete="off"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-500 transition-colors"
+                    >
+                    <input type="hidden" id="empleadoReporte" required>
+                    <!-- Lista desplegable de empleados -->
+                    <div id="listaEmpleadosReporte" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <!-- Opciones se cargan dinámicamente -->
+                    </div>
                 </div>
 
                 <div>
