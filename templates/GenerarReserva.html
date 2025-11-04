@@ -201,8 +201,45 @@
                 </button>
             </div>
 
-            <!-- Mensaje inicial -->
-            <div id="horarios-placeholder" class="text-center py-12">
+            <!-- Lista de Programaciones Generales -->
+            <div id="programaciones-list" class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Programaciones Disponibles</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-gray-300 rounded-lg">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Inicio</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Fin</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Servicio</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Empleado</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prog in programaciones %}
+                            <tr class="border-t border-gray-200">
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.fecha }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.hora_inicio }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.hora_fin }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.servicio }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.empleado }}</td>
+                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.estado }}</td>
+                                <td class="px-4 py-2 text-sm">
+                                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs seleccionar-programacion" data-id="{{ prog.id_programacion }}" data-fecha="{{ prog.fecha }}" data-hora-inicio="{{ prog.hora_inicio }}" data-hora-fin="{{ prog.hora_fin }}" data-servicio="{{ prog.servicio }}" data-empleado="{{ prog.empleado }}">
+                                        Seleccionar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Mensaje inicial (oculto por defecto) -->
+            <div id="horarios-placeholder" class="hidden text-center py-12">
                 <i class="fas fa-clock text-gray-300 text-6xl mb-4"></i>
                 <p class="text-gray-600 font-semibold text-lg">Busque horarios disponibles</p>
                 <p class="text-gray-500 text-sm mt-2">Primero seleccione un servicio y haga clic en "Buscar Horarios"</p>
@@ -299,6 +336,22 @@
         btnBuscarHorarios.addEventListener('click', buscarHorarios);
         btnCrearReserva.addEventListener('click', crearReserva);
         btnLimpiarTodo.addEventListener('click', limpiarTodo);
+
+        // Event listener for programacion selection
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('seleccionar-programacion')) {
+                const button = e.target;
+                const progData = {
+                    id_programacion: button.dataset.id,
+                    fecha: button.dataset.fecha,
+                    hora_inicio: button.dataset.horaInicio,
+                    hora_fin: button.dataset.horaFin,
+                    servicio: button.dataset.servicio,
+                    empleado: button.dataset.empleado
+                };
+                seleccionarProgramacion(button, progData);
+            }
+        });
 
         // Enter en DNI
         dniInput.addEventListener('keypress', (e) => {
@@ -451,6 +504,26 @@
             horarioData = data;
 
             estadoReserva.textContent = 'Horario seleccionado';
+            actualizarResumen();
+            actualizarBotonCrear();
+        }
+
+        // Función para seleccionar programacion
+        function seleccionarProgramacion(button, data) {
+            // Remover selección anterior de programaciones
+            document.querySelectorAll('.seleccionar-programacion').forEach(btn => {
+                btn.classList.remove('bg-green-500', 'hover:bg-green-700');
+                btn.classList.add('bg-blue-500', 'hover:bg-blue-700');
+            });
+
+            // Marcar seleccionado
+            button.classList.remove('bg-blue-500', 'hover:bg-blue-700');
+            button.classList.add('bg-green-500', 'hover:bg-green-700');
+
+            horarioSeleccionado = data.id_programacion; // Usar id_programacion como horarioSeleccionado
+            horarioData = data;
+
+            estadoReserva.textContent = 'Programación seleccionada';
             actualizarResumen();
             actualizarBotonCrear();
         }
