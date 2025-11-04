@@ -249,34 +249,143 @@ function initializeAuthModals() {
     });
 
     // Manejo del formulario de recuperación de contraseña
-    const forgotPasswordForm = document.querySelector('#forgot-password-modal form');
-    forgotPasswordForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    const sendCodeBtn = document.getElementById('send-code-btn');
+    const emailMessage = document.getElementById('email-message');
+    const formMessage = document.getElementById('form-message');
+    const codeField = document.getElementById('code-field');
+    const passwordField = document.getElementById('password-field');
+    const confirmPasswordField = document.getElementById('confirm-password-field');
+    const resetPasswordBtn = document.getElementById('reset-password-btn');
 
-        const email = document.getElementById('forgot-email').value;
+    // Enviar código de verificación
+    sendCodeBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('forgot-email').value.trim();
+
+        emailMessage.className = 'text-sm mt-2 hidden';
+        emailMessage.textContent = '';
+
+        if (!email) {
+            emailMessage.textContent = 'Por favor ingrese su correo electrónico';
+            emailMessage.className = 'text-sm mt-2 text-red-600';
+            return;
+        }
+
+        sendCodeBtn.disabled = true;
+        sendCodeBtn.textContent = 'Enviando...';
 
         try {
             const response = await fetch('/usuarios/api/forgot-password', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ correo: email })
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                alert('Se ha enviado un código de recuperación a tu correo electrónico');
-                closeModal(forgotPasswordModal);
-                openModal(loginModal);
-                forgotPasswordForm.reset();
+            if (response.ok) {
+                emailMessage.textContent = 'Código enviado. Revisa tu correo electrónico';
+                emailMessage.className = 'text-sm mt-2 text-green-600';
+                sendCodeBtn.textContent = 'Reenviar';
+                
+                // Mostrar campos adicionales
+                codeField.style.display = 'block';
+                passwordField.style.display = 'block';
+                confirmPasswordField.style.display = 'block';
+                resetPasswordBtn.style.display = 'block';
             } else {
-                alert(data.error || 'Error al enviar el código de recuperación');
+                const data = await response.json().catch(() => ({}));
+                emailMessage.textContent = data.error || 'No se pudo enviar el código. Intente nuevamente.';
+                emailMessage.className = 'text-sm mt-2 text-red-600';
+                sendCodeBtn.textContent = 'Enviar';
             }
         } catch (error) {
-            console.error('Error:', error);
-            alert('Error al conectar con el servidor');
+            emailMessage.textContent = 'Error de red. Intente nuevamente.';
+            emailMessage.className = 'text-sm mt-2 text-red-600';
+            sendCodeBtn.textContent = 'Enviar';
+        } finally {
+            sendCodeBtn.disabled = false;
+        }
+    });
+
+    // Enviar formulario completo para cambiar contraseña
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    forgotPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('forgot-email').value.trim();
+        const code = document.getElementById('forgot-code').value.trim();
+        const newPassword = document.getElementById('forgot-new-password').value;
+        const confirmPassword = document.getElementById('forgot-confirm-password').value;
+
+        formMessage.className = 'text-sm mt-3 text-center hidden';
+        formMessage.textContent = '';
+
+        // Validaciones
+        if (!email || !code || !newPassword || !confirmPassword) {
+            formMessage.textContent = 'Complete todos los campos';
+            formMessage.className = 'text-sm mt-3 text-center text-red-600';
+            return;
+        }
+
+        if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+            formMessage.textContent = 'El código debe ser de 6 dígitos';
+            formMessage.className = 'text-sm mt-3 text-center text-red-600';
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            formMessage.textContent = 'Las contraseñas no coinciden';
+            formMessage.className = 'text-sm mt-3 text-center text-red-600';
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            formMessage.textContent = 'La contraseña debe tener al menos 6 caracteres';
+            formMessage.className = 'text-sm mt-3 text-center text-red-600';
+            return;
+        }
+
+        resetPasswordBtn.disabled = true;
+        resetPasswordBtn.textContent = 'Procesando...';
+
+        try {
+            const response = await fetch('/usuarios/api/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    correo: email,
+                    codigo: code,
+                    nueva_contrasena: newPassword
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok && data.success) {
+                formMessage.textContent = '✓ Contraseña actualizada. Redirigiendo...';
+                formMessage.className = 'text-sm mt-3 text-center text-green-600';
+                
+                setTimeout(() => {
+                    closeModal(forgotPasswordModal);
+                    openModal(loginModal);
+                    forgotPasswordForm.reset();
+                    // Ocultar campos adicionales
+                    codeField.style.display = 'none';
+                    passwordField.style.display = 'none';
+                    confirmPasswordField.style.display = 'none';
+                    resetPasswordBtn.style.display = 'none';
+                    sendCodeBtn.textContent = 'Enviar';
+                }, 1500);
+            } else {
+                formMessage.textContent = data.error || 'No se pudo actualizar la contraseña';
+                formMessage.className = 'text-sm mt-3 text-center text-red-600';
+                resetPasswordBtn.disabled = false;
+                resetPasswordBtn.textContent = 'Cambiar Contraseña';
+            }
+        } catch (error) {
+            formMessage.textContent = 'Error de red. Intente nuevamente';
+            formMessage.className = 'text-sm mt-3 text-center text-red-600';
+            resetPasswordBtn.disabled = false;
+            resetPasswordBtn.textContent = 'Cambiar Contraseña';
         }
     });
     
@@ -431,6 +540,24 @@ function logout() {
         window.location.href = '/logout';
     }
 }
+
+// Función para mostrar/ocultar contraseñas
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.nextElementSibling;
+    const icon = button.querySelector('svg');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-7-10-7a15.18 15.18 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a15.18 15.18 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+        input.type = 'password';
+        icon.innerHTML = '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>';
+    }
+}
+
+// Hacer la función global para que pueda ser llamada desde HTML
+window.togglePasswordVisibility = togglePasswordVisibility;
 
 // Verificar si hay usuario logueado al cargar la página
 async function checkUserSession() {

@@ -979,8 +979,6 @@ def modificar_datos_cuenta():
             id_rol = request.form.get('rol')
             id_distrito = request.form.get('distrito')
             id_especialidad = request.form.get('especialidad')
-            password_anterior = request.form.get('password_anterior', '').strip()
-            password_nueva = request.form.get('password_nueva', '').strip()
 
             # Validar campos requeridos
             if not all([nombres, apellidos, documento, telefono, email, id_rol]):
@@ -1047,23 +1045,6 @@ def modificar_datos_cuenta():
                 'correo': email,
                 'telefono': telefono
             }
-
-            # Validar cambio de contraseña
-            if password_nueva:
-                # Verificar que se proporcionó la contraseña anterior
-                if not password_anterior:
-                    flash('Debes proporcionar tu contraseña anterior para cambiar la contraseña', 'error')
-                    return redirect(url_for('cuentas.modificar_datos_cuenta'))
-
-                # Verificar que la contraseña anterior es correcta
-                from werkzeug.security import check_password_hash
-                usuario_actual = Usuario.obtener_por_id(usuario_id)
-                if not check_password_hash(usuario_actual['contrasena'], password_anterior):
-                    flash('La contraseña anterior es incorrecta', 'error')
-                    return redirect(url_for('cuentas.modificar_datos_cuenta'))
-
-                # Actualizar con la nueva contraseña
-                params_usuario['contrasena'] = password_nueva
 
             resultado_usuario = Usuario.actualizar(**params_usuario)
 
