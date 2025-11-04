@@ -4,7 +4,7 @@ USE `CLINICA`;
 --
 -- Host: trolley.proxy.rlwy.net    Database: CLINICA
 -- ------------------------------------------------------
--- Server version	9.4.0
+-- Server version	9.4.2.0
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;

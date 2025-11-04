@@ -2,7 +2,7 @@
 -- DATOS DE PRUEBA COMPLETOS PARA EL SISTEMA DE CLÍNICA
 -- Incluye datos para todos los módulos: Reservas y Notificaciones
 -- =====================================================
-
+--chero
 -- Usar la base de datos CLINICA
 USE CLINICA;
 
