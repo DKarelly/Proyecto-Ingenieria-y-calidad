@@ -543,7 +543,8 @@ def api_obtener_distritos(id_provincia):
 def api_send_email():
     """API: Enviar email genérico"""
     import smtplib
-    from email.message import EmailMessage
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
     import os
 
     data = request.get_json()
@@ -564,28 +565,58 @@ def api_send_email():
         if not sender_email or not sender_password:
             return jsonify({'error': 'Configuración SMTP no encontrada. Verifica las variables de entorno.'}), 500
 
-        # Crear mensaje
-        msg = EmailMessage()
-        msg.set_charset('utf-8')
-        msg['From'] = sender_email
+        # Crear mensaje con formato HTML
+        msg = MIMEMultipart('alternative')
+        msg['From'] = f"Clínica Unión <{sender_email}>"
         msg['To'] = to_email
         msg['Subject'] = subject
-        msg.set_content(body)
+
+        # Convertir el cuerpo a formato HTML
+        html_body = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #0891b2;">Clínica Unión</h2>
+              </div>
+              <div style="white-space: pre-line;">
+                {body}
+              </div>
+              <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                Este es un mensaje automático del Sistema de Gestión Médica de Clínica Unión.<br>
+                Por favor, no responda a este correo.
+              </p>
+            </div>
+          </body>
+        </html>
+        """
+
+        # Agregar versión texto plano como respaldo
+        text_part = MIMEText(body, 'plain', 'utf-8')
+        html_part = MIMEText(html_body, 'html', 'utf-8')
+        
+        msg.attach(text_part)
+        msg.attach(html_part)
 
         # Enviar email
         server = smtplib.SMTP(smtp_server, smtp_port)
+        server.set_debuglevel(1)  # Activar debug para ver qué pasa
         server.starttls()
         server.login(sender_email, sender_password)
-        server.send_message(msg, sender_email, to_email)
+        server.send_message(msg)
         server.quit()
 
         return jsonify({'success': True, 'message': 'Email enviado exitosamente'})
 
     except smtplib.SMTPAuthenticationError as e:
         print(f"Error de autenticación SMTP: {e}")
-        return jsonify({'error': 'Error de autenticación. Verifica las credenciales SMTP.'}), 500
+        print(f"Intentando conectar con: {sender_email}")
+        return jsonify({'error': 'Error de autenticación. Verifica las credenciales SMTP o usa una contraseña de aplicación de Gmail.'}), 500
     except Exception as e:
         print(f"Error sending email: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Error al enviar email: {str(e)}'}), 500
 
 @usuarios_bp.route('/api/forgot-password', methods=['POST'])
@@ -650,20 +681,29 @@ def api_forgot_password():
             # Enviar email usando la API de envío de emails
             email_data = {
                 'to': correo,
-                'subject': 'Codigo de recuperacion de contrasena - Sistema Medico',
+                'subject': 'Código de recuperación de contraseña - Clínica Unión',
                 'body': f"""
-Hola,
+¡Hola!
 
-Has solicitado recuperar tu contrasena. Tu codigo de recuperacion es:
+Has solicitado recuperar tu contraseña en el Sistema de Gestión Médica de Clínica Unión.
 
-{codigo}
+Tu código de verificación es:
 
-Este codigo expirara en 15 minutos.
+<div style="text-align: center; margin: 20px 0;">
+    <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #0891b2; background-color: #f0f9ff; padding: 15px 30px; border-radius: 8px; display: inline-block;">
+        {codigo}
+    </span>
+</div>
 
-Si no solicitaste este cambio, ignora este mensaje.
+⏰ Este código es válido por 15 minutos.
+
+🔒 Por tu seguridad:
+   • No compartas este código con nadie
+   • Si no solicitaste este cambio, ignora este mensaje
+   • Tu contraseña permanecerá sin cambios
 
 Atentamente,
-Sistema de Gestion Medica
+Equipo de Clínica Unión
                 """.strip()
             }
 
