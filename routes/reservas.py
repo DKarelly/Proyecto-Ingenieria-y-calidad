@@ -610,3 +610,175 @@ def api_cancelar_reserva():
 
     except Exception as e:
         return jsonify({'error': f'Error al cancelar reserva: {str(e)}'}), 500
+
+
+# ========== RUTAS PARA PACIENTES ==========
+
+@reservas_bp.route('/paciente/nueva-cita')
+def paciente_nueva_cita():
+    """Vista para que pacientes registren nuevas citas"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('RegistrarCitaPaciente.html')
+
+
+@reservas_bp.route('/api/servicios-activos')
+def api_servicios_activos():
+    """Retorna todos los servicios activos disponibles para pacientes"""
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT s.id_servicio, s.nombre, s.descripcion, e.nombre as especialidad
+                FROM SERVICIO s
+                LEFT JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
+                WHERE s.estado = 'activo'
+                ORDER BY s.nombre
+            """
+            cursor.execute(sql)
+            servicios = cursor.fetchall()
+
+            return jsonify({'servicios': servicios})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
+@reservas_bp.route('/api/medicos-por-servicio/<int:id_servicio>')
+def api_medicos_por_servicio(id_servicio):
+    """Retorna médicos disponibles para un servicio específico"""
+    try:
+        # Obtener servicio para saber la especialidad
+        servicio = Servicio.obtener_por_id(id_servicio)
+        if not servicio:
+            return jsonify({'error': 'Servicio no encontrado'}), 404
+
+        id_especialidad = servicio.get('id_especialidad')
+        if not id_especialidad:
+            return jsonify({'error': 'Servicio sin especialidad asignada'}), 400
+
+        # Obtener médicos de esa especialidad
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT e.id_empleado, e.nombres, e.apellidos, esp.nombre as especialidad
+                FROM EMPLEADO e
+                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE e.id_especialidad = %s
+                AND e.estado = 'activo'
+                AND e.id_rol IN (2, 3)
+                ORDER BY e.apellidos, e.nombres
+            """
+            cursor.execute(sql, (id_especialidad,))
+            medicos = cursor.fetchall()
+
+            return jsonify({'medicos': medicos})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
+@reservas_bp.route('/paciente/crear-reserva', methods=['POST'])
+def paciente_crear_reserva():
+    """Crea una nueva reserva para un paciente autenticado"""
+    # Verificar autenticación
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    data = request.get_json() or {}
+    id_servicio = data.get('id_servicio')
+    id_horario = data.get('id_horario')
+
+    # Validaciones
+    if not id_servicio:
+        return jsonify({'error': 'Servicio es requerido'}), 400
+
+    if not id_horario:
+        return jsonify({'error': 'Horario es requerido'}), 400
+
+    try:
+        # Obtener el id_paciente asociado al usuario actual
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        id_paciente = paciente.get('id_paciente')
+
+        # Verificar que el horario existe y está disponible
+        horario = Horario.obtener_por_id(int(id_horario))
+        if not horario:
+            return jsonify({'error': 'Horario no encontrado'}), 404
+
+        if horario.get('disponibilidad') != 'Disponible':
+            return jsonify({'error': 'El horario seleccionado ya no está disponible'}), 400
+
+        # Obtener datos del horario
+        fecha = horario.get('fecha')
+        hora_inicio = horario.get('hora_inicio')
+        hora_fin = horario.get('hora_fin')
+
+        # Crear programación
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql_prog = """
+                INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_servicio, id_horario)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'disponible', id_servicio, id_horario))
+            conexion.commit()
+            id_programacion = cursor.lastrowid
+
+            # Crear reserva (tipo 1 = reserva normal)
+            from datetime import datetime
+            fecha_actual = datetime.now().date()
+            hora_actual = datetime.now().time()
+
+            sql_reserva = """
+                INSERT INTO RESERVA (fecha_registro, hora_registro, tipo, estado, id_paciente, id_programacion)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_reserva, (fecha_actual, hora_actual, 1, 'activa', id_paciente, id_programacion))
+            conexion.commit()
+            id_reserva = cursor.lastrowid
+
+            # Actualizar disponibilidad del horario
+            sql_update_horario = """
+                UPDATE HORARIO SET disponibilidad = 'Ocupado' WHERE id_horario = %s
+            """
+            cursor.execute(sql_update_horario, (id_horario,))
+            conexion.commit()
+
+        return jsonify({
+            'success': True,
+            'id_reserva': id_reserva,
+            'message': 'Cita agendada exitosamente'
+        }), 201
+
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        return jsonify({'error': f'Error al crear reserva: {str(e)}'}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
