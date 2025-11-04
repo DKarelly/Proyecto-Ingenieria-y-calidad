@@ -106,11 +106,15 @@ def gestionar_recursos_fisicos():
 
 @admin_bp.route('/api/servicios', methods=['GET'])
 def api_obtener_servicios():
-    """API para obtener todos los servicios"""
+    """API para obtener todos los servicios o filtrados por tipo"""
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
         return jsonify({'error': 'No autorizado'}), 401
 
-    servicios = Servicio.obtener_todos()
+    tipo_servicio = request.args.get('tipo_servicio')
+    if tipo_servicio:
+        servicios = Servicio.obtener_por_tipo(int(tipo_servicio))
+    else:
+        servicios = Servicio.obtener_todos()
     return jsonify(servicios)
 
 @admin_bp.route('/api/tipos-servicio', methods=['GET'])
@@ -537,18 +541,49 @@ def api_consultar_agenda():
 
 @admin_bp.route('/api/programaciones', methods=['GET'])
 def api_obtener_programaciones():
-    """API para obtener todas las programaciones"""
+    """API para obtener todas las programaciones o filtradas por parámetros"""
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
         return jsonify({'error': 'No autorizado'}), 401
 
-    programaciones = Programacion.obtener_todos()
+    # Obtener parámetros de consulta
+    fecha = request.args.get('fecha', '')
+    tipo_servicio = request.args.get('tipo_servicio', '')
+    servicio = request.args.get('servicio', '')
+    estado = request.args.get('estado', '')
+    id_empleado = request.args.get('id_empleado', '')
+
+    # Convertir a int si no están vacíos
+    id_tipo_servicio = int(tipo_servicio) if tipo_servicio else None
+    id_servicio = int(servicio) if servicio else None
+    id_empleado_int = int(id_empleado) if id_empleado else None
+
+    if fecha or id_tipo_servicio or id_servicio or estado or id_empleado_int:
+        # Usar búsqueda con filtros
+        programaciones = Programacion.buscar_por_filtros(fecha=fecha, id_tipo_servicio=id_tipo_servicio, id_servicio=id_servicio, estado=estado, id_empleado=id_empleado_int)
+    else:
+        # Obtener todas las programaciones
+        programaciones = Programacion.obtener_todos()
 
     # Convertir objetos datetime a strings para JSON serialization
     for prog in programaciones:
         if 'hora_inicio' in prog and prog['hora_inicio']:
-            prog['hora_inicio'] = str(prog['hora_inicio'])
+            if hasattr(prog['hora_inicio'], 'total_seconds'):
+                # Es timedelta
+                total_seconds = int(prog['hora_inicio'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                prog['hora_inicio'] = f"{hours:02d}:{minutes:02d}"
+            else:
+                prog['hora_inicio'] = str(prog['hora_inicio'])
         if 'hora_fin' in prog and prog['hora_fin']:
-            prog['hora_fin'] = str(prog['hora_fin'])
+            if hasattr(prog['hora_fin'], 'total_seconds'):
+                # Es timedelta
+                total_seconds = int(prog['hora_fin'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                prog['hora_fin'] = f"{hours:02d}:{minutes:02d}"
+            else:
+                prog['hora_fin'] = str(prog['hora_fin'])
         if 'fecha' in prog and prog['fecha']:
             prog['fecha'] = prog['fecha'].isoformat()
 
@@ -577,9 +612,23 @@ def api_buscar_programaciones():
     # Convertir objetos datetime a strings para JSON serialization
     for prog in programaciones_filtradas:
         if 'hora_inicio' in prog and prog['hora_inicio']:
-            prog['hora_inicio'] = str(prog['hora_inicio'])
+            if hasattr(prog['hora_inicio'], 'total_seconds'):
+                # Es timedelta
+                total_seconds = int(prog['hora_inicio'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                prog['hora_inicio'] = f"{hours:02d}:{minutes:02d}"
+            else:
+                prog['hora_inicio'] = str(prog['hora_inicio'])
         if 'hora_fin' in prog and prog['hora_fin']:
-            prog['hora_fin'] = str(prog['hora_fin'])
+            if hasattr(prog['hora_fin'], 'total_seconds'):
+                # Es timedelta
+                total_seconds = int(prog['hora_fin'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                prog['hora_fin'] = f"{hours:02d}:{minutes:02d}"
+            else:
+                prog['hora_fin'] = str(prog['hora_fin'])
         if 'fecha' in prog and prog['fecha']:
             prog['fecha'] = prog['fecha'].isoformat()
 
@@ -639,9 +688,23 @@ def api_obtener_programacion(id_programacion):
     if programacion:
         # Convertir objetos datetime a strings para JSON serialization
         if 'hora_inicio' in programacion and programacion['hora_inicio']:
-            programacion['hora_inicio'] = str(programacion['hora_inicio'])
+            if hasattr(programacion['hora_inicio'], 'total_seconds'):
+                # Es timedelta
+                total_seconds = int(programacion['hora_inicio'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                programacion['hora_inicio'] = f"{hours:02d}:{minutes:02d}"
+            else:
+                programacion['hora_inicio'] = str(programacion['hora_inicio'])
         if 'hora_fin' in programacion and programacion['hora_fin']:
-            programacion['hora_fin'] = str(programacion['hora_fin'])
+            if hasattr(programacion['hora_fin'], 'total_seconds'):
+                # Es timedelta
+                total_seconds = int(programacion['hora_fin'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                programacion['hora_fin'] = f"{hours:02d}:{minutes:02d}"
+            else:
+                programacion['hora_fin'] = str(programacion['hora_fin'])
         if 'fecha' in programacion and programacion['fecha']:
             programacion['fecha'] = programacion['fecha'].isoformat()
         return jsonify(programacion)
