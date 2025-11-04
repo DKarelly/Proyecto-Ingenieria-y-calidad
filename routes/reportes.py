@@ -153,30 +153,52 @@ def api_obtener_categorias():
 
 @reportes_bp.route("/api/empleados", methods=["GET"])
 def api_obtener_empleados():
+    """API para obtener empleados - filtra solo médicos (id_rol = 2) si se especifica"""
     if "usuario_id" not in session or session.get("tipo_usuario") != "empleado":
         return jsonify({"error": "No autorizado"}), 401
     try:
+        # Verificar si se solicita solo médicos
+        solo_medicos = request.args.get('solo_medicos', 'false').lower() == 'true'
+        formato = request.args.get('formato', 'array')  # 'array' o 'object'
+        
         conexion, cursor = obtener_conexion_dict()
-        cursor.execute("""
+        
+        sql = """
             SELECT 
                 e.id_empleado, 
                 e.nombres, 
                 e.apellidos, 
-                COALESCE(esp.nombre, r.nombre, 'Sin cargo') as cargo
+                COALESCE(esp.nombre, 'Sin especialidad') as especialidad,
+                r.nombre as rol
             FROM EMPLEADO e
             LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
             LEFT JOIN ROL r ON e.id_rol = r.id_rol
             WHERE e.estado = 'Activo'
-            ORDER BY e.nombres, e.apellidos
-        """)
+        """
+        
+        if solo_medicos:
+            sql += " AND e.id_rol = 2"
+            print(f"[API EMPLEADOS] Filtrando solo médicos (id_rol = 2)")
+        
+        sql += " ORDER BY e.nombres, e.apellidos"
+        
+        cursor.execute(sql)
         empleados = cursor.fetchall()
+        
+        print(f"[API EMPLEADOS] Total empleados retornados: {len(empleados)}")
+        
         cursor.close()
         conexion.close()
         
-        return jsonify({
-            'success': True,
-            'empleados': empleados
-        })
+        # Devolver en formato solicitado
+        if formato == 'object':
+            return jsonify({
+                'success': True,
+                'empleados': empleados
+            })
+        else:
+            return jsonify(empleados)
+        
     except Exception as e:
         print(f"[API EMPLEADOS] Error: {e}")
         import traceback
@@ -256,12 +278,13 @@ def api_obtener_auditoria():
             sql += " AND a.tipo_evento = %s"
             params.append(tipo_evento)
         
-        sql += f" ORDER BY a.fecha_registro DESC LIMIT {limite}"
+        sql += " ORDER BY a.fecha_registro DESC LIMIT %s"
+        params.append(limite)
         
         print(f"[API AUDITORIA] SQL: {sql}")
         print(f"[API AUDITORIA] Params: {params}")
         
-        cursor.execute(sql, tuple(params)) if params else cursor.execute(sql)
+        cursor.execute(sql, tuple(params))
         actividades = cursor.fetchall()
         
         print(f"[API AUDITORIA] Registros encontrados: {len(actividades)}")
@@ -319,15 +342,7 @@ def api_recursos_ocupacion():
                      FROM OPERACION_RECURSO ore
                      WHERE ore.id_recurso = r.id_recurso
                     ), 0
-                ) as operaciones_mes,
-                ROUND(
-                    COALESCE(
-                        (SELECT COUNT(*) 
-                         FROM OPERACION_RECURSO ore
-                         WHERE ore.id_recurso = r.id_recurso
-                        ) * 100.0 / NULLIF((SELECT COUNT(*) FROM OPERACION_RECURSO), 0), 0
-                    ), 2
-                ) as ocupacion_porcentaje
+                ) as operaciones_mes
             FROM RECURSO r
             LEFT JOIN TIPO_RECURSO tr ON r.id_tipo_recurso = tr.id_tipo_recurso
             WHERE 1=1
@@ -339,14 +354,12 @@ def api_recursos_ocupacion():
             params.append(id_tipo_recurso)
             print(f"[API RECURSOS-OCUPACION] Filtrando por tipo: {id_tipo_recurso}")
         
-        sql += f" ORDER BY r.nombre LIMIT {limite}"
+        sql += " ORDER BY r.nombre LIMIT %s"
+        params.append(limite)
         
         print(f"[API RECURSOS-OCUPACION] Ejecutando query...")
         
-        if params:
-            cursor.execute(sql, tuple(params))
-        else:
-            cursor.execute(sql)
+        cursor.execute(sql, tuple(params))
             
         recursos = cursor.fetchall()
         
@@ -419,8 +432,8 @@ def api_detalle_recurso(id_recurso):
         conexion, cursor = obtener_conexion_dict()
         print("[API DETALLE-RECURSO] Conexión establecida")
         
-        # Query para listar OPERACION_RECURSO: muestra qué operaciones usaron este recurso
-        # y qué empleado realizó cada operación
+        # Query actualizado: RESERVA → CITA → OPERACION → OPERACION_RECURSO
+        # Obtiene información completa desde la cita programada
         sql = """
             SELECT 
                 ore.id_operacion_recurso,
@@ -428,19 +441,35 @@ def api_detalle_recurso(id_recurso):
                 o.fecha_operacion,
                 o.hora_inicio,
                 o.hora_fin,
-                o.observaciones,
-                CONCAT(COALESCE(e.nombres, ''), ' ', COALESCE(e.apellidos, 'Sin asignar')) as empleado,
+                o.observaciones as observaciones_operacion,
+                c.id_cita,
+                c.fecha_cita,
+                c.diagnostico,
+                c.observaciones as observaciones_cita,
+                c.estado as estado_cita,
+                CONCAT(COALESCE(p.nombres, ''), ' ', COALESCE(p.apellidos, '')) as paciente,
+                p.id_paciente,
+                p.documento_identidad as dni_paciente,
+                CONCAT(COALESCE(e.nombres, ''), ' ', COALESCE(e.apellidos, '')) as medico,
                 e.id_empleado,
+                COALESCE(esp.nombre, 'Sin especialidad') as especialidad_medico,
                 r.nombre as recurso,
                 tr.nombre as tipo_recurso,
                 COALESCE(s.nombre, 'Sin servicio') as servicio,
-                COALESCE(res.estado, 'N/A') as estado_reserva
+                res.estado as estado_reserva,
+                res.tipo as tipo_reserva,
+                DATE_FORMAT(o.fecha_operacion, '%%d/%%m/%%Y') as fecha_formateada,
+                TIME_FORMAT(o.hora_inicio, '%%H:%%i') as hora_inicio_formateada,
+                TIME_FORMAT(o.hora_fin, '%%H:%%i') as hora_fin_formateada
             FROM OPERACION_RECURSO ore
             INNER JOIN OPERACION o ON ore.id_operacion = o.id_operacion
             INNER JOIN RECURSO r ON ore.id_recurso = r.id_recurso
             INNER JOIN TIPO_RECURSO tr ON r.id_tipo_recurso = tr.id_tipo_recurso
+            LEFT JOIN CITA c ON o.id_cita = c.id_cita
+            LEFT JOIN RESERVA res ON c.id_reserva = res.id_reserva
+            LEFT JOIN PACIENTE p ON res.id_paciente = p.id_paciente
             LEFT JOIN EMPLEADO e ON o.id_empleado = e.id_empleado
-            LEFT JOIN RESERVA res ON o.id_reserva = res.id_reserva
+            LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
             LEFT JOIN PROGRAMACION prog ON res.id_programacion = prog.id_programacion
             LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
             WHERE ore.id_recurso = %s
@@ -453,14 +482,24 @@ def api_detalle_recurso(id_recurso):
         
         print(f"[API DETALLE-RECURSO] Usos encontrados: {len(usos)}")
         
-        # Formatear fechas en Python
+        # Convertir timedelta y datetime a strings para serialización JSON
         for uso in usos:
-            if uso.get('fecha_operacion'):
-                uso['fecha_formateada'] = uso['fecha_operacion'].strftime('%d/%m/%Y')
-            if uso.get('hora_inicio'):
-                uso['hora_inicio_formateada'] = str(uso['hora_inicio'])
-            if uso.get('hora_fin'):
-                uso['hora_fin_formateada'] = str(uso['hora_fin'])
+            # Convertir hora_inicio y hora_fin (timedelta) a strings
+            if uso.get('hora_inicio') and hasattr(uso['hora_inicio'], 'total_seconds'):
+                total_seconds = int(uso['hora_inicio'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                uso['hora_inicio'] = f"{hours:02d}:{minutes:02d}"
+            
+            if uso.get('hora_fin') and hasattr(uso['hora_fin'], 'total_seconds'):
+                total_seconds = int(uso['hora_fin'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                uso['hora_fin'] = f"{hours:02d}:{minutes:02d}"
+            
+            # Convertir fecha_operacion (date) a string
+            if uso.get('fecha_operacion') and hasattr(uso['fecha_operacion'], 'strftime'):
+                uso['fecha_operacion'] = uso['fecha_operacion'].strftime('%Y-%m-%d')
         
         cursor.close()
         conexion.close()
@@ -473,56 +512,7 @@ def api_detalle_recurso(id_recurso):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@reportes_bp.route("/api/recursos-ocupacion/generar", methods=["POST"])
-def api_generar_reporte_ocupacion():
-    """API para generar reporte de ocupación de recursos"""
-    print("[API GENERAR-OCUPACION] Iniciando generación de reporte...")
-    
-    if "usuario_id" not in session or session.get("tipo_usuario") != "empleado":
-        print("[API GENERAR-OCUPACION] Usuario no autorizado")
-        return jsonify({"error": "No autorizado"}), 401
-    
-    try:
-        # Obtener datos del formulario
-        id_tipo_recurso = request.form.get('id_tipo_recurso')
-        descripcion = request.form.get('descripcion', '')
-        
-        print(f"[API GENERAR-OCUPACION] Tipo recurso: {id_tipo_recurso}")
-        print(f"[API GENERAR-OCUPACION] Descripción: {descripcion}")
-        
-        if not id_tipo_recurso:
-            return jsonify({"error": "Debe especificar un tipo de recurso"}), 400
-        
-        conexion, cursor = obtener_conexion_dict()
-        print("[API GENERAR-OCUPACION] Conexión establecida")
-        
-        # Contar recursos de ese tipo
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM RECURSO
-            WHERE id_tipo_recurso = %s
-        """, (id_tipo_recurso,))
-        
-        resultado = cursor.fetchone()
-        total_recursos = resultado['total'] if resultado else 0
-        
-        print(f"[API GENERAR-OCUPACION] Total recursos del tipo: {total_recursos}")
-        
-        cursor.close()
-        conexion.close()
-        
-        return jsonify({
-            "success": True,
-            "message": "Reporte generado exitosamente",
-            "total_recursos": total_recursos,
-            "descripcion": descripcion
-        })
-        
-    except Exception as e:
-        print(f"[API GENERAR-OCUPACION] ERROR: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+# ============ MÓDULOS Y TIPOS DE EVENTO (para auditoría) ============
 
 @reportes_bp.route("/api/modulos", methods=["GET"])
 def api_obtener_modulos():
@@ -711,10 +701,13 @@ def api_buscar_reportes():
             filtros['limite'] = 50
     
     try:
+        print(f"[API BUSCAR] Filtros enviados: {filtros}")
         reportes = Reporte.buscar_reportes(filtros)
         return jsonify(reportes)
     except Exception as e:
-        print(f"Error en api_buscar_reportes: {str(e)}")  # Log para debugging
+        print(f"Error en api_buscar_reportes: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # =======================================
@@ -1270,66 +1263,186 @@ def api_generar_reporte_auditoria():
 
 @reportes_bp.route("/api/recursos-ocupacion/generar", methods=["POST"])
 def api_generar_reporte_recursos():
-    """API para generar un nuevo reporte de ocupación de recursos con archivo adjunto"""
+    """API para vincular una operación existente (desde RESERVA) con un recurso"""
     if "usuario_id" not in session or session.get("tipo_usuario") != "empleado":
         return jsonify({"error": "No autorizado"}), 401
     
     try:
         # Obtener datos del formulario
-        id_tipo_recurso = request.form.get('id_tipo_recurso')
-        descripcion = request.form.get('descripcion', '')
+        id_operacion = request.form.get('id_operacion')  # ID de operación existente
+        id_recurso = request.form.get('id_recurso')
         
-        if not id_tipo_recurso:
-            return jsonify({"error": "Debe seleccionar un tipo de recurso"}), 400
+        print(f"[VINCULAR OPERACION-RECURSO] Datos recibidos:")
+        print(f"  - id_operacion: {id_operacion}")
+        print(f"  - id_recurso: {id_recurso}")
         
-        # Obtener conexión a la base de datos
-        conexion = bd.obtener_conexion()
-        cursor = conexion.cursor()
+        # Validaciones
+        if not id_operacion:
+            return jsonify({"error": "Debe seleccionar una operación"}), 400
+        if not id_recurso:
+            return jsonify({"error": "Debe seleccionar un recurso"}), 400
         
-        # Contar recursos del tipo especificado
-        sql_count = """
-            SELECT COUNT(*) as total
-            FROM RECURSO
-            WHERE id_tipo_recurso = %s
+        # Obtener conexión a la base de datos con DictCursor
+        conexion, cursor = obtener_conexion_dict()
+        
+        # Verificar que la operación existe y tiene reserva
+        cursor.execute("""
+            SELECT o.id_operacion, o.id_reserva, r.id_paciente
+            FROM OPERACION o
+            INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+            WHERE o.id_operacion = %s
+        """, (id_operacion,))
+        
+        operacion = cursor.fetchone()
+        
+        if not operacion:
+            cursor.close()
+            conexion.close()
+            return jsonify({"error": "La operación no existe o no tiene reserva asociada"}), 400
+        
+        print(f"[VINCULAR OPERACION-RECURSO] Operación válida encontrada")
+        
+        # Verificar si ya existe el vínculo
+        cursor.execute("""
+            SELECT id_operacion_recurso 
+            FROM OPERACION_RECURSO 
+            WHERE id_operacion = %s AND id_recurso = %s
+        """, (id_operacion, id_recurso))
+        
+        if cursor.fetchone():
+            cursor.close()
+            conexion.close()
+            return jsonify({"error": "Esta operación ya está vinculada a este recurso"}), 400
+        
+        # Crear el vínculo OPERACION_RECURSO
+        sql_operacion_recurso = """
+            INSERT INTO OPERACION_RECURSO 
+            (id_operacion, id_recurso)
+            VALUES (%s, %s)
         """
-        cursor.execute(sql_count, (id_tipo_recurso,))
-        resultado = cursor.fetchone()
-        total_recursos = resultado[0] if resultado else 0
+        print(f"[VINCULAR OPERACION-RECURSO] Creando vínculo...")
         
-        # Manejar archivo adjunto si existe
-        archivo_guardado = None
-        if 'archivo' in request.files:
-            archivo = request.files['archivo']
-            if archivo and archivo.filename:
-                # Crear directorio si no existe
-                UPLOAD_FOLDER = os.path.join('uploads', 'reportes', 'recursos')
-                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-                
-                # Generar nombre único
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = secure_filename(archivo.filename)
-                nombre_unico = f"recurso_{timestamp}_{filename}"
-                filepath = os.path.join(UPLOAD_FOLDER, nombre_unico)
-                
-                # Guardar archivo
-                archivo.save(filepath)
-                archivo_guardado = {
-                    'nombre': filename,
-                    'ruta': filepath,
-                    'tipo': archivo.content_type,
-                    'tamano': os.path.getsize(filepath)
-                }
+        cursor.execute(sql_operacion_recurso, (id_operacion, id_recurso))
+        
+        conexion.commit()
+        print(f"[VINCULAR OPERACION-RECURSO] Vínculo creado exitosamente")
         
         cursor.close()
         conexion.close()
         
         return jsonify({
             "success": True,
-            "mensaje": "Reporte generado exitosamente",
-            "total_recursos": total_recursos,
-            "archivo_adjunto": archivo_guardado is not None
+            "mensaje": "Operación vinculada al recurso exitosamente"
         })
         
     except Exception as e:
+        print(f"[VINCULAR OPERACION-RECURSO] ❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Intentar hacer rollback si la conexión existe
+        try:
+            if 'conexion' in locals():
+                conexion.rollback()
+                print(f"[VINCULAR OPERACION-RECURSO] Rollback realizado")
+        except:
+            pass
+            
+        return jsonify({"error": str(e)}), 500
+        
+    except Exception as e:
         print(f"Error al generar reporte de recursos: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# ============ ENDPOINTS AUXILIARES ============
+
+@reportes_bp.route("/api/operaciones-disponibles", methods=["GET"])
+def api_operaciones_disponibles():
+    """API para obtener operaciones desde CITA que pueden vincularse a recursos"""
+    if "usuario_id" not in session or session.get("tipo_usuario") != "empleado":
+        return jsonify({"error": "No autorizado"}), 401
+    
+    try:
+        conexion, cursor = obtener_conexion_dict()
+        
+        # Obtener operaciones que tienen CITA con RESERVA
+        sql = """
+            SELECT 
+                o.id_operacion,
+                DATE_FORMAT(o.fecha_operacion, '%%d/%%m/%%Y') as fecha,
+                TIME_FORMAT(o.hora_inicio, '%%H:%%i') as hora_inicio,
+                TIME_FORMAT(o.hora_fin, '%%H:%%i') as hora_fin,
+                c.id_cita,
+                c.diagnostico,
+                c.estado as estado_cita,
+                CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                p.documento_identidad as dni_paciente,
+                CONCAT(e.nombres, ' ', e.apellidos) as medico,
+                COALESCE(esp.nombre, 'Sin especialidad') as especialidad,
+                COALESCE(s.nombre, 'Sin servicio') as servicio,
+                o.observaciones,
+                res.estado as estado_reserva
+            FROM OPERACION o
+            INNER JOIN CITA c ON o.id_cita = c.id_cita
+            INNER JOIN RESERVA res ON c.id_reserva = res.id_reserva
+            INNER JOIN PACIENTE p ON res.id_paciente = p.id_paciente
+            LEFT JOIN EMPLEADO e ON o.id_empleado = e.id_empleado
+            LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            LEFT JOIN PROGRAMACION prog ON res.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            WHERE c.id_cita IS NOT NULL
+            ORDER BY o.fecha_operacion DESC, o.hora_inicio DESC
+            LIMIT 100
+        """
+        
+        cursor.execute(sql)
+        operaciones = cursor.fetchall()
+        
+        print(f"[API OPERACIONES-DISPONIBLES] Operaciones encontradas: {len(operaciones)}")
+        
+        cursor.close()
+        conexion.close()
+        
+        return jsonify(operaciones)
+        
+    except Exception as e:
+        print(f"[API OPERACIONES-DISPONIBLES] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@reportes_bp.route("/api/pacientes", methods=["GET"])
+def api_obtener_pacientes():
+    """API para obtener la lista de pacientes para búsquedas"""
+    if "usuario_id" not in session or session.get("tipo_usuario") != "empleado":
+        return jsonify({"error": "No autorizado"}), 401
+    
+    try:
+        conexion = bd.obtener_conexion()
+        cursor = conexion.cursor()
+        
+        sql = """
+            SELECT 
+                p.id_paciente,
+                p.nombres,
+                p.apellidos,
+                p.documento_identidad,
+                p.sexo,
+                p.fecha_nacimiento
+            FROM PACIENTE p
+            ORDER BY p.apellidos, p.nombres
+        """
+        
+        cursor.execute(sql)
+        pacientes = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        return jsonify(pacientes)
+        
+    except Exception as e:
+        print(f"Error al obtener pacientes: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500

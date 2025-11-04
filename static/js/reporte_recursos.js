@@ -162,8 +162,6 @@ function renderizarTablaRecursos(recursos) {
                 'Ocupado': 'badge-ocupado'
             }[recurso.estado] || 'badge-mantenimiento';
 
-            const ocupacion = parseFloat(recurso.ocupacion_porcentaje || 0);
-
             const row = `
                 <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4 text-sm text-gray-900 font-medium">#${recurso.id_recurso}</td>
@@ -174,7 +172,6 @@ function renderizarTablaRecursos(recursos) {
                             ${recurso.estado || 'N/A'}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-sm font-bold ${ocupacion > 70 ? 'text-red-600' : ocupacion > 40 ? 'text-yellow-600' : 'text-green-600'}">${ocupacion.toFixed(1)}%</td>
                     <td class="px-6 py-4 text-center space-x-2">
                         <button onclick="verDetalleRecurso(${recurso.id_recurso}, '${(recurso.nombre || '').replace(/'/g, "\\'")}', '${(recurso.tipo_recurso || '').replace(/'/g, "\\'")}', ${recurso.operaciones_mes || 0})" 
                                 class="text-cyan-600 hover:text-cyan-800 transition-colors" 
@@ -231,21 +228,24 @@ async function verDetalleRecurso(idRecurso, nombreRecurso, tipoRecurso, totalUso
             tbody.innerHTML = usos.map(uso => `
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-3 text-sm text-gray-900">${uso.fecha_formateada || 'N/A'}</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">${uso.empleado || 'Sin asignar'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">
+                        ${uso.paciente || 'Sin paciente'}
+                        ${uso.dni_paciente ? `<br><span class="text-xs text-gray-500">DNI: ${uso.dni_paciente}</span>` : ''}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${uso.medico || 'Sin asignar'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${uso.especialidad_medico || 'N/A'}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${uso.servicio || 'Sin servicio'}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${uso.hora_inicio_formateada || 'N/A'}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${uso.hora_fin_formateada || 'N/A'}</td>
-                    <td class="px-4 py-3">
-                        <span class="badge-${uso.estado_reserva === 'Confirmada' ? 'disponible' : 'mantenimiento'} text-white text-xs px-2 py-1 rounded-full">
-                            ${uso.estado_reserva || 'N/A'}
-                        </span>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${uso.observaciones ? `<span class="text-xs">${uso.observaciones.substring(0, 50)}${uso.observaciones.length > 50 ? '...' : ''}</span>` : '-'}
                     </td>
                 </tr>
             `).join('');
         } else {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="8" class="px-4 py-8 text-center text-gray-500">
                         <i class="fas fa-inbox text-3xl mb-2 block"></i>
                         <p>No hay registros de uso para este recurso</p>
                     </td>
@@ -311,11 +311,15 @@ function setupModales() {
     }
 }
 
-// ========== FUNCIONES PARA GENERAR REPORTE ==========
+// ========== FUNCIONES PARA VINCULAR OPERACIÓN A RECURSO ==========
 
-// Abrir modal de generar reporte
-function abrirModalGenerarRecursos() {
-    console.log('[GENERAR REPORTE] Abriendo modal...');
+// Variables globales
+let operacionesGlobales = [];
+let operacionSeleccionada = null;
+
+// Abrir modal
+async function abrirModalGenerarRecursos() {
+    console.log('[VINCULAR OPERACION] Abriendo modal...');
     
     // Limpiar formulario
     const form = document.getElementById('formGenerarReporte');
@@ -323,19 +327,74 @@ function abrirModalGenerarRecursos() {
         form.reset();
     }
     
-    // Ocultar contenedor de recursos hasta que se seleccione tipo
-    const contenedorRecurso = document.getElementById('contenedorRecurso');
-    if (contenedorRecurso) {
-        contenedorRecurso.style.display = 'none';
-    }
+    // Ocultar info de operación
+    document.getElementById('infoOperacion').classList.add('hidden');
+    document.getElementById('contenedorRecurso').style.display = 'none';
     
     const progresoDiv = document.getElementById('progresoSubidaRecurso');
     if (progresoDiv) {
         progresoDiv.classList.add('hidden');
     }
     
+    // Cargar operaciones disponibles
+    await cargarOperacionesDisponibles();
+    
     document.getElementById('modalGenerarReporte').classList.add('show');
 }
+
+// Cargar operaciones que tienen RESERVA
+async function cargarOperacionesDisponibles() {
+    try {
+        console.log('[OPERACIONES] Cargando operaciones con reserva...');
+        const response = await fetch('/reportes/api/operaciones-disponibles');
+        if (response.ok) {
+            operacionesGlobales = await response.json();
+            console.log('[OPERACIONES] Operaciones cargadas:', operacionesGlobales.length);
+            
+            const select = document.getElementById('operacionReporte');
+            select.innerHTML = '<option value="">Seleccione una operación</option>';
+            
+            operacionesGlobales.forEach(op => {
+                const option = document.createElement('option');
+                option.value = op.id_operacion;
+                option.textContent = `${op.fecha} - ${op.paciente} - ${op.servicio || 'Sin servicio'}`;
+                option.dataset.operacion = JSON.stringify(op);
+                select.appendChild(option);
+            });
+        } else {
+            console.error('[OPERACIONES] Error al cargar:', response.status);
+        }
+    } catch (error) {
+        console.error('[OPERACIONES] Error:', error);
+    }
+}
+
+// Cuando se selecciona una operación, mostrar sus detalles
+document.addEventListener('DOMContentLoaded', function() {
+    const selectOperacion = document.getElementById('operacionReporte');
+    if (selectOperacion) {
+        selectOperacion.addEventListener('change', function() {
+            const infoDiv = document.getElementById('infoOperacion');
+            
+            if (this.value) {
+                const option = this.options[this.selectedIndex];
+                operacionSeleccionada = JSON.parse(option.dataset.operacion);
+                
+                // Mostrar información
+                document.getElementById('infoFecha').textContent = operacionSeleccionada.fecha;
+                document.getElementById('infoHorario').textContent = `${operacionSeleccionada.hora_inicio} - ${operacionSeleccionada.hora_fin}`;
+                document.getElementById('infoPaciente').textContent = `${operacionSeleccionada.paciente} (${operacionSeleccionada.dni_paciente})`;
+                document.getElementById('infoMedico').textContent = `${operacionSeleccionada.medico} - ${operacionSeleccionada.especialidad}`;
+                document.getElementById('infoServicio').textContent = operacionSeleccionada.servicio;
+                
+                infoDiv.classList.remove('hidden');
+            } else {
+                infoDiv.classList.add('hidden');
+                operacionSeleccionada = null;
+            }
+        });
+    }
+});
 
 // Cerrar modal
 function cerrarModalGenerarRecursos() {
@@ -346,44 +405,44 @@ function cerrarModalGenerarRecursos() {
 // Enviar formulario de generación
 async function enviarFormularioRecursos(e) {
     e.preventDefault();
-    console.log('[GENERAR REPORTE] Enviando formulario...');
+    console.log('[VINCULAR OPERACION] Enviando formulario...');
     
-    const tipoRecursoId = document.getElementById('tipoRecursoReporte').value;
-    const recursoId = document.getElementById('recursoReporte').value;
-    const fechaOperacion = document.getElementById('fechaOperacionReporte').value;
-    const descripcion = document.getElementById('descripcionRecursoReporte').value;
+    const idOperacion = document.getElementById('operacionReporte').value;
+    const idRecurso = document.getElementById('recursoReporte').value;
     
-    if (!tipoRecursoId) {
-        alert('Por favor seleccione un tipo de recurso');
+    // Validaciones
+    if (!idOperacion) {
+        alert('Por favor seleccione una operación');
+        return;
+    }
+    
+    if (!idRecurso) {
+        alert('Por favor seleccione un recurso');
         return;
     }
     
     const formData = new FormData();
-    formData.append('id_tipo_recurso', tipoRecursoId);
-    if (recursoId) formData.append('id_recurso', recursoId);
-    if (fechaOperacion) formData.append('fecha_operacion', fechaOperacion);
-    formData.append('descripcion', descripcion || '');
+    formData.append('id_operacion', idOperacion);
+    formData.append('id_recurso', idRecurso);
     
     try {
         // Mostrar progreso
         const progresoDiv = document.getElementById('progresoSubidaRecurso');
-        const spinner = document.getElementById('spinnerGenerarRecurso');
         const textoBtn = document.getElementById('textoGenerarRecurso');
         
         if (progresoDiv) progresoDiv.classList.remove('hidden');
-        if (spinner) spinner.style.display = 'inline-block';
-        if (textoBtn) textoBtn.textContent = 'Generando...';
+        if (textoBtn) textoBtn.textContent = 'Vinculando...';
         
         const response = await fetch('/reportes/api/recursos-ocupacion/generar', {
             method: 'POST',
             body: formData
         });
         
-        console.log('[GENERAR REPORTE] Respuesta status:', response.status);
+        console.log('[VINCULAR OPERACION] Respuesta status:', response.status);
         
         if (response.ok) {
             const resultado = await response.json();
-            console.log('[GENERAR REPORTE] Resultado:', resultado);
+            console.log('[VINCULAR OPERACION] Resultado:', resultado);
             
             cerrarModalGenerarRecursos();
             
@@ -391,7 +450,7 @@ async function enviarFormularioRecursos(e) {
             const exitoTotal = document.getElementById('exitoTotal');
             const exitoFecha = document.getElementById('exitoFecha');
             
-            if (exitoTotal) exitoTotal.textContent = resultado.total_recursos || 'N/A';
+            if (exitoTotal) exitoTotal.textContent = '1 vinculación';
             if (exitoFecha) exitoFecha.textContent = new Date().toLocaleDateString('es-PE');
             
             document.getElementById('modalExito').classList.add('show');
@@ -400,22 +459,26 @@ async function enviarFormularioRecursos(e) {
             await cargarRecursosOcupacion();
         } else {
             const error = await response.json();
-            alert('Error al generar el reporte: ' + (error.message || 'Error desconocido'));
+            alert('Error al vincular: ' + (error.error || 'Error desconocido'));
         }
         
     } catch (error) {
-        console.error('[GENERAR REPORTE] Error:', error);
-        alert('Error al generar el reporte: ' + error.message);
+        console.error('[VINCULAR OPERACION] Error:', error);
+        alert('Error al vincular: ' + error.message);
     } finally {
         // Ocultar progreso
         const progresoDiv = document.getElementById('progresoSubidaRecurso');
-        const spinner = document.getElementById('spinnerGenerarRecurso');
         const textoBtn = document.getElementById('textoGenerarRecurso');
         
         if (progresoDiv) progresoDiv.classList.add('hidden');
-        if (spinner) spinner.style.display = 'none';
-        if (textoBtn) textoBtn.textContent = 'Generar Reporte';
+        if (textoBtn) textoBtn.textContent = 'Vincular Operación';
     }
+}
+
+// Cerrar modal
+function cerrarModalGenerarRecursos() {
+    console.log('[VINCULAR OPERACION] Cerrando modal...');
+    document.getElementById('modalGenerarReporte').classList.remove('show');
 }
 
 // Event listeners
