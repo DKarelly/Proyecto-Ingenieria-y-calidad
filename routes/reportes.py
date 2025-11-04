@@ -1271,10 +1271,12 @@ def api_generar_reporte_recursos():
         # Obtener datos del formulario
         id_operacion = request.form.get('id_operacion')  # ID de operación existente
         id_recurso = request.form.get('id_recurso')
+        observaciones = request.form.get('observaciones', '').strip()
         
         print(f"[VINCULAR OPERACION-RECURSO] Datos recibidos:")
         print(f"  - id_operacion: {id_operacion}")
         print(f"  - id_recurso: {id_recurso}")
+        print(f"  - observaciones: {observaciones[:50] if observaciones else 'Sin observaciones'}...")
         
         # Validaciones
         if not id_operacion:
@@ -1285,11 +1287,12 @@ def api_generar_reporte_recursos():
         # Obtener conexión a la base de datos con DictCursor
         conexion, cursor = obtener_conexion_dict()
         
-        # Verificar que la operación existe y tiene reserva
+        # Verificar que la operación existe y tiene cita
         cursor.execute("""
-            SELECT o.id_operacion, o.id_reserva, r.id_paciente
+            SELECT o.id_operacion, o.id_cita, c.id_reserva, r.id_paciente
             FROM OPERACION o
-            INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+            INNER JOIN CITA c ON o.id_cita = c.id_cita
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
             WHERE o.id_operacion = %s
         """, (id_operacion,))
         
@@ -1298,9 +1301,19 @@ def api_generar_reporte_recursos():
         if not operacion:
             cursor.close()
             conexion.close()
-            return jsonify({"error": "La operación no existe o no tiene reserva asociada"}), 400
+            return jsonify({"error": "La operación no existe o no tiene cita/reserva asociada"}), 400
         
         print(f"[VINCULAR OPERACION-RECURSO] Operación válida encontrada")
+        
+        # Actualizar observaciones de la operación si se proporcionaron
+        if observaciones:
+            print(f"[VINCULAR OPERACION-RECURSO] Actualizando observaciones de la operación...")
+            cursor.execute("""
+                UPDATE OPERACION 
+                SET observaciones = %s
+                WHERE id_operacion = %s
+            """, (observaciones, id_operacion))
+            print(f"[VINCULAR OPERACION-RECURSO] Observaciones actualizadas")
         
         # Verificar si ya existe el vínculo
         cursor.execute("""
@@ -1369,9 +1382,9 @@ def api_operaciones_disponibles():
         sql = """
             SELECT 
                 o.id_operacion,
-                DATE_FORMAT(o.fecha_operacion, '%%d/%%m/%%Y') as fecha,
-                TIME_FORMAT(o.hora_inicio, '%%H:%%i') as hora_inicio,
-                TIME_FORMAT(o.hora_fin, '%%H:%%i') as hora_fin,
+                DATE_FORMAT(o.fecha_operacion, '%d/%m/%Y') as fecha,
+                TIME_FORMAT(o.hora_inicio, '%H:%i') as hora_inicio,
+                TIME_FORMAT(o.hora_fin, '%H:%i') as hora_fin,
                 c.id_cita,
                 c.diagnostico,
                 c.estado as estado_cita,
