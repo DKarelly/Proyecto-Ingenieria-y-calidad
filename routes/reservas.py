@@ -178,15 +178,22 @@ def api_servicios_por_tipo(id_tipo):
 
 @reservas_bp.route('/generar-reserva')
 def generar_reserva():
-    """Generar Nueva Reserva"""
+    """Generar Nueva Reserva - Para empleados y pacientes"""
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
 
-    if session.get('tipo_usuario') != 'empleado':
-        return redirect(url_for('home'))
-    servicios = Servicio.obtener_todos()
-    medicos = Empleado.obtener_medicos()
-    return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos)
+    # Si es paciente, renderizar el formulario de paciente
+    if session.get('tipo_usuario') == 'paciente':
+        return render_template('RegistrarCitaPaciente.html')
+    
+    # Si es empleado, renderizar el formulario de empleado
+    if session.get('tipo_usuario') == 'empleado':
+        servicios = Servicio.obtener_todos()
+        medicos = Empleado.obtener_medicos()
+        return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos)
+    
+    # Si no es ni empleado ni paciente, redirigir al home
+    return redirect(url_for('home'))
 
 
 @reservas_bp.route('/api/paciente-por-dni')
