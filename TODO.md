@@ -1,4 +1,0 @@
-- [x] Correct crear method in models/programacion.py: Remove id_empleado from INSERT
-- [x] Correct actualizar method in models/programacion.py: Remove id_empleado from update fields
-- [x] Modify crear method in models/programacion.py: Add logic to obtain id_empleado from horario
-- [x] Modify actualizar method in models/programacion.py: Add logic to update id_empleado when id_horario is updated

@@ -364,6 +364,7 @@ class Reporte:
     @staticmethod
     def buscar_reportes(filtros):
         """Busca reportes con filtros en tiempo real"""
+        print(f"[MODELO] buscar_reportes llamado con: {filtros}")
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -384,7 +385,7 @@ class Reporte:
                            c.nombre as categoria,
                            CONCAT(e.nombres, ' ', e.apellidos) as empleado,
                            s.nombre as servicio,
-                           DATE_FORMAT(r.fecha_creacion, '%d/%m/%Y %H:%i') as fecha_formateada,
+                           DATE_FORMAT(r.fecha_creacion, '%%d/%%m/%%Y %%H:%%i') as fecha_formateada,
                            COALESCE((SELECT COUNT(*) FROM REPORTE_ARCHIVO ra WHERE ra.id_reporte = r.id_reporte), 0) as num_archivos
                     FROM REPORTE r
                     LEFT JOIN CATEGORIA c ON r.id_categoria = c.id_categoria
@@ -428,20 +429,23 @@ class Reporte:
                 sql += " ORDER BY r.fecha_creacion DESC"
                 
                 # Límite de resultados para búsqueda en tiempo real
+                limite = 50  # Valor por defecto
                 if filtros.get('limite'):
                     try:
                         limite = int(filtros['limite'])
-                        sql += f" LIMIT {limite}"
                     except (ValueError, TypeError):
-                        sql += " LIMIT 50"  # Límite por defecto
-                else:
-                    sql += " LIMIT 50"  # Límite por defecto si no se especifica
+                        limite = 50
+                
+                # Añadir límite como parámetro
+                sql += " LIMIT %s"
+                params.append(limite)
+                
+                print(f"[MODELO] SQL final: {sql}")
+                print(f"[MODELO] Params: {params}")
+                print(f"[MODELO] Tipos de params: {[type(p).__name__ for p in params]}")
                 
                 # Ejecutar la consulta
-                if params:
-                    cursor.execute(sql, tuple(params))
-                else:
-                    cursor.execute(sql)
+                cursor.execute(sql, tuple(params))
                     
                 return cursor.fetchall()
         finally:
