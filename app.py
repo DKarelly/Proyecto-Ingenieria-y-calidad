@@ -12,7 +12,7 @@ from routes.paciente import paciente_bp
 
 import os
 from dotenv import load_dotenv
-
+#noaseaeaeaeass
 # Cargar variables de entorno
 load_dotenv()
 
