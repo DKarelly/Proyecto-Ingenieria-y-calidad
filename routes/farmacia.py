@@ -4,10 +4,10 @@ farmacia_bp = Blueprint('farmacia', __name__, url_prefix='/farmacia')
 
 @farmacia_bp.before_request
 def check_session():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-    if session['usuario']['rol'] not in ['admin', 'farmacia']:
-        return redirect(url_for('unauthorized'))
+    if 'usuario_id' not in session:
+        return redirect(url_for('usuarios.login'))
+    if session.get('id_rol') not in [1, 4]:  # 1 = admin, 4 = farmacia
+        return redirect(url_for('home'))
 
 @farmacia_bp.route('/')
 def farmacia():

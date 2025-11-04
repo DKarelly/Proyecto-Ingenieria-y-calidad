@@ -20,19 +20,18 @@ class Programacion:
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                # Obtener id_empleado desde el horario
+                # Verificar que el horario existe
                 sql_empleado = "SELECT id_empleado FROM HORARIO WHERE id_horario = %s"
                 cursor.execute(sql_empleado, (id_horario,))
                 result = cursor.fetchone()
                 if not result:
                     return {'error': 'Horario no encontrado'}
-                id_empleado = result['id_empleado']
 
                 sql = """INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin,
-                         id_servicio, id_empleado, id_horario, estado)
-                         VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+                         id_servicio, id_horario, estado)
+                         VALUES (%s, %s, %s, %s, %s, %s)"""
                 cursor.execute(sql, (fecha, hora_inicio, hora_fin, id_servicio,
-                                   id_empleado, id_horario, 'Activo'))
+                                   id_horario, 'Activo'))
                 conexion.commit()
                 return {'success': True, 'id_programacion': cursor.lastrowid}
         except Exception as e:
