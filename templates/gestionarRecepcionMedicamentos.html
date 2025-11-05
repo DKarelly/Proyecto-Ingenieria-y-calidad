@@ -1,26 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Recepción de Medicamentos - Clínica Unión</title>
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .badge-activo {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
+
         .badge-inactivo {
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
         }
+
         .badge-completado {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
+
         .badge-pendiente {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
+
         .modal {
             display: none;
             position: fixed;
@@ -31,11 +37,13 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
         }
+
         .modal.show {
             display: flex;
             align-items: center;
             justify-content: center;
         }
+
         .modal-content {
             background: white;
             border-radius: 1rem;
@@ -47,6 +55,7 @@
         }
     </style>
 </head>
+
 <body class="bg-[#f8fafc] font-['Inter']">
 
     {% include 'header_admin.html' %}
@@ -68,7 +77,8 @@
 
         <!-- Botón registrar nueva recepción -->
         <div class="mb-6">
-            <button id="btnRegistrarRecepcion" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
+            <button id="btnRegistrarRecepcion"
+                class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
                 <i class="fas fa-plus mr-2"></i>
                 Registrar Nueva Recepción
             </button>
@@ -87,14 +97,9 @@
                         <i class="fas fa-pills text-gray-500 mr-1"></i>
                         Buscar Medicamento
                     </label>
-                    <input
-                        type="text"
-                        id="filtroMedicamento"
-                        minlength="2"
-                        placeholder="Buscar medicamento"
+                    <input type="text" id="filtroMedicamento" minlength="2" placeholder="Buscar medicamento"
                         list="medicamentos-list"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-                    >
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
                     <datalist id="medicamentos-list">
                         <option value="Paracetamol">
                         <option value="Ibuprofeno">
@@ -102,14 +107,16 @@
                 </div>
 
                 <div class="flex items-end">
-                    <button id="btnLimpiar" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
+                    <button id="btnLimpiar"
+                        class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
                         <i class="fas fa-broom"></i>
                         Limpiar
                     </button>
                 </div>
 
                 <div class="flex items-end">
-                    <button type="submit" id="btnBuscar" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
+                    <button type="submit" id="btnBuscar"
+                        class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
                         <i class="fas fa-search"></i>
                         Buscar
                     </button>
@@ -123,48 +130,24 @@
                 <table class="admin-table w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Stock</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Registro</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Fecha Vencimiento</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Nombre</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Descripción</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Stock</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Fecha Registro</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Fecha Vencimiento</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Controles</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-recepciones-body" class="divide-y divide-gray-200">
-                        <tr data-id="REC-001" data-id-medicamento="1" data-medicamento="Paracetamol" data-descripcion="Analgésico y antipirético" data-cantidad="100" data-fecha-registro="2023-10-01" data-fecha-vencimiento="2024-10-01">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">REC-001</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Paracetamol</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Analgésico y antipirético</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2023-10-01</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-10-01</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                <button class="text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="text-blue-600 hover:text-blue-900 mr-3 btn-editar" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr data-id="REC-002" data-id-medicamento="2" data-medicamento="Ibuprofeno" data-descripcion="Antiinflamatorio no esteroideo" data-cantidad="50" data-fecha-registro="2023-09-28" data-fecha-vencimiento="2024-09-28">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">REC-002</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Ibuprofeno</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Antiinflamatorio no esteroideo</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">50</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2023-09-28</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-09-28</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                <button class="text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="text-blue-600 hover:text-blue-900 mr-3 btn-editar" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </td>
-                        </tr>
+                        <!-- Filas de la tabla generadas dinámicamente -->
                     </tbody>
                 </table>
             </div>
@@ -179,7 +162,8 @@
                     <i class="fas fa-box-open text-cyan-600 mr-2"></i>
                     Registrar Nueva Recepción
                 </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+                <button
+                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formRegistrarRecepcion" class="space-y-4">
                 <div>
@@ -187,14 +171,18 @@
                         <i class="fas fa-pills text-gray-500 mr-1"></i>
                         Nombre del Medicamento
                     </label>
-                    <input type="text" id="nombreMedicamento" name="nombreMedicamento" placeholder="Nombre del medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    <input type="text" id="nombreMedicamento" name="nombreMedicamento"
+                        placeholder="Nombre del medicamento"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                        required>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-info-circle text-gray-500 mr-1"></i>
                         Descripción
                     </label>
-                    <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
+                    <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del medicamento"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -202,14 +190,18 @@
                             <i class="fas fa-hashtag text-gray-500 mr-1"></i>
                             Stock
                         </label>
-                        <input type="number" id="stock" name="stock" min="1" placeholder="Cantidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="number" id="stock" name="stock" min="1" placeholder="Cantidad"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-calendar text-gray-500 mr-1"></i>
                             Fecha de Registro
                         </label>
-                        <input type="date" id="fecha_registro" name="fecha_registro" value="{{ current_date }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="date" id="fecha_registro" name="fecha_registro" value="{{ current_date }}"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                 </div>
                 <div>
@@ -217,14 +209,18 @@
                         <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
                         Fecha de Vencimiento
                     </label>
-                    <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    <input type="date" id="fecha_vencimiento" name="fecha_vencimiento"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                        required>
                 </div>
                 <div class="flex gap-4 pt-4">
-                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <button type="button"
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
                         <i class="fas fa-times mr-2"></i>
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <button type="submit"
+                        class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-save mr-2"></i>
                         Guardar
                     </button>
@@ -241,7 +237,8 @@
                     <i class="fas fa-pen-to-square text-blue-600 mr-2"></i>
                     Modificar Medicamento
                 </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+                <button
+                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formModificarRecepcion" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -250,14 +247,17 @@
                             <i class="fas fa-hashtag text-gray-500 mr-1"></i>
                             ID Medicamento
                         </label>
-                        <input type="text" id="idMedicamento" value="1" placeholder="ID del medicamento" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
+                        <input type="text" id="idMedicamento" value="1" placeholder="ID del medicamento"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-pills text-gray-500 mr-1"></i>
                             Nombre del Medicamento
                         </label>
-                        <input type="text" id="nombreMedicamentoEdit" name="nombreMedicamentoEdit" value="Paracetamol" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="text" id="nombreMedicamentoEdit" name="nombreMedicamentoEdit" value="Paracetamol"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -266,14 +266,18 @@
                             <i class="fas fa-hashtag text-gray-500 mr-1"></i>
                             Stock
                         </label>
-                        <input type="number" id="stockEdit" name="stockEdit" value="100" min="1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="number" id="stockEdit" name="stockEdit" value="100" min="1"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-calendar text-gray-500 mr-1"></i>
                             Fecha de Registro
                         </label>
-                        <input type="date" id="fechaRegistroEdit" name="fechaRegistroEdit" value="2023-10-01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <input type="date" id="fechaRegistroEdit" name="fechaRegistroEdit" value="2023-10-01"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                 </div>
                 <div>
@@ -281,50 +285,31 @@
                         <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
                         Fecha de Vencimiento
                     </label>
-                    <input type="date" id="fechaVencimientoEdit" name="fechaVencimientoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                    <input type="date" id="fechaVencimientoEdit" name="fechaVencimientoEdit"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                        required>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-info-circle text-gray-500 mr-1"></i>
                         Descripción
                     </label>
-                    <textarea id="descripcionEdit" name="descripcionEdit" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
+                    <textarea id="descripcionEdit" name="descripcionEdit" rows="3"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
                 </div>
                 <div class="flex gap-4 pt-4">
-                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <button type="button"
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
                         <i class="fas fa-times mr-2"></i>
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <button type="submit"
+                        class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-save mr-2"></i>
                         Guardar Cambios
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Modal de confirmación de eliminación -->
-    <div id="modalEliminar" class="modal">
-        <div class="modal-content max-w-md">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-                    Confirmar Eliminación
-                </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
-            </div>
-            <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar esta recepción de medicamentos?</p>
-            <div class="flex gap-4">
-                <button id="btnCancelarEliminar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                    <i class="fas fa-times mr-2"></i>
-                    Cancelar
-                </button>
-                <button id="btnConfirmarEliminar" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-                    <i class="fas fa-trash-alt mr-2"></i>
-                    Eliminar
-                </button>
-            </div>
         </div>
     </div>
 
@@ -336,7 +321,8 @@
                     <i class="fas fa-eye text-cyan-600 mr-2"></i>
                     Detalles de la Recepción
                 </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+                <button
+                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -384,12 +370,14 @@
                             <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
                             Fecha Vencimiento
                         </label>
-                        <p id="detalleFechaVencimiento" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                        <p id="detalleFechaVencimiento" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg">
+                        </p>
                     </div>
                 </div>
             </div>
             <div class="flex gap-4 pt-4">
-                <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors close">
+                <button type="button"
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors close">
                     <i class="fas fa-times mr-2"></i>
                     Cerrar
                 </button>
@@ -397,122 +385,9 @@
         </div>
     </div>
 
-    <script>
-        // Funcionalidad de modales
-        const modalRegistrar = document.getElementById('modalRegistrarRecepcion');
-        const modalModificar = document.getElementById('modalModificarRecepcion');
-        const modalEliminar = document.getElementById('modalEliminar');
-        const modalVerDetalles = document.getElementById('modalVerDetalles');
-        const btnRegistrar = document.getElementById('btnRegistrarRecepcion');
-
-        // Abrir modal de registro
-        btnRegistrar.addEventListener('click', () => {
-            modalRegistrar.classList.add('show');
-        });
-
-        // Cerrar modales
-        document.querySelectorAll('.close').forEach(closeBtn => {
-            closeBtn.addEventListener('click', () => {
-                modalRegistrar.classList.remove('show');
-                modalModificar.classList.remove('show');
-                modalEliminar.classList.remove('show');
-                modalVerDetalles.classList.remove('show');
-            });
-        });
-
-        // Cerrar modal al hacer clic fuera
-        window.addEventListener('click', (e) => {
-            if (e.target === modalRegistrar) modalRegistrar.classList.remove('show');
-            if (e.target === modalModificar) modalModificar.classList.remove('show');
-            if (e.target === modalEliminar) modalEliminar.classList.remove('show');
-            if (e.target === modalVerDetalles) modalVerDetalles.classList.remove('show');
-        });
-
-        // Botones de ver detalles
-        document.querySelectorAll('button[title="Ver detalles"]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const row = e.target.closest('tr');
-                const id = row.getAttribute('data-id');
-                const nombre = row.getAttribute('data-medicamento');
-                const descripcion = row.getAttribute('data-descripcion');
-                const stock = row.getAttribute('data-cantidad');
-                const fechaRegistro = row.getAttribute('data-fecha-registro');
-                const fechaVencimiento = row.getAttribute('data-fecha-vencimiento');
-
-                document.getElementById('detalleId').textContent = id;
-                document.getElementById('detalleNombre').textContent = nombre;
-                document.getElementById('detalleDescripcion').textContent = descripcion;
-                document.getElementById('detalleStock').textContent = stock;
-                document.getElementById('detalleFechaRegistro').textContent = fechaRegistro;
-                document.getElementById('detalleFechaVencimiento').textContent = fechaVencimiento;
-
-                modalVerDetalles.classList.add('show');
-            });
-        });
-
-        // Botones de editar
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const row = e.target.closest('tr');
-                const idMedicamento = row.getAttribute('data-id-medicamento');
-                const nombre = row.getAttribute('data-medicamento');
-                const stock = row.getAttribute('data-cantidad');
-
-                document.getElementById('idMedicamento').value = idMedicamento;
-                document.getElementById('nombreMedicamentoEdit').value = nombre;
-                document.getElementById('stockEdit').value = stock;
-                // Nota: descripcion, fechaRegistroEdit, fechaVencimientoEdit no están disponibles en la tabla estática
-                // Se pueden dejar con valores por defecto o vacíos
-
-                modalModificar.classList.add('show');
-            });
-        });
-
-        // Botones de eliminar
-        document.querySelectorAll('.btn-eliminar').forEach(btn => {
-            btn.addEventListener('click', () => {
-                modalEliminar.classList.add('show');
-            });
-        });
-
-        // Formulario de registro
-        document.getElementById('formRegistrarRecepcion').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Recepción registrada exitosamente');
-            modalRegistrar.classList.remove('show');
-            this.reset();
-        });
-
-        // Formulario de modificación
-        document.getElementById('formModificarRecepcion').addEventListener('submit', function(e) {
-            e.preventDefault();
-            alert('Recepción modificada exitosamente');
-            modalModificar.classList.remove('show');
-        });
-
-        // Confirmar eliminación
-        document.getElementById('btnConfirmarEliminar').addEventListener('click', () => {
-            alert('Recepción eliminada exitosamente');
-            modalEliminar.classList.remove('show');
-        });
-
-        // Cancelar eliminación
-        document.getElementById('btnCancelarEliminar').addEventListener('click', () => {
-            modalEliminar.classList.remove('show');
-        });
-
-        // Filtros
-        document.getElementById('btnLimpiar').addEventListener('click', () => {
-            document.getElementById('formFiltros').reset();
-        });
-
-        document.getElementById('formFiltros').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Aquí iría la lógica de filtrado
-            alert('Filtros aplicados');
-        });
-    </script>
+    <script src="/static/js/gestionarRecepcionMedicamento.js"></script>
 
     {% include 'footer.html' %}
 </body>
+
 </html>
