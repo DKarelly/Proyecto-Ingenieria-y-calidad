@@ -70,6 +70,68 @@ def consultar_disponibilidad():
     return render_template('consultarDisponibilidad.html', servicios=servicios, medicos=medicos)
 
 
+@reservas_bp.route('/api/horarios-semana/<int:id_empleado>')
+def api_horarios_semana(id_empleado):
+    """
+    Retorna los horarios de esta semana para un médico específico
+    Agrupa por fecha y muestra si está disponible o no
+    """
+    try:
+        from datetime import date, timedelta
+        
+        # Calcular inicio y fin de esta semana (lunes a domingo)
+        hoy = date.today()
+        inicio_semana = hoy - timedelta(days=hoy.weekday())  # Lunes
+        fin_semana = inicio_semana + timedelta(days=6)  # Domingo
+        
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT 
+                    h.id_horario,
+                    h.fecha,
+                    TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
+                    TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
+                    h.estado,
+                    CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                    esp.nombre as especialidad
+                FROM HORARIO h
+                INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE h.id_empleado = %s
+                  AND h.fecha BETWEEN %s AND %s
+                ORDER BY h.fecha, h.hora_inicio
+            """
+            cursor.execute(sql, (id_empleado, inicio_semana, fin_semana))
+            horarios = cursor.fetchall()
+            
+            # Convertir fechas a string
+            for horario in horarios:
+                if horario.get('fecha'):
+                    horario['fecha'] = horario['fecha'].strftime('%Y-%m-%d')
+                    # Agregar día de la semana
+                    fecha_obj = date.fromisoformat(horario['fecha'])
+                    dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+                    horario['dia_semana'] = dias_semana[fecha_obj.weekday()]
+                
+                # Marcar si es disponible
+                horario['disponible'] = horario['estado'].lower() == 'disponible'
+            
+            return jsonify({
+                'horarios': horarios,
+                'inicio_semana': inicio_semana.strftime('%Y-%m-%d'),
+                'fin_semana': fin_semana.strftime('%Y-%m-%d')
+            })
+
+    except Exception as e:
+        return jsonify({'error': f'Error al obtener horarios: {str(e)}'}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
 @reservas_bp.route('/api/horarios-disponibles')
 def api_horarios_disponibles():
     """Retorna horarios disponibles para una fecha y (opcional) empleado o servicio.
@@ -635,6 +697,55 @@ def paciente_nueva_cita():
     return render_template('RegistrarCitaPaciente.html')
 
 
+@reservas_bp.route('/api/especialidades-activas')
+def api_especialidades_activas():
+    """Retorna todas las especialidades activas"""
+    try:
+        print("[API] Iniciando consulta de especialidades...")
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Buscar especialidades activas (con LIKE para ser case-insensitive)
+            sql = """
+                SELECT id_especialidad, nombre, estado, descripcion
+                FROM ESPECIALIDAD
+                WHERE LOWER(estado) = 'activo'
+                ORDER BY nombre
+            """
+            print(f"[API] Ejecutando SQL: {sql}")
+            cursor.execute(sql)
+            especialidades = cursor.fetchall()
+            print(f"[API] Especialidades encontradas con filtro: {len(especialidades)}")
+            
+            # Si no hay especialidades activas, devolver todas
+            if not especialidades or len(especialidades) == 0:
+                print("[API] No se encontraron especialidades activas, buscando todas...")
+                sql_all = """
+                    SELECT id_especialidad, nombre, estado, descripcion
+                    FROM ESPECIALIDAD
+                    ORDER BY nombre
+                """
+                cursor.execute(sql_all)
+                especialidades = cursor.fetchall()
+                print(f"[API] Total especialidades sin filtro: {len(especialidades)}")
+
+            print(f"[API] Retornando {len(especialidades)} especialidades")
+            return jsonify({
+                'especialidades': especialidades,
+                'total': len(especialidades) if especialidades else 0
+            })
+
+    except Exception as e:
+        print(f"[API] Error al obtener especialidades: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'especialidades': []}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
 @reservas_bp.route('/api/servicios-activos')
 def api_servicios_activos():
     """Retorna todos los servicios activos disponibles para pacientes"""
@@ -652,6 +763,42 @@ def api_servicios_activos():
             servicios = cursor.fetchall()
 
             return jsonify({'servicios': servicios})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
+@reservas_bp.route('/api/medicos-por-especialidad/<int:id_especialidad>')
+def api_medicos_por_especialidad(id_especialidad):
+    """Retorna médicos disponibles (id_rol=2) para una especialidad específica"""
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT 
+                    e.id_empleado,
+                    e.nombres,
+                    e.apellidos,
+                    e.correo,
+                    e.telefono,
+                    esp.nombre as especialidad,
+                    esp.id_especialidad
+                FROM EMPLEADO e
+                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE e.id_rol = 2 
+                  AND e.id_especialidad = %s
+                  AND e.estado = 'activo'
+                ORDER BY e.nombres, e.apellidos
+            """
+            cursor.execute(sql, (id_especialidad,))
+            medicos = cursor.fetchall()
+
+            return jsonify({'medicos': medicos})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -874,8 +1021,8 @@ def api_paciente_mis_reservas():
                        r.fecha_registro,
                        r.estado as estado_reserva,
                        p.fecha as fecha_cita,
-                       p.hora_inicio,
-                       p.hora_fin,
+                       TIME_FORMAT(p.hora_inicio, '%H:%i') as hora_inicio,
+                       TIME_FORMAT(p.hora_fin, '%H:%i') as hora_fin,
                        s.nombre as servicio,
                        e.nombres as medico_nombres,
                        e.apellidos as medico_apellidos,
@@ -891,6 +1038,13 @@ def api_paciente_mis_reservas():
             """
             cursor.execute(sql, (id_paciente,))
             reservas = cursor.fetchall()
+            
+            # Convertir fecha_registro a string
+            for reserva in reservas:
+                if reserva.get('fecha_registro'):
+                    reserva['fecha_registro'] = reserva['fecha_registro'].strftime('%Y-%m-%d %H:%M:%S')
+                if reserva.get('fecha_cita'):
+                    reserva['fecha_cita'] = reserva['fecha_cita'].strftime('%Y-%m-%d')
 
             return jsonify({'reservas': reservas})
 
