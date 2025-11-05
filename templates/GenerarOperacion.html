@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Operación - Clínica Unión</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    {% include 'header.html' %}
+
+    <div class="container mx-auto px-4 pt-24 pb-12">
+
+        <!-- Header Section -->
+        <div class="max-w-4xl mx-auto mb-8">
+            <a href="javascript:history.back()" class="inline-flex items-center text-red-600 hover:text-red-700 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+                </svg>
+                Volver
+            </a>
+
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-red-400 to-red-600 rounded-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Generar Nueva Operación</h1>
+                        <p class="text-gray-600">Programa una operación quirúrgica para el paciente</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario -->
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <form id="formOperacion">
+                    <!-- Información de la Cita -->
+                    <div class="mb-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Información de la Cita</h3>
+                        <div id="infoCita" class="text-sm text-gray-600">
+                            <p><strong>ID Reserva:</strong> <span id="displayReserva">-</span></p>
+                            <p><strong>ID Cita:</strong> <span id="displayCita">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Operación -->
+                    <div class="mb-6">
+                        <label for="tipoOperacion" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Tipo de Operación <span class="text-red-500">*</span>
+                        </label>
+                        <select id="tipoOperacion" name="tipoOperacion" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="">Seleccione el tipo de operación</option>
+                            <option value="Cirugía General">Cirugía General</option>
+                            <option value="Cirugía Cardiovascular">Cirugía Cardiovascular</option>
+                            <option value="Cirugía Ortopédica">Cirugía Ortopédica</option>
+                            <option value="Cirugía Plástica">Cirugía Plástica</option>
+                            <option value="Cirugía Neurológica">Cirugía Neurológica</option>
+                            <option value="Cirugía Oftalmológica">Cirugía Oftalmológica</option>
+                            <option value="Cirugía Ginecológica">Cirugía Ginecológica</option>
+                            <option value="Cirugía Urológica">Cirugía Urológica</option>
+                            <option value="Apendicectomía">Apendicectomía</option>
+                            <option value="Colecistectomía">Colecistectomía</option>
+                            <option value="Hernia">Cirugía de Hernia</option>
+                            <option value="Cesárea">Cesárea</option>
+                            <option value="Otra">Otra</option>
+                        </select>
+                    </div>
+
+                    <!-- Fecha de la Operación -->
+                    <div class="mb-6">
+                        <label for="fechaOperacion" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Fecha de la Operación <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="fechaOperacion" name="fechaOperacion" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    </div>
+
+                    <!-- Hora de la Operación -->
+                    <div class="mb-6">
+                        <label for="horaOperacion" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Hora de la Operación <span class="text-red-500">*</span>
+                        </label>
+                        <input type="time" id="horaOperacion" name="horaOperacion" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="mb-6">
+                        <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Descripción de la Operación <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="descripcion" name="descripcion" rows="5" required
+                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                  placeholder="Describa el motivo o detalles relevantes para la operación..."></textarea>
+                    </div>
+
+                    <!-- Nota informativa -->
+                    <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600 flex-shrink-0 mt-0.5">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                            </svg>
+                            <div class="text-sm text-blue-800">
+                                <p><strong>La operación será registrada con estado "Programada".</strong></p>
+                                <p class="mt-1">El equipo médico confirmará los detalles y preparativos necesarios antes del procedimiento.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos ocultos -->
+                    <input type="hidden" id="idReserva" name="idReserva">
+                    <input type="hidden" id="idCita" name="idCita">
+
+                    <!-- Botones -->
+                    <div class="flex gap-4 justify-end">
+                        <button type="button" onclick="history.back()"
+                                class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg">
+                            Generar Operación
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Obtener parámetros de la URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const idReserva = urlParams.get('reserva');
+            const idCita = urlParams.get('cita');
+
+            if (idReserva && idCita) {
+                document.getElementById('idReserva').value = idReserva;
+                document.getElementById('idCita').value = idCita;
+                document.getElementById('displayReserva').textContent = `#${idReserva}`;
+                document.getElementById('displayCita').textContent = `#${idCita}`;
+            } else {
+                alert('Faltan parámetros requeridos (reserva y cita)');
+                history.back();
+            }
+
+            // Establecer fecha mínima como hoy
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('fechaOperacion').setAttribute('min', hoy);
+        });
+
+        // Manejar el envío del formulario
+        document.getElementById('formOperacion').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                id_reserva: document.getElementById('idReserva').value,
+                id_cita: document.getElementById('idCita').value,
+                tipo_operacion: document.getElementById('tipoOperacion').value,
+                fecha_operacion: document.getElementById('fechaOperacion').value,
+                hora_operacion: document.getElementById('horaOperacion').value,
+                estado: 'Programada', // Estado automático
+                descripcion: document.getElementById('descripcion').value
+            };
+
+            try {
+                const response = await fetch('/reservas/api/operaciones/crear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert('Operación generada exitosamente');
+                    history.back();
+                } else {
+                    alert('Error al generar operación: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al generar operación. Por favor, intente nuevamente.');
+            }
+        });
+    </script>
+
+</body>
+</html>

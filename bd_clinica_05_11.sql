@@ -23,7 +23,7 @@ USE `CLINICA`;
 
 DROP TABLE IF EXISTS `ASIGNAR_EMPLEADO_INCIDENCIA`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!50503 SET character_set_client = Manuel */;
 CREATE TABLE `ASIGNAR_EMPLEADO_INCIDENCIA` (
   `id_historial` int NOT NULL AUTO_INCREMENT,
   `observaciones` varchar(200) DEFAULT NULL,

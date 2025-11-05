@@ -1400,6 +1400,7 @@ def api_paciente_mis_reservas():
                 SELECT r.id_reserva,
                        r.fecha_registro,
                        r.hora_registro,
+                       r.tipo,
                        r.estado as estado_reserva,
                        p.fecha as fecha_cita,
                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
@@ -1460,5 +1461,425 @@ def api_paciente_mis_reservas():
             try:
                 conexion.close()
                 print("[API mis-reservas] Conexión cerrada")
+            except:
+                pass
+
+
+@reservas_bp.route('/historial-clinico')
+def historial_clinico():
+    """Vista del historial clínico (citas completadas con diagnóstico)"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('HistorialClinicoPaciente.html')
+
+
+@reservas_bp.route('/api/paciente/historial-clinico')
+def api_paciente_historial_clinico():
+    """API que retorna el historial clínico (citas completadas con diagnóstico)"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    conexion = None
+    try:
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Solo citas completadas con diagnóstico
+            sql = """
+                SELECT c.id_cita,
+                       c.fecha_cita,
+                       TIME_FORMAT(c.hora_inicio, '%%H:%%i') as hora_inicio,
+                       c.diagnostico,
+                       c.observaciones,
+                       c.estado,
+                       e.nombres as medico_nombres,
+                       e.apellidos as medico_apellidos,
+                       esp.nombre as especialidad,
+                       r.id_reserva,
+                       (SELECT COUNT(*) FROM EXAMEN ex WHERE ex.id_reserva = r.id_reserva) as total_examenes
+                FROM CITA c
+                INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE r.id_paciente = %s
+                  AND LOWER(c.estado) = 'completada'
+                  AND c.diagnostico IS NOT NULL
+                  AND c.diagnostico != ''
+                ORDER BY c.fecha_cita DESC
+            """
+            cursor.execute(sql, (id_paciente,))
+            historial = cursor.fetchall()
+            
+            # Convertir fechas y obtener exámenes asociados
+            for cita in historial:
+                if cita.get('fecha_cita'):
+                    if hasattr(cita['fecha_cita'], 'strftime'):
+                        cita['fecha_cita'] = cita['fecha_cita'].strftime('%Y-%m-%d')
+                    else:
+                        cita['fecha_cita'] = str(cita['fecha_cita'])
+                
+                # Obtener detalles de exámenes asociados
+                id_reserva = cita.get('id_reserva')
+                if id_reserva:
+                    sql_examenes = """
+                        SELECT e.id_examen,
+                               e.fecha_examen,
+                               TIME_FORMAT(e.hora_examen, '%%H:%%i') as hora_examen,
+                               e.observacion,
+                               e.estado,
+                               'Examen Médico' as tipo_examen
+                        FROM EXAMEN e
+                        WHERE e.id_reserva = %s
+                        ORDER BY e.fecha_examen DESC, e.hora_examen DESC
+                    """
+                    cursor.execute(sql_examenes, (id_reserva,))
+                    examenes = cursor.fetchall()
+                    
+                    # Convertir fechas de exámenes
+                    for examen in examenes:
+                        if examen.get('fecha_examen'):
+                            if hasattr(examen['fecha_examen'], 'strftime'):
+                                examen['fecha_examen'] = examen['fecha_examen'].strftime('%Y-%m-%d')
+                            else:
+                                examen['fecha_examen'] = str(examen['fecha_examen'])
+                    
+                    cita['examenes'] = examenes
+                    
+                    # Obtener operaciones asociadas (si la tabla OPERACION existe)
+                    try:
+                        sql_operaciones = """
+                            SELECT o.id_operacion,
+                                   o.fecha_operacion,
+                                   TIME_FORMAT(o.hora_operacion, '%%H:%%i') as hora_operacion,
+                                   o.descripcion,
+                                   o.estado,
+                                   o.tipo_operacion
+                            FROM OPERACION o
+                            WHERE o.id_reserva = %s
+                            ORDER BY o.fecha_operacion DESC, o.hora_operacion DESC
+                        """
+                        cursor.execute(sql_operaciones, (id_reserva,))
+                        operaciones = cursor.fetchall()
+                        
+                        # Convertir fechas de operaciones
+                        for operacion in operaciones:
+                            if operacion.get('fecha_operacion'):
+                                if hasattr(operacion['fecha_operacion'], 'strftime'):
+                                    operacion['fecha_operacion'] = operacion['fecha_operacion'].strftime('%Y-%m-%d')
+                                else:
+                                    operacion['fecha_operacion'] = str(operacion['fecha_operacion'])
+                        
+                        cita['operaciones'] = operaciones
+                    except:
+                        # Si la tabla OPERACION no existe, devolver lista vacía
+                        cita['operaciones'] = []
+                else:
+                    cita['examenes'] = []
+                    cita['operaciones'] = []
+
+            return jsonify({'historial': historial})
+
+    except Exception as e:
+        print(f"[API historial-clinico] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al obtener historial clínico: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+@reservas_bp.route('/operaciones')
+def operaciones():
+    """Vista de gestión de operaciones"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('GestionOperaciones.html')
+
+
+@reservas_bp.route('/examenes')
+def examenes():
+    """Vista de gestión de exámenes"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('GestionExamenes.html')
+
+
+@reservas_bp.route('/api/paciente/examenes')
+def api_paciente_examenes():
+    """API que retorna todos los exámenes del paciente autenticado"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    conexion = None
+    try:
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT e.id_examen,
+                       e.fecha_examen,
+                       TIME_FORMAT(e.hora_examen, '%%H:%%i') as hora_examen,
+                       e.observacion,
+                       e.estado,
+                       r.id_reserva,
+                       'Examen Médico' as tipo_examen
+                FROM EXAMEN e
+                INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
+                WHERE r.id_paciente = %s
+                ORDER BY e.fecha_examen DESC
+            """
+            cursor.execute(sql, (id_paciente,))
+            examenes = cursor.fetchall()
+            
+            # Convertir fechas
+            for examen in examenes:
+                if examen.get('fecha_examen'):
+                    if hasattr(examen['fecha_examen'], 'strftime'):
+                        examen['fecha_examen'] = examen['fecha_examen'].strftime('%Y-%m-%d')
+                    else:
+                        examen['fecha_examen'] = str(examen['fecha_examen'])
+
+            return jsonify({'examenes': examenes})
+
+    except Exception as e:
+        print(f"[API examenes] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al obtener exámenes: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+# ========== RUTAS PARA GENERACIÓN DE EXÁMENES Y OPERACIONES ==========
+
+@reservas_bp.route('/examenes/generar')
+def examenes_generar():
+    """Vista para generar un nuevo examen"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('GenerarExamen.html')
+
+
+@reservas_bp.route('/operaciones/generar')
+def operaciones_generar():
+    """Vista para generar una nueva operación"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('GenerarOperacion.html')
+
+
+@reservas_bp.route('/api/examenes/crear', methods=['POST'])
+def api_crear_examen():
+    """API para crear un nuevo examen"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    data = request.get_json() or {}
+    id_reserva = data.get('id_reserva')
+    fecha_examen = data.get('fecha_examen')
+    hora_examen = data.get('hora_examen')
+    estado = data.get('estado', 'Pendiente')
+    observacion = data.get('observacion', '')
+
+    # Validaciones
+    if not id_reserva:
+        return jsonify({'error': 'ID de reserva es requerido'}), 400
+    
+    if not fecha_examen:
+        return jsonify({'error': 'Fecha del examen es requerida'}), 400
+    
+    if not hora_examen:
+        return jsonify({'error': 'Hora del examen es requerida'}), 400
+
+    conexion = None
+    try:
+        # Verificar que la reserva pertenece al paciente autenticado
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+        
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar que la reserva pertenece al paciente
+            sql_verificar = """
+                SELECT id_reserva FROM RESERVA WHERE id_reserva = %s AND id_paciente = %s
+            """
+            cursor.execute(sql_verificar, (id_reserva, id_paciente))
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada o no autorizada'}), 404
+
+            # Insertar el nuevo examen
+            sql_insert = """
+                INSERT INTO EXAMEN (fecha_examen, hora_examen, observacion, estado, id_reserva)
+                VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_insert, (fecha_examen, hora_examen, observacion, estado, id_reserva))
+            conexion.commit()
+            
+            id_examen = cursor.lastrowid
+
+            return jsonify({
+                'success': True,
+                'id_examen': id_examen,
+                'message': 'Examen creado exitosamente'
+            }), 201
+
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"[API crear-examen] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al crear examen: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+@reservas_bp.route('/api/operaciones/crear', methods=['POST'])
+def api_crear_operacion():
+    """API para crear una nueva operación"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    data = request.get_json() or {}
+    id_reserva = data.get('id_reserva')
+    tipo_operacion = data.get('tipo_operacion')
+    fecha_operacion = data.get('fecha_operacion')
+    hora_operacion = data.get('hora_operacion')
+    estado = data.get('estado', 'Programada')
+    descripcion = data.get('descripcion', '')
+
+    # Validaciones
+    if not id_reserva:
+        return jsonify({'error': 'ID de reserva es requerido'}), 400
+    
+    if not tipo_operacion:
+        return jsonify({'error': 'Tipo de operación es requerido'}), 400
+    
+    if not fecha_operacion:
+        return jsonify({'error': 'Fecha de operación es requerida'}), 400
+    
+    if not hora_operacion:
+        return jsonify({'error': 'Hora de operación es requerida'}), 400
+    
+    if not descripcion:
+        return jsonify({'error': 'Descripción es requerida'}), 400
+
+    conexion = None
+    try:
+        # Verificar que la reserva pertenece al paciente autenticado
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+        
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar que la reserva pertenece al paciente
+            sql_verificar = """
+                SELECT id_reserva FROM RESERVA WHERE id_reserva = %s AND id_paciente = %s
+            """
+            cursor.execute(sql_verificar, (id_reserva, id_paciente))
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada o no autorizada'}), 404
+
+            # Insertar la nueva operación
+            sql_insert = """
+                INSERT INTO OPERACION (tipo_operacion, fecha_operacion, hora_operacion, descripcion, estado, id_reserva)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_insert, (tipo_operacion, fecha_operacion, hora_operacion, descripcion, estado, id_reserva))
+            conexion.commit()
+            
+            id_operacion = cursor.lastrowid
+
+            return jsonify({
+                'success': True,
+                'id_operacion': id_operacion,
+                'message': 'Operación creada exitosamente'
+            }), 201
+
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"[API crear-operacion] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al crear operación: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
             except:
                 pass
