@@ -1,108 +1,148 @@
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
-from models.farmacia import Medicamento, DetalleMedicamento
-from bd import obtener_conexion
-from datetime import date
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
+from models.farmacia import Medicamento, DetalleMedicamento, Paciente, Empleado
+from datetime import datetime
 
-farmacia_bp = Blueprint('farmacia', __name__, url_prefix='/farmacia')
+farmacia_bp = Blueprint('farmacia', __name__)
 
-@farmacia_bp.before_request
-def check_session():
-    if 'usuario_id' not in session:
-        return redirect(url_for('usuarios.login'))
-    if session.get('id_rol') not in [1, 4]:  # 1 = admin, 4 = farmacia
-        return redirect(url_for('home'))
-
+# Rutas de vistas
 @farmacia_bp.route('/')
-def farmacia():
+def index():
+    if 'id_rol' not in session or session['id_rol'] not in [1, 5]:
+        return redirect(url_for('usuarios.login'))
     return render_template('panel.html', subsistema='farmacia')
 
-@farmacia_bp.route('/gestionar-recepcion-medicamentos')
-def gestionar_recepcion_medicamentos():
-    # Pasar la fecha actual para el formulario
-    return render_template('gestionarRecepcionMedicamentos.html', current_date=date.today().isoformat())
+@farmacia_bp.route('/gestionar-medicamentos')
+def gestionar_medicamentos():
+    if 'id_rol' not in session or session['id_rol'] not in [1, 5]:
+        return redirect(url_for('usuarios.login'))
+    return render_template('gestionarMedicamentos.html')
 
 @farmacia_bp.route('/gestionar-entrega-medicamentos')
 def gestionar_entrega_medicamentos():
+    if 'id_rol' not in session or session['id_rol'] not in [1, 5]:
+        return redirect(url_for('usuarios.login'))
     return render_template('gestionarEntregaMedicamentos.html')
 
-# Medicamentos - API
+# API Endpoints para Medicamentos
 @farmacia_bp.route('/api/medicamentos', methods=['GET'])
 def api_listar_medicamentos():
-    medicamentos = Medicamento.listar()
-    return jsonify(medicamentos), 200
+    try:
+        medicamentos = Medicamento.listar()
+        return jsonify(medicamentos)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-@farmacia_bp.route('/api/medicamentos/crear', methods=['POST'])
+@farmacia_bp.route('/api/medicamentos', methods=['POST'])
 def api_crear_medicamento():
-    data = request.get_json() or {}
-    nombre = data.get('nombre')
-    descripcion = data.get('descripcion', '')
-    stock = data.get('stock')
-    fecha_vencimiento = data.get('fecha_vencimiento')
-
-    if not nombre or stock is None or not fecha_vencimiento:
-        return jsonify({'error': 'Campos requeridos: nombre, stock, fecha_vencimiento'}), 400
-
     try:
-        res = Medicamento.crear(nombre, descripcion, int(stock), fecha_vencimiento)
-        return jsonify(res), 201
+        datos = request.json
+        resultado = Medicamento.crear(
+            datos['nombre'],
+            datos['descripcion'],
+            datos['stock'],
+            datos['fecha_vencimiento']
+        )
+        return jsonify(resultado), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@farmacia_bp.route('/api/medicamentos/<int:id_medicamento>/actualizar', methods=['PUT'])
+@farmacia_bp.route('/api/medicamentos/<int:id_medicamento>', methods=['GET'])
+def api_obtener_medicamento(id_medicamento):
+    try:
+        medicamento = Medicamento.obtener_por_id(id_medicamento)
+        if medicamento:
+            return jsonify(medicamento)
+        return jsonify({'error': 'Medicamento no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@farmacia_bp.route('/api/medicamentos/<int:id_medicamento>', methods=['PUT'])
 def api_actualizar_medicamento(id_medicamento):
-    data = request.get_json() or {}
-    nombre = data.get('nombre')
-    descripcion = data.get('descripcion', '')
-    stock = data.get('stock')
-    fecha_vencimiento = data.get('fecha_vencimiento')
-
-    if not nombre or stock is None or not fecha_vencimiento:
-        return jsonify({'error': 'Campos requeridos: nombre, stock, fecha_vencimiento'}), 400
-
     try:
-        res = Medicamento.actualizar(id_medicamento, nombre, descripcion, int(stock), fecha_vencimiento)
-        return jsonify(res), 200
+        datos = request.json
+        resultado = Medicamento.actualizar(
+            id_medicamento,
+            datos['nombre'],
+            datos['descripcion'],
+            datos['stock'],
+            datos['fecha_vencimiento']
+        )
+        return jsonify(resultado)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@farmacia_bp.route('/api/medicamentos/<int:id_medicamento>/eliminar', methods=['DELETE'])
-def api_eliminar_medicamento(id_medicamento):
-    conexion = obtener_conexion()
+@farmacia_bp.route('/api/medicamentos/buscar', methods=['GET'])
+def api_buscar_medicamentos():
     try:
-        with conexion.cursor() as cursor:
-            cursor.execute("DELETE FROM MEDICAMENTO WHERE id_medicamento = %s", (id_medicamento,))
-            conexion.commit()
-            return jsonify({'deleted_rows': cursor.rowcount}), 200
+        termino = request.args.get('termino', '')
+        resultados = Medicamento.buscar(termino)
+        return jsonify(resultados)
     except Exception as e:
-        conexion.rollback()
         return jsonify({'error': str(e)}), 500
-    finally:
-        conexion.close()
 
-# Entregas - API
+# API Endpoints para Entrega de Medicamentos
 @farmacia_bp.route('/api/entregas', methods=['GET'])
 def api_listar_entregas():
     try:
         entregas = DetalleMedicamento.listar_entregas()
-        return jsonify(entregas), 200
+        return jsonify(entregas)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@farmacia_bp.route('/api/entregas/registrar', methods=['POST'])
-def api_registrar_entrega():
-    data = request.get_json() or {}
-    id_empleado = data.get('id_empleado')
-    id_paciente = data.get('id_paciente')
-    id_medicamento = data.get('id_medicamento')
-    cantidad = data.get('cantidad')
-
-    if not all([id_empleado, id_paciente, id_medicamento, cantidad]):
-        return jsonify({'error': 'Campos requeridos: id_empleado, id_paciente, id_medicamento, cantidad'}), 400
-
+@farmacia_bp.route('/api/entregas/<int:id_detalle>', methods=['GET'])
+def api_obtener_entrega(id_detalle):
     try:
-        resultado = DetalleMedicamento.registrar_entrega(int(id_empleado), int(id_paciente), int(id_medicamento), int(cantidad))
-        if resultado.get('error'):
-            return jsonify(resultado), 400
+        entrega = DetalleMedicamento.obtener_entrega_por_id(id_detalle)
+        if entrega:
+            return jsonify(entrega)
+        return jsonify({'error': 'Entrega no encontrada'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@farmacia_bp.route('/api/entregas/<int:id_detalle>', methods=['PUT'])
+def api_actualizar_entrega(id_detalle):
+    try:
+        datos = request.json
+        resultado = DetalleMedicamento.actualizar_entrega(
+            id_detalle,
+            datos['id_empleado'],
+            datos['id_paciente'],
+            datos['id_medicamento'],
+            datos['cantidad']
+        )
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@farmacia_bp.route('/api/entregas', methods=['POST'])
+def api_registrar_entrega():
+    try:
+        datos = request.json
+        resultado = DetalleMedicamento.registrar_entrega(
+            datos['id_empleado'],
+            datos['id_paciente'],
+            datos['id_medicamento'],
+            datos['cantidad']
+        )
         return jsonify(resultado), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# API Endpoints para búsqueda de Pacientes y Empleados
+@farmacia_bp.route('/api/pacientes/buscar', methods=['GET'])
+def api_buscar_pacientes():
+    try:
+        termino = request.args.get('termino', '')
+        resultados = Paciente.buscar(termino)
+        return jsonify(resultados)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@farmacia_bp.route('/api/empleados/buscar', methods=['GET'])
+def api_buscar_empleados():
+    try:
+        termino = request.args.get('termino', '')
+        resultados = Empleado.buscar(termino)
+        return jsonify(resultados)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
