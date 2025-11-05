@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Ordenar medicamentos por id de menor a mayor
+        medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
+
         // Poblar datalist con nombres de medicamentos para autocompletar
         const datalist = document.getElementById('medicamentos-list');
         if (datalist) {
@@ -72,9 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         medicamentos.forEach(m => {
-            const idDisplay = `REC-${String(m.id_medicamento).padStart(3, '0')}`;
             const tr = document.createElement('tr');
-            tr.dataset.id = idDisplay;
+            tr.dataset.id = m.id_medicamento;
             tr.dataset.idMedicamento = m.id_medicamento;
             tr.dataset.medicamento = m.nombre || '';
             tr.dataset.descripcion = m.descripcion || '';
@@ -83,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.dataset.fechaVencimiento = m.fecha_vencimiento || '';
 
             tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${idDisplay}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.id_medicamento}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.nombre)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.descripcion || '')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.stock ?? ''}</td>
@@ -202,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const resp = await fetch('/farmacia/api/medicamentos/crear', {
+                const resp = await fetch('/farmacia/api/medicamentos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
@@ -247,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                const resp = await fetch(`/farmacia/api/medicamentos/${encodeURIComponent(id)}/actualizar`, {
+                const resp = await fetch(`/farmacia/api/medicamentos/${encodeURIComponent(id)}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',

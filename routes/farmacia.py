@@ -23,6 +23,12 @@ def gestionar_entrega_medicamentos():
         return redirect(url_for('usuarios.login'))
     return render_template('gestionarEntregaMedicamentos.html')
 
+@farmacia_bp.route('/gestionar-recepcion-medicamentos')
+def gestionar_recepcion_medicamentos():
+    if 'id_rol' not in session or session['id_rol'] not in [1, 5]:
+        return redirect(url_for('usuarios.login'))
+    return render_template('gestionarRecepcionMedicamentos.html')
+
 # API Endpoints para Medicamentos
 @farmacia_bp.route('/api/medicamentos', methods=['GET'])
 def api_listar_medicamentos():
