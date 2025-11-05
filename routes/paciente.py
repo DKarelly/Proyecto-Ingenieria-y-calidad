@@ -202,6 +202,13 @@ def api_mis_incidencias():
             """
             cursor.execute(sql, (id_paciente,))
             incidencias = cursor.fetchall()
+            
+            # Convertir fechas a string para serialización JSON
+            for incidencia in incidencias:
+                if incidencia.get('fecha_registro'):
+                    incidencia['fecha_registro'] = incidencia['fecha_registro'].strftime('%Y-%m-%d %H:%M:%S')
+                if incidencia.get('fecha_resolucion'):
+                    incidencia['fecha_resolucion'] = incidencia['fecha_resolucion'].strftime('%Y-%m-%d %H:%M:%S')
 
             return jsonify({'incidencias': incidencias})
 
