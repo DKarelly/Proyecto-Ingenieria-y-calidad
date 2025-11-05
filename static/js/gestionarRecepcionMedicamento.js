@@ -13,6 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
         btnRegistrar.addEventListener('click', () => modalRegistrar.classList.add('show'));
     }
 
+    // Evento para buscar medicamento en tiempo real
+    const nombreMedicamentoInput = document.getElementById('nombreMedicamento');
+    if (nombreMedicamentoInput) {
+        nombreMedicamentoInput.addEventListener('input', function() {
+            buscarMedicamento(this.value);
+        });
+    }
+
     // Cerrar modales (botones .close)
     document.addEventListener('click', (e) => {
         if (e.target.matches('.close')) {
@@ -33,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const resp = await fetch('/farmacia/api/medicamentos', { credentials: 'same-origin' });
             if (!resp.ok) throw new Error('Error al obtener medicamentos');
             const medicamentos = await resp.json();
+            // Guardar medicamentos para búsqueda
+            window.medicamentos = medicamentos;
             renderTabla(medicamentos);
         } catch (err) {
             console.error(err);
@@ -48,6 +58,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td colspan="7" class="px-6 py-4 text-center text-gray-500">No se encontraron recepciones</td>
                 </tr>`;
             return;
+        }
+
+        // Poblar datalist con nombres de medicamentos para autocompletar
+        const datalist = document.getElementById('medicamentos-list');
+        if (datalist) {
+            datalist.innerHTML = '';
+            medicamentos.forEach(m => {
+                const option = document.createElement('option');
+                option.value = m.nombre;
+                datalist.appendChild(option);
+            });
         }
 
         medicamentos.forEach(m => {
@@ -258,6 +279,70 @@ document.addEventListener('DOMContentLoaded', () => {
             cargarMedicamentos();
         });
     }
+
+    function buscarMedicamento(termino) {
+        if (!window.medicamentos || termino.length < 2) {
+            ocultarSugerenciasMedicamento();
+            return;
+        }
+
+        const medicamentosFiltrados = window.medicamentos.filter(medicamento =>
+            medicamento.nombre.toLowerCase().includes(termino.toLowerCase())
+        );
+
+        mostrarSugerenciasMedicamento(medicamentosFiltrados);
+    }
+
+    function mostrarSugerenciasMedicamento(medicamentos) {
+        // Remover sugerencias anteriores
+        const sugerenciasAnteriores = document.querySelector('.sugerencias-medicamentos');
+        if (sugerenciasAnteriores) {
+            sugerenciasAnteriores.remove();
+        }
+
+        if (medicamentos.length === 0) {
+            return;
+        }
+
+        const inputNombre = document.getElementById('nombreMedicamento');
+        const sugerenciasDiv = document.createElement('div');
+        sugerenciasDiv.className = 'sugerencias-medicamentos absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1';
+        sugerenciasDiv.style.width = inputNombre.offsetWidth + 'px';
+
+        medicamentos.forEach(medicamento => {
+            const opcion = document.createElement('div');
+            opcion.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+            opcion.textContent = medicamento.nombre;
+            opcion.onclick = function() {
+                seleccionarMedicamento(medicamento);
+                sugerenciasDiv.remove();
+            };
+            sugerenciasDiv.appendChild(opcion);
+        });
+
+        // Posicionar las sugerencias
+        inputNombre.parentNode.style.position = 'relative';
+        inputNombre.parentNode.appendChild(sugerenciasDiv);
+    }
+
+    function seleccionarMedicamento(medicamento) {
+        document.getElementById('nombreMedicamento').value = medicamento.nombre;
+        ocultarSugerenciasMedicamento();
+    }
+
+    function ocultarSugerenciasMedicamento() {
+        const sugerencias = document.querySelector('.sugerencias-medicamentos');
+        if (sugerencias) {
+            sugerencias.remove();
+        }
+    }
+
+    // Ocultar sugerencias al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#nombreMedicamento') && !e.target.closest('.sugerencias-medicamentos')) {
+            ocultarSugerenciasMedicamento();
+        }
+    });
 
     // Inicializar
     cargarMedicamentos();
