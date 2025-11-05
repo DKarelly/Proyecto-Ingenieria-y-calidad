@@ -143,7 +143,46 @@
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 3: Selecciona Fecha y Horario</h2>
 
                     <div class="mb-6">
-                        <label class="block text-gray-700 font-semibold mb-3">Horarios de esta semana</label>
+                        <!-- Buscador de fecha -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex flex-wrap items-end gap-3">
+                                <div class="flex-1 min-w-[200px]">
+                                    <label for="fechaBusqueda" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Buscar horarios desde:
+                                    </label>
+                                    <input 
+                                        type="date" 
+                                        id="fechaBusqueda" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                </div>
+                                <button 
+                                    type="button" 
+                                    id="btnBuscarFecha" 
+                                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                    </svg>
+                                    Buscar
+                                </button>
+                                <button 
+                                    type="button" 
+                                    id="btnLimpiarFecha" 
+                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200 flex items-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                    </svg>
+                                    Limpiar
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">
+                                Mostrando horarios de la semana: <span id="rangoFechas" class="font-semibold text-blue-600"></span>
+                            </p>
+                        </div>
+                        
+                        <label class="block text-gray-700 font-semibold mb-3">Horarios disponibles</label>
                         <p class="text-sm text-gray-600 mb-4">Médico: <span id="medicoNombreHorario" class="font-semibold"></span></p>
                         
                         <div id="horariosSemanales" class="space-y-4">
@@ -154,8 +193,8 @@
                             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 mb-3">
                                 <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                             </svg>
-                            <p>No hay horarios disponibles para este médico esta semana.</p>
-                            <p class="text-sm mt-2">Por favor, selecciona otro médico.</p>
+                            <p>No hay horarios disponibles para este médico en las fechas seleccionadas.</p>
+                            <p class="text-sm mt-2">Por favor, intenta con otra fecha o selecciona otro médico.</p>
                         </div>
                     </div>
 
@@ -287,6 +326,150 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('[NuevaCita] Iniciando sistema de reservas');
             await cargarEspecialidades();
+            
+            // Configurar fecha mínima en el buscador de fecha (hoy)
+            const fechaBusquedaEl = document.getElementById('fechaBusqueda');
+            if (fechaBusquedaEl) {
+                const hoy = new Date().toISOString().split('T')[0];
+                fechaBusquedaEl.setAttribute('min', hoy);
+                
+                // Event listener para Enter en el input de fecha
+                fechaBusquedaEl.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const btnBuscar = document.getElementById('btnBuscarFecha');
+                        if (btnBuscar) btnBuscar.click();
+                    }
+                });
+            }
+            
+            // Event listener para buscar fecha específica
+            const btnBuscarFecha = document.getElementById('btnBuscarFecha');
+            if (btnBuscarFecha) {
+                btnBuscarFecha.addEventListener('click', async function() {
+                    const fechaBusqueda = document.getElementById('fechaBusqueda');
+                    if (fechaBusqueda && fechaBusqueda.value) {
+                        const fechaSeleccionada = fechaBusqueda.value;
+                        const hoy = new Date().toISOString().split('T')[0];
+                        
+                        if (fechaSeleccionada < hoy) {
+                            alert('No puedes buscar horarios de fechas pasadas. Por favor, selecciona la fecha de hoy o una fecha futura.');
+                            return;
+                        }
+                        
+                        console.log('[Paso3] Buscando horarios desde:', fechaSeleccionada);
+                        await cargarHorariosSemanales(fechaSeleccionada);
+                    } else {
+                        alert('Por favor, selecciona una fecha para buscar.');
+                    }
+                });
+            }
+            
+            // Event listener para limpiar fecha y volver a la semana actual
+            const btnLimpiarFecha = document.getElementById('btnLimpiarFecha');
+            if (btnLimpiarFecha) {
+                btnLimpiarFecha.addEventListener('click', async function() {
+                    const fechaBusqueda = document.getElementById('fechaBusqueda');
+                    if (fechaBusqueda) {
+                        fechaBusqueda.value = '';
+                    }
+                    console.log('[Paso3] Regresando a la semana actual');
+                    await cargarHorariosSemanales();
+                });
+            }
+
+            // Navegación entre pasos
+            const btnStep1Next = document.getElementById('btn-step1-next');
+            if (btnStep1Next) {
+                btnStep1Next.addEventListener('click', async () => {
+                    goToStep(2);
+                    await cargarMedicos();
+                });
+            }
+
+            const btnStep2Prev = document.getElementById('btn-step2-prev');
+            if (btnStep2Prev) {
+                btnStep2Prev.addEventListener('click', () => goToStep(1));
+            }
+
+            const btnStep2Next = document.getElementById('btn-step2-next');
+            if (btnStep2Next) {
+                btnStep2Next.addEventListener('click', async () => {
+                    goToStep(3);
+                    await cargarHorariosSemanales();
+                });
+            }
+            
+            const btnStep3Prev = document.getElementById('btn-step3-prev');
+            if (btnStep3Prev) {
+                btnStep3Prev.addEventListener('click', () => goToStep(2));
+            }
+
+            const btnStep3Next = document.getElementById('btn-step3-next');
+            if (btnStep3Next) {
+                btnStep3Next.addEventListener('click', () => {
+                    mostrarResumen();
+                    goToStep(4);
+                });
+            }
+
+            const btnStep4Prev = document.getElementById('btn-step4-prev');
+            if (btnStep4Prev) {
+                btnStep4Prev.addEventListener('click', () => goToStep(3));
+            }
+
+            // Confirmar cita
+            const btnConfirmar = document.getElementById('btn-confirmar');
+            if (btnConfirmar) {
+                btnConfirmar.addEventListener('click', async function() {
+                    try {
+                        this.disabled = true;
+                        this.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
+
+                        // Preparar datos - NO incluir id_servicio para reserva de CITA
+                        const requestData = {
+                            id_horario: formData.id_horario
+                        };
+                        
+                        // Solo incluir id_servicio si existe (para reserva de SERVICIO)
+                        if (formData.id_servicio) {
+                            requestData.id_servicio = formData.id_servicio;
+                        }
+
+                        const response = await fetch('/reservas/paciente/crear-reserva', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestData)
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // Mostrar modal de éxito
+                            const modalExito = document.getElementById('modalExito');
+                            if (modalExito) {
+                                modalExito.classList.remove('hidden');
+                                const transform = modalExito.querySelector('.transform');
+                                if (transform) {
+                                    transform.classList.add('scale-100');
+                                    transform.classList.remove('scale-95');
+                                }
+                            }
+                        } else {
+                            alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
+                            this.disabled = false;
+                            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud. Por favor, intenta nuevamente.');
+                        this.disabled = false;
+                        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
+                    }
+                });
+            }
         });
 
         // PASO 1: Cargar especialidades desde la BD
@@ -422,9 +605,10 @@
                                     <p class="text-sm text-cyan-600">${medico.especialidad}</p>
                                     <p class="text-xs text-gray-500 mt-1">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1">
-                                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="8.5" cy="7" r="4"/>
                                         </svg>
-                                        ${medico.correo || 'Sin correo'}
+                                        ${medico.documento_identidad || 'Sin documento'}
                                     </p>
                                 </div>
                             </div>
@@ -460,14 +644,30 @@
         }
 
         // PASO 3: Cargar horarios de esta semana del médico seleccionado
-        async function cargarHorariosSemanales() {
+        async function cargarHorariosSemanales(fechaInicio = null) {
             try {
-                console.log('[Paso3] Cargando horarios de esta semana para médico ID:', formData.id_empleado);
+                console.log('[Paso3] Cargando horarios para médico ID:', formData.id_empleado, 'desde fecha:', fechaInicio || 'semana actual');
                 
                 document.getElementById('medicoNombreHorario').textContent = formData.empleado_nombre;
                 
-                const response = await fetch(`/reservas/api/horarios-semana/${formData.id_empleado}`);
+                // Construir URL con parámetro de fecha si existe
+                let url = `/reservas/api/horarios-semana/${formData.id_empleado}`;
+                if (fechaInicio) {
+                    url += `?fecha_inicio=${fechaInicio}`;
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
+                
+                // Actualizar el rango de fechas mostrado
+                const rangoFechasSpan = document.getElementById('rangoFechas');
+                if (rangoFechasSpan && data.inicio_semana && data.fin_semana) {
+                    const inicio = new Date(data.inicio_semana + 'T00:00:00');
+                    const fin = new Date(data.fin_semana + 'T00:00:00');
+                    const inicioFormateado = inicio.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    const finFormateado = fin.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+                    rangoFechasSpan.textContent = `${inicioFormateado} - ${finFormateado}`;
+                }
 
                 const container = document.getElementById('horariosSemanales');
                 const noHorarios = document.getElementById('noHorarios');
@@ -573,109 +773,6 @@
             document.getElementById('btn-step3-next').disabled = false;
         }
 
-        // Función antigua eliminada - ahora se usa cargarEspecialidades()
-
-        // Función antigua eliminada - ahora se usa cargarMedicos() actualizada
-
-        // Función antigua eliminada - ahora se usa seleccionarMedico() actualizada
-
-        // Función actualizada para cargar horarios por fecha (si fuera necesario)
-        async function cargarHorarios() {
-            elemento.classList.add('border-cyan-500', 'bg-cyan-50');
-            elemento.classList.remove('border-gray-200');
-
-            formData.id_empleado = id;
-            formData.empleado_nombre = nombre;
-
-            document.getElementById('btn-step2-next').disabled = false;
-        }
-
-        async function cargarHorarios() {
-            const fecha = document.getElementById('fechaCita').value;
-            if (!fecha) return;
-
-            formData.fecha = fecha;
-
-            try {
-                const response = await fetch(`/reservas/api/horarios-disponibles?fecha=${fecha}&id_empleado=${formData.id_empleado}`);
-                const data = await response.json();
-
-                const container = document.getElementById('horariosContainer');
-                const noHorarios = document.getElementById('noHorarios');
-                container.innerHTML = '';
-
-                if (data.horarios && data.horarios.length > 0) {
-                    noHorarios.classList.add('hidden');
-                    container.classList.remove('hidden');
-
-                    data.horarios.forEach(horario => {
-                        const card = document.createElement('div');
-                        card.className = 'border-2 border-gray-200 rounded-lg p-3 cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300 text-center';
-                        card.onclick = () => seleccionarHorario(horario.id_horario, horario.hora_inicio, horario.hora_fin, card);
-                        card.innerHTML = `
-                            <div class="flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
-                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                                <span class="font-semibold text-gray-800">${horario.hora_inicio} - ${horario.hora_fin}</span>
-                            </div>
-                        `;
-                        container.appendChild(card);
-                    });
-                } else {
-                    noHorarios.classList.remove('hidden');
-                    container.classList.add('hidden');
-                }
-            } catch (error) {
-                console.error('Error al cargar horarios:', error);
-                alert('Error al cargar los horarios. Por favor, intenta nuevamente.');
-            }
-        }
-
-        function seleccionarHorario(id, hora_inicio, hora_fin, elemento) {
-            // Remover selección previa
-            document.querySelectorAll('#horariosContainer > div').forEach(el => {
-                el.classList.remove('border-cyan-500', 'bg-cyan-50');
-                el.classList.add('border-gray-200');
-            });
-
-            // Marcar como seleccionado
-            elemento.classList.add('border-cyan-500', 'bg-cyan-50');
-            elemento.classList.remove('border-gray-200');
-
-            formData.id_horario = id;
-            formData.hora_inicio = hora_inicio;
-            formData.hora_fin = hora_fin;
-
-            document.getElementById('btn-step3-next').disabled = false;
-        }
-
-        // Event listener para cambio de fecha
-        document.getElementById('fechaCita').addEventListener('change', function() {
-            formData.id_horario = null;
-            document.getElementById('btn-step3-next').disabled = true;
-            cargarHorarios();
-        });
-
-        // Navegación entre pasos
-        document.getElementById('btn-step1-next').addEventListener('click', async () => {
-            goToStep(2);
-            await cargarMedicos();
-        });
-
-        document.getElementById('btn-step2-prev').addEventListener('click', () => goToStep(1));
-        document.getElementById('btn-step2-next').addEventListener('click', async () => {
-            goToStep(3);
-            await cargarHorariosSemanales();
-        });
-        
-        document.getElementById('btn-step3-prev').addEventListener('click', () => goToStep(2));
-        document.getElementById('btn-step3-next').addEventListener('click', () => {
-            mostrarResumen();
-            goToStep(4);
-        });
-        document.getElementById('btn-step4-prev').addEventListener('click', () => goToStep(3));
-
         function goToStep(step) {
             // Ocultar todos los pasos
             for (let i = 1; i <= 4; i++) {
@@ -726,52 +823,6 @@
             document.getElementById('resumen-fecha').textContent = 
                 `${fechaFormateada} - ${formData.hora_inicio} a ${formData.hora_fin}`;
         }
-            document.getElementById('resumen-medico').textContent = formData.empleado_nombre;
-
-            // Formatear fecha
-            const fecha = new Date(formData.fecha + 'T00:00:00');
-            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
-
-            document.getElementById('resumen-fecha').textContent = `${fechaFormateada} a las ${formData.hora_inicio}`;
-        }
-
-        // Confirmar cita
-        document.getElementById('btn-confirmar').addEventListener('click', async function() {
-            try {
-                this.disabled = true;
-                this.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
-
-                const response = await fetch('/reservas/paciente/crear-reserva', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id_servicio: formData.id_servicio,
-                        id_horario: formData.id_horario
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Mostrar modal de éxito
-                    document.getElementById('modalExito').classList.remove('hidden');
-                    document.getElementById('modalExito').querySelector('.transform').classList.add('scale-100');
-                    document.getElementById('modalExito').querySelector('.transform').classList.remove('scale-95');
-                } else {
-                    alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
-                    this.disabled = false;
-                    this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al procesar la solicitud. Por favor, intenta nuevamente.');
-                this.disabled = false;
-                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
-            }
-        });
 
         // Función para preseleccionar médico desde la URL
         async function preseleccionarMedico(idMedico) {
@@ -789,64 +840,29 @@
                     const medicoIdParaPreseleccionar = parseInt(idMedico);
                     const medicoNombreCompleto = `Dr(a). ${medico.nombres} ${medico.apellidos}`;
                     
-                    // Si el médico tiene un servicio asociado, seleccionarlo automáticamente
-                    if (medico.id_servicio) {
-                        formData.id_servicio = medico.id_servicio;
-                        formData.servicio_nombre = medico.servicio_nombre;
-                        console.log('Servicio preseleccionado:', formData.servicio_nombre);
+                    // Reserva de CITA - NO necesita servicio
+                    // Avanzar directamente al paso 2 (selección ya realizada por especialidad)
+                    goToStep(2);
+                    await cargarMedicos();
+                    
+                    // Seleccionar el médico después de cargar la lista
+                    setTimeout(() => {
+                        formData.id_empleado = medicoIdParaPreseleccionar;
+                        formData.empleado_nombre = medicoNombreCompleto;
+                        document.getElementById('btn-step2-next').disabled = false;
                         
-                        // Avanzar al paso 2 y cargar médicos filtrados por servicio
-                        goToStep(2);
-                        await cargarMedicos();
+                        console.log('Médico preseleccionado para CITA:', medicoNombreCompleto);
                         
-                        // Seleccionar el médico después de cargar la lista
-                        setTimeout(() => {
-                            formData.id_empleado = medicoIdParaPreseleccionar;
-                            formData.empleado_nombre = medicoNombreCompleto;
-                            document.getElementById('btn-step2-next').disabled = false;
-                            
-                            console.log('Médico preseleccionado:', medicoNombreCompleto);
-                            
-                            // Marcar visualmente el médico seleccionado
-                            const medicosCards = document.querySelectorAll('#medicosContainer > div');
-                            medicosCards.forEach(card => {
-                                const cardIdMatch = card.getAttribute('data-medico-id');
-                                if (cardIdMatch == medicoIdParaPreseleccionar) {
-                                    card.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-200');
-                                    card.classList.remove('border-gray-200');
-                                }
-                            });
-                        }, 500);
-                    } else {
-                        // Si no tiene servicio, el usuario debe seleccionar primero en el paso 1
-                        console.log('El médico no tiene servicio asociado. Usuario debe seleccionar el servicio primero.');
-                        
-                        // Guardar el médico en sessionStorage para preselección después
-                        sessionStorage.setItem('medicoPreseleccionado', medicoIdParaPreseleccionar);
-                        sessionStorage.setItem('medicoNombre', medicoNombreCompleto);
-                        
-                        // Asegurarse de que estamos en el paso 1
-                        goToStep(1);
-                        
-                        // Agregar un indicador visual en el encabezado del paso 1
-                        const step1Header = document.querySelector('#step1 h3');
-                        if (step1Header) {
-                            const medicoInfo = document.createElement('div');
-                            medicoInfo.className = 'mt-3 p-3 bg-cyan-50 border-l-4 border-cyan-500 rounded text-sm';
-                            medicoInfo.innerHTML = `
-                                <p class="text-cyan-800 font-medium">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1">
-                                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                                    </svg>
-                                    Agendar cita con: ${medicoNombreCompleto}
-                                </p>
-                                <p class="text-cyan-700 mt-1">Por favor, seleccione el tipo de servicio que desea para continuar.</p>
-                            `;
-                            step1Header.after(medicoInfo);
-                        }
-                        
-                        console.log('Usuario en paso 1. Debe seleccionar servicio para continuar con:', medicoNombreCompleto);
-                    }
+                        // Marcar visualmente el médico seleccionado
+                        const medicosCards = document.querySelectorAll('#medicosContainer > div');
+                        medicosCards.forEach(card => {
+                            const cardIdMatch = card.getAttribute('data-medico-id');
+                            if (cardIdMatch == medicoIdParaPreseleccionar) {
+                                card.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-200');
+                                card.classList.remove('border-gray-200');
+                            }
+                        });
+                    }, 500);
                 } else {
                     console.error('Error al obtener médico:', medico.error);
                 }

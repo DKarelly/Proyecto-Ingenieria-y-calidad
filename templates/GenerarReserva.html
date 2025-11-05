@@ -310,29 +310,64 @@
         let horarioSeleccionado = null;
         let horarioData = null;
 
-        // Elementos del DOM
-        const dniInput = document.getElementById('dni-paciente');
-        const btnBuscarPaciente = document.getElementById('btn-buscar-paciente');
-        const pacienteInfo = document.getElementById('paciente-info');
+        // Elementos del DOM (se inicializarán cuando el DOM esté listo)
+        let dniInput, btnBuscarPaciente, pacienteInfo;
+        let servicioSelect, medicoSelect, btnBuscarHorarios;
+        let horariosPlaceholder, horariosLoading, horariosVacio, horariosPicker;
+        let btnCrearReserva, btnLimpiarTodo;
+        let horariosCount, estadoReserva, resumenReserva;
 
-        const servicioSelect = document.getElementById('select-service');
-        const medicoSelect = document.getElementById('select-medic');
-        const btnBuscarHorarios = document.getElementById('btn-buscar-horarios');
-
-        const horariosPlaceholder = document.getElementById('horarios-placeholder');
-        const horariosLoading = document.getElementById('horarios-loading');
-        const horariosVacio = document.getElementById('horarios-vacio');
-        const horariosPicker = document.getElementById('horarios-picker');
-
-        const btnCrearReserva = document.getElementById('btn-crear-reserva');
-        const btnLimpiarTodo = document.getElementById('btn-limpiar-todo');
-
-        const horariosCount = document.getElementById('horarios-count');
-        const estadoReserva = document.getElementById('estado-reserva');
-        const resumenReserva = document.getElementById('resumen-reserva');
-
-        // Capturar parámetro 'medico' de la URL y seleccionarlo automáticamente
+        // Esperar a que el DOM esté completamente cargado
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar referencias a elementos del DOM
+            dniInput = document.getElementById('dni-paciente');
+            btnBuscarPaciente = document.getElementById('btn-buscar-paciente');
+            pacienteInfo = document.getElementById('paciente-info');
+
+            servicioSelect = document.getElementById('select-service');
+            medicoSelect = document.getElementById('select-medic');
+            btnBuscarHorarios = document.getElementById('btn-buscar-horarios');
+
+            horariosPlaceholder = document.getElementById('horarios-placeholder');
+            horariosLoading = document.getElementById('horarios-loading');
+            horariosVacio = document.getElementById('horarios-vacio');
+            horariosPicker = document.getElementById('horarios-picker');
+
+            btnCrearReserva = document.getElementById('btn-crear-reserva');
+            btnLimpiarTodo = document.getElementById('btn-limpiar-todo');
+
+            horariosCount = document.getElementById('horarios-count');
+            estadoReserva = document.getElementById('estado-reserva');
+            resumenReserva = document.getElementById('resumen-reserva');
+
+            // Verificar que todos los elementos existan
+            if (!dniInput || !btnBuscarPaciente || !servicioSelect || !medicoSelect) {
+                console.error('[GenerarReserva] ERROR: Algunos elementos del DOM no se encontraron');
+                return;
+            }
+
+            // Event listeners
+            btnBuscarPaciente.addEventListener('click', buscarPaciente);
+            btnBuscarHorarios.addEventListener('click', buscarHorarios);
+            btnCrearReserva.addEventListener('click', crearReserva);
+            btnLimpiarTodo.addEventListener('click', limpiarTodo);
+
+            // Event listener for programacion selection
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('seleccionar-programacion')) {
+                    const button = e.target;
+                    const progData = {
+                        id_programacion: button.dataset.id,
+                        fecha: button.dataset.fecha,
+                        hora_inicio: button.dataset.horaInicio,
+                        hora_fin: button.dataset.horaFin,
+                        medico: button.dataset.medico
+                    };
+                    seleccionarProgramacion(button, progData);
+                }
+            });
+
+            // Capturar parámetro 'medico' de la URL y seleccionarlo automáticamente
             const urlParams = new URLSearchParams(window.location.search);
             const medicoId = urlParams.get('medico');
             
@@ -362,34 +397,12 @@
                     alert(`Error: El médico seleccionado (ID: ${medicoId}) no está disponible en este momento. Por favor, selecciona otro médico.`);
                 }
             }
-        });
 
-        // Event listeners
-        btnBuscarPaciente.addEventListener('click', buscarPaciente);
-        btnBuscarHorarios.addEventListener('click', buscarHorarios);
-        btnCrearReserva.addEventListener('click', crearReserva);
-        btnLimpiarTodo.addEventListener('click', limpiarTodo);
-
-        // Event listener for programacion selection
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('seleccionar-programacion')) {
-                const button = e.target;
-                const progData = {
-                    id_programacion: button.dataset.id,
-                    fecha: button.dataset.fecha,
-                    hora_inicio: button.dataset.horaInicio,
-                    hora_fin: button.dataset.horaFin,
-                    servicio: button.dataset.servicio,
-                    empleado: button.dataset.empleado
-                };
-                seleccionarProgramacion(button, progData);
-            }
-        });
-
-        // Enter en DNI
-        dniInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') buscarPaciente();
-        });
+            // Enter en DNI
+            dniInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') buscarPaciente();
+            });
+        }); // Fin de DOMContentLoaded
 
         // Función para buscar paciente
         async function buscarPaciente() {
