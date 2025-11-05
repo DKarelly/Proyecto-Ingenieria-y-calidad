@@ -73,16 +73,47 @@ def consultar_disponibilidad():
 @reservas_bp.route('/api/horarios-semana/<int:id_empleado>')
 def api_horarios_semana(id_empleado):
     """
-    Retorna los horarios de esta semana para un médico específico
+    Retorna los horarios de una semana para un médico específico
     Agrupa por fecha y muestra si está disponible o no
+    
+    Parámetros GET opcionales:
+    - fecha_inicio: YYYY-MM-DD (fecha desde la cual buscar la semana)
     """
     try:
-        from datetime import date, timedelta
+        from datetime import date, timedelta, datetime
         
-        # Calcular inicio y fin de esta semana (lunes a domingo)
+        # Obtener fecha de inicio si se proporciona
+        fecha_param = request.args.get('fecha_inicio')
         hoy = date.today()
-        inicio_semana = hoy - timedelta(days=hoy.weekday())  # Lunes
-        fin_semana = inicio_semana + timedelta(days=6)  # Domingo
+        
+        if fecha_param:
+            try:
+                fecha_inicio = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+                
+                # Validar que no sea una fecha anterior a hoy
+                if fecha_inicio < hoy:
+                    return jsonify({
+                        'error': 'No se pueden buscar horarios de fechas pasadas',
+                        'fecha_minima': hoy.strftime('%Y-%m-%d')
+                    }), 400
+                
+                # Calcular inicio de semana desde la fecha proporcionada (lunes de esa semana)
+                inicio_semana = fecha_inicio - timedelta(days=fecha_inicio.weekday())
+                
+                # Si el lunes calculado es anterior a hoy, usar hoy como inicio
+                if inicio_semana < hoy:
+                    inicio_semana = hoy
+                    
+            except ValueError:
+                return jsonify({'error': 'Formato de fecha inválido. Use YYYY-MM-DD'}), 400
+        else:
+            # Si no se proporciona fecha, usar la semana actual desde hoy
+            inicio_semana = hoy
+        
+        # Fin de semana: 7 días después del inicio
+        fin_semana = inicio_semana + timedelta(days=6)
+        
+        print(f"[API] Horarios para médico {id_empleado} desde {inicio_semana} hasta {fin_semana}")
         
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
@@ -93,6 +124,7 @@ def api_horarios_semana(id_empleado):
                     TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
                     TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
                     h.estado,
+                    h.disponibilidad,
                     CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
                     esp.nombre as especialidad
                 FROM HORARIO h
@@ -100,10 +132,13 @@ def api_horarios_semana(id_empleado):
                 LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
                 WHERE h.id_empleado = %s
                   AND h.fecha BETWEEN %s AND %s
+                  AND LOWER(h.estado) = 'activo'
                 ORDER BY h.fecha, h.hora_inicio
             """
             cursor.execute(sql, (id_empleado, inicio_semana, fin_semana))
             horarios = cursor.fetchall()
+            
+            print(f"[API] Horarios encontrados: {len(horarios)}")
             
             # Convertir fechas a string
             for horario in horarios:
@@ -114,16 +149,21 @@ def api_horarios_semana(id_empleado):
                     dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
                     horario['dia_semana'] = dias_semana[fecha_obj.weekday()]
                 
-                # Marcar si es disponible
-                horario['disponible'] = horario['estado'].lower() == 'disponible'
+                # Marcar si es disponible (verificar campo disponibilidad o estado)
+                disponibilidad = horario.get('disponibilidad', '').lower()
+                horario['disponible'] = disponibilidad == 'disponible'
             
             return jsonify({
                 'horarios': horarios,
                 'inicio_semana': inicio_semana.strftime('%Y-%m-%d'),
-                'fin_semana': fin_semana.strftime('%Y-%m-%d')
+                'fin_semana': fin_semana.strftime('%Y-%m-%d'),
+                'total': len(horarios)
             })
 
     except Exception as e:
+        print(f"[API] Error al obtener horarios: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Error al obtener horarios: {str(e)}'}), 500
     finally:
         try:
@@ -777,6 +817,7 @@ def api_servicios_activos():
 def api_medicos_por_especialidad(id_especialidad):
     """Retorna médicos disponibles (id_rol=2) para una especialidad específica"""
     try:
+        print(f"[API] Buscando médicos para especialidad ID: {id_especialidad}")
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             sql = """
@@ -784,24 +825,37 @@ def api_medicos_por_especialidad(id_especialidad):
                     e.id_empleado,
                     e.nombres,
                     e.apellidos,
-                    e.correo,
-                    e.telefono,
+                    e.documento_identidad,
+                    e.sexo,
+                    e.estado,
+                    e.fotoPerfil,
                     esp.nombre as especialidad,
                     esp.id_especialidad
                 FROM EMPLEADO e
                 INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
                 WHERE e.id_rol = 2 
                   AND e.id_especialidad = %s
-                  AND e.estado = 'activo'
+                  AND LOWER(e.estado) = 'activo'
                 ORDER BY e.nombres, e.apellidos
             """
+            print(f"[API] Ejecutando SQL con id_especialidad={id_especialidad}")
             cursor.execute(sql, (id_especialidad,))
             medicos = cursor.fetchall()
+            print(f"[API] Médicos encontrados: {len(medicos)}")
+            
+            for medico in medicos:
+                print(f"[API] - {medico.get('nombres')} {medico.get('apellidos')} (ID: {medico.get('id_empleado')})")
 
-            return jsonify({'medicos': medicos})
+            return jsonify({
+                'medicos': medicos,
+                'total': len(medicos)
+            })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[API] Error al obtener médicos: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'medicos': []}), 500
     finally:
         try:
             conexion.close()
@@ -902,13 +956,10 @@ def paciente_crear_reserva():
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     data = request.get_json() or {}
-    id_servicio = data.get('id_servicio')
+    id_servicio = data.get('id_servicio')  # Opcional para reserva de CITA
     id_horario = data.get('id_horario')
 
     # Validaciones
-    if not id_servicio:
-        return jsonify({'error': 'Servicio es requerido'}), 400
-
     if not id_horario:
         return jsonify({'error': 'Horario es requerido'}), 400
 
@@ -938,11 +989,22 @@ def paciente_crear_reserva():
         # Crear programación
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
-            sql_prog = """
-                INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_servicio, id_horario)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'disponible', id_servicio, id_horario))
+            # Si NO hay id_servicio, es una reserva de CITA (id_servicio NULL)
+            # Si SÍ hay id_servicio, es una reserva de SERVICIO
+            if id_servicio:
+                sql_prog = """
+                    INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_servicio, id_horario)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'disponible', id_servicio, id_horario))
+            else:
+                # Reserva de CITA - sin servicio
+                sql_prog = """
+                    INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_horario)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'disponible', id_horario))
+            
             conexion.commit()
             id_programacion = cursor.lastrowid
 
@@ -955,7 +1017,7 @@ def paciente_crear_reserva():
                 INSERT INTO RESERVA (fecha_registro, hora_registro, tipo, estado, id_paciente, id_programacion)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql_reserva, (fecha_actual, hora_actual, 1, 'activa', id_paciente, id_programacion))
+            cursor.execute(sql_reserva, (fecha_actual, hora_actual, 1, 'Pendiente', id_paciente, id_programacion))
             conexion.commit()
             id_reserva = cursor.lastrowid
 
@@ -966,10 +1028,12 @@ def paciente_crear_reserva():
             cursor.execute(sql_update_horario, (id_horario,))
             conexion.commit()
 
+        tipo_reserva = 'servicio' if id_servicio else 'cita'
         return jsonify({
             'success': True,
             'id_reserva': id_reserva,
-            'message': 'Cita agendada exitosamente'
+            'tipo': tipo_reserva,
+            'message': f'{"Servicio reservado" if id_servicio else "Cita agendada"} exitosamente'
         }), 201
 
     except Exception as e:
@@ -998,60 +1062,96 @@ def paciente_historial_reservas():
 @reservas_bp.route('/api/paciente/mis-reservas')
 def api_paciente_mis_reservas():
     """API que retorna todas las reservas del paciente autenticado"""
+    print("\n[API mis-reservas] Inicio de solicitud")
+    
     if 'usuario_id' not in session:
+        print("[API mis-reservas] Error: No autenticado")
         return jsonify({'error': 'No autenticado'}), 401
 
     if session.get('tipo_usuario') != 'paciente':
+        print("[API mis-reservas] Error: No es paciente")
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
+    conexion = None
     try:
         # Obtener el id_paciente del usuario
         usuario_id = session.get('usuario_id')
+        print(f"[API mis-reservas] Usuario ID: {usuario_id}")
+        
         paciente = Paciente.obtener_por_usuario(usuario_id)
 
         if not paciente:
+            print("[API mis-reservas] Error: Paciente no encontrado")
             return jsonify({'error': 'Paciente no encontrado'}), 404
 
         id_paciente = paciente.get('id_paciente')
+        print(f"[API mis-reservas] Paciente ID: {id_paciente}")
 
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             sql = """
                 SELECT r.id_reserva,
                        r.fecha_registro,
+                       r.hora_registro,
                        r.estado as estado_reserva,
                        p.fecha as fecha_cita,
-                       TIME_FORMAT(p.hora_inicio, '%H:%i') as hora_inicio,
-                       TIME_FORMAT(p.hora_fin, '%H:%i') as hora_fin,
-                       s.nombre as servicio,
+                       TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                       TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                       COALESCE(s.nombre, 'Cita Médica') as servicio,
                        e.nombres as medico_nombres,
                        e.apellidos as medico_apellidos,
                        esp.nombre as especialidad
                 FROM RESERVA r
                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
                 LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
                 LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                 LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
                 WHERE r.id_paciente = %s
                 ORDER BY p.fecha DESC, p.hora_inicio DESC
             """
+            print(f"[API mis-reservas] Ejecutando SQL para paciente {id_paciente}")
             cursor.execute(sql, (id_paciente,))
             reservas = cursor.fetchall()
             
-            # Convertir fecha_registro a string
-            for reserva in reservas:
-                if reserva.get('fecha_registro'):
-                    reserva['fecha_registro'] = reserva['fecha_registro'].strftime('%Y-%m-%d %H:%M:%S')
-                if reserva.get('fecha_cita'):
-                    reserva['fecha_cita'] = reserva['fecha_cita'].strftime('%Y-%m-%d')
+            print(f"[API mis-reservas] Encontradas {len(reservas)} reservas")
+            
+            # Convertir fechas a string
+            for i, reserva in enumerate(reservas):
+                try:
+                    if reserva.get('fecha_registro'):
+                        if hasattr(reserva['fecha_registro'], 'strftime'):
+                            reserva['fecha_registro'] = reserva['fecha_registro'].strftime('%Y-%m-%d')
+                        else:
+                            reserva['fecha_registro'] = str(reserva['fecha_registro'])
+                    
+                    if reserva.get('hora_registro'):
+                        if hasattr(reserva['hora_registro'], 'strftime'):
+                            reserva['hora_registro'] = reserva['hora_registro'].strftime('%H:%M:%S')
+                        else:
+                            reserva['hora_registro'] = str(reserva['hora_registro'])
+                    
+                    if reserva.get('fecha_cita'):
+                        if hasattr(reserva['fecha_cita'], 'strftime'):
+                            reserva['fecha_cita'] = reserva['fecha_cita'].strftime('%Y-%m-%d')
+                        else:
+                            reserva['fecha_cita'] = str(reserva['fecha_cita'])
+                except Exception as e:
+                    print(f"[API mis-reservas] Error procesando reserva {i}: {str(e)}")
+                    raise
 
+            print(f"[API mis-reservas] Retornando {len(reservas)} reservas")
             return jsonify({'reservas': reservas})
 
     except Exception as e:
+        print(f"[API mis-reservas] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Error al obtener reservas: {str(e)}'}), 500
     finally:
-        try:
-            conexion.close()
-        except:
-            pass
+        if conexion:
+            try:
+                conexion.close()
+                print("[API mis-reservas] Conexión cerrada")
+            except:
+                pass
