@@ -64,21 +64,29 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-800">Historial de Reservas</h1>
-                        <p class="text-gray-600">Consulta todas tus citas médicas programadas</p>
+                        <h1 class="text-3xl font-bold text-gray-800">📋 Historial de Reservas</h1>
+                        <p class="text-gray-600">Consulta todas tus reservas: citas médicas y exámenes</p>
                     </div>
                 </div>
 
                 <!-- Filtros -->
-                <div class="grid md:grid-cols-3 gap-4 mt-6">
+                <div class="grid md:grid-cols-4 gap-4 mt-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Reserva</label>
+                        <select id="filtroTipo" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            <option value="">Todos los tipos</option>
+                            <option value="1">🩺 Citas Médicas</option>
+                            <option value="2">🔬 Exámenes</option>
+                        </select>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por estado</label>
                         <select id="filtroEstado" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                             <option value="">Todos los estados</option>
-                            <option value="Pendiente">Pendiente</option>
-                            <option value="Confirmada">Confirmada</option>
-                            <option value="Completada">Completada</option>
-                            <option value="Cancelada">Cancelada</option>
+                            <option value="Pendiente">⏳ Pendiente</option>
+                            <option value="Confirmada">✅ Confirmada</option>
+                            <option value="Completada">✔️ Completada</option>
+                            <option value="Cancelada">❌ Cancelada</option>
                         </select>
                     </div>
                     <div>
@@ -88,6 +96,14 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
                         <input type="date" id="filtroFechaHasta" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                    </div>
+                </div>
+                
+                <!-- Contador de resultados -->
+                <div class="mt-4">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-700 text-sm">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span id="contadorResultados">Mostrando 0 reservas</span>
                     </div>
                 </div>
 
@@ -141,6 +157,7 @@
             cargarReservas();
 
             // Event listeners para filtros dinámicos (sin botón)
+            document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
             document.getElementById('filtroEstado').addEventListener('change', aplicarFiltros);
             document.getElementById('filtroFechaDesde').addEventListener('change', aplicarFiltros);
             document.getElementById('filtroFechaHasta').addEventListener('change', aplicarFiltros);
@@ -172,17 +189,20 @@
             const container = document.getElementById('reservasContainer');
             const loadingState = document.getElementById('loadingState');
             const emptyState = document.getElementById('emptyState');
+            const contadorResultados = document.getElementById('contadorResultados');
 
             loadingState.classList.add('hidden');
 
             if (!reservas || reservas.length === 0) {
                 container.classList.add('hidden');
                 emptyState.classList.remove('hidden');
+                contadorResultados.textContent = 'Mostrando 0 reservas';
                 return;
             }
 
             emptyState.classList.add('hidden');
             container.classList.remove('hidden');
+            contadorResultados.textContent = `Mostrando ${reservas.length} reserva${reservas.length !== 1 ? 's' : ''}`;
 
             container.innerHTML = reservas.map(reserva => {
                 const fecha = new Date(reserva.fecha_cita + 'T00:00:00');
@@ -194,7 +214,13 @@
                 });
 
                 const estadoClass = `status-${reserva.estado_reserva}`;
-                const estadoTexto = reserva.estado_reserva; // Ya viene correcto de la BD
+                const estadoTexto = reserva.estado_reserva;
+                
+                // Determinar icono y etiqueta según tipo
+                const tipoInfo = getTipoInfo(reserva.tipo);
+                const tipoIcono = tipoInfo.icono;
+                const tipoTexto = tipoInfo.texto;
+                const tipoColor = tipoInfo.color;
 
                 return `
                     <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
@@ -203,6 +229,7 @@
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-2">
                                         <span class="status-badge ${estadoClass}">${estadoTexto}</span>
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${tipoColor}">${tipoIcono} ${tipoTexto}</span>
                                         <span class="text-sm text-gray-500">ID: #${reserva.id_reserva}</span>
                                     </div>
                                     <h3 class="text-xl font-bold text-gray-800 mb-1">${reserva.servicio}</h3>
@@ -258,14 +285,44 @@
                 `;
             }).join('');
         }
+        
+        // Función auxiliar para obtener información del tipo
+        function getTipoInfo(tipo) {
+            // tipo: 1 = Cita Médica, 2 = Examen
+            if (tipo == 1) {
+                return {
+                    icono: '🩺',
+                    texto: 'Cita Médica',
+                    color: 'bg-blue-100 text-blue-800'
+                };
+            } else if (tipo == 2) {
+                return {
+                    icono: '🔬',
+                    texto: 'Examen',
+                    color: 'bg-purple-100 text-purple-800'
+                };
+            } else {
+                return {
+                    icono: '📋',
+                    texto: 'Reserva',
+                    color: 'bg-gray-100 text-gray-800'
+                };
+            }
+        }
 
         // Función para aplicar filtros
         function aplicarFiltros() {
+            const tipo = document.getElementById('filtroTipo').value;
             const estado = document.getElementById('filtroEstado').value;
             const fechaDesde = document.getElementById('filtroFechaDesde').value;
             const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
             let reservasFiltradas = [...reservasData];
+
+            // Filtrar por tipo
+            if (tipo) {
+                reservasFiltradas = reservasFiltradas.filter(r => r.tipo == tipo);
+            }
 
             // Filtrar por estado
             if (estado) {
@@ -291,6 +348,7 @@
 
         // Función para limpiar filtros
         function limpiarFiltros() {
+            document.getElementById('filtroTipo').value = '';
             document.getElementById('filtroEstado').value = '';
             document.getElementById('filtroFechaDesde').value = '';
             document.getElementById('filtroFechaHasta').value = '';
