@@ -916,22 +916,178 @@ def api_descargar_reporte(id_reporte):
             return jsonify({"error": "Reporte no encontrado"}), 404
         
         if formato == 'pdf':
-            # Aquí implementarías la generación del PDF
-            # Por ahora retornamos los datos JSON
-            return jsonify({
-                "mensaje": "Generación de PDF en desarrollo",
-                "reporte": reporte
-            })
+            # Generar PDF con ReportLab
+            try:
+                from reportlab.lib.pagesizes import letter
+                from reportlab.lib import colors
+                from reportlab.lib.units import inch
+                from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+                from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+                from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+                from io import BytesIO
+                
+                # Crear buffer
+                buffer = BytesIO()
+                
+                # Crear documento
+                doc = SimpleDocTemplate(buffer, pagesize=letter,
+                                      topMargin=0.75*inch, bottomMargin=0.75*inch,
+                                      leftMargin=0.75*inch, rightMargin=0.75*inch)
+                
+                elements = []
+                styles = getSampleStyleSheet()
+                
+                # Estilos personalizados
+                title_style = ParagraphStyle(
+                    'CustomTitle',
+                    parent=styles['Heading1'],
+                    fontSize=20,
+                    textColor=colors.HexColor('#0891b2'),
+                    spaceAfter=10,
+                    alignment=TA_CENTER,
+                    fontName='Helvetica-Bold'
+                )
+                
+                subtitle_style = ParagraphStyle(
+                    'CustomSubtitle',
+                    parent=styles['Normal'],
+                    fontSize=12,
+                    textColor=colors.HexColor('#475569'),
+                    spaceAfter=20,
+                    alignment=TA_CENTER
+                )
+                
+                heading_style = ParagraphStyle(
+                    'Heading',
+                    parent=styles['Heading2'],
+                    fontSize=14,
+                    textColor=colors.HexColor('#0891b2'),
+                    spaceAfter=10,
+                    spaceBefore=15,
+                    fontName='Helvetica-Bold'
+                )
+                
+                body_style = ParagraphStyle(
+                    'Body',
+                    parent=styles['Normal'],
+                    fontSize=10,
+                    textColor=colors.HexColor('#334155'),
+                    spaceAfter=8,
+                    alignment=TA_JUSTIFY
+                )
+                
+                # Título principal
+                elements.append(Paragraph("REPORTE DE CLÍNICA UNIÓN", title_style))
+                elements.append(Paragraph(f"Código: {reporte.get('codigo', 'N/A')}", subtitle_style))
+                elements.append(Spacer(1, 0.3*inch))
+                
+                # Información del reporte
+                info_data = [
+                    ['Campo', 'Información'],
+                    ['Tipo de Reporte', reporte.get('tipo', 'N/A')],
+                    ['Categoría', reporte.get('categoria', 'N/A')],
+                    ['Estado', reporte.get('estado', 'N/A')],
+                    ['Empleado', reporte.get('empleado', 'No asignado')],
+                    ['Fecha de Creación', reporte.get('fecha_creacion', 'N/A')],
+                ]
+                
+                info_table = Table(info_data, colWidths=[2*inch, 4.5*inch])
+                info_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0891b2')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 11),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 10),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f9ff')]),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+                ]))
+                
+                elements.append(info_table)
+                elements.append(Spacer(1, 0.3*inch))
+                
+                # Descripción
+                if reporte.get('descripcion'):
+                    elements.append(Paragraph("Descripción", heading_style))
+                    elements.append(Paragraph(reporte.get('descripcion', ''), body_style))
+                    elements.append(Spacer(1, 0.2*inch))
+                
+                # Detalles adicionales si existen
+                if reporte.get('servicio'):
+                    elements.append(Paragraph(f"<b>Servicio:</b> {reporte.get('servicio')}", body_style))
+                
+                if reporte.get('recurso'):
+                    elements.append(Paragraph(f"<b>Recurso:</b> {reporte.get('recurso')}", body_style))
+                
+                # Pie de página
+                elements.append(Spacer(1, 0.5*inch))
+                footer_style = ParagraphStyle(
+                    'Footer',
+                    parent=styles['Normal'],
+                    fontSize=8,
+                    textColor=colors.grey,
+                    alignment=TA_CENTER
+                )
+                elements.append(Paragraph(
+                    f"Documento generado el {datetime.now().strftime('%d/%m/%Y a las %H:%M:%S')} - Clínica Unión",
+                    footer_style
+                ))
+                
+                # Construir PDF
+                doc.build(elements)
+                
+                # Enviar archivo
+                buffer.seek(0)
+                return send_file(
+                    buffer,
+                    mimetype='application/pdf',
+                    as_attachment=True,
+                    download_name=f'reporte_{reporte.get("codigo", "documento")}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+                )
+                
+            except ImportError as ie:
+                print(f"[DESCARGAR REPORTE] Error de importación: {ie}")
+                return jsonify({
+                    "error": "ReportLab no está instalado. Instale con: pip install reportlab"
+                }), 500
+                
         elif formato == 'excel':
-            # Aquí implementarías la generación del Excel
-            return jsonify({
-                "mensaje": "Generación de Excel en desarrollo",
-                "reporte": reporte
-            })
+            # Generar Excel simple con CSV
+            import csv
+            from io import StringIO
+            
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            # Encabezados
+            writer.writerow(['Campo', 'Valor'])
+            writer.writerow(['Código', reporte.get('codigo', 'N/A')])
+            writer.writerow(['Tipo', reporte.get('tipo', 'N/A')])
+            writer.writerow(['Categoría', reporte.get('categoria', 'N/A')])
+            writer.writerow(['Estado', reporte.get('estado', 'N/A')])
+            writer.writerow(['Empleado', reporte.get('empleado', 'No asignado')])
+            writer.writerow(['Fecha', reporte.get('fecha_creacion', 'N/A')])
+            writer.writerow(['Descripción', reporte.get('descripcion', '')])
+            
+            output.seek(0)
+            return send_file(
+                BytesIO(output.getvalue().encode('utf-8')),
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'reporte_{reporte.get("codigo", "documento")}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            )
         else:
             return jsonify({"error": "Formato no soportado"}), 400
             
     except Exception as e:
+        print(f"[DESCARGAR REPORTE] Error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 # =======================================
@@ -1160,16 +1316,174 @@ def api_exportar_recursos():
     if "usuario_id" not in session or session.get("tipo_usuario") != "empleado":
         return jsonify({"error": "No autorizado"}), 401
     
-    # Obtener filtros
-    id_tipo_recurso = request.args.get('id_tipo_recurso')
-    
-    # Por ahora retornar mensaje
-    return jsonify({
-        "mensaje": "Exportación a PDF en desarrollo",
-        "filtros": {
-            "id_tipo_recurso": id_tipo_recurso
-        }
-    })
+    try:
+        # Obtener filtros
+        id_tipo_recurso = request.args.get('id_tipo_recurso')
+        
+        # Obtener datos de recursos
+        conexion, cursor = obtener_conexion_dict()
+        
+        sql = """
+            SELECT 
+                r.id_recurso,
+                r.nombre as recurso,
+                tr.nombre as tipo_recurso,
+                r.estado,
+                COUNT(ore.id_operacion_recurso) as operaciones_mes
+            FROM RECURSO r
+            INNER JOIN TIPO_RECURSO tr ON r.id_tipo_recurso = tr.id_tipo_recurso
+            LEFT JOIN OPERACION_RECURSO ore ON r.id_recurso = ore.id_recurso
+        """
+        
+        params = []
+        if id_tipo_recurso:
+            sql += " WHERE r.id_tipo_recurso = %s"
+            params.append(id_tipo_recurso)
+        
+        sql += """
+            GROUP BY r.id_recurso, r.nombre, tr.nombre, r.estado
+            ORDER BY tr.nombre, r.nombre
+        """
+        
+        cursor.execute(sql, tuple(params) if params else ())
+        recursos = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        # Generar PDF usando reportlab
+        try:
+            from reportlab.lib.pagesizes import letter, A4
+            from reportlab.lib import colors
+            from reportlab.lib.units import inch
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib.enums import TA_CENTER, TA_LEFT
+            from io import BytesIO
+            
+            # Crear buffer
+            buffer = BytesIO()
+            
+            # Crear documento
+            doc = SimpleDocTemplate(buffer, pagesize=letter,
+                                  topMargin=0.75*inch, bottomMargin=0.75*inch,
+                                  leftMargin=0.75*inch, rightMargin=0.75*inch)
+            
+            elements = []
+            styles = getSampleStyleSheet()
+            
+            # Título
+            title_style = ParagraphStyle(
+                'CustomTitle',
+                parent=styles['Heading1'],
+                fontSize=18,
+                textColor=colors.HexColor('#0891b2'),
+                spaceAfter=10,
+                alignment=TA_CENTER
+            )
+            
+            subtitle_style = ParagraphStyle(
+                'CustomSubtitle',
+                parent=styles['Normal'],
+                fontSize=10,
+                textColor=colors.grey,
+                spaceAfter=20,
+                alignment=TA_CENTER
+            )
+            
+            elements.append(Paragraph("Reporte de Ocupación de Recursos", title_style))
+            elements.append(Paragraph(f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}", subtitle_style))
+            elements.append(Spacer(1, 0.3*inch))
+            
+            # Tabla de datos
+            data = [['N°', 'Nombre del Recurso', 'Tipo', 'Estado', 'Operaciones']]
+            
+            for idx, recurso in enumerate(recursos, 1):
+                data.append([
+                    str(idx),
+                    recurso['recurso'] or 'N/A',
+                    recurso['tipo_recurso'] or 'N/A',
+                    recurso['estado'] or 'N/A',
+                    str(recurso['operaciones_mes'] or 0)
+                ])
+            
+            table = Table(data, colWidths=[0.6*inch, 2.5*inch, 1.8*inch, 1.2*inch, 1.2*inch])
+            
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0891b2')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f9ff')])
+            ]))
+            
+            elements.append(table)
+            
+            # Pie de página con resumen
+            elements.append(Spacer(1, 0.3*inch))
+            summary_style = ParagraphStyle(
+                'Summary',
+                parent=styles['Normal'],
+                fontSize=10,
+                textColor=colors.HexColor('#0891b2'),
+                spaceAfter=5,
+                alignment=TA_LEFT
+            )
+            
+            total_recursos = len(recursos)
+            total_operaciones = sum(r['operaciones_mes'] or 0 for r in recursos)
+            
+            elements.append(Paragraph(f"<b>Total de recursos:</b> {total_recursos}", summary_style))
+            elements.append(Paragraph(f"<b>Total de operaciones:</b> {total_operaciones}", summary_style))
+            
+            # Construir PDF
+            doc.build(elements)
+            
+            # Enviar archivo
+            buffer.seek(0)
+            return send_file(
+                buffer,
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=f'reporte_recursos_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+            )
+            
+        except ImportError:
+            # Si reportlab no está instalado, retornar CSV simple
+            import csv
+            from io import StringIO
+            
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            writer.writerow(['Nombre del Recurso', 'Tipo', 'Estado', 'Operaciones'])
+            for recurso in recursos:
+                writer.writerow([
+                    recurso['recurso'] or 'N/A',
+                    recurso['tipo_recurso'] or 'N/A',
+                    recurso['estado'] or 'N/A',
+                    recurso['operaciones_mes'] or 0
+                ])
+            
+            output.seek(0)
+            return send_file(
+                BytesIO(output.getvalue().encode('utf-8')),
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'reporte_recursos_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            )
+        
+    except Exception as e:
+        print(f"[EXPORTAR RECURSOS] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 @reportes_bp.route("/api/auditoria/generar", methods=["POST"])
 def api_generar_reporte_auditoria():
@@ -1271,10 +1585,12 @@ def api_generar_reporte_recursos():
         # Obtener datos del formulario
         id_operacion = request.form.get('id_operacion')  # ID de operación existente
         id_recurso = request.form.get('id_recurso')
+        observaciones = request.form.get('observaciones', '').strip()
         
         print(f"[VINCULAR OPERACION-RECURSO] Datos recibidos:")
         print(f"  - id_operacion: {id_operacion}")
         print(f"  - id_recurso: {id_recurso}")
+        print(f"  - observaciones: {observaciones[:50] if observaciones else 'Sin observaciones'}...")
         
         # Validaciones
         if not id_operacion:
@@ -1285,11 +1601,12 @@ def api_generar_reporte_recursos():
         # Obtener conexión a la base de datos con DictCursor
         conexion, cursor = obtener_conexion_dict()
         
-        # Verificar que la operación existe y tiene reserva
+        # Verificar que la operación existe y tiene cita
         cursor.execute("""
-            SELECT o.id_operacion, o.id_reserva, r.id_paciente
+            SELECT o.id_operacion, o.id_cita, c.id_reserva, r.id_paciente
             FROM OPERACION o
-            INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+            INNER JOIN CITA c ON o.id_cita = c.id_cita
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
             WHERE o.id_operacion = %s
         """, (id_operacion,))
         
@@ -1298,9 +1615,19 @@ def api_generar_reporte_recursos():
         if not operacion:
             cursor.close()
             conexion.close()
-            return jsonify({"error": "La operación no existe o no tiene reserva asociada"}), 400
+            return jsonify({"error": "La operación no existe o no tiene cita/reserva asociada"}), 400
         
         print(f"[VINCULAR OPERACION-RECURSO] Operación válida encontrada")
+        
+        # Actualizar observaciones de la operación si se proporcionaron
+        if observaciones:
+            print(f"[VINCULAR OPERACION-RECURSO] Actualizando observaciones de la operación...")
+            cursor.execute("""
+                UPDATE OPERACION 
+                SET observaciones = %s
+                WHERE id_operacion = %s
+            """, (observaciones, id_operacion))
+            print(f"[VINCULAR OPERACION-RECURSO] Observaciones actualizadas")
         
         # Verificar si ya existe el vínculo
         cursor.execute("""
@@ -1369,9 +1696,9 @@ def api_operaciones_disponibles():
         sql = """
             SELECT 
                 o.id_operacion,
-                DATE_FORMAT(o.fecha_operacion, '%%d/%%m/%%Y') as fecha,
-                TIME_FORMAT(o.hora_inicio, '%%H:%%i') as hora_inicio,
-                TIME_FORMAT(o.hora_fin, '%%H:%%i') as hora_fin,
+                DATE_FORMAT(o.fecha_operacion, '%d/%m/%Y') as fecha,
+                TIME_FORMAT(o.hora_inicio, '%H:%i') as hora_inicio,
+                TIME_FORMAT(o.hora_fin, '%H:%i') as hora_fin,
                 c.id_cita,
                 c.diagnostico,
                 c.estado as estado_cita,

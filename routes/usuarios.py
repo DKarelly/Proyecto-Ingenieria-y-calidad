@@ -916,6 +916,38 @@ def lista_medicos():
         return redirect(url_for('home'))
 
 
+@usuarios_bp.route('/api/cambiar-contrasena', methods=['POST'])
+def api_cambiar_contrasena():
+    """API para cambiar contraseña"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    data = request.get_json()
+    contrasena_actual = data.get('contrasena_actual')
+    contrasena_nueva = data.get('contrasena_nueva')
+    
+    if not contrasena_actual or not contrasena_nueva:
+        return jsonify({'error': 'Debe proporcionar la contraseña actual y la nueva'}), 400
+        
+    try:
+        # Verificar contraseña actual y actualizar
+        resultado = Usuario.cambiar_contrasena(
+            session['usuario_id'], 
+            contrasena_actual,
+            contrasena_nueva
+        )
+        
+        if resultado.get('error'):
+            return jsonify({'error': resultado['error']}), 400
+            
+        return jsonify({
+            'success': True,
+            'message': 'Contraseña actualizada exitosamente'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @usuarios_bp.route('/cambiar-contrasena', methods=['GET', 'POST'])
 @login_required
 def cambiar_contrasena():

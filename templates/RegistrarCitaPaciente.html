@@ -95,9 +95,9 @@
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 1: Selecciona la Especialidad</h2>
 
                     <div class="mb-6">
-                        <label class="block text-gray-700 font-semibold mb-3">¿Qué tipo de consulta necesitas?</label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="serviciosContainer">
-                            <!-- Los servicios se cargarán dinámicamente aquí -->
+                        <label class="block text-gray-700 font-semibold mb-3">¿Qué especialidad médica necesitas?</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="especialidadesContainer">
+                            <!-- Las especialidades se cargarán dinámicamente aquí -->
                         </div>
                     </div>
 
@@ -116,7 +116,7 @@
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 2: Selecciona tu Médico</h2>
 
                     <div class="mb-6">
-                        <label class="block text-gray-700 font-semibold mb-3">Médicos disponibles para <span id="servicioSeleccionado" class="text-cyan-600"></span></label>
+                        <label class="block text-gray-700 font-semibold mb-3">Médicos disponibles para <span id="especialidadSeleccionada" class="text-cyan-600"></span></label>
                         <div class="grid grid-cols-1 gap-4" id="medicosContainer">
                             <!-- Los médicos se cargarán dinámicamente aquí -->
                         </div>
@@ -143,21 +143,58 @@
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 3: Selecciona Fecha y Horario</h2>
 
                     <div class="mb-6">
-                        <label class="block text-gray-700 font-semibold mb-3">Selecciona una fecha</label>
-                        <input type="date" id="fechaCita" min="" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                    </div>
-
-                    <div class="mb-6">
-                        <label class="block text-gray-700 font-semibold mb-3">Horarios disponibles</label>
-                        <div id="horariosContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <!-- Los horarios se cargarán dinámicamente aquí -->
+                        <!-- Buscador de fecha -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                            <div class="flex flex-wrap items-end gap-3">
+                                <div class="flex-1 min-w-[200px]">
+                                    <label for="fechaBusqueda" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Buscar horarios desde:
+                                    </label>
+                                    <input 
+                                        type="date" 
+                                        id="fechaBusqueda" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                </div>
+                                <button 
+                                    type="button" 
+                                    id="btnBuscarFecha" 
+                                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                    </svg>
+                                    Buscar
+                                </button>
+                                <button 
+                                    type="button" 
+                                    id="btnLimpiarFecha" 
+                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200 flex items-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                    </svg>
+                                    Limpiar
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">
+                                Mostrando horarios de la semana: <span id="rangoFechas" class="font-semibold text-blue-600"></span>
+                            </p>
                         </div>
+                        
+                        <label class="block text-gray-700 font-semibold mb-3">Horarios disponibles</label>
+                        <p class="text-sm text-gray-600 mb-4">Médico: <span id="medicoNombreHorario" class="font-semibold"></span></p>
+                        
+                        <div id="horariosSemanales" class="space-y-4">
+                            <!-- Los horarios agrupados por día se cargarán aquí -->
+                        </div>
+                        
                         <div id="noHorarios" class="hidden text-center py-8 text-gray-500">
                             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 mb-3">
                                 <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                             </svg>
-                            <p>No hay horarios disponibles para la fecha seleccionada.</p>
-                            <p class="text-sm mt-2">Por favor, selecciona otra fecha.</p>
+                            <p>No hay horarios disponibles para este médico en las fechas seleccionadas.</p>
+                            <p class="text-sm mt-2">Por favor, intenta con otra fecha o selecciona otro médico.</p>
                         </div>
                     </div>
 
@@ -274,78 +311,258 @@
         // Variables globales para el formulario
         let currentStep = 1;
         let formData = {
-            id_servicio: null,
-            servicio_nombre: '',
+            id_especialidad: null,
+            especialidad_nombre: '',
             id_empleado: null,
             empleado_nombre: '',
             id_horario: null,
             fecha: '',
             hora_inicio: '',
-            hora_fin: ''
+            hora_fin: '',
+            dia_semana: ''
         };
 
-        // Obtener parámetros de la URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const medicoPreseleccionado = urlParams.get('medico');
-
-        // Configurar fecha mínima (hoy)
+        // Configurar y cargar especialidades al iniciar
         document.addEventListener('DOMContentLoaded', async function() {
-            const fechaInput = document.getElementById('fechaCita');
-            const today = new Date().toISOString().split('T')[0];
-            fechaInput.min = today;
-
-            // Cargar servicios siempre
-            await cargarServicios();
-            console.log('Servicios cargados en el paso 1');
+            console.log('[NuevaCita] Iniciando sistema de reservas');
+            await cargarEspecialidades();
             
-            // Si hay médico preseleccionado, intentar procesarlo
-            if (medicoPreseleccionado) {
-                console.log('Intentando preseleccionar médico:', medicoPreseleccionado);
-                await preseleccionarMedico(medicoPreseleccionado);
+            // Configurar fecha mínima en el buscador de fecha (hoy)
+            const fechaBusquedaEl = document.getElementById('fechaBusqueda');
+            if (fechaBusquedaEl) {
+                const hoy = new Date().toISOString().split('T')[0];
+                fechaBusquedaEl.setAttribute('min', hoy);
+                
+                // Event listener para Enter en el input de fecha
+                fechaBusquedaEl.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const btnBuscar = document.getElementById('btnBuscarFecha');
+                        if (btnBuscar) btnBuscar.click();
+                    }
+                });
+            }
+            
+            // Event listener para buscar fecha específica
+            const btnBuscarFecha = document.getElementById('btnBuscarFecha');
+            if (btnBuscarFecha) {
+                btnBuscarFecha.addEventListener('click', async function() {
+                    const fechaBusqueda = document.getElementById('fechaBusqueda');
+                    if (fechaBusqueda && fechaBusqueda.value) {
+                        const fechaSeleccionada = fechaBusqueda.value;
+                        const hoy = new Date().toISOString().split('T')[0];
+                        
+                        if (fechaSeleccionada < hoy) {
+                            alert('No puedes buscar horarios de fechas pasadas. Por favor, selecciona la fecha de hoy o una fecha futura.');
+                            return;
+                        }
+                        
+                        console.log('[Paso3] Buscando horarios desde:', fechaSeleccionada);
+                        await cargarHorariosSemanales(fechaSeleccionada);
+                    } else {
+                        alert('Por favor, selecciona una fecha para buscar.');
+                    }
+                });
+            }
+            
+            // Event listener para limpiar fecha y volver a la semana actual
+            const btnLimpiarFecha = document.getElementById('btnLimpiarFecha');
+            if (btnLimpiarFecha) {
+                btnLimpiarFecha.addEventListener('click', async function() {
+                    const fechaBusqueda = document.getElementById('fechaBusqueda');
+                    if (fechaBusqueda) {
+                        fechaBusqueda.value = '';
+                    }
+                    console.log('[Paso3] Regresando a la semana actual');
+                    await cargarHorariosSemanales();
+                });
+            }
+
+            // Navegación entre pasos
+            const btnStep1Next = document.getElementById('btn-step1-next');
+            if (btnStep1Next) {
+                btnStep1Next.addEventListener('click', async () => {
+                    goToStep(2);
+                    await cargarMedicos();
+                });
+            }
+
+            const btnStep2Prev = document.getElementById('btn-step2-prev');
+            if (btnStep2Prev) {
+                btnStep2Prev.addEventListener('click', () => goToStep(1));
+            }
+
+            const btnStep2Next = document.getElementById('btn-step2-next');
+            if (btnStep2Next) {
+                btnStep2Next.addEventListener('click', async () => {
+                    goToStep(3);
+                    await cargarHorariosSemanales();
+                });
+            }
+            
+            const btnStep3Prev = document.getElementById('btn-step3-prev');
+            if (btnStep3Prev) {
+                btnStep3Prev.addEventListener('click', () => goToStep(2));
+            }
+
+            const btnStep3Next = document.getElementById('btn-step3-next');
+            if (btnStep3Next) {
+                btnStep3Next.addEventListener('click', () => {
+                    mostrarResumen();
+                    goToStep(4);
+                });
+            }
+
+            const btnStep4Prev = document.getElementById('btn-step4-prev');
+            if (btnStep4Prev) {
+                btnStep4Prev.addEventListener('click', () => goToStep(3));
+            }
+
+            // Confirmar cita
+            const btnConfirmar = document.getElementById('btn-confirmar');
+            if (btnConfirmar) {
+                btnConfirmar.addEventListener('click', async function() {
+                    try {
+                        this.disabled = true;
+                        this.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
+
+                        // Preparar datos - NO incluir id_servicio para reserva de CITA
+                        const requestData = {
+                            id_horario: formData.id_horario
+                        };
+                        
+                        // Solo incluir id_servicio si existe (para reserva de SERVICIO)
+                        if (formData.id_servicio) {
+                            requestData.id_servicio = formData.id_servicio;
+                        }
+
+                        const response = await fetch('/reservas/paciente/crear-reserva', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestData)
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // Mostrar modal de éxito
+                            const modalExito = document.getElementById('modalExito');
+                            if (modalExito) {
+                                modalExito.classList.remove('hidden');
+                                const transform = modalExito.querySelector('.transform');
+                                if (transform) {
+                                    transform.classList.add('scale-100');
+                                    transform.classList.remove('scale-95');
+                                }
+                            }
+                        } else {
+                            alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
+                            this.disabled = false;
+                            this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud. Por favor, intenta nuevamente.');
+                        this.disabled = false;
+                        this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
+                    }
+                });
             }
         });
 
-        // Cargar servicios disponibles
-        async function cargarServicios() {
+        // PASO 1: Cargar especialidades desde la BD
+        async function cargarEspecialidades() {
             try {
-                const response = await fetch('/reservas/api/servicios-activos');
+                console.log('[Paso1] Cargando especialidades...');
+                console.log('[Paso1] URL:', '/reservas/api/especialidades-activas');
+                
+                const response = await fetch('/reservas/api/especialidades-activas');
+                console.log('[Paso1] Response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('[Paso1] Datos recibidos:', data);
 
-                const container = document.getElementById('serviciosContainer');
+                const container = document.getElementById('especialidadesContainer');
+                
+                if (!container) {
+                    console.error('[Paso1] ERROR: Container especialidadesContainer no encontrado');
+                    return;
+                }
+                
                 container.innerHTML = '';
 
-                if (data.servicios && data.servicios.length > 0) {
-                    data.servicios.forEach(servicio => {
+                if (data.especialidades && data.especialidades.length > 0) {
+                    console.log('[Paso1] Cargando', data.especialidades.length, 'especialidades...');
+                    
+                    data.especialidades.forEach(esp => {
                         const card = document.createElement('div');
                         card.className = 'border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300';
-                        card.onclick = () => seleccionarServicio(servicio.id_servicio, servicio.nombre, card);
+                        card.onclick = () => seleccionarEspecialidad(esp.id_especialidad, esp.nombre, card);
                         card.innerHTML = `
                             <div class="flex items-start gap-3">
                                 <div class="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
-                                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-800">${servicio.nombre}</h4>
-                                    <p class="text-sm text-gray-600">${servicio.especialidad || 'Consulta General'}</p>
+                                    <h4 class="font-semibold text-gray-800">${esp.nombre}</h4>
+                                    <p class="text-sm text-gray-600">${esp.descripcion || 'Especialidad médica'}</p>
+                                    ${esp.estado ? `<p class="text-xs text-gray-400 mt-1">Estado: ${esp.estado}</p>` : ''}
                                 </div>
                             </div>
                         `;
                         container.appendChild(card);
                     });
+                    console.log('[Paso1] ✓ Cargadas', data.especialidades.length, 'especialidades exitosamente');
                 } else {
-                    container.innerHTML = '<p class="text-gray-500 col-span-2 text-center py-4">No hay servicios disponibles en este momento.</p>';
+                    console.warn('[Paso1] No hay especialidades disponibles');
+                    container.innerHTML = `
+                        <div class="col-span-2 text-center py-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-gray-300 mb-3">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                            </svg>
+                            <p class="text-gray-500 mb-2">No hay especialidades disponibles</p>
+                            <p class="text-sm text-gray-400">Por favor, contacta al administrador</p>
+                            <button onclick="cargarEspecialidades()" class="mt-4 bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600">
+                                Reintentar
+                            </button>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                console.error('Error al cargar servicios:', error);
-                alert('Error al cargar los servicios. Por favor, intenta nuevamente.');
+                console.error('[Paso1] ERROR al cargar especialidades:', error);
+                console.error('[Paso1] Stack trace:', error.stack);
+                
+                const container = document.getElementById('especialidadesContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="col-span-2 text-center py-8 border-2 border-red-200 rounded-lg bg-red-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-red-400 mb-3">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            <p class="text-red-600 font-semibold mb-2">Error al cargar especialidades</p>
+                            <p class="text-sm text-red-500 mb-4">${error.message}</p>
+                            <button onclick="cargarEspecialidades()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                                Reintentar
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                alert('Error al cargar las especialidades. Por favor, revisa la consola (F12) para más detalles.');
             }
         }
 
-        function seleccionarServicio(id, nombre, elemento) {
+        function seleccionarEspecialidad(id, nombre, elemento) {
             // Remover selección previa
-            document.querySelectorAll('#serviciosContainer > div').forEach(el => {
+            document.querySelectorAll('#especialidadesContainer > div').forEach(el => {
                 el.classList.remove('border-cyan-500', 'bg-cyan-50');
                 el.classList.add('border-gray-200');
             });
@@ -354,46 +571,56 @@
             elemento.classList.add('border-cyan-500', 'bg-cyan-50');
             elemento.classList.remove('border-gray-200');
 
-            formData.id_servicio = id;
-            formData.servicio_nombre = nombre;
+            formData.id_especialidad = id;
+            formData.especialidad_nombre = nombre;
 
+            console.log('[Paso1] Especialidad seleccionada:', nombre, '(ID:', id, ')');
             document.getElementById('btn-step1-next').disabled = false;
         }
 
+        // PASO 2: Cargar médicos por especialidad (id_rol=2)
         async function cargarMedicos() {
             try {
-                const response = await fetch(`/reservas/api/medicos-por-servicio/${formData.id_servicio}`);
+                console.log('[Paso2] Cargando médicos para especialidad ID:', formData.id_especialidad);
+                const response = await fetch(`/reservas/api/medicos-por-especialidad/${formData.id_especialidad}`);
                 const data = await response.json();
 
                 const container = document.getElementById('medicosContainer');
                 container.innerHTML = '';
 
-                document.getElementById('servicioSeleccionado').textContent = formData.servicio_nombre;
+                document.getElementById('especialidadSeleccionada').textContent = formData.especialidad_nombre;
 
                 if (data.medicos && data.medicos.length > 0) {
                     data.medicos.forEach(medico => {
                         const card = document.createElement('div');
                         card.className = 'border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300';
-                        card.setAttribute('data-medico-id', medico.id_empleado);
-                        card.onclick = () => seleccionarMedico(medico.id_empleado, `${medico.nombres} ${medico.apellidos}`, card);
+                        card.onclick = () => seleccionarMedico(medico.id_empleado, `Dr(a). ${medico.nombres} ${medico.apellidos}`, card);
                         card.innerHTML = `
                             <div class="flex items-center gap-4">
-                                <div class="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                                <div class="w-16 h-16 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
                                     ${medico.nombres.charAt(0)}${medico.apellidos.charAt(0)}
                                 </div>
-                                <div>
+                                <div class="flex-1">
                                     <h4 class="font-semibold text-gray-800">Dr(a). ${medico.nombres} ${medico.apellidos}</h4>
-                                    <p class="text-sm text-gray-600">${medico.especialidad || 'Médico General'}</p>
+                                    <p class="text-sm text-cyan-600">${medico.especialidad}</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="8.5" cy="7" r="4"/>
+                                        </svg>
+                                        ${medico.documento_identidad || 'Sin documento'}
+                                    </p>
                                 </div>
                             </div>
                         `;
                         container.appendChild(card);
                     });
+                    console.log('[Paso2] Cargados', data.medicos.length, 'médicos');
                 } else {
-                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay médicos disponibles para este servicio.</p>';
+                    container.innerHTML = '<p class="text-gray-500 text-center py-4">No hay médicos disponibles para esta especialidad.</p>';
                 }
             } catch (error) {
-                console.error('Error al cargar médicos:', error);
+                console.error('[Paso2] Error al cargar médicos:', error);
                 alert('Error al cargar los médicos. Por favor, intenta nuevamente.');
             }
         }
@@ -412,119 +639,139 @@
             formData.id_empleado = id;
             formData.empleado_nombre = nombre;
 
+            console.log('[Paso2] Médico seleccionado:', nombre, '(ID:', id, ')');
             document.getElementById('btn-step2-next').disabled = false;
         }
 
-        async function cargarHorarios() {
-            const fecha = document.getElementById('fechaCita').value;
-            if (!fecha) return;
-
-            formData.fecha = fecha;
-
+        // PASO 3: Cargar horarios de esta semana del médico seleccionado
+        async function cargarHorariosSemanales(fechaInicio = null) {
             try {
-                const response = await fetch(`/reservas/api/horarios-disponibles?fecha=${fecha}&id_empleado=${formData.id_empleado}`);
+                console.log('[Paso3] Cargando horarios para médico ID:', formData.id_empleado, 'desde fecha:', fechaInicio || 'semana actual');
+                
+                document.getElementById('medicoNombreHorario').textContent = formData.empleado_nombre;
+                
+                // Construir URL con parámetro de fecha si existe
+                let url = `/reservas/api/horarios-semana/${formData.id_empleado}`;
+                if (fechaInicio) {
+                    url += `?fecha_inicio=${fechaInicio}`;
+                }
+                
+                const response = await fetch(url);
                 const data = await response.json();
+                
+                // Actualizar el rango de fechas mostrado
+                const rangoFechasSpan = document.getElementById('rangoFechas');
+                if (rangoFechasSpan && data.inicio_semana && data.fin_semana) {
+                    const inicio = new Date(data.inicio_semana + 'T00:00:00');
+                    const fin = new Date(data.fin_semana + 'T00:00:00');
+                    const inicioFormateado = inicio.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                    const finFormateado = fin.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+                    rangoFechasSpan.textContent = `${inicioFormateado} - ${finFormateado}`;
+                }
 
-                const container = document.getElementById('horariosContainer');
+                const container = document.getElementById('horariosSemanales');
                 const noHorarios = document.getElementById('noHorarios');
+                
                 container.innerHTML = '';
 
                 if (data.horarios && data.horarios.length > 0) {
                     noHorarios.classList.add('hidden');
-                    container.classList.remove('hidden');
+                    
+                    // Agrupar horarios por fecha
+                    const horariosPorFecha = {};
+                    data.horarios.forEach(h => {
+                        if (!horariosPorFecha[h.fecha]) {
+                            horariosPorFecha[h.fecha] = {
+                                dia_semana: h.dia_semana,
+                                horarios: []
+                            };
+                        }
+                        horariosPorFecha[h.fecha].horarios.push(h);
+                    });
 
-                    data.horarios.forEach(horario => {
-                        const card = document.createElement('div');
-                        card.className = 'border-2 border-gray-200 rounded-lg p-3 cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-all duration-300 text-center';
-                        card.onclick = () => seleccionarHorario(horario.id_horario, horario.hora_inicio, horario.hora_fin, card);
-                        card.innerHTML = `
-                            <div class="flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
-                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                    // Crear cards por día
+                    Object.keys(horariosPorFecha).sort().forEach(fecha => {
+                        const info = horariosPorFecha[fecha];
+                        const fechaObj = new Date(fecha + 'T00:00:00');
+                        const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
+                            day: '2-digit', 
+                            month: 'long', 
+                            year: 'numeric' 
+                        });
+                        
+                        const diaCard = document.createElement('div');
+                        diaCard.className = 'border rounded-lg p-4 bg-gray-50';
+                        diaCard.innerHTML = `
+                            <h4 class="font-semibold text-gray-800 mb-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 text-cyan-600">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
                                 </svg>
-                                <span class="font-semibold text-gray-800">${horario.hora_inicio} - ${horario.hora_fin}</span>
+                                ${info.dia_semana}, ${fechaFormateada}
+                            </h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2" data-fecha="${fecha}">
                             </div>
                         `;
-                        container.appendChild(card);
+                        
+                        const horariosGrid = diaCard.querySelector('[data-fecha]');
+                        
+                        info.horarios.forEach(h => {
+                            const horarioBtn = document.createElement('button');
+                            horarioBtn.type = 'button';
+                            
+                            if (h.disponible) {
+                                horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-2 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all';
+                                horarioBtn.onclick = () => seleccionarHorario(h.id_horario, fecha, h.hora_inicio, h.hora_fin, info.dia_semana, horarioBtn);
+                            } else {
+                                horarioBtn.className = 'border-2 border-gray-200 bg-gray-100 rounded-lg p-2 text-sm text-gray-400 cursor-not-allowed';
+                                horarioBtn.disabled = true;
+                            }
+                            
+                            horarioBtn.innerHTML = `
+                                <div class="font-semibold">${h.hora_inicio} - ${h.hora_fin}</div>
+                                <div class="text-xs ${h.disponible ? 'text-green-600' : 'text-red-500'}">
+                                    ${h.disponible ? '✓ Disponible' : '✗ No Disponible'}
+                                </div>
+                            `;
+                            
+                            horariosGrid.appendChild(horarioBtn);
+                        });
+                        
+                        container.appendChild(diaCard);
                     });
+                    
+                    console.log('[Paso3] Cargados', data.horarios.length, 'horarios');
                 } else {
                     noHorarios.classList.remove('hidden');
-                    container.classList.add('hidden');
+                    console.log('[Paso3] No hay horarios disponibles');
                 }
             } catch (error) {
-                console.error('Error al cargar horarios:', error);
+                console.error('[Paso3] Error al cargar horarios:', error);
                 alert('Error al cargar los horarios. Por favor, intenta nuevamente.');
             }
         }
 
-        function seleccionarHorario(id, hora_inicio, hora_fin, elemento) {
-            // Remover selección previa
-            document.querySelectorAll('#horariosContainer > div').forEach(el => {
-                el.classList.remove('border-cyan-500', 'bg-cyan-50');
-                el.classList.add('border-gray-200');
+        function seleccionarHorario(id, fecha, horaInicio, horaFin, diaSemana, elemento) {
+            // Remover selección previa en todos los horarios
+            document.querySelectorAll('#horariosSemanales button').forEach(btn => {
+                if (!btn.disabled) {
+                    btn.classList.remove('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-300');
+                    btn.classList.add('border-gray-300', 'bg-white');
+                }
             });
 
             // Marcar como seleccionado
-            elemento.classList.add('border-cyan-500', 'bg-cyan-50');
-            elemento.classList.remove('border-gray-200');
+            elemento.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-300');
+            elemento.classList.remove('border-gray-300', 'bg-white');
 
             formData.id_horario = id;
-            formData.hora_inicio = hora_inicio;
-            formData.hora_fin = hora_fin;
+            formData.fecha = fecha;
+            formData.hora_inicio = horaInicio;
+            formData.hora_fin = horaFin;
+            formData.dia_semana = diaSemana;
 
+            console.log('[Paso3] Horario seleccionado:', diaSemana, fecha, horaInicio, '-', horaFin);
             document.getElementById('btn-step3-next').disabled = false;
         }
-
-        // Event listener para cambio de fecha
-        document.getElementById('fechaCita').addEventListener('change', function() {
-            formData.id_horario = null;
-            document.getElementById('btn-step3-next').disabled = true;
-            cargarHorarios();
-        });
-
-        // Navegación entre pasos
-        document.getElementById('btn-step1-next').addEventListener('click', async () => {
-            goToStep(2);
-            await cargarMedicos();
-            
-            // Verificar si hay un médico preseleccionado en sessionStorage
-            const medicoId = sessionStorage.getItem('medicoPreseleccionado');
-            const medicoNombre = sessionStorage.getItem('medicoNombre');
-            
-            if (medicoId && medicoNombre) {
-                // Preseleccionar el médico después de cargar la lista
-                setTimeout(() => {
-                    formData.id_empleado = parseInt(medicoId);
-                    formData.empleado_nombre = medicoNombre;
-                    document.getElementById('btn-step2-next').disabled = false;
-                    
-                    console.log('Médico preseleccionado desde sessionStorage:', medicoNombre);
-                    
-                    // Marcar visualmente el médico seleccionado
-                    const medicosCards = document.querySelectorAll('#medicosContainer > div');
-                    medicosCards.forEach(card => {
-                        const cardIdMatch = card.getAttribute('data-medico-id');
-                        if (cardIdMatch == medicoId) {
-                            card.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-200');
-                            card.classList.remove('border-gray-200');
-                        }
-                    });
-                    
-                    // Limpiar sessionStorage
-                    sessionStorage.removeItem('medicoPreseleccionado');
-                    sessionStorage.removeItem('medicoNombre');
-                }, 500);
-            }
-        });
-
-        document.getElementById('btn-step2-prev').addEventListener('click', () => goToStep(1));
-        document.getElementById('btn-step2-next').addEventListener('click', () => goToStep(3));
-        document.getElementById('btn-step3-prev').addEventListener('click', () => goToStep(2));
-        document.getElementById('btn-step3-next').addEventListener('click', () => {
-            mostrarResumen();
-            goToStep(4);
-        });
-        document.getElementById('btn-step4-prev').addEventListener('click', () => goToStep(3));
 
         function goToStep(step) {
             // Ocultar todos los pasos
@@ -562,53 +809,20 @@
         }
 
         function mostrarResumen() {
-            document.getElementById('resumen-servicio').textContent = formData.servicio_nombre;
+            document.getElementById('resumen-servicio').textContent = formData.especialidad_nombre;
             document.getElementById('resumen-medico').textContent = formData.empleado_nombre;
-
-            // Formatear fecha
-            const fecha = new Date(formData.fecha + 'T00:00:00');
-            const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const fechaFormateada = fecha.toLocaleDateString('es-ES', opciones);
-
-            document.getElementById('resumen-fecha').textContent = `${fechaFormateada} a las ${formData.hora_inicio}`;
+            
+            const fechaObj = new Date(formData.fecha + 'T00:00:00');
+            const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            document.getElementById('resumen-fecha').textContent = 
+                `${fechaFormateada} - ${formData.hora_inicio} a ${formData.hora_fin}`;
         }
-
-        // Confirmar cita
-        document.getElementById('btn-confirmar').addEventListener('click', async function() {
-            try {
-                this.disabled = true;
-                this.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
-
-                const response = await fetch('/reservas/paciente/crear-reserva', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id_servicio: formData.id_servicio,
-                        id_horario: formData.id_horario
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Mostrar modal de éxito
-                    document.getElementById('modalExito').classList.remove('hidden');
-                    document.getElementById('modalExito').querySelector('.transform').classList.add('scale-100');
-                    document.getElementById('modalExito').querySelector('.transform').classList.remove('scale-95');
-                } else {
-                    alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
-                    this.disabled = false;
-                    this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error al procesar la solicitud. Por favor, intenta nuevamente.');
-                this.disabled = false;
-                this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
-            }
-        });
 
         // Función para preseleccionar médico desde la URL
         async function preseleccionarMedico(idMedico) {
@@ -626,64 +840,29 @@
                     const medicoIdParaPreseleccionar = parseInt(idMedico);
                     const medicoNombreCompleto = `Dr(a). ${medico.nombres} ${medico.apellidos}`;
                     
-                    // Si el médico tiene un servicio asociado, seleccionarlo automáticamente
-                    if (medico.id_servicio) {
-                        formData.id_servicio = medico.id_servicio;
-                        formData.servicio_nombre = medico.servicio_nombre;
-                        console.log('Servicio preseleccionado:', formData.servicio_nombre);
+                    // Reserva de CITA - NO necesita servicio
+                    // Avanzar directamente al paso 2 (selección ya realizada por especialidad)
+                    goToStep(2);
+                    await cargarMedicos();
+                    
+                    // Seleccionar el médico después de cargar la lista
+                    setTimeout(() => {
+                        formData.id_empleado = medicoIdParaPreseleccionar;
+                        formData.empleado_nombre = medicoNombreCompleto;
+                        document.getElementById('btn-step2-next').disabled = false;
                         
-                        // Avanzar al paso 2 y cargar médicos filtrados por servicio
-                        goToStep(2);
-                        await cargarMedicos();
+                        console.log('Médico preseleccionado para CITA:', medicoNombreCompleto);
                         
-                        // Seleccionar el médico después de cargar la lista
-                        setTimeout(() => {
-                            formData.id_empleado = medicoIdParaPreseleccionar;
-                            formData.empleado_nombre = medicoNombreCompleto;
-                            document.getElementById('btn-step2-next').disabled = false;
-                            
-                            console.log('Médico preseleccionado:', medicoNombreCompleto);
-                            
-                            // Marcar visualmente el médico seleccionado
-                            const medicosCards = document.querySelectorAll('#medicosContainer > div');
-                            medicosCards.forEach(card => {
-                                const cardIdMatch = card.getAttribute('data-medico-id');
-                                if (cardIdMatch == medicoIdParaPreseleccionar) {
-                                    card.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-200');
-                                    card.classList.remove('border-gray-200');
-                                }
-                            });
-                        }, 500);
-                    } else {
-                        // Si no tiene servicio, el usuario debe seleccionar primero en el paso 1
-                        console.log('El médico no tiene servicio asociado. Usuario debe seleccionar el servicio primero.');
-                        
-                        // Guardar el médico en sessionStorage para preselección después
-                        sessionStorage.setItem('medicoPreseleccionado', medicoIdParaPreseleccionar);
-                        sessionStorage.setItem('medicoNombre', medicoNombreCompleto);
-                        
-                        // Asegurarse de que estamos en el paso 1
-                        goToStep(1);
-                        
-                        // Agregar un indicador visual en el encabezado del paso 1
-                        const step1Header = document.querySelector('#step1 h3');
-                        if (step1Header) {
-                            const medicoInfo = document.createElement('div');
-                            medicoInfo.className = 'mt-3 p-3 bg-cyan-50 border-l-4 border-cyan-500 rounded text-sm';
-                            medicoInfo.innerHTML = `
-                                <p class="text-cyan-800 font-medium">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-1">
-                                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-                                    </svg>
-                                    Agendar cita con: ${medicoNombreCompleto}
-                                </p>
-                                <p class="text-cyan-700 mt-1">Por favor, seleccione el tipo de servicio que desea para continuar.</p>
-                            `;
-                            step1Header.after(medicoInfo);
-                        }
-                        
-                        console.log('Usuario en paso 1. Debe seleccionar servicio para continuar con:', medicoNombreCompleto);
-                    }
+                        // Marcar visualmente el médico seleccionado
+                        const medicosCards = document.querySelectorAll('#medicosContainer > div');
+                        medicosCards.forEach(card => {
+                            const cardIdMatch = card.getAttribute('data-medico-id');
+                            if (cardIdMatch == medicoIdParaPreseleccionar) {
+                                card.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-200');
+                                card.classList.remove('border-gray-200');
+                            }
+                        });
+                    }, 500);
                 } else {
                     console.error('Error al obtener médico:', medico.error);
                 }

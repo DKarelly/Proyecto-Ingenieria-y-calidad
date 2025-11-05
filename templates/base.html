@@ -23,6 +23,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/utils.css') }}">
     {% endblock %}
 </head>
 <body class="text-gray-700">
@@ -45,6 +46,7 @@
     
     <!-- Custom JavaScript -->
     <script type="module" src="{{ url_for('static', filename='js/home.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
     
     <script>
         // Hacer la función logout disponible globalmente

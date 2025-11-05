@@ -1,36 +1,45 @@
 from flask import Flask, render_template, session, redirect, url_for, g, request
-from models.usuario import Usuario
-from routes.usuarios import usuarios_bp
-from routes.cuentas import cuentas_bp
-from routes.admin import admin_bp
-from routes.reservas import reservas_bp
-from routes.notificaciones import notificaciones_bp
-from routes.reportes import reportes_bp
-from routes.seguridad import seguridad_bp
-from routes.farmacia import farmacia_bp
-from routes.paciente import paciente_bp
-from routes.trabajador import trabajador_bp
-
 import os
 from dotenv import load_dotenv
-#noaseaeaeaeass
+
 # Cargar variables de entorno
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tu_clave_secreta_super_segura_aqui_12345')
 
+# Inicializar pool de conexiones al arrancar la aplicación
+# Esto mejora el rendimiento al reutilizar conexiones
+from bd import inicializar_pool
+inicializar_pool()
+
+# Registrar blueprints con lazy loading - se importan solo cuando se necesitan
+# Esto reduce el tiempo de inicio de la aplicación
+def registrar_blueprints():
+    from routes.usuarios import usuarios_bp
+    from routes.cuentas import cuentas_bp
+    from routes.admin import admin_bp
+    from routes.reservas import reservas_bp
+    from routes.notificaciones import notificaciones_bp
+    from routes.reportes import reportes_bp
+    from routes.seguridad import seguridad_bp
+    from routes.farmacia import farmacia_bp
+    from routes.paciente import paciente_bp
+    from routes.trabajador import trabajador_bp
+    
+    app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
+    app.register_blueprint(cuentas_bp, url_prefix='/cuentas')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(reservas_bp, url_prefix='/reservas')
+    app.register_blueprint(notificaciones_bp, url_prefix='/notificaciones')
+    app.register_blueprint(reportes_bp, url_prefix='/reportes')
+    app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
+    app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
+    app.register_blueprint(paciente_bp, url_prefix='/paciente')
+    app.register_blueprint(trabajador_bp, url_prefix='/trabajador')
+
 # Registrar blueprints
-app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
-app.register_blueprint(cuentas_bp, url_prefix='/cuentas')
-app.register_blueprint(admin_bp, url_prefix='/admin')
-app.register_blueprint(reservas_bp, url_prefix='/reservas')
-app.register_blueprint(notificaciones_bp, url_prefix='/notificaciones')
-app.register_blueprint(reportes_bp, url_prefix='/reportes')
-app.register_blueprint(seguridad_bp, url_prefix='/seguridad')
-app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
-app.register_blueprint(paciente_bp, url_prefix='/paciente')
-app.register_blueprint(trabajador_bp, url_prefix='/trabajador')
+registrar_blueprints()
 
 @app.route("/")
 def home():
@@ -44,6 +53,8 @@ def load_logged_in_user():
         g.user = None
     else:
         try:
+            # Lazy loading del modelo Usuario - se importa solo cuando es necesario
+            from models.usuario import Usuario
             # Obtener el usuario completo desde el modelo
             g.user = Usuario.obtener_por_id(user_id)
         except Exception:
