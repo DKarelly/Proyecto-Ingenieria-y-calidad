@@ -208,6 +208,56 @@ class Usuario:
             conexion.close()
 
     @staticmethod
+    def cambiar_contrasena(id_usuario, contrasena_actual, contrasena_nueva):
+        """Cambia la contraseña de un usuario verificando la contraseña actual"""
+        from werkzeug.security import check_password_hash, generate_password_hash
+        
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                # Obtener contraseña actual
+                sql = "SELECT contrasena FROM USUARIO WHERE id_usuario = %s"
+                cursor.execute(sql, (id_usuario,))
+                usuario = cursor.fetchone()
+                
+                if not usuario:
+                    return {'error': 'Usuario no encontrado'}
+                    
+                # Verificar contraseña actual
+                if not check_password_hash(usuario['contrasena'], contrasena_actual):
+                    return {'error': 'La contraseña actual es incorrecta'}
+                    
+                # Validar nueva contraseña
+                if len(contrasena_nueva) < 8:
+                    return {'error': 'La nueva contraseña debe tener al menos 8 caracteres'}
+                    
+                import re
+                if not re.search(r'[A-Z]', contrasena_nueva):
+                    return {'error': 'La nueva contraseña debe tener al menos una mayúscula'}
+                    
+                if not re.search(r'[a-z]', contrasena_nueva):
+                    return {'error': 'La nueva contraseña debe tener al menos una minúscula'}
+                    
+                if not re.search(r'\d', contrasena_nueva):
+                    return {'error': 'La nueva contraseña debe tener al menos un número'}
+                
+                # Actualizar contraseña
+                contrasena_hash = generate_password_hash(contrasena_nueva)
+                sql = "UPDATE USUARIO SET contrasena = %s WHERE id_usuario = %s"
+                cursor.execute(sql, (contrasena_hash, id_usuario))
+                conexion.commit()
+                
+                return {
+                    'success': True,
+                    'message': 'Contraseña actualizada exitosamente'
+                }
+                
+        except Exception as e:
+            return {'error': str(e)}
+        finally:
+            conexion.close()
+
+    @staticmethod
     def verificar_contrasena(contrasena_hash, contrasena_ingresada):
         """Verifica si la contraseña ingresada coincide con el hash"""
         return check_password_hash(contrasena_hash, contrasena_ingresada)
