@@ -5,66 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultar Disponibilidad - Sistema Médico</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .autocomplete-item { padding: 0.75rem 1rem; cursor: pointer; transition: background-color 0.2s; border-bottom: 1px solid #e5e7eb; }
+        .autocomplete-item:hover { background-color: #f0f9ff; }
+        .autocomplete-item.active { background-color: #dbeafe; }
+        .autocomplete-list { position: absolute; z-index: 50; width: 100%; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #d1d5db; border-top: none; border-radius: 0 0 0.5rem 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .row-disponible { background-color: white; }
+        .row-no-disponible { background-color: #f3f4f6; color: #9ca3af; }
+        .row-disponible:hover { background-color: #f0f9ff; cursor: pointer; }
+        .row-no-disponible:hover { background-color: #e5e7eb; cursor: pointer; }
+        
+        /* Estilos para paginación */
+        #paginacion-container button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        #paginacion-container button:not(:disabled):hover {
+            background-color: #f0f9ff;
+            border-color: #06b6d4;
         }
     </style>
 </head>
-<body class="bg-[#f8fafc]">
-    {% include 'header_admin.html' %}
-
+<body class="text-gray-700">
+    
     <div class="max-w-7xl mx-auto p-6 md:p-10">
-        <!-- Botón Volver -->
         <div class="mb-6">
-            <a href="{{ url_for('reservas.panel') }}" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+            <a href="{%raw%}{{url_for('reservas.panel')}}{%endraw%}" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
                 <i class="fas fa-arrow-left mr-2"></i>
                 <span class="font-medium">Volver al Panel de Reservas</span>
             </a>
         </div>
-
-        <!-- Título -->
         <div class="mb-8">
             <h1 class="text-3xl font-black text-gray-800">
                 <i class="fas fa-calendar-check text-cyan-600 mr-3"></i>
                 Consultar Disponibilidad
             </h1>
-            <p class="text-gray-600 mt-2">Selecciona un servicio, profesional y fecha para ver los horarios disponibles</p>
+            <p class="text-gray-600 mt-2">Búsqueda dinámica en tiempo real</p>
         </div>
-
-        <!-- Dashboard de Estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <!-- Total Servicios -->
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-600 text-sm font-semibold uppercase tracking-wide">Servicios Disponibles</p>
-                        <p class="text-3xl font-bold text-blue-800 mt-2">{{ servicios|length }}</p>
-                    </div>
-                    <div class="bg-blue-500 bg-opacity-20 rounded-full p-4">
-                        <i class="fas fa-briefcase-medical text-blue-600 text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Total Médicos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Profesionales</p>
-                        <p class="text-3xl font-bold text-green-800 mt-2">{{ medicos|length }}</p>
+                        <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Empleados</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2" id="total-empleados">0</p>
                     </div>
                     <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
-                        <i class="fas fa-user-md text-green-600 text-2xl"></i>
+                        <i class="fas fa-users text-green-600 text-2xl"></i>
                     </div>
                 </div>
             </div>
-
-            <!-- Horarios Encontrados -->
             <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
@@ -77,339 +69,163 @@
                 </div>
             </div>
         </div>
-
-        <!-- Filtros -->
         <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-8">
             <div class="flex items-center mb-4">
                 <i class="fas fa-filter text-cyan-600 text-xl mr-3"></i>
                 <h2 class="text-lg font-semibold text-gray-800">Filtros de Búsqueda</h2>
+                <span class="ml-auto text-xs text-cyan-600 font-semibold">
+                    <i class="fas fa-bolt mr-1"></i>Búsqueda automática
+                </span>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div class="flex flex-col">
                     <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
-                        <i class="fas fa-stethoscope mr-1"></i>
-                        SERVICIO
+                        <i class="fas fa-user-tag mr-1"></i>ROL
                     </label>
-                    <select id="servicio-select" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
-                        <option value="">Selecciona un servicio</option>
-                        {% for s in servicios %}
-                        <option value="{{ s.id_servicio }}">{{ s.nombre }}{% if s.especialidad %} — {{ s.especialidad }}{% endif %}</option>
-                        {% endfor %}
+                    <select id="rol-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
+                        <option value="">Todos los roles</option>
                     </select>
                 </div>
-
+                <div class="flex flex-col relative">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-user mr-1"></i>EMPLEADO
+                    </label>
+                    <input type="text" id="empleado-input" placeholder="Escribir para buscar..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors" autocomplete="off">
+                    <div id="empleado-list" class="autocomplete-list hidden"></div>
+                    <input type="hidden" id="empleado-id">
+                    <input type="hidden" id="empleado-rol">
+                </div>
                 <div class="flex flex-col">
                     <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
-                        <i class="fas fa-user-doctor mr-1"></i>
-                        PROFESIONAL
+                        <i class="fas fa-info-circle mr-1"></i>ESTADO
                     </label>
-                    <select id="medico-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
-                        <option value="">Todos los profesionales</option>
-                        {% for m in medicos %}
-                        <option value="{{ m.id_empleado }}">{{ m.nombres }} {{ m.apellidos }}{% if m.especialidad %} — {{ m.especialidad }}{% endif %}</option>
-                        {% endfor %}
+                    <select id="estado-select" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
+                        <option value="">Todos los estados</option>
+                        <option value="Disponible">Disponible</option>
+                        <option value="Ocupado">Ocupado</option>
+                        <option value="Completado">Completado</option>
                     </select>
                 </div>
-
                 <div class="flex flex-col">
                     <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
-                        <i class="fas fa-calendar mr-1"></i>
-                        FECHA
+                        <i class="fas fa-calendar mr-1"></i>DESDE
                     </label>
-                    <input
-                        type="date"
-                        id="fecha-select"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors"
-                    >
+                    <input type="date" id="fecha-desde-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
+                </div>
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-calendar mr-1"></i>HASTA
+                    </label>
+                    <input type="date" id="fecha-hasta-input" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
                 </div>
             </div>
-
-            <div class="mt-6 flex gap-4">
-                <button
-                    id="btn-buscar"
-                    class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                    <i class="fas fa-search mr-2"></i>
-                    Buscar Disponibilidad
-                </button>
-                <button
-                    id="btn-limpiar"
-                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-sm">
-                    <i class="fas fa-eraser mr-2"></i>
-                    Limpiar
+            <div class="mt-6 flex justify-end">
+                <button id="btn-limpiar" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-sm">
+                    <i class="fas fa-eraser mr-2"></i>Limpiar
                 </button>
             </div>
         </div>
-
-        <!-- Resultados de Disponibilidad -->
-        <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-8">
-            <div class="flex items-center justify-between mb-6">
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
                 <div class="flex items-center">
                     <i class="fas fa-calendar-alt text-cyan-600 text-2xl mr-3"></i>
                     <div>
-                        <h2 class="text-xl font-bold text-gray-800" id="calendario-titulo">Horarios Disponibles</h2>
-                        <p class="text-sm text-gray-500 mt-1" id="calendario-subtitulo">Realiza una búsqueda para ver resultados</p>
+                        <h2 class="text-xl font-bold text-gray-800">Horarios Disponibles</h2>
+                        <p class="text-sm text-gray-500 mt-1" id="calendario-subtitulo">Actualización en tiempo real</p>
                     </div>
                 </div>
                 <div id="loading-indicator" class="hidden">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-4 border-cyan-500"></div>
                 </div>
             </div>
-
-            <!-- Placeholder inicial -->
             <div id="placeholder-mensaje" class="text-center py-16">
-                <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-600 mb-2">Busca horarios disponibles</h3>
-                <p class="text-gray-500">Selecciona un servicio y opcionalmente un profesional y fecha para ver la disponibilidad</p>
+                <i class="fas fa-hourglass-half text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Cargando horarios...</h3>
+                <p class="text-gray-500">Por favor espera un momento</p>
             </div>
-
-            <!-- Mensaje cuando no hay resultados -->
             <div id="no-resultados" class="hidden text-center py-16">
                 <i class="fas fa-calendar-times text-gray-300 text-6xl mb-4"></i>
                 <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay horarios disponibles</h3>
-                <p class="text-gray-500">No se encontraron horarios para los criterios seleccionados. Intenta con otra fecha o profesional.</p>
+                <p class="text-gray-500">No se encontraron horarios para los criterios seleccionados.</p>
             </div>
-
-            <!-- Grid de horarios -->
-            <div id="horarios-container" class="hidden">
-                <!-- Información del profesional seleccionado -->
-                <div id="info-profesional" class="mb-6 p-4 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 h-12 w-12 flex items-center justify-center bg-cyan-500 rounded-full mr-4">
-                            <i class="fas fa-user-md text-white text-xl"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600 font-medium">Mostrando horarios para:</p>
-                            <p class="text-lg font-bold text-gray-800" id="nombre-profesional"></p>
-                            <p class="text-sm text-cyan-600" id="especialidad-profesional"></p>
-                        </div>
+            <div id="horarios-container" class="hidden overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Empleado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Especialidad</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Inicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Fin</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Disponibilidad</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="horarios-tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+            <!-- Controles de Paginación -->
+            <div id="paginacion-container" class="hidden border-t border-gray-200 px-6 py-4 bg-gray-50">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <!-- Información de registros -->
+                    <div class="text-sm text-gray-600">
+                        Mostrando <span class="font-semibold text-gray-800" id="registros-inicio">0</span> a 
+                        <span class="font-semibold text-gray-800" id="registros-fin">0</span> de 
+                        <span class="font-semibold text-gray-800" id="total-registros">0</span> registros
                     </div>
-                </div>
-
-                <!-- Grid de horarios disponibles -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="horarios-grid">
-                    <!-- Horarios se cargarán dinámicamente aquí -->
+                    
+                    <!-- Botones de paginación -->
+                    <div class="flex items-center gap-2">
+                        <button id="btn-primera-pagina" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <i class="fas fa-angle-double-left text-gray-600"></i>
+                        </button>
+                        <button id="btn-pagina-anterior" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <i class="fas fa-angle-left text-gray-600"></i>
+                        </button>
+                        
+                        <!-- Números de página -->
+                        <div id="numeros-pagina" class="flex items-center gap-1"></div>
+                        
+                        <button id="btn-pagina-siguiente" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <i class="fas fa-angle-right text-gray-600"></i>
+                        </button>
+                        <button id="btn-ultima-pagina" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <i class="fas fa-angle-double-right text-gray-600"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Selector de registros por página -->
+                    <div class="flex items-center gap-2">
+                        <label for="registros-por-pagina" class="text-sm text-gray-600">Mostrar:</label>
+                        <select id="registros-por-pagina" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white text-sm">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <script>
-        // Variables globales
-        const servicioSelect = document.getElementById('servicio-select');
-        const medicoSelect = document.getElementById('medico-select');
-        const fechaSelect = document.getElementById('fecha-select');
-        const horariosGrid = document.getElementById('horarios-grid');
-        const btnBuscar = document.getElementById('btn-buscar');
-        const btnLimpiar = document.getElementById('btn-limpiar');
-        const horariosEncontrados = document.getElementById('horarios-encontrados');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        const placeholderMensaje = document.getElementById('placeholder-mensaje');
-        const noResultados = document.getElementById('no-resultados');
-        const horariosContainer = document.getElementById('horarios-container');
-        const infoProfesional = document.getElementById('info-profesional');
-        const calendarioTitulo = document.getElementById('calendario-titulo');
-        const calendarioSubtitulo = document.getElementById('calendario-subtitulo');
-
-        // Configurar fecha mínima (hoy)
-        const hoy = new Date();
-        const fechaMin = hoy.toISOString().split('T')[0];
-        fechaSelect.min = fechaMin;
-
-        // Establecer fecha por defecto a hoy
-        fechaSelect.value = fechaMin;
-
-        // Event listeners
-        btnBuscar.addEventListener('click', buscarHorarios);
-        btnLimpiar.addEventListener('click', limpiarFiltros);
-
-        // Limpiar filtros
-        function limpiarFiltros() {
-            servicioSelect.value = '';
-            medicoSelect.value = '';
-            fechaSelect.value = fechaMin;
-            horariosEncontrados.textContent = '0';
-
-            // Mostrar placeholder
-            placeholderMensaje.classList.remove('hidden');
-            noResultados.classList.add('hidden');
-            horariosContainer.classList.add('hidden');
-
-            calendarioTitulo.textContent = 'Horarios Disponibles';
-            calendarioSubtitulo.textContent = 'Realiza una búsqueda para ver resultados';
-        }
-
-        // Renderizar tarjeta de horario
-        function renderHorarioCard(h) {
-            const div = document.createElement('div');
-            const hora = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
-            const horaFin = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
-
-            const esDisponible = h.estado === 'disponible';
-
-            if (esDisponible) {
-                div.className = 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4 text-center hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1';
-                div.innerHTML = `
-                    <div class="flex flex-col items-center">
-                        <i class="fas fa-clock text-green-600 text-2xl mb-2"></i>
-                        <p class="font-bold text-gray-800 text-lg">${hora}</p>
-                        <p class="text-xs text-gray-600 mt-1">a ${horaFin}</p>
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500 text-white mt-2">
-                            <i class="fas fa-check-circle mr-1"></i>
-                            Disponible
-                        </span>
-                    </div>
-                `;
-            } else {
-                div.className = 'bg-gray-100 border-2 border-gray-200 rounded-lg p-4 text-center opacity-60';
-                div.innerHTML = `
-                    <div class="flex flex-col items-center">
-                        <i class="fas fa-clock text-gray-400 text-2xl mb-2"></i>
-                        <p class="font-bold text-gray-500 text-lg">${hora}</p>
-                        <p class="text-xs text-gray-500 mt-1">a ${horaFin}</p>
-                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-400 text-white mt-2">
-                            <i class="fas fa-times-circle mr-1"></i>
-                            No disponible
-                        </span>
-                    </div>
-                `;
-            }
-
-            // Tooltip con nombre del empleado si está disponible
-            if (h.empleado) {
-                div.title = `Dr. ${h.empleado}`;
-            }
-
-            return div;
-        }
-
-        // Buscar horarios
-        async function buscarHorarios() {
-            const id_servicio = servicioSelect.value;
-            const id_empleado = medicoSelect.value;
-            const fecha = fechaSelect.value;
-
-            // Validar que al menos servicio esté seleccionado
-            if (!id_servicio) {
-                mostrarNotificacion('Por favor selecciona un servicio', 'error');
-                return;
-            }
-
-            // Mostrar loading
-            loadingIndicator.classList.remove('hidden');
-            placeholderMensaje.classList.add('hidden');
-            noResultados.classList.add('hidden');
-            horariosContainer.classList.add('hidden');
-
-            // Construir URL con parámetros
-            const params = new URLSearchParams();
-            if (fecha) params.set('fecha', fecha);
-            if (id_empleado) params.set('id_empleado', id_empleado);
-            else if (id_servicio) params.set('id_servicio', id_servicio);
-
-            try {
-                const resp = await fetch(`/reservas/api/horarios-disponibles?${params.toString()}`);
-
-                if (!resp.ok) {
-                    throw new Error('Error al cargar horarios');
-                }
-
-                const data = await resp.json();
-                const horarios = data.horarios || [];
-
-                // Ocultar loading
-                loadingIndicator.classList.add('hidden');
-
-                // Actualizar contador
-                horariosEncontrados.textContent = horarios.length;
-
-                if (horarios.length === 0) {
-                    noResultados.classList.remove('hidden');
-                    calendarioTitulo.textContent = 'Sin Resultados';
-                    calendarioSubtitulo.textContent = 'No se encontraron horarios disponibles';
-                    return;
-                }
-
-                // Mostrar container de horarios
-                horariosContainer.classList.remove('hidden');
-
-                // Actualizar información del profesional
-                const medicoText = medicoSelect.options[medicoSelect.selectedIndex]?.text || 'Todos los profesionales';
-                const servicioText = servicioSelect.options[servicioSelect.selectedIndex]?.text || '';
-
-                if (id_empleado && horarios.length > 0) {
-                    const primerHorario = horarios[0];
-                    document.getElementById('nombre-profesional').textContent = primerHorario.empleado || medicoText;
-                    document.getElementById('especialidad-profesional').textContent = primerHorario.especialidad || 'Especialidad no especificada';
-                    infoProfesional.classList.remove('hidden');
-                } else {
-                    infoProfesional.classList.add('hidden');
-                }
-
-                // Actualizar títulos
-                const fechaFormateada = new Date(fecha + 'T00:00:00').toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                calendarioTitulo.textContent = `Horarios para ${servicioText}`;
-                calendarioSubtitulo.textContent = `Fecha: ${fechaFormateada}`;
-
-                // Limpiar y renderizar horarios
-                horariosGrid.innerHTML = '';
-                horarios.forEach(h => {
-                    const card = renderHorarioCard(h);
-                    horariosGrid.appendChild(card);
-                });
-
-                mostrarNotificacion(`Se encontraron ${horarios.length} horario(s) disponible(s)`, 'success');
-
-            } catch (err) {
-                loadingIndicator.classList.add('hidden');
-                noResultados.classList.remove('hidden');
-                calendarioTitulo.textContent = 'Error';
-                calendarioSubtitulo.textContent = err.message;
-                mostrarNotificacion('Error al cargar los horarios', 'error');
-            }
-        }
-
-        // Mostrar notificación (simple)
-        function mostrarNotificacion(mensaje, tipo) {
-            // Crear notificación toast simple
-            const toast = document.createElement('div');
-            const bgColor = tipo === 'success' ? 'bg-green-500' : 'bg-red-500';
-            const icon = tipo === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-
-            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center animate-fade-in`;
-            toast.innerHTML = `
-                <i class="fas ${icon} mr-3 text-xl"></i>
-                <span>${mensaje}</span>
-            `;
-
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-    </script>
-
-    <style>
-        @keyframes fade-in {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fade-in {
-            animation: fade-in 0.3s ease-out;
-        }
-    </style>
+    <div id="modal-detalle" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-6 py-4 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Detalle del Horario
+                    </h3>
+                    <button id="btn-cerrar-modal" class="text-white hover:text-gray-200 transition-colors">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="modal-contenido" class="p-6"></div>
+        </div>
+    </div>
+    <script src="/static/js/consultar-disponibilidad.js"></script>
 </body>
 </html>
