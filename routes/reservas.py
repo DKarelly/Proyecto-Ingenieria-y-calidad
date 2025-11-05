@@ -7,8 +7,54 @@ from models.paciente import Paciente
 from models.reserva import Reserva
 from models.programacion import Programacion
 from bd import obtener_conexion
+from datetime import date
 
 reservas_bp = Blueprint('reservas', __name__)
+
+def actualizar_horarios_vencidos():
+    """
+    Actualiza automáticamente el estado de los horarios a 'Completado' 
+    cuando la fecha del horario ya ha pasado (fecha < fecha actual).
+    
+    Esta función se ejecuta automáticamente antes de consultar horarios
+    para mantener los estados actualizados.
+    """
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion()
+        cursor = conn.cursor()
+        
+        fecha_actual = date.today()
+        
+        # Actualizar horarios cuya fecha ya pasó y no están en estado Completado
+        query = """
+            UPDATE HORARIO 
+            SET estado = 'Completado'
+            WHERE fecha < %s 
+            AND estado != 'Completado'
+        """
+        
+        cursor.execute(query, (fecha_actual,))
+        registros_actualizados = cursor.rowcount
+        conn.commit()
+        
+        if registros_actualizados > 0:
+            print(f"✓ Se actualizaron {registros_actualizados} horarios a estado 'Completado'")
+        
+        return registros_actualizados
+        
+    except Exception as e:
+        print(f"Error al actualizar horarios vencidos: {str(e)}")
+        if conn:
+            conn.rollback()
+        return 0
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @reservas_bp.route('/')
 def panel():
@@ -64,6 +110,10 @@ def consultar_disponibilidad():
 
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
+    
+    # Actualizar horarios vencidos antes de mostrar la página
+    actualizar_horarios_vencidos()
+    
     # Pasar lista de servicios y médicos al template
     servicios = Servicio.obtener_todos()
     medicos = Empleado.obtener_medicos()
@@ -255,6 +305,191 @@ def api_horarios_disponibles():
             resultados = filtrar_horarios_lista(todos or [])
 
     return jsonify({'horarios': resultados})
+
+@reservas_bp.route('/api/buscar-horarios-disponibles')
+def api_buscar_horarios_disponibles():
+    """Búsqueda dinámica de horarios disponibles con filtros opcionales.
+    
+    Parámetros GET (todos opcionales):
+    - id_servicio: int
+    - id_empleado: int  
+    - fecha: YYYY-MM-DD
+    """
+    # Actualizar automáticamente los horarios vencidos antes de consultar
+    actualizar_horarios_vencidos()
+    
+    id_servicio = request.args.get('id_servicio')
+    id_empleado = request.args.get('id_empleado')
+    fecha = request.args.get('fecha')
+    
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion()
+        cursor = conn.cursor()
+        
+        # Query base
+        query = """
+            SELECT 
+                h.id_horario,
+                h.id_empleado,
+                h.fecha,
+                TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
+                TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
+                h.disponibilidad,
+                h.estado,
+                CONCAT(e.nombres, ' ', e.apellidos) as profesional,
+                es.nombre as especialidad
+            FROM HORARIO h
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
+            WHERE LOWER(h.disponibilidad) = 'disponible'
+                AND LOWER(h.estado) = 'activo'
+        """
+        
+        params = []
+        
+        # Filtro por servicio (buscar empleados de la especialidad del servicio)
+        if id_servicio:
+            query += """
+                AND e.id_especialidad = (
+                    SELECT id_especialidad 
+                    FROM SERVICIO 
+                    WHERE id_servicio = %s
+                )
+            """
+            params.append(int(id_servicio))
+        
+        # Filtro por empleado
+        if id_empleado:
+            query += " AND h.id_empleado = %s"
+            params.append(int(id_empleado))
+        
+        # Filtro por fecha
+        if fecha:
+            query += " AND h.fecha = %s"
+            params.append(fecha)
+        # Si NO hay fecha, mostrar TODOS los horarios (sin filtro de fecha)
+        
+        # Ordenar por ID de horario
+        query += " ORDER BY h.id_horario ASC"
+        
+        cursor.execute(query, params)
+        horarios = cursor.fetchall()
+        
+        # Convertir fechas a string
+        for h in horarios:
+            if h.get('fecha'):
+                h['fecha'] = h['fecha'].strftime('%Y-%m-%d')
+        
+        return jsonify({'horarios': horarios})
+        
+    except Exception as e:
+        print(f"Error en búsqueda de horarios: {str(e)}")
+        return jsonify({'error': str(e), 'horarios': []}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@reservas_bp.route('/api/buscar-horarios-disponibles-completo')
+def api_buscar_horarios_disponibles_completo():
+    """Búsqueda completa de horarios con todos los filtros.
+    
+    Parámetros GET (todos opcionales):
+    - id_empleado: int
+    - disponibilidad: string (Disponible, Ocupado, Completado)
+    - fecha_desde: YYYY-MM-DD
+    - fecha_hasta: YYYY-MM-DD
+    - rol: string
+    """
+    # Actualizar automáticamente los horarios vencidos antes de consultar
+    actualizar_horarios_vencidos()
+    
+    id_empleado = request.args.get('id_empleado')
+    disponibilidad = request.args.get('disponibilidad')
+    fecha_desde = request.args.get('fecha_desde')
+    fecha_hasta = request.args.get('fecha_hasta')
+    rol = request.args.get('rol')
+    
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion()
+        cursor = conn.cursor()
+        
+        # Query base - NO filtrar por disponibilidad ni estado en WHERE inicial
+        query = """
+            SELECT 
+                h.id_horario,
+                h.id_empleado,
+                h.fecha,
+                TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
+                TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
+                h.disponibilidad,
+                h.estado,
+                CONCAT(e.nombres, ' ', e.apellidos) as profesional,
+                COALESCE(es.nombre, '-') as especialidad,
+                r.nombre as rol
+            FROM HORARIO h
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
+            LEFT JOIN ROL r ON e.id_rol = r.id_rol
+            WHERE 1=1
+        """
+        
+        params = []
+        
+        # Filtro por empleado
+        if id_empleado:
+            query += " AND h.id_empleado = %s"
+            params.append(int(id_empleado))
+        
+        # Filtro por disponibilidad
+        if disponibilidad:
+            query += " AND LOWER(h.disponibilidad) = LOWER(%s)"
+            params.append(disponibilidad)
+        
+        # Filtro por rango de fechas
+        if fecha_desde:
+            query += " AND h.fecha >= %s"
+            params.append(fecha_desde)
+        
+        if fecha_hasta:
+            query += " AND h.fecha <= %s"
+            params.append(fecha_hasta)
+        
+        # Filtro por rol del empleado
+        if rol:
+            query += " AND r.nombre = %s"
+            params.append(rol)
+        
+        # Ordenar por ID de horario
+        query += " ORDER BY h.id_horario ASC"
+        
+        cursor.execute(query, params)
+        horarios = cursor.fetchall()
+        
+        # Convertir fechas a string
+        for h in horarios:
+            if h.get('fecha'):
+                h['fecha'] = h['fecha'].strftime('%Y-%m-%d')
+        
+        return jsonify({'horarios': horarios})
+        
+    except Exception as e:
+        print(f"Error en búsqueda completa de horarios: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'horarios': []}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @reservas_bp.route('/consultar-servicio-tipo')
 def consultar_servicio_tipo():
@@ -813,11 +1048,11 @@ def api_servicios_activos():
             pass
 
 
-@reservas_bp.route('/api/medicos-por-especialidad/<int:id_especialidad>')
-def api_medicos_por_especialidad(id_especialidad):
-    """Retorna médicos disponibles (id_rol=2) para una especialidad específica"""
+@reservas_bp.route('/api/empleados-todos')
+def api_empleados_todos():
+    """Retorna TODOS los empleados activos con sus roles."""
     try:
-        print(f"[API] Buscando médicos para especialidad ID: {id_especialidad}")
+        print(f"[API] Obteniendo todos los empleados activos")
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             sql = """
@@ -829,17 +1064,89 @@ def api_medicos_por_especialidad(id_especialidad):
                     e.sexo,
                     e.estado,
                     e.fotoPerfil,
-                    esp.nombre as especialidad,
-                    esp.id_especialidad
+                    COALESCE(esp.nombre, '-') as especialidad,
+                    e.id_especialidad,
+                    r.nombre as rol,
+                    e.id_rol
                 FROM EMPLEADO e
-                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                WHERE e.id_rol = 2 
-                  AND e.id_especialidad = %s
-                  AND LOWER(e.estado) = 'activo'
-                ORDER BY e.nombres, e.apellidos
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                WHERE LOWER(e.estado) = 'activo'
+                ORDER BY e.id_empleado ASC
             """
-            print(f"[API] Ejecutando SQL con id_especialidad={id_especialidad}")
-            cursor.execute(sql, (id_especialidad,))
+            cursor.execute(sql)
+            
+            empleados = cursor.fetchall()
+            print(f"[API] Empleados encontrados: {len(empleados)}")
+
+            return jsonify({
+                'empleados': empleados,
+                'total': len(empleados)
+            })
+
+    except Exception as e:
+        print(f"[API] Error al obtener empleados: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'empleados': []}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
+@reservas_bp.route('/api/medicos-por-especialidad/<int:id_especialidad>')
+def api_medicos_por_especialidad(id_especialidad):
+    """Retorna médicos disponibles (id_rol=2) para una especialidad específica.
+    Si id_especialidad es 0, retorna todos los médicos activos."""
+    try:
+        print(f"[API] Buscando médicos para especialidad ID: {id_especialidad}")
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            if id_especialidad == 0:
+                # Retornar todos los médicos activos
+                sql = """
+                    SELECT 
+                        e.id_empleado,
+                        e.nombres,
+                        e.apellidos,
+                        e.documento_identidad,
+                        e.sexo,
+                        e.estado,
+                        e.fotoPerfil,
+                        COALESCE(esp.nombre, 'General') as especialidad,
+                        e.id_especialidad
+                    FROM EMPLEADO e
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    WHERE e.id_rol = 2 
+                      AND LOWER(e.estado) = 'activo'
+                    ORDER BY e.id_empleado ASC
+                """
+                cursor.execute(sql)
+            else:
+                # Filtrar por especialidad específica
+                sql = """
+                    SELECT 
+                        e.id_empleado,
+                        e.nombres,
+                        e.apellidos,
+                        e.documento_identidad,
+                        e.sexo,
+                        e.estado,
+                        e.fotoPerfil,
+                        esp.nombre as especialidad,
+                        esp.id_especialidad
+                    FROM EMPLEADO e
+                    INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    WHERE e.id_rol = 2 
+                      AND e.id_especialidad = %s
+                      AND LOWER(e.estado) = 'activo'
+                    ORDER BY e.nombres, e.apellidos
+                """
+                print(f"[API] Ejecutando SQL con id_especialidad={id_especialidad}")
+                cursor.execute(sql, (id_especialidad,))
+            
             medicos = cursor.fetchall()
             print(f"[API] Médicos encontrados: {len(medicos)}")
             
