@@ -72,10 +72,29 @@
                     <!-- Hora del Examen -->
                     <div class="mb-6">
                         <label for="horaExamen" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Hora del Examen <span class="text-red-500">*</span>
+                            Hora del Examen (en punto) <span class="text-red-500">*</span>
                         </label>
-                        <input type="time" id="horaExamen" name="horaExamen" required
+                        <select id="horaExamen" name="horaExamen" required
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <option value="">Seleccione una hora</option>
+                            <option value="07:00">07:00 AM</option>
+                            <option value="08:00">08:00 AM</option>
+                            <option value="09:00">09:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="12:00">12:00 PM</option>
+                            <option value="13:00">01:00 PM</option>
+                            <option value="14:00">02:00 PM</option>
+                            <option value="15:00">03:00 PM</option>
+                            <option value="16:00">04:00 PM</option>
+                            <option value="17:00">05:00 PM</option>
+                            <option value="18:00">06:00 PM</option>
+                            <option value="19:00">07:00 PM</option>
+                            <option value="20:00">08:00 PM</option>
+                            <option value="21:00">09:00 PM</option>
+                            <option value="22:00">10:00 PM</option>
+                        </select>
+                        <p class="mt-2 text-sm text-gray-500">Horario de la clínica: 7:00 AM - 10:00 PM</p>
                     </div>
 
                     <!-- Nota informativa -->
@@ -161,8 +180,8 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert('Examen generado exitosamente');
-                    history.back();
+                    // Mostrar modal de éxito
+                    mostrarModalExito();
                 } else {
                     alert('Error al generar examen: ' + (data.error || 'Error desconocido'));
                 }
@@ -171,6 +190,50 @@
                 alert('Error al generar examen. Por favor, intente nuevamente.');
             }
         });
+
+        // Función para mostrar modal de éxito
+        function mostrarModalExito() {
+            const modalHTML = `
+                <div id="modalExito" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform transition-all">
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-3">¡Examen Registrado!</h2>
+                            <p class="text-gray-600 mb-6">El examen ha sido registrado exitosamente con estado "Pendiente".</p>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <p class="text-sm text-blue-800">
+                                    <strong>📋 Revisa tu Historial de Reservas</strong><br>
+                                    Podrás ver el estado y detalles de tu examen en cualquier momento.
+                                </p>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="window.location.href='/reservas/paciente/historial'" 
+                                        class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-300">
+                                    Ver Historial
+                                </button>
+                                <button onclick="cerrarModal()" 
+                                        class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function cerrarModal() {
+            const modal = document.getElementById('modalExito');
+            if (modal) {
+                modal.remove();
+            }
+            history.back();
+        }
     </script>
 
 </body>

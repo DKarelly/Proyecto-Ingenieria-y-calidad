@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Cancelaciones - Sistema de Reservas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .status-Solicitada {
+        background-color: #FEF3C7;
+        color: #92400E;
+    }
+    .status-Aprobada {
+        background-color: #D1FAE5;
+        color: #065F46;
+    }
+    .status-Rechazada {
+        background-color: #FEE2E2;
+        color: #991B1B;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Gestión de Cancelaciones</h1>
+            <p class="text-gray-600">Revisa y procesa las solicitudes de cancelación de reservas</p>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select id="filtroEstado" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos los estados</option>
+                        <option value="Solicitada" selected>Pendientes</option>
+                        <option value="Aprobada">Aprobadas</option>
+                        <option value="Rechazada">Rechazadas</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Reserva</label>
+                    <select id="filtroTipo" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Todos los tipos</option>
+                        <option value="1">Citas Médicas</option>
+                        <option value="2">Operaciones</option>
+                        <option value="3">Exámenes</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Desde</label>
+                    <input type="date" id="filtroFechaDesde" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Hasta</label>
+                    <input type="date" id="filtroFechaHasta" class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-between items-center">
+                <p id="contadorResultados" class="text-sm text-gray-600">Cargando...</p>
+                <button id="btnLimpiarFiltros" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                    Limpiar Filtros
+                </button>
+            </div>
+        </div>
+
+        <!-- Estados de carga -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p class="text-gray-600 text-lg">Cargando solicitudes...</p>
+        </div>
+
+        <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl shadow-md">
+            <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-300 mb-4">
+                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <h3 class="text-xl font-semibold text-gray-800 mb-2">No hay solicitudes</h3>
+            <p class="text-gray-600">No se encontraron solicitudes de cancelación con los filtros aplicados.</p>
+        </div>
+
+        <!-- Lista de solicitudes -->
+        <div id="solicitudesContainer" class="hidden space-y-4">
+            <!-- Se llenará dinámicamente con JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/gestion-cancelaciones.js') }}"></script>
+{% endblock %}

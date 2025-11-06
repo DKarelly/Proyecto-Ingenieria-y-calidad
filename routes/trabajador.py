@@ -50,3 +50,9 @@ def incidencias():
 def reportes():
     """Módulo de reportes para trabajadores"""
     return render_template('panel_trabajador.html', subsistema='reportes')
+
+@trabajador_bp.route('/cancelaciones')
+@trabajador_required
+def cancelaciones():
+    """Gestión de solicitudes de cancelación de reservas"""
+    return render_template('GestionarSolicitudesCancelacion.html')
