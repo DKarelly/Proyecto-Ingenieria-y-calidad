@@ -82,6 +82,7 @@
                             <option value="Cesárea">Cesárea</option>
                             <option value="Otra">Otra</option>
                         </select>
+                        <p class="mt-2 text-xs text-gray-500">El médico responsable será asignado automáticamente.</p>
                     </div>
 
                     <!-- Fecha de la Operación -->
@@ -93,23 +94,43 @@
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
                     </div>
 
-                    <!-- Hora de la Operación -->
+                    <!-- Hora de Inicio -->
                     <div class="mb-6">
-                        <label for="horaOperacion" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Hora de la Operación <span class="text-red-500">*</span>
+                        <label for="horaInicio" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Hora Estimada de Inicio (en punto) <span class="text-red-500">*</span>
                         </label>
-                        <input type="time" id="horaOperacion" name="horaOperacion" required
+                        <select id="horaInicio" name="horaInicio" required
                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                            <option value="">Seleccione una hora</option>
+                            <option value="07:00">07:00 AM</option>
+                            <option value="08:00">08:00 AM</option>
+                            <option value="09:00">09:00 AM</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="12:00">12:00 PM</option>
+                            <option value="13:00">01:00 PM</option>
+                            <option value="14:00">02:00 PM</option>
+                            <option value="15:00">03:00 PM</option>
+                            <option value="16:00">04:00 PM</option>
+                            <option value="17:00">05:00 PM</option>
+                            <option value="18:00">06:00 PM</option>
+                            <option value="19:00">07:00 PM</option>
+                            <option value="20:00">08:00 PM</option>
+                            <option value="21:00">09:00 PM</option>
+                            <option value="22:00">10:00 PM</option>
+                        </select>
+                        <p class="mt-2 text-sm text-gray-500">Horario de la clínica: 7:00 AM - 10:00 PM. La hora de fin será registrada por el médico al completar la operación.</p>
                     </div>
 
                     <!-- Descripción -->
                     <div class="mb-6">
                         <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Descripción de la Operación <span class="text-red-500">*</span>
+                            Motivo / Descripción Inicial
                         </label>
-                        <textarea id="descripcion" name="descripcion" rows="5" required
+                        <textarea id="descripcion" name="descripcion" rows="5"
                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                  placeholder="Describa el motivo o detalles relevantes para la operación..."></textarea>
+                                  placeholder="(Opcional) Describa el motivo o detalles iniciales de la operación..."></textarea>
+                        <p class="mt-2 text-xs text-gray-500">Las observaciones finales serán completadas por el médico después de la operación.</p>
                     </div>
 
                     <!-- Nota informativa -->
@@ -119,8 +140,8 @@
                                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
                             </svg>
                             <div class="text-sm text-blue-800">
-                                <p><strong>La operación será registrada con estado "Programada".</strong></p>
-                                <p class="mt-1">El equipo médico confirmará los detalles y preparativos necesarios antes del procedimiento.</p>
+                                <p><strong>Esta operación será programada con el médico responsable de su cita.</strong></p>
+                                <p class="mt-1">El médico completará los detalles finales (hora de fin y observaciones) después de realizar el procedimiento.</p>
                             </div>
                         </div>
                     </div>
@@ -174,14 +195,21 @@
         document.getElementById('formOperacion').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            const tipoOperacion = document.getElementById('tipoOperacion').value;
+            const descripcion = document.getElementById('descripcion').value.trim();
+            
+            // Combinar tipo de operación con descripción (si existe)
+            let observaciones = `Tipo: ${tipoOperacion}`;
+            if (descripcion) {
+                observaciones += `\n\nMotivo:\n${descripcion}`;
+            }
+
             const formData = {
-                id_reserva: document.getElementById('idReserva').value,
-                id_cita: document.getElementById('idCita').value,
-                tipo_operacion: document.getElementById('tipoOperacion').value,
+                id_reserva: parseInt(document.getElementById('idReserva').value),
+                id_cita: parseInt(document.getElementById('idCita').value),
                 fecha_operacion: document.getElementById('fechaOperacion').value,
-                hora_operacion: document.getElementById('horaOperacion').value,
-                estado: 'Programada', // Estado automático
-                descripcion: document.getElementById('descripcion').value
+                hora_inicio: document.getElementById('horaInicio').value,
+                observaciones: observaciones
             };
 
             try {
@@ -196,16 +224,60 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    alert('Operación generada exitosamente');
-                    history.back();
+                    // Mostrar modal de éxito
+                    mostrarModalExito();
                 } else {
-                    alert('Error al generar operación: ' + (data.error || 'Error desconocido'));
+                    alert('Error al programar operación: ' + (data.error || 'Error desconocido'));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al generar operación. Por favor, intente nuevamente.');
+                alert('Error al programar operación. Por favor, intente nuevamente.');
             }
         });
+
+        // Función para mostrar modal de éxito
+        function mostrarModalExito() {
+            const modalHTML = `
+                <div id="modalExito" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md mx-4 transform transition-all">
+                        <div class="text-center">
+                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-800 mb-3">¡Operación Programada!</h2>
+                            <p class="text-gray-600 mb-6">La operación ha sido programada exitosamente.</p>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <p class="text-sm text-blue-800">
+                                    <strong>📋 Revisa tu Historial de Reservas</strong><br>
+                                    Podrás ver el estado y detalles de tu operación programada.
+                                </p>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="window.location.href='/reservas/paciente/historial'" 
+                                        class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300">
+                                    Ver Historial
+                                </button>
+                                <button onclick="cerrarModal()" 
+                                        class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300">
+                                    Cerrar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+
+        function cerrarModal() {
+            const modal = document.getElementById('modalExito');
+            if (modal) {
+                modal.remove();
+            }
+            history.back();
+        }
     </script>
 
 </body>
