@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consultar Perfil - Clínica Unión</title>
+    <title>Mi Perfil - Clínica Unión</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -21,21 +21,12 @@
     <div class="max-w-5xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            {% if usuario and usuario.tipo_usuario == 'empleado' %}
-            <a href="/cuentas/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+            <a href="/admin/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Volver al Panel
             </a>
-            {% else %}
-            <a href="/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver al Inicio
-            </a>
-            {% endif %}
         </div>
         
         <!-- Header con título y botón -->
@@ -45,18 +36,11 @@
                 <p class="text-gray-600">Información completa de tu cuenta</p>
             </div>
             <div class="flex flex-wrap gap-3">
-                {% if usuario.tipo_usuario == 'empleado' %}
-                <a href="/cuentas/modificar-datos-cuenta" class="inline-flex items-center px-5 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg">
-                    <i class="fa-solid fa-edit mr-2"></i>
-                    Editar Perfil
-                </a>
-                {% else %}
                 <a href="/usuarios/editar-perfil" class="inline-flex items-center px-5 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg">
                     <i class="fa-solid fa-edit mr-2"></i>
                     Editar Perfil
                 </a>
-                {% endif %}
-                <a href="/usuarios/cambiar-contrasena" class="inline-flex items-center px-5 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg">
+                <a href="/cuentas/recuperar-contrasena" class="inline-flex items-center px-5 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:from-orange-700 hover:to-red-700 transition-all duration-300 font-semibold shadow-md hover:shadow-lg">
                     <i class="fa-solid fa-lock mr-2"></i>
                     Cambiar Contraseña
                 </a>
@@ -80,13 +64,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Tipo de Usuario</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                            {% if usuario.tipo_usuario == 'empleado' %}bg-blue-100 text-blue-800{% else %}bg-green-100 text-green-800{% endif %}">
-                            {% if usuario.tipo_usuario == 'empleado' %}
-                                <i class="fa-solid fa-user-tie mr-2"></i>Empleado
-                            {% else %}
-                                <i class="fa-solid fa-user mr-2"></i>Paciente
-                            {% endif %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            <i class="fa-solid fa-user-tie mr-2"></i>Empleado
                         </span>
                     </p>
                 </div>
@@ -95,11 +74,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Nombre Completo</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">
-                        {% if usuario.tipo_usuario == 'paciente' %}
-                            {{ usuario.nombre_paciente or 'No especificado' }}
-                        {% else %}
-                            {{ usuario.nombre_empleado or 'No especificado' }}
-                        {% endif %}
+                        {{ usuario.nombre_empleado or 'No especificado' }}
                     </p>
                 </div>
                 
@@ -107,11 +82,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Documento de Identidad</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">
-                        {% if usuario.tipo_usuario == 'paciente' %}
-                            {{ usuario.documento_paciente or 'No especificado' }}
-                        {% else %}
-                            {{ usuario.documento_empleado or 'No especificado' }}
-                        {% endif %}
+                        {{ usuario.documento_empleado or 'No especificado' }}
                     </p>
                 </div>
                 
@@ -127,46 +98,24 @@
                     <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.telefono or 'No especificado' }}</p>
                 </div>
                 
-                {% if usuario.tipo_usuario == 'paciente' %}
-                <!-- Fecha de Nacimiento (solo pacientes) -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Fecha de Nacimiento</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">
-                        {% if usuario.fecha_nacimiento %}
-                            {{ usuario.fecha_nacimiento.strftime('%d/%m/%Y') if usuario.fecha_nacimiento is not string else usuario.fecha_nacimiento }}
-                        {% else %}
-                            No especificado
-                        {% endif %}
-                    </p>
-                </div>
-                
-                <!-- Sexo -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
-                    <p class="text-gray-500 text-sm font-medium">Sexo</p>
-                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.sexo_paciente or 'No especificado' }}</p>
-                </div>
-                {% endif %}
-                
-                {% if usuario.tipo_usuario == 'empleado' %}
-                <!-- Sexo (solo empleados) -->
+                <!-- Sexo (empleados) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Sexo</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.sexo_empleado or 'No especificado' }}</p>
                 </div>
                 
-                <!-- Rol (solo empleados) -->
+                <!-- Rol (empleados) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Rol</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.rol_empleado or 'No especificado' }}</p>
                 </div>
                 
-                <!-- Especialidad (solo empleados) -->
+                <!-- Especialidad (empleados) -->
                 {% if usuario.especialidad_empleado %}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Especialidad</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.especialidad_empleado }}</p>
                 </div>
-                {% endif %}
                 {% endif %}
                 
                 <!-- Ubicación -->
@@ -187,8 +136,8 @@
                     <p class="text-gray-500 text-sm font-medium">Estado de Cuenta</p>
                     <p class="md:col-span-2">
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                            {% if usuario.estado == 'activo' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                            {% if usuario.estado == 'activo' %}
+                            {% if usuario.estado == 'activo' or usuario.estado == 'Activo' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if usuario.estado == 'activo' or usuario.estado == 'Activo' %}
                                 <i class="fa-solid fa-circle-check mr-2"></i>Activo
                             {% else %}
                                 <i class="fa-solid fa-circle-xmark mr-2"></i>Inactivo
@@ -213,7 +162,7 @@
             <div class="text-center py-12">
                 <i class="fa-solid fa-user-slash text-6xl text-gray-300 mb-4"></i>
                 <p class="text-gray-500 text-lg">No se pudo cargar la información del usuario</p>
-                <a href="/" class="mt-4 inline-block text-cyan-600 hover:text-cyan-800">Volver al inicio</a>
+                <a href="/admin/" class="mt-4 inline-block text-cyan-600 hover:text-cyan-800">Volver al panel</a>
             </div>
             {% endif %}
         </div>
@@ -223,12 +172,5 @@
 
     <!-- Footer -->
     {% include 'footer.html' %}
-
-    <!-- Script de validación de sesión (server-side) -->
-    <script>
-        if (!window.usuario) {
-            window.location.href = '/';
-        }
-    </script>
 </body>
 </html>

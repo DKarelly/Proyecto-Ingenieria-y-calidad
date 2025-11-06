@@ -1,43 +1,126 @@
-<!-- Footer -->
-<footer id="contacto" class="mt-6 pt-6 pb-4 animate-on-scroll">
-    <div class="grid md:grid-cols-4 gap-8 border-t pt-6">
-        <div class="md:col-span-1">
-            <h3 class="font-bold text-lg mb-3">Clínica Unión</h3>
-            <p class="text-gray-500 text-sm">Cuidando de tu salud y la de tu familia con profesionalismo y calidez.</p>
+<!-- Footer Moderno -->
+<footer id="contacto" class="mt-16 bg-white/90 backdrop-blur border-t border-gray-100">
+    <!-- Línea de acento -->
+    <div class="h-1 w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500"></div>
+
+    <div class="container mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+            <!-- Marca -->
+            <div>
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-10 w-auto">
+                    <span class="sr-only">Clínica Unión</span>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed">Cuidamos tu salud con calidez, tecnología y un equipo comprometido.</p>
+
+                <div class="mt-5 flex items-center gap-3">
+                    <a href="tel:+51555123456" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-50 text-cyan-700 hover:bg-cyan-100 transition-colors text-sm font-medium" aria-label="Llámanos">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h2.28a1 1 0 01.96.74l1.1 4.4a1 1 0 01-.27.98l-1.6 1.6a16 16 0 006.4 6.4l1.6-1.6a1 1 0 01.98-.27l4.4 1.1a1 1 0 01.74.96V19a2 2 0 01-2 2h-1C9.72 21 3 14.28 3 6V5z"/></svg>
+                        555-123-456
+                    </a>
+                </div>
+            </div>
+
+            <!-- Contacto -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900 tracking-wide uppercase mb-4">Contacto</h3>
+                <ul class="space-y-3 text-sm text-gray-600">
+                    <li class="flex items-center gap-3">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        </span>
+                        info@clinicaunion.com
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                        </span>
+                        555-123-456
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </span>
+                        <span>Torres Paz 204, Chiclayo 14009</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Enlaces -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900 tracking-wide uppercase mb-4">Navegación</h3>
+                <ul class="grid grid-cols-2 gap-2 text-sm">
+                    <li><a href="/#nosotros" class="text-gray-600 hover:text-cyan-600 transition-colors">Nosotros</a></li>
+                    <li><a href="/#servicios" class="text-gray-600 hover:text-cyan-600 transition-colors">Servicios</a></li>
+                    <li><a href="/#especialidades" class="text-gray-600 hover:text-cyan-600 transition-colors">Especialidades</a></li>
+                    <li><a href="/#contacto" class="text-gray-600 hover:text-cyan-600 transition-colors">Contáctanos</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-cyan-600 transition-colors">Blog</a></li>
+                    <li><a href="#" class="text-gray-600 hover:text-cyan-600 transition-colors">Ayuda</a></li>
+                </ul>
+            </div>
+
+            <!-- Newsletter -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-900 tracking-wide uppercase mb-4">Boletín</h3>
+                <p class="text-sm text-gray-600 mb-3">Recibe consejos de salud y novedades.</p>
+                <form id="newsletter-form" class="w-full" novalidate>
+                    <div class="flex overflow-hidden rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-cyan-500">
+                        <input type="email" name="email" autocomplete="email" placeholder="Tu correo electrónico" required aria-label="Correo electrónico" class="flex-1 px-3 py-2 text-sm outline-none placeholder:text-gray-400">
+                        <button type="submit" class="px-4 py-2 text-sm font-medium bg-cyan-600 text-white hover:bg-cyan-700 transition-colors">
+                            Suscribirme
+                        </button>
+                    </div>
+                    <p id="newsletter-msg" class="mt-2 text-xs text-gray-500"></p>
+                </form>
+
+                <div class="mt-5 flex items-center gap-3" aria-label="Redes sociales">
+                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors" aria-label="Twitter">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9s-5.2-.8-6.1-2.4c-1.1 1.1-2.5 2.1-4.6 2.5H4.2c-1.1 0-2.2-.4-2.2-2.2s1.1-2.3 2.2-2.3c1 .2 2.3.1 3.4-.4C8.7 8.1 9.1 7 9.1 7s-2.1-.2-2.1-2.3c0-1.2 1-2.1 2.1-2.1H12c3.4 0 5.6 2.3 5.6 2.3s2.1-.2 2.1 1.1c0 .9-.8 1.9-1.5 2.4.9-.1 2.4-1 2.4-1z"/></svg>
+                    </a>
+                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors" aria-label="Facebook">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    </a>
+                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors" aria-label="Instagram">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                    </a>
+                </div>
+            </div>
         </div>
-        <div class="md:col-span-1">
-            <h3 class="font-semibold mb-3">Contacto</h3>
-            <ul class="space-y-2 text-sm text-gray-600">
-                <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> 555-123-456</li>
-                <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> info@clinicaunion.com</li>
-                <li class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg> Calle Ficticia 123, Ciudad</li>
-            </ul>
+
+        <!-- Barra inferior -->
+        <div class="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+            <p>Clínica Unión <span aria-hidden="true">©</span> <span id="footer-year">2025</span>. Todos los derechos reservados.</p>
+            <div class="flex items-center gap-4">
+                <a href="#" class="hover:text-gray-700">Términos</a>
+                <span class="text-gray-300">•</span>
+                <a href="#" class="hover:text-gray-700">Privacidad</a>
+                <span class="text-gray-300">•</span>
+                <a href="#" class="hover:text-gray-700">Accesibilidad</a>
+            </div>
         </div>
-        <div class="md:col-span-1">
-             <h3 class="font-semibold mb-3">Enlaces</h3>
-             <ul class="space-y-2 text-sm">
-                <li><a href="/#nosotros" class="text-gray-600 hover:text-cyan-500">Nosotros</a></li>
-                <li><a href="/#servicios" class="text-gray-600 hover:text-cyan-500">Servicios</a></li>
-                <li><a href="#" class="text-gray-600 hover:text-cyan-500">Blog</a></li>
-             </ul>
-        </div>
-        <div class="md:col-span-1">
-            <h3 class="font-semibold mb-3">Newsletter</h3>
-            <p class="text-sm text-gray-500 mb-2">Recibe noticias de salud.</p>
-            <form action="#" class="w-full">
-    <div class="flex">
-        <input type="email" placeholder="Tu email" class="flex-1 p-2 border rounded-l-md text-sm" required>
-        <button type="submit" class="bg-cyan-500 text-white px-3 rounded-r-md text-sm">OK</button>
     </div>
-</form>
-         </div>
-    </div>
-     <div class="text-center text-sm text-gray-400 mt-6 border-t pt-4 flex flex-col sm:flex-row justify-between items-center">
-        <p>Clínica Unión &copy; 2025. Todos los derechos reservados.</p>
-        <div class="flex gap-4 mt-4 sm:mt-0">
-            <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9s-5.2-.8-6.1-2.4c-1.1 1.1-2.5 2.1-4.6 2.5H4.2c-1.1 0-2.2-.4-2.2-2.2s1.1-2.3 2.2-2.3c1 .2 2.3.1 3.4-.4C8.7 8.1 9.1 7 9.1 7s-2.1-.2-2.1-2.3c0-1.2 1-2.1 2.1-2.1H12c3.4 0 5.6 2.3 5.6 2.3s2.1-.2 2.1 1.1c0 .9-.8 1.9-1.5 2.4.9-.1 2.4-1 2.4-1z"/></svg></a>
-            <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg></a>
-            <a href="#" class="text-gray-500 hover:text-cyan-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg></a>
-        </div>
-     </div>
+
+    <script>
+        // Año automático y feedback del newsletter minimalista
+        (function(){
+            const y = document.getElementById('footer-year');
+            if (y) y.textContent = new Date().getFullYear();
+            const form = document.getElementById('newsletter-form');
+            if (form) {
+                form.addEventListener('submit', function(e){
+                    e.preventDefault();
+                    const input = form.querySelector('input[name="email"]');
+                    const msg = document.getElementById('newsletter-msg');
+                    if (input && input.validity.valid) {
+                        msg.textContent = '¡Gracias! Te hemos suscrito al boletín.';
+                        msg.className = 'mt-2 text-xs text-green-600';
+                        input.value = '';
+                    } else {
+                        msg.textContent = 'Por favor, escribe un correo válido.';
+                        msg.className = 'mt-2 text-xs text-red-600';
+                    }
+                });
+            }
+        })();
+    </script>
 </footer>

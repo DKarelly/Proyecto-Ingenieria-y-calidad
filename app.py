@@ -92,7 +92,9 @@ def admin_panel():
     if id_rol is None or id_rol not in [1, 2, 3, 4, 5]:
         return redirect(url_for('home'))
 
-    return render_template('panel.html')
+    # Leer el subsistema desde el querystring para resaltar la sección y mostrar su contenido
+    subsistema = request.args.get('subsistema')
+    return render_template('panel.html', subsistema=subsistema)
 
 @app.route("/perfil")
 def perfil():

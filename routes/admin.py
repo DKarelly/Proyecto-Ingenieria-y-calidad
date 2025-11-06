@@ -24,7 +24,9 @@ def panel():
     if id_rol is None or id_rol not in [1, 2, 3, 4, 5]:
         return redirect(url_for('home'))
 
-    return render_template('panel.html', subsistema='administracion')
+    # Aceptar query param ?subsistema=... para unificar navegación
+    subsistema = request.args.get('subsistema', 'administracion')
+    return render_template('panel.html', subsistema=subsistema)
 
 @admin_bp.route('/consultar-agenda-medica')
 def consultar_agenda_medica():

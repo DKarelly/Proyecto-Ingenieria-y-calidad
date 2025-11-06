@@ -725,6 +725,127 @@ def gestionar_roles_permisos():
     
     return render_template('gestionarRolesPermisos.html')
 
+# ==================== API ENDPOINTS PARA ROLES Y PERMISOS ====================
+
+@cuentas_bp.route('/api/roles', methods=['GET'])
+def api_obtener_roles():
+    """API: Obtener todos los roles"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Rol
+        roles = Rol.obtener_todos()
+        return jsonify({'success': True, 'roles': roles})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@cuentas_bp.route('/api/roles', methods=['POST'])
+def api_crear_rol():
+    """API: Crear un nuevo rol"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Rol
+        data = request.get_json()
+        
+        nombre = data.get('nombre', '').strip()
+        descripcion = data.get('descripcion', '').strip()
+        
+        if not nombre:
+            return jsonify({'success': False, 'message': 'El nombre del rol es obligatorio'}), 400
+        
+        id_rol = Rol.crear(nombre, descripcion)
+        return jsonify({'success': True, 'message': 'Rol creado correctamente', 'id_rol': id_rol})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@cuentas_bp.route('/api/roles/<int:id_rol>', methods=['PUT'])
+def api_actualizar_rol(id_rol):
+    """API: Actualizar un rol existente"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Rol
+        data = request.get_json()
+        
+        nombre = data.get('nombre', '').strip()
+        descripcion = data.get('descripcion', '').strip()
+        estado = data.get('estado', 'Activo')
+        
+        if not nombre:
+            return jsonify({'success': False, 'message': 'El nombre del rol es obligatorio'}), 400
+        
+        actualizado = Rol.actualizar(id_rol, nombre, descripcion, estado)
+        
+        if actualizado:
+            return jsonify({'success': True, 'message': 'Rol actualizado correctamente'})
+        else:
+            return jsonify({'success': False, 'message': 'Rol no encontrado'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@cuentas_bp.route('/api/roles/<int:id_rol>', methods=['DELETE'])
+def api_eliminar_rol(id_rol):
+    """API: Eliminar un rol"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Rol
+        exito, mensaje = Rol.eliminar(id_rol)
+        
+        if exito:
+            return jsonify({'success': True, 'message': mensaje})
+        else:
+            return jsonify({'success': False, 'message': mensaje}), 400
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@cuentas_bp.route('/api/permisos', methods=['GET'])
+def api_obtener_permisos():
+    """API: Obtener todos los permisos agrupados por módulo"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Permiso
+        permisos = Permiso.obtener_por_modulo()
+        return jsonify({'success': True, 'permisos': permisos})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@cuentas_bp.route('/api/roles/<int:id_rol>/permisos', methods=['GET'])
+def api_obtener_permisos_rol(id_rol):
+    """API: Obtener permisos de un rol específico"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Permiso
+        permisos_ids = Permiso.obtener_ids_por_rol(id_rol)
+        return jsonify({'success': True, 'permisos_ids': permisos_ids})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@cuentas_bp.route('/api/roles/<int:id_rol>/permisos', methods=['POST'])
+def api_asignar_permisos_rol(id_rol):
+    """API: Asignar permisos a un rol"""
+    if 'usuario_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        from models.rol import Rol
+        data = request.get_json()
+        permisos = data.get('permisos', [])
+        
+        Rol.asignar_permisos(id_rol, permisos)
+        return jsonify({'success': True, 'message': 'Permisos asignados correctamente'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @cuentas_bp.route('/gestionar-datos-pacientes')
 def gestionar_datos_pacientes():
     """Gestión de Datos del Paciente"""
