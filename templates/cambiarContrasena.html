@@ -22,7 +22,7 @@
     <div class="max-w-2xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            <a href="/cuentas/consultar-perfil" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+            <a href="/usuarios/perfil" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
@@ -50,12 +50,28 @@
                 <div class="flex items-start">
                     <i class="fa-solid fa-circle-info text-blue-600 mr-3 mt-1"></i>
                     <div class="text-sm text-blue-800">
-                        <p class="font-semibold mb-1">Requisitos de la contraseña:</p>
-                        <ul class="list-disc list-inside space-y-1">
-                            <li>Mínimo 8 caracteres</li>
-                            <li>Al menos una letra mayúscula</li>
-                            <li>Al menos una letra minúscula</li>
-                            <li>Al menos un número</li>
+                        <p class="font-semibold mb-2">Requisitos de seguridad de la contraseña:</p>
+                        <ul class="space-y-1">
+                            <li id="req-length" class="flex items-center">
+                                <i class="fa-solid fa-circle text-xs mr-2 text-gray-400"></i>
+                                Mínimo 8 caracteres, máximo 255
+                            </li>
+                            <li id="req-uppercase" class="flex items-center">
+                                <i class="fa-solid fa-circle text-xs mr-2 text-gray-400"></i>
+                                Al menos una letra mayúscula (A-Z)
+                            </li>
+                            <li id="req-lowercase" class="flex items-center">
+                                <i class="fa-solid fa-circle text-xs mr-2 text-gray-400"></i>
+                                Al menos una letra minúscula (a-z)
+                            </li>
+                            <li id="req-number" class="flex items-center">
+                                <i class="fa-solid fa-circle text-xs mr-2 text-gray-400"></i>
+                                Al menos un número (0-9)
+                            </li>
+                            <li id="req-special" class="flex items-center">
+                                <i class="fa-solid fa-circle text-xs mr-2 text-gray-400"></i>
+                                Al menos un carácter especial (@#$%&*!?-_.)
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -85,7 +101,7 @@
                 <!-- Nueva Contraseña -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2" for="nueva_contrasena">
-                        Nueva Contraseña
+                        Nueva Contraseña <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
                         <input 
@@ -95,18 +111,28 @@
                             type="password"
                             placeholder="••••••••"
                             minlength="8"
+                            maxlength="255"
                             required
+                            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%&*!?\-_.])[A-Za-z\d@#$%&*!?\-_.]{8,255}$"
+                            title="La contraseña debe contener al menos: 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@#$%&*!?-_.)"
                         />
                         <button type="button" onclick="togglePassword('nueva_contrasena')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                             <i class="fa-solid fa-eye" id="nueva_contrasena-icon"></i>
                         </button>
+                    </div>
+                    <!-- Indicador de fortaleza de contraseña -->
+                    <div class="mt-2">
+                        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div id="password-strength-bar" class="h-full transition-all duration-300" style="width: 0%;"></div>
+                        </div>
+                        <p id="password-strength-text" class="text-xs mt-1 text-gray-500"></p>
                     </div>
                 </div>
 
                 <!-- Confirmar Nueva Contraseña -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2" for="confirmar_contrasena">
-                        Confirmar Nueva Contraseña
+                        Confirmar Nueva Contraseña <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
                         <input 
@@ -116,12 +142,14 @@
                             type="password"
                             placeholder="••••••••"
                             minlength="8"
+                            maxlength="255"
                             required
                         />
                         <button type="button" onclick="togglePassword('confirmar_contrasena')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
                             <i class="fa-solid fa-eye" id="confirmar_contrasena-icon"></i>
                         </button>
                     </div>
+                    <p id="password-match-message" class="text-xs mt-1"></p>
                 </div>
 
                 <!-- Botones -->
@@ -133,7 +161,7 @@
                         Cambiar Contraseña
                     </button>
                     <a 
-                        href="/cuentas/consultar-perfil" 
+                        href="/usuarios/perfil" 
                         class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors text-center inline-flex items-center justify-center">
                         <i class="fa-solid fa-times mr-2"></i>
                         Cancelar
@@ -161,16 +189,162 @@
             }
         }
 
-        // Validación en tiempo real de coincidencia de contraseñas
-        document.getElementById('confirmar_contrasena').addEventListener('input', function() {
+        // Elementos de requisitos de contraseña
+        const requisitos = {
+            length: document.getElementById('req-length'),
+            uppercase: document.getElementById('req-uppercase'),
+            lowercase: document.getElementById('req-lowercase'),
+            number: document.getElementById('req-number'),
+            special: document.getElementById('req-special')
+        };
+
+        // Elementos de indicador de fortaleza
+        const strengthBar = document.getElementById('password-strength-bar');
+        const strengthText = document.getElementById('password-strength-text');
+        const passwordMatchMessage = document.getElementById('password-match-message');
+
+        // Función para actualizar estado de un requisito
+        function actualizarRequisito(elemento, cumplido) {
+            const icono = elemento.querySelector('i');
+            if (cumplido) {
+                icono.classList.remove('fa-circle', 'text-gray-400');
+                icono.classList.add('fa-check-circle', 'text-green-600');
+                elemento.classList.remove('text-gray-600');
+                elemento.classList.add('text-green-600');
+            } else {
+                icono.classList.remove('fa-check-circle', 'text-green-600');
+                icono.classList.add('fa-circle', 'text-gray-400');
+                elemento.classList.remove('text-green-600');
+                elemento.classList.add('text-gray-600');
+            }
+        }
+
+        // Función para calcular fortaleza de contraseña
+        function calcularFortaleza(valor) {
+            let cumplidos = 0;
+            const tests = {
+                length: valor.length >= 8 && valor.length <= 255,
+                uppercase: /[A-Z]/.test(valor),
+                lowercase: /[a-z]/.test(valor),
+                number: /\d/.test(valor),
+                special: /[@#$%&*!?\-_.]/.test(valor)
+            };
+
+            // Actualizar cada requisito visual
+            Object.keys(tests).forEach(key => {
+                actualizarRequisito(requisitos[key], tests[key]);
+                if (tests[key]) cumplidos++;
+            });
+
+            return cumplidos;
+        }
+
+        // Función para actualizar indicador de fortaleza
+        function actualizarIndicadorFortaleza(cumplidos, valor) {
+            if (!valor) {
+                strengthBar.style.width = '0%';
+                strengthBar.className = 'h-full transition-all duration-300';
+                strengthText.textContent = '';
+                strengthText.className = 'text-xs mt-1';
+                return;
+            }
+
+            const porcentaje = (cumplidos / 5) * 100;
+            strengthBar.style.width = porcentaje + '%';
+
+            // Determinar color y texto según fortaleza
+            let colorClase, mensaje;
+            if (cumplidos <= 1) {
+                colorClase = 'bg-red-500';
+                mensaje = 'Muy débil';
+            } else if (cumplidos === 2) {
+                colorClase = 'bg-orange-500';
+                mensaje = 'Débil';
+            } else if (cumplidos === 3) {
+                colorClase = 'bg-yellow-500';
+                mensaje = 'Media';
+            } else if (cumplidos === 4) {
+                colorClase = 'bg-lime-500';
+                mensaje = 'Fuerte';
+            } else {
+                colorClase = 'bg-green-600';
+                mensaje = 'Muy fuerte';
+            }
+
+            strengthBar.className = `h-full transition-all duration-300 ${colorClase}`;
+            strengthText.textContent = `Fortaleza: ${mensaje}`;
+            strengthText.className = `text-xs mt-1 font-semibold ${colorClase.replace('bg-', 'text-')}`;
+        }
+
+        // Validación en tiempo real de la nueva contraseña
+        const nuevaContrasenaInput = document.getElementById('nueva_contrasena');
+        nuevaContrasenaInput.addEventListener('input', function() {
+            const valor = this.value;
+            const cumplidos = calcularFortaleza(valor);
+            actualizarIndicadorFortaleza(cumplidos, valor);
+
+            // Verificar coincidencia con confirmación si existe
+            const confirmarInput = document.getElementById('confirmar_contrasena');
+            if (confirmarInput.value) {
+                verificarCoincidencia();
+            }
+        });
+
+        // Función para verificar coincidencia de contraseñas
+        function verificarCoincidencia() {
             const nueva = document.getElementById('nueva_contrasena').value;
-            const confirmar = this.value;
+            const confirmar = document.getElementById('confirmar_contrasena').value;
             
             if (confirmar && nueva !== confirmar) {
-                this.setCustomValidity('Las contraseñas no coinciden');
+                document.getElementById('confirmar_contrasena').setCustomValidity('Las contraseñas no coinciden');
+                passwordMatchMessage.textContent = '✗ Las contraseñas no coinciden';
+                passwordMatchMessage.className = 'text-xs mt-1 text-red-600';
+                return false;
+            } else if (confirmar && nueva === confirmar) {
+                document.getElementById('confirmar_contrasena').setCustomValidity('');
+                passwordMatchMessage.textContent = '✓ Las contraseñas coinciden';
+                passwordMatchMessage.className = 'text-xs mt-1 text-green-600';
+                return true;
             } else {
-                this.setCustomValidity('');
+                document.getElementById('confirmar_contrasena').setCustomValidity('');
+                passwordMatchMessage.textContent = '';
+                return true;
             }
+        }
+
+        // Validación en tiempo real de coincidencia de contraseñas
+        document.getElementById('confirmar_contrasena').addEventListener('input', verificarCoincidencia);
+        document.getElementById('nueva_contrasena').addEventListener('input', verificarCoincidencia);
+
+        // Validación final del formulario antes de enviar
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const nuevaContrasena = document.getElementById('nueva_contrasena').value;
+            const confirmarContrasena = document.getElementById('confirmar_contrasena').value;
+
+            // Verificar que la nueva contraseña cumpla con todos los requisitos
+            const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%&*!?\-_.])[A-Za-z\d@#$%&*!?\-_.]{8,255}$/;
+            if (!pattern.test(nuevaContrasena)) {
+                e.preventDefault();
+                alert('La nueva contraseña no cumple con todos los requisitos de seguridad.');
+                return false;
+            }
+
+            // Verificar que las contraseñas coincidan
+            if (nuevaContrasena !== confirmarContrasena) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden. Por favor, verifique.');
+                return false;
+            }
+
+            // Verificar que la nueva contraseña sea diferente a la actual
+            const actualContrasena = document.getElementById('contrasena_actual').value;
+            if (nuevaContrasena === actualContrasena) {
+                e.preventDefault();
+                alert('La nueva contraseña debe ser diferente a la contraseña actual.');
+                return false;
+            }
+
+            return true;
         });
     </script>
 </body>

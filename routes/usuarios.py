@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from models.usuario import Usuario
 from functools import wraps
+from models.notificacion import Notificacion
+from models.paciente import Paciente
 
 usuarios_bp = Blueprint('usuarios', __name__)
 
@@ -89,9 +91,16 @@ def recuperar_contrasena_vista():
 @usuarios_bp.route('/perfil')
 @login_required
 def perfil():
-    """Página de perfil del usuario - Versión Simple"""
+    """Página de perfil del usuario - Vista detallada para empleados, simple para pacientes"""
     usuario = Usuario.obtener_por_id(session['usuario_id'])
-    return render_template('perfil.html', usuario=usuario)
+    
+    # Si es empleado, usar vista detallada (antes consultarperfil.html)
+    if usuario and usuario.get('tipo_usuario') == 'empleado':
+        return render_template('perfil_empleado.html', usuario=usuario)
+    else:
+        # Pacientes mantienen vista simple
+        return render_template('perfil.html', usuario=usuario)
+
 
 @usuarios_bp.route('/listar')
 @login_required
@@ -480,16 +489,33 @@ def api_obtener_usuarios():
 
 @usuarios_bp.route('/api/usuarios/<int:id_usuario>', methods=['GET'])
 @login_required
+@empleado_required
 def api_obtener_usuario(id_usuario):
-    """API: Obtiene un usuario por ID"""
-    # Solo empleados pueden ver otros usuarios
-    if session['tipo_usuario'] != 'empleado' and session['usuario_id'] != id_usuario:
-        return jsonify({'error': 'No autorizado'}), 403
-    
-    usuario = Usuario.obtener_por_id(id_usuario)
-    if usuario:
+    """API: Obtiene información detallada de un usuario para modal"""
+    try:
+        usuario = Usuario.obtener_por_id(id_usuario)
+        
+        if not usuario:
+            return jsonify({'error': 'Usuario no encontrado'}), 404
+        
+        # Formatear fechas para el modal
+        if usuario.get('fecha_creacion'):
+            if hasattr(usuario['fecha_creacion'], 'strftime'):
+                usuario['fecha_creacion'] = usuario['fecha_creacion'].strftime('%d/%m/%Y')
+        
+        if usuario.get('fecha_nacimiento'):
+            if hasattr(usuario['fecha_nacimiento'], 'strftime'):
+                usuario['fecha_nacimiento'] = usuario['fecha_nacimiento'].strftime('%d/%m/%Y')
+        
+        if usuario.get('fecha_nacimiento_empleado'):
+            if hasattr(usuario['fecha_nacimiento_empleado'], 'strftime'):
+                usuario['fecha_nacimiento_empleado'] = usuario['fecha_nacimiento_empleado'].strftime('%d/%m/%Y')
+        
         return jsonify(usuario)
-    return jsonify({'error': 'Usuario no encontrado'}), 404
+        
+    except Exception as e:
+        print(f"Error al obtener usuario: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @usuarios_bp.route('/api/departamentos', methods=['GET'])
 def api_obtener_departamentos():
@@ -939,7 +965,19 @@ def api_cambiar_contrasena():
         
         if resultado.get('error'):
             return jsonify({'error': resultado['error']}), 400
-            
+        # Crear notificación para el usuario si es paciente
+        try:
+            if session.get('tipo_usuario') == 'paciente':
+                id_paciente = session.get('id_paciente')
+                if not id_paciente:
+                    p = Paciente.obtener_por_usuario(session['usuario_id'])
+                    if p:
+                        id_paciente = p.get('id_paciente')
+                if id_paciente:
+                    Notificacion.crear('Cambio de contraseña', 'Se ha actualizado la contraseña de su cuenta.', 'seguridad', id_paciente)
+        except Exception as e:
+            print(f"Error creando notificación de cambio de contraseña (API): {e}")
+
         return jsonify({
             'success': True,
             'message': 'Contraseña actualizada exitosamente'
@@ -1003,7 +1041,85 @@ def cambiar_contrasena():
             return render_template('cambiarContrasena.html')
         
         flash('Contraseña cambiada exitosamente', 'success')
-        return redirect(url_for('cuentas.consultar_perfil'))
+        # Crear notificación local para pacientes
+        try:
+            if session.get('tipo_usuario') == 'paciente':
+                id_paciente = session.get('id_paciente')
+                if not id_paciente:
+                    p = Paciente.obtener_por_usuario(session['usuario_id'])
+                    if p:
+                        id_paciente = p.get('id_paciente')
+                if id_paciente:
+                    Notificacion.crear('Cambio de contraseña', 'Se ha actualizado la contraseña de su cuenta.', 'seguridad', id_paciente)
+        except Exception as e:
+            print(f"Error creando notificación de cambio de contraseña: {e}")
+        return redirect(url_for('usuarios.perfil'))
     
     # GET
     return render_template('cambiarContrasena.html')
+
+
+@usuarios_bp.route('/gestion')
+@login_required
+@empleado_required
+def gestion():
+    """Gestión Unificada de Usuarios - Empleados y Pacientes"""
+    from models.empleado import Empleado
+    from models.paciente import Paciente
+    import bd
+    
+    # Obtener todos los empleados con su información completa
+    conexion = bd.obtener_conexion()
+    cursor = conexion.cursor()
+    
+    try:
+        # Consulta para empleados
+        query_empleados = """
+            SELECT 
+                e.id_empleado,
+                e.id_usuario,
+                e.nombres,
+                e.apellidos,
+                e.documento_identidad,
+                e.sexo,
+                e.estado,
+                u.correo,
+                u.telefono,
+                r.nombre as rol
+            FROM EMPLEADO e
+            INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+            LEFT JOIN ROL r ON e.id_rol = r.id_rol
+            ORDER BY e.id_empleado DESC
+        """
+        cursor.execute(query_empleados)
+        empleados = cursor.fetchall()
+        
+        # Consulta para pacientes
+        query_pacientes = """
+            SELECT 
+                p.id_paciente,
+                p.id_usuario,
+                p.nombres,
+                p.apellidos,
+                p.documento_identidad,
+                p.sexo,
+                u.correo,
+                u.telefono,
+                u.estado
+            FROM PACIENTE p
+            INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+            ORDER BY p.id_paciente DESC
+        """
+        cursor.execute(query_pacientes)
+        pacientes = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        return render_template('gestionUsuarios.html', empleados=empleados, pacientes=pacientes)
+        
+    except Exception as e:
+        print(f"Error al obtener usuarios: {e}")
+        cursor.close()
+        conexion.close()
+        return render_template('gestionUsuarios.html', empleados=[], pacientes=[])
