@@ -284,9 +284,100 @@ document.addEventListener('DOMContentLoaded', () => {
             ev.preventDefault();
             const formFiltros = document.getElementById('formFiltros');
             if (formFiltros) formFiltros.reset();
+            // Mostrar todas las filas al limpiar filtros
+            const filas = tablaBody.querySelectorAll('tr');
+            filas.forEach(fila => {
+                fila.style.display = '';
+            });
             cargarMedicamentos();
         });
     }
+
+    // Evento para buscar medicamento en el filtro de búsqueda
+    const filtroMedicamentoInput = document.getElementById('filtroMedicamento');
+    if (filtroMedicamentoInput) {
+        filtroMedicamentoInput.addEventListener('input', function() {
+            buscarMedicamentoFiltro(this.value);
+        });
+    }
+
+    function buscarMedicamentoFiltro(termino) {
+        if (!window.medicamentos || termino.length < 2) {
+            ocultarSugerenciasFiltro();
+            return;
+        }
+
+        const medicamentosFiltrados = window.medicamentos.filter(medicamento =>
+            medicamento.nombre.toLowerCase().includes(termino.toLowerCase())
+        );
+
+        mostrarSugerenciasFiltro(medicamentosFiltrados);
+    }
+
+    function mostrarSugerenciasFiltro(medicamentos) {
+        // Remover sugerencias anteriores
+        const sugerenciasAnteriores = document.querySelector('.sugerencias-filtro');
+        if (sugerenciasAnteriores) {
+            sugerenciasAnteriores.remove();
+        }
+
+        if (medicamentos.length === 0) {
+            return;
+        }
+
+        const inputFiltro = document.getElementById('filtroMedicamento');
+        const sugerenciasDiv = document.createElement('div');
+        sugerenciasDiv.className = 'sugerencias-filtro absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1';
+        sugerenciasDiv.style.width = inputFiltro.offsetWidth + 'px';
+
+        medicamentos.forEach(medicamento => {
+            const opcion = document.createElement('div');
+            opcion.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+            opcion.textContent = medicamento.nombre;
+            opcion.onclick = function() {
+                seleccionarMedicamentoFiltro(medicamento);
+                sugerenciasDiv.remove();
+            };
+            sugerenciasDiv.appendChild(opcion);
+        });
+
+        // Posicionar las sugerencias
+        inputFiltro.parentNode.style.position = 'relative';
+        inputFiltro.parentNode.appendChild(sugerenciasDiv);
+    }
+
+    function seleccionarMedicamentoFiltro(medicamento) {
+        document.getElementById('filtroMedicamento').value = medicamento.nombre;
+        ocultarSugerenciasFiltro();
+        // Filtrar la tabla por el medicamento seleccionado
+        filtrarTablaPorMedicamento(medicamento.nombre);
+    }
+
+    function filtrarTablaPorMedicamento(nombreMedicamento) {
+        const filas = tablaBody.querySelectorAll('tr');
+        filas.forEach(fila => {
+            const nombreEnFila = fila.dataset.medicamento.toLowerCase();
+            if (nombreEnFila.includes(nombreMedicamento.toLowerCase())) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+    }
+
+    function ocultarSugerenciasFiltro() {
+        const sugerencias = document.querySelector('.sugerencias-filtro');
+        if (sugerencias) {
+            sugerencias.remove();
+        }
+    }
+
+    // Ocultar sugerencias al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#filtroMedicamento') && !e.target.closest('.sugerencias-filtro')) {
+            ocultarSugerenciasFiltro();
+        }
+    });
 
     function buscarMedicamento(termino) {
         if (!window.medicamentos || termino.length < 2) {
