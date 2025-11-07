@@ -26,7 +26,8 @@ def registrar_blueprints():
     from routes.farmacia import farmacia_bp
     from routes.paciente import paciente_bp
     from routes.trabajador import trabajador_bp
-    
+    from routes.medico import medico_bp
+
     app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
     app.register_blueprint(cuentas_bp, url_prefix='/cuentas')
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -37,6 +38,7 @@ def registrar_blueprints():
     app.register_blueprint(farmacia_bp, url_prefix='/farmacia')
     app.register_blueprint(paciente_bp, url_prefix='/paciente')
     app.register_blueprint(trabajador_bp, url_prefix='/trabajador')
+    app.register_blueprint(medico_bp, url_prefix='/medico')
 
 # Registrar blueprints
 registrar_blueprints()
@@ -78,7 +80,7 @@ def inject_globals():
 
 @app.route("/admin/panel")
 def admin_panel():
-    """Panel de administración - Solo para empleados con roles 1 a 5"""
+    """Panel de administración - Solo para administradores (rol 1)"""
     # Verificar si hay sesión activa
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
@@ -87,10 +89,14 @@ def admin_panel():
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
 
-    # Verificar que el rol esté entre 1 y 5
+    # Verificar que el rol sea Administrador (rol 1)
     id_rol = session.get('id_rol')
-    if id_rol is None or id_rol not in [1, 2, 3, 4, 5]:
-        return redirect(url_for('home'))
+    if id_rol != 1:
+        # Si no es administrador, redirigir según su rol
+        if id_rol == 2:  # Médico
+            return redirect(url_for('medico.panel'))
+        else:  # Otros empleados
+            return redirect(url_for('trabajador.panel'))
 
     # Leer el subsistema desde el querystring para resaltar la sección y mostrar su contenido
     subsistema = request.args.get('subsistema')
