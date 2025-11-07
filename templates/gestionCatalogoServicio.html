@@ -1,20 +1,24 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión Catálogo de Servicios - Clínica Union</title>
     <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?display=swap&family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;700;900">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .badge-activo {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
+
         .badge-inactivo {
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
         }
+
         .modal {
             display: none;
             position: fixed;
@@ -25,11 +29,13 @@
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
         }
+
         .modal.show {
             display: flex;
             align-items: center;
             justify-content: center;
         }
+
         .modal-content {
             background: white;
             border-radius: 1rem;
@@ -41,8 +47,9 @@
         }
     </style>
 </head>
+
 <body class="bg-[#f8fafc] font-['Inter']">
-    
+
     {% include 'header_admin.html' %}
 
     <div class="max-w-7xl mx-auto p-6 md:p-10">
@@ -62,7 +69,8 @@
 
         <!-- Botón registrar nuevo servicio -->
         <div class="mb-6">
-            <button id="btnRegistrarServicio" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
+            <button id="btnRegistrarServicio"
+                class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn btn-primary">
                 <i class="fas fa-plus mr-2"></i>
                 Registrar Nuevo Servicio
             </button>
@@ -75,51 +83,41 @@
                 <h3 class="text-xl font-bold text-gray-800">Filtros de Búsqueda</h3>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
-                    <label for="filtroTipoServicio" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-tags text-gray-500 mr-1"></i>
-                        Tipo de Servicio
-                    </label>
-                    <select id="filtroTipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Todos los tipos</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label for="filtroEspecialidad" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-user-md text-gray-500 mr-1"></i>
-                        Especialidad
-                    </label>
-                    <select id="filtroEspecialidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
-                        <option value="">Todas las especialidades</option>
-                    </select>
-                </div>
-
+            <!-- ✅ Ajuste: mejor proporción entre campos -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
                     <label for="filtroServicio" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-stethoscope text-gray-500 mr-1"></i>
                         Buscar Servicio
                     </label>
-                    <input
-                        type="text"
-                        id="filtroServicio"
-                        placeholder="Buscar servicio"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
-                    >
+                    <input type="text" id="filtroServicio" placeholder="Buscar servicio"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
                 </div>
-
+                <div>
+                    <label for="filtroTipoServicio" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-tags text-gray-500 mr-1"></i>
+                        Tipo de Servicio
+                    </label>
+                    <select id="filtroTipoServicio"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtroEspecialidad" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                        Especialidad
+                    </label>
+                    <select id="filtroEspecialidad"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors">
+                        <option value="">Todas las especialidades</option>
+                    </select>
+                </div>
                 <div class="flex items-end">
-                    <button id="btnLimpiar" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
+                    <button id="btnLimpiar"
+                        class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-all duration-300 btn btn-outline">
                         <i class="fas fa-broom mr-2"></i>
                         Limpiar
-                    </button>
-                </div>
-
-                <div class="flex items-end">
-                    <button id="btnBuscar" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
-                        <i class="fas fa-search mr-2"></i>
-                        Buscar
                     </button>
                 </div>
             </div>
@@ -131,19 +129,39 @@
                 <table class="admin-table w-full">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID Servicio</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Nombre Servicio</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Tipo de Servicio</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Especialidad</th>
-                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Controles</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">ID
+                                Servicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Nombre Servicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Descripción</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Estado</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Tipo de Servicio</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Especialidad</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Controles</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-servicios-body" class="divide-y divide-gray-200">
                         <!-- Los datos se cargarán dinámicamente desde la BD -->
                     </tbody>
                 </table>
+            </div>
+            <!-- Paginación -->
+            <div
+                class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+                <!-- Texto de registros -->
+                <div class="text-sm text-gray-600 text-center md:text-left">
+                    Mostrando <span id="inicio-rango" class="font-medium">0</span>-
+                    <span id="fin-rango" class="font-medium">0</span> de
+                    <span id="total-registros" class="font-medium">0</span> registros
+                </div>
+
+                <!-- Controles de paginación -->
+                <nav id="paginacionNumeros" class="flex items-center space-x-2" aria-label="Pagination"></nav>
             </div>
         </div>
     </div>
@@ -156,7 +174,8 @@
                     <i class="fas fa-stethoscope text-cyan-600 mr-2"></i>
                     Registrar Nuevo Servicio
                 </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+                <button
+                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formRegistrarServicio" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
@@ -165,24 +184,19 @@
                             <i class="fas fa-file-medical text-gray-500 mr-1"></i>
                             Nombre del Servicio
                         </label>
-                        <input type="text" name="nombreServicio" id="nombreServicio" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-align-left text-gray-500 mr-1"></i>
-                            Descripción
-                        </label>
-                        <textarea name="descripcionServicio" id="descripcionServicio" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
+                        <input type="text" name="nombreServicio" id="nombreServicio"
+                            placeholder="Ingrese nombre del servicio"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
-                            Estado
+                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
+                            Especialidad
                         </label>
-                        <select name="estadoServicio" id="estadoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option value="">Seleccione un estado</option>
-                            <option value="activo">Activo</option>
-                            <option value="inactivo">Inactivo</option>
+                        <select name="especialidadServicio" id="especialidadServicio"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                            <option value="">Seleccione especialidad (opcional)</option>
                         </select>
                     </div>
                     <div>
@@ -190,26 +204,44 @@
                             <i class="fas fa-tags text-gray-500 mr-1"></i>
                             Tipo de Servicio
                         </label>
-                        <select name="tipoServicio" id="tipoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
+                        <select name="tipoServicio" id="tipoServicio"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                             <option value="">Seleccione tipo de servicio</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-user-md text-gray-500 mr-1"></i>
-                            Especialidad
+                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+                            Estado
                         </label>
-                        <select name="especialidadServicio" id="especialidadServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-                            <option value="">Seleccione especialidad (opcional)</option>
+                        <select name="estadoServicio" id="estadoServicio"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
+                            <option value="">Seleccione un estado</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
                         </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-align-left text-gray-500 mr-1"></i>
+                            Descripción
+                        </label>
+                        <textarea name="descripcionServicio" id="descripcionServicio" rows="3"
+                            placeholder="Describa el servicio..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required></textarea>
                     </div>
                 </div>
                 <div class="flex gap-4 pt-4">
-                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <button type="button"
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
                         <i class="fas fa-times mr-2"></i>
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <button type="submit"
+                        class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-save mr-2"></i>
                         Guardar
                     </button>
@@ -226,65 +258,81 @@
                     <i class="fas fa-edit text-blue-600 mr-2"></i>
                     Modificar Servicio
                 </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+                <button
+                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formModificarServicio" class="space-y-4">
+                <!-- Mantengo el id del código como hidden para que el JS siga funcionando -->
+                <input type="hidden" id="codigoServicio">
+
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                            Código
-                        </label>
-                        <input type="text" id="codigoServicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
+                    <!-- Primera fila: Nombre | Especialidad -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-file-medical text-gray-500 mr-1"></i>
                             Nombre del Servicio
                         </label>
-                        <input type="text" name="nombreServicioEditar" id="nombreServicioEditar" placeholder="Ingrese nombre del servicio" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                    </div>
-                    <div class="col-span-2">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-align-left text-gray-500 mr-1"></i>
-                            Descripción
-                        </label>
-                        <textarea name="descripcionServicioEditar" id="descripcionServicioEditar" rows="3" placeholder="Describa el servicio..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
-                            Estado
-                        </label>
-                        <select name="estadoServicioEditar" id="estadoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                            <option value="activo">Activo</option>
-                            <option value="inactivo">Inactivo</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-tags text-gray-500 mr-1"></i>
-                            Tipo de Servicio
-                        </label>
-                        <select name="tipoServicioEditar" id="tipoServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" required>
-                        </select>
+                        <input type="text" name="nombreServicioEditar" id="nombreServicioEditar"
+                            placeholder="Ingrese nombre del servicio"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
                             <i class="fas fa-user-md text-gray-500 mr-1"></i>
                             Especialidad
                         </label>
-                        <select name="especialidadServicioEditar" id="especialidadServicioEditar" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+                        <select name="especialidadServicioEditar" id="especialidadServicioEditar"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
                             <option value="">Seleccione especialidad (opcional)</option>
                         </select>
                     </div>
+
+                    <!-- Segunda fila: Tipo de Servicio | Estado -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-tags text-gray-500 mr-1"></i>
+                            Tipo de Servicio
+                        </label>
+                        <select name="tipoServicioEditar" id="tipoServicioEditar"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+                            Estado
+                        </label>
+                        <select name="estadoServicioEditar" id="estadoServicioEditar"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </div>
+
+                    <!-- Última fila: Descripción (ancho completo) -->
+                    <div class="col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-align-left text-gray-500 mr-1"></i>
+                            Descripción
+                        </label>
+                        <textarea name="descripcionServicioEditar" id="descripcionServicioEditar" rows="3"
+                            placeholder="Describa el servicio..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            required></textarea>
+                    </div>
                 </div>
+
                 <div class="flex gap-4 pt-4">
-                    <button type="button" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                    <button type="button"
+                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
                         <i class="fas fa-times mr-2"></i>
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <button type="submit"
+                        class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-save mr-2"></i>
                         Guardar Cambios
                     </button>
@@ -301,15 +349,18 @@
                     <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
                     Confirmar Eliminación
                 </h2>
-                <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+                <button
+                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar este servicio del catálogo?</p>
             <div class="flex gap-4">
-                <button id="btnCancelarEliminar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                <button id="btnCancelarEliminar"
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
                     <i class="fas fa-times mr-2"></i>
                     Cancelar
                 </button>
-                <button id="btnConfirmarEliminar" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
+                <button id="btnConfirmarEliminar"
+                    class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                     <i class="fas fa-trash-alt mr-2"></i>
                     Eliminar
                 </button>
@@ -321,4 +372,5 @@
 
     {% include 'footer.html' %}
 </body>
+
 </html>

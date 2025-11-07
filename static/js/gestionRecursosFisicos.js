@@ -80,7 +80,14 @@ function cargarRecursos() {
     fetch('/admin/api/recursos')
         .then(response => response.json())
         .then(data => {
-            poblarTabla(data);
+            todosLosRecursos = data; // guarda copia completa
+
+            // Usa la paginación genérica
+            inicializarPaginacion({
+                datos: todosLosRecursos,
+                registrosPorPagina: 8,
+                renderFuncion: poblarTabla
+            });
         })
         .catch(error => {
             console.error('Error cargando recursos:', error);
