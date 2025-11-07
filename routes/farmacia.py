@@ -9,7 +9,8 @@ farmacia_bp = Blueprint('farmacia', __name__)
 def index():
     if 'id_rol' not in session or session['id_rol'] not in [1, 5]:
         return redirect(url_for('usuarios.login'))
-    return render_template('panel.html', subsistema='farmacia')
+    # Redirigir al dashboard principal unificado
+    return redirect(url_for('admin_panel', subsistema='farmacia'))
 
 @farmacia_bp.route('/gestionar-medicamentos')
 def gestionar_medicamentos():

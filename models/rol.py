@@ -118,10 +118,11 @@ class Rol:
             with conexion.cursor() as cursor:
                 # Verificar si hay empleados con este rol
                 cursor.execute("""
-                    SELECT COUNT(*) FROM EMPLEADO WHERE id_rol = %s
+                    SELECT COUNT(*) AS total FROM EMPLEADO WHERE id_rol = %s
                 """, (id_rol,))
-                
-                if cursor.fetchone()[0] > 0:
+                resultado = cursor.fetchone()
+                total = resultado['total'] if isinstance(resultado, dict) else (resultado[0] if resultado else 0)
+                if total > 0:
                     return False, "No se puede eliminar el rol porque tiene empleados asignados"
                 
                 # Eliminar permisos asociados (se eliminan automáticamente por CASCADE)

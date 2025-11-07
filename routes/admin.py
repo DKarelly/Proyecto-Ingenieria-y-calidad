@@ -28,9 +28,9 @@ def panel():
         else:            # Otros empleados (recepción, farmacia, etc.)
             return redirect(url_for('trabajador.panel'))
 
-    # Aceptar query param ?subsistema=... para unificar navegación
-    subsistema = request.args.get('subsistema', 'administracion')
-    return render_template('panel.html', subsistema=subsistema)
+    # Redirigir al dashboard canónico /admin/panel
+    subsistema = request.args.get('subsistema')
+    return redirect(url_for('admin_panel', subsistema=subsistema))
 
 @admin_bp.route('/consultar-agenda-medica')
 def consultar_agenda_medica():

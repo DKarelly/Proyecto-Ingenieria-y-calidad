@@ -6,7 +6,7 @@ cuentas_bp = Blueprint('cuentas', __name__)
 
 @cuentas_bp.route('/')
 def panel():
-    """Panel de Cuentas y Autenticación"""
+    """Panel de Cuentas y Autenticación - Redirige al dashboard principal"""
     # Verificar si hay sesión activa
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
@@ -15,7 +15,8 @@ def panel():
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
     
-    return render_template('panel.html', subsistema='cuentas')
+    # Redirigir al dashboard principal con subsistema cuentas
+    return redirect(url_for('admin_panel', subsistema='cuentas'))
 
 @cuentas_bp.route('/consultar-lista-usuarios')
 def consultar_lista_usuarios():
@@ -227,6 +228,170 @@ def consultar_perfil():
     
     return render_template('consultarperfil.html', usuario=usuario)
 
+@cuentas_bp.route('/ver-perfil-empleado/<int:id_empleado>')
+def ver_perfil_empleado(id_empleado):
+    """Ver Perfil de un Empleado específico"""
+    # Verificar si hay sesión activa
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    # Verificar que sea empleado
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    import bd
+    conexion = bd.obtener_conexion()
+    cursor = conexion.cursor()
+    
+    # Obtener información completa del empleado
+    query = """
+        SELECT 
+            u.id_usuario,
+            u.correo,
+            u.telefono,
+            u.estado,
+            u.fecha_creacion,
+            e.id_empleado,
+            e.nombres,
+            e.apellidos,
+            e.documento_identidad,
+            e.sexo,
+            e.fecha_nacimiento,
+            r.nombre as rol,
+            esp.nombre as especialidad,
+            d.nombre as distrito,
+            prov.nombre as provincia,
+            dep.nombre as departamento
+        FROM EMPLEADO e
+        INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+        LEFT JOIN ROL r ON e.id_rol = r.id_rol
+        LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+        LEFT JOIN DISTRITO d ON e.id_distrito = d.id_distrito
+        LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
+        LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+        WHERE e.id_empleado = %s
+    """
+    cursor.execute(query, (id_empleado,))
+    resultado = cursor.fetchone()
+    cursor.close()
+    conexion.close()
+    
+    if not resultado:
+        flash('Empleado no encontrado', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+    
+    # Normalizar sexo
+    sexo_val = resultado.get('sexo')
+    if sexo_val in (None, ''):
+        sexo_empleado = 'No especificado'
+    elif sexo_val.upper() == 'M' or sexo_val == 'Masculino':
+        sexo_empleado = 'Masculino'
+    elif sexo_val.upper() == 'F' or sexo_val == 'Femenino':
+        sexo_empleado = 'Femenino'
+    else:
+        sexo_empleado = sexo_val
+
+    usuario = {
+        'tipo_usuario': 'empleado',
+        'id_usuario': resultado['id_usuario'],
+        'id_empleado': resultado['id_empleado'],
+        'correo': resultado['correo'],
+        'telefono': resultado['telefono'],
+        'estado': resultado['estado'],
+        'fecha_creacion': resultado['fecha_creacion'],
+        'nombre_empleado': f"{resultado['nombres']} {resultado['apellidos']}",
+        'documento_empleado': resultado['documento_identidad'],
+        'sexo_empleado': sexo_empleado,
+        'fecha_nacimiento': resultado.get('fecha_nacimiento'),
+        'rol_empleado': resultado['rol'],
+        'especialidad_empleado': resultado['especialidad'],
+        'distrito': resultado['distrito'],
+        'provincia': resultado['provincia'],
+        'departamento': resultado['departamento'],
+        'origen': 'gestion_usuarios'  # Indicar que viene de gestión de usuarios
+    }
+    
+    return render_template('consultarperfil.html', usuario=usuario)
+
+@cuentas_bp.route('/ver-perfil-paciente/<int:id_paciente>')
+def ver_perfil_paciente(id_paciente):
+    """Ver Perfil de un Paciente específico"""
+    # Verificar si hay sesión activa
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    # Verificar que sea empleado
+    if session.get('tipo_usuario') != 'empleado':
+        return redirect(url_for('home'))
+    
+    import bd
+    conexion = bd.obtener_conexion()
+    cursor = conexion.cursor()
+    
+    # Obtener información completa del paciente
+    query = """
+        SELECT 
+            u.id_usuario,
+            u.correo,
+            u.telefono,
+            u.estado,
+            u.fecha_creacion,
+            p.id_paciente,
+            p.nombres,
+            p.apellidos,
+            p.documento_identidad,
+            p.sexo,
+            p.fecha_nacimiento,
+            d.nombre as distrito,
+            prov.nombre as provincia,
+            dep.nombre as departamento
+        FROM PACIENTE p
+        INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+        LEFT JOIN DISTRITO d ON p.id_distrito = d.id_distrito
+        LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
+        LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+        WHERE p.id_paciente = %s
+    """
+    cursor.execute(query, (id_paciente,))
+    resultado = cursor.fetchone()
+    cursor.close()
+    conexion.close()
+    
+    if not resultado:
+        flash('Paciente no encontrado', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
+    
+    # Normalizar sexo
+    sexo_val = resultado.get('sexo')
+    if sexo_val in (None, ''):
+        sexo_paciente = 'No especificado'
+    elif sexo_val.upper() == 'M' or sexo_val == 'Masculino':
+        sexo_paciente = 'Masculino'
+    elif sexo_val.upper() == 'F' or sexo_val == 'Femenino':
+        sexo_paciente = 'Femenino'
+    else:
+        sexo_paciente = sexo_val
+
+    usuario = {
+        'tipo_usuario': 'paciente',
+        'id_usuario': resultado['id_usuario'],
+        'id_paciente': resultado['id_paciente'],
+        'correo': resultado['correo'],
+        'telefono': resultado['telefono'],
+        'estado': resultado['estado'],
+        'fecha_creacion': resultado['fecha_creacion'],
+        'nombre_paciente': f"{resultado['nombres']} {resultado['apellidos']}",
+        'documento_paciente': resultado['documento_identidad'],
+        'sexo_paciente': sexo_paciente,
+        'fecha_nacimiento': resultado['fecha_nacimiento'],
+        'distrito': resultado['distrito'],
+        'provincia': resultado['provincia'],
+        'departamento': resultado['departamento'],
+        'origen': 'gestion_usuarios'  # Indicar que viene de gestión de usuarios
+    }
+    
+    return render_template('consultarperfil.html', usuario=usuario)
+
 @cuentas_bp.route('/registrar-cuenta-paciente', methods=['GET', 'POST'])
 def registrar_cuenta_paciente():
     """Registrar Cuenta de Paciente"""
@@ -337,7 +502,7 @@ def registrar_cuenta_paciente():
 
 @cuentas_bp.route('/gestionar-cuentas-internas', methods=['GET', 'POST'])
 def gestionar_cuentas_internas():
-    """Gestionar Cuentas Internas - Listar, Crear, Buscar Empleados"""
+    """Gestionar Cuentas Internas - Empleados y Pacientes con Tabs"""
     # Verificar si hay sesión activa
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
@@ -345,6 +510,9 @@ def gestionar_cuentas_internas():
     # Verificar que sea empleado
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
+    
+    # Obtener tab activo (por defecto: empleados)
+    tab_activo = request.args.get('tab', 'empleados')
 
     # Si es POST, crear nuevo empleado
     if request.method == 'POST':
@@ -532,13 +700,21 @@ def gestionar_cuentas_internas():
             flash(f'Error al procesar la solicitud: {str(e)}', 'error')
             return redirect(url_for('cuentas.gestionar_cuentas_internas'))
     
-    # GET - Listar o buscar empleados
+    # GET - Listar o buscar empleados y pacientes
     termino_busqueda = request.args.get('q', '').strip()
     
+    # EMPLEADOS
     if termino_busqueda:
         empleados = Empleado.buscar(termino_busqueda)
     else:
         empleados = Empleado.obtener_todos()
+    
+    # PACIENTES
+    from models.paciente import Paciente
+    if termino_busqueda:
+        pacientes = Paciente.buscar(termino_busqueda)
+    else:
+        pacientes = Paciente.obtener_todos()
     
     # Obtener roles para el formulario
     from bd import obtener_conexion
@@ -550,10 +726,12 @@ def gestionar_cuentas_internas():
     finally:
         conexion.close()
     
-    return render_template('gestionarCuentasInternas.html', 
+    return render_template('gestionarCuentasInternas_new.html', 
                          empleados=empleados,
+                         pacientes=pacientes,
                          roles=roles,
-                         termino_busqueda=termino_busqueda)
+                         termino_busqueda=termino_busqueda,
+                         tab_activo=tab_activo)
 
 @cuentas_bp.route('/editar-empleado/<int:id_empleado>', methods=['GET', 'POST'])
 def editar_empleado(id_empleado):

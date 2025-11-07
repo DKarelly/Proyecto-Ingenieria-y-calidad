@@ -1,5 +1,6 @@
 from bd import obtener_conexion
 from datetime import datetime
+from utils.email_service import email_service
 
 class Notificacion:
     def __init__(self, id_notificacion=None, titulo=None, mensaje=None,
@@ -16,7 +17,7 @@ class Notificacion:
 
     @staticmethod
     def crear(titulo, mensaje, tipo, id_paciente, id_reserva=None):
-        """Crea una nueva notificación"""
+        """Crea una nueva notificación y envía email al paciente"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -36,7 +37,42 @@ class Notificacion:
                          VALUES (%s, %s, %s, %s, %s, %s, %s)"""
                 cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, id_paciente))
                 conexion.commit()
-                return {'success': True, 'id_notificacion': cursor.lastrowid}
+                id_notificacion = cursor.lastrowid
+                
+                # Obtener datos del paciente para enviar email
+                sql_paciente = """
+                    SELECT CONCAT(p.nombres, ' ', p.apellidos) as nombre_completo, u.correo
+                    FROM PACIENTE p
+                    INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+                    WHERE p.id_paciente = %s
+                """
+                cursor.execute(sql_paciente, (id_paciente,))
+                paciente = cursor.fetchone()
+                
+                # Enviar email al paciente
+                if paciente and paciente['correo']:
+                    resultado_email = email_service.enviar_notificacion_email(
+                        destinatario_email=paciente['correo'],
+                        destinatario_nombre=paciente['nombre_completo'],
+                        titulo=titulo,
+                        mensaje=mensaje,
+                        tipo=tipo
+                    )
+                    
+                    return {
+                        'success': True, 
+                        'id_notificacion': id_notificacion,
+                        'email_enviado': resultado_email['success'],
+                        'email_mensaje': resultado_email.get('message', '')
+                    }
+                else:
+                    return {
+                        'success': True, 
+                        'id_notificacion': id_notificacion,
+                        'email_enviado': False,
+                        'email_mensaje': 'Correo del paciente no disponible'
+                    }
+                    
         except Exception as e:
             conexion.rollback()
             return {'error': str(e)}

@@ -56,7 +56,8 @@ def reportes():
 def panel():
     """Dashboard principal del trabajador (conmutador por subsistema vía query param)."""
     subsistema = request.args.get('subsistema')
-    return render_template('panel_trabajador_limpio.html', subsistema=subsistema)
+    # Unificar visualización en el dashboard principal
+    return redirect(url_for('admin_panel', subsistema=subsistema))
 
 @trabajador_bp.route('/panel')
 @trabajador_required

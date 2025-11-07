@@ -53,21 +53,16 @@ def test_panel_trabajador():
     except Exception as e:
         print(f"❌ Error al verificar rutas: {e}")
     
-    # Test 4: Verificar template
+    # Test 4: Verificar template principal
     print("\n[TEST 4] Verificando templates...")
     import os
-    legacy_path = os.path.join('templates', 'panel_trabajador.html')
-    clean_path = os.path.join('templates', 'panel_trabajador_limpio.html')
-    if os.path.exists(clean_path):
-        print("✅ Template 'panel_trabajador_limpio.html' existe")
-        file_size = os.path.getsize(clean_path)
-        print(f"   Tamaño: {file_size} bytes")
-    elif os.path.exists(legacy_path):
-        print("⚠️  Aviso: usando template legado 'panel_trabajador.html'")
-        file_size = os.path.getsize(legacy_path)
+    panel_path = os.path.join('templates', 'panel.html')
+    if os.path.exists(panel_path):
+        print("✅ Template 'panel.html' existe (dashboard principal)")
+        file_size = os.path.getsize(panel_path)
         print(f"   Tamaño: {file_size} bytes")
     else:
-        print("❌ No se encontró ni 'panel_trabajador_limpio.html' ni 'panel_trabajador.html'")
+        print("❌ No se encontró 'panel.html' (dashboard principal)")
     
     # Test 5: Verificar modificaciones en usuarios.py
     print("\n[TEST 5] Verificando lógica de redirección en login...")
