@@ -36,13 +36,13 @@
         </h1>
 
         <!-- Dashboard de Estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <!-- Total Servicios -->
             <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-600 text-sm font-semibold uppercase tracking-wide">Servicios</p>
-                        <p class="text-3xl font-bold text-blue-800 mt-2">{{ servicios|length }}</p>
+                        <p class="text-3xl font-bold text-blue-800 mt-2" id="servicios-count">{{ servicios|length }}</p>
                     </div>
                     <div class="bg-blue-500 bg-opacity-20 rounded-full p-4">
                         <i class="fas fa-stethoscope text-blue-600 text-2xl"></i>
@@ -55,36 +55,10 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Médicos</p>
-                        <p class="text-3xl font-bold text-green-800 mt-2">{{ medicos|length }}</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2" id="medicos-count">{{ medicos|length }}</p>
                     </div>
                     <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
                         <i class="fas fa-user-md text-green-600 text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Horarios Disponibles -->
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Horarios</p>
-                        <p class="text-3xl font-bold text-purple-800 mt-2" id="horarios-count">0</p>
-                    </div>
-                    <div class="bg-purple-500 bg-opacity-20 rounded-full p-4">
-                        <i class="fas fa-clock text-purple-600 text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Estado Reserva -->
-            <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 border-l-4 border-cyan-500 rounded-lg p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-cyan-600 text-sm font-semibold uppercase tracking-wide">Estado</p>
-                        <p class="text-sm font-bold text-cyan-800 mt-2" id="estado-reserva">Sin iniciar</p>
-                    </div>
-                    <div class="bg-cyan-500 bg-opacity-20 rounded-full p-4">
-                        <i class="fas fa-info-circle text-cyan-600 text-2xl"></i>
                     </div>
                 </div>
             </div>
@@ -135,14 +109,32 @@
             </div>
         </div>
 
-        <!-- Paso 2: Seleccionar Servicio y Médico -->
+        <!-- Paso 2: Seleccionar Tipo, Servicio y Médico -->
         <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-6">
             <div class="flex items-center mb-4">
                 <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-cyan-500 text-white rounded-full font-bold mr-3">2</div>
-                <h2 class="text-lg font-semibold text-gray-800">Seleccionar Servicio y Médico</h2>
+                <h2 class="text-lg font-semibold text-gray-800">Seleccionar Tipo, Servicio y Médico</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Tipo de Servicio -->
+                <div>
+                    <label for="select-tipo-servicio" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-list mr-1"></i>
+                        TIPO DE SERVICIO
+                    </label>
+                    <select
+                        id="select-tipo-servicio"
+                        class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                    >
+                        <option value="">Todos los tipos</option>
+                        {% for tipo in tipos_servicio %}
+                        <option value="{{ tipo.id_tipo_servicio }}">{{ tipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Servicio -->
                 <div>
                     <label for="select-service" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
                         <i class="fas fa-stethoscope mr-1"></i>
@@ -154,11 +146,12 @@
                     >
                         <option value="">Seleccione un servicio</option>
                         {% for s in servicios %}
-                        <option value="{{ s.id_servicio }}">{{ s.nombre }}{% if s.especialidad %} — {{ s.especialidad }}{% endif %}</option>
+                        <option value="{{ s.id_servicio }}" data-tipo="{{ s.id_tipo_servicio }}" data-especialidad="{{ s.id_especialidad }}">{{ s.nombre }}{% if s.especialidad %} — {{ s.especialidad }}{% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
 
+                <!-- Médico -->
                 <div>
                     <label for="select-medic" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
                         <i class="fas fa-user-doctor mr-1"></i>
@@ -170,11 +163,12 @@
                     >
                         <option value="">Cualquier médico disponible</option>
                         {% for m in medicos %}
-                        <option value="{{ m.id_empleado }}">{{ m.nombres }} {{ m.apellidos }}{% if m.especialidad %} — {{ m.especialidad }}{% endif %}</option>
+                        <option value="{{ m.id_empleado }}" data-especialidad="{{ m.id_especialidad }}">{{ m.nombres }} {{ m.apellidos }}{% if m.especialidad %} — {{ m.especialidad }}{% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
 
+                <!-- Botón Buscar -->
                 <div class="flex items-end">
                     <button
                         id="btn-buscar-horarios"
@@ -309,13 +303,15 @@
         let pacienteSeleccionado = null;
         let horarioSeleccionado = null;
         let horarioData = null;
+        let todosLosServicios = []; // Array para almacenar todos los servicios
+        let todosMedicos = []; // Array para almacenar todos los médicos
 
         // Elementos del DOM (se inicializarán cuando el DOM esté listo)
         let dniInput, btnBuscarPaciente, pacienteInfo;
-        let servicioSelect, medicoSelect, btnBuscarHorarios;
+        let tipoServicioSelect, servicioSelect, medicoSelect, btnBuscarHorarios;
         let horariosPlaceholder, horariosLoading, horariosVacio, horariosPicker;
         let btnCrearReserva, btnLimpiarTodo;
-        let horariosCount, estadoReserva, resumenReserva;
+        let serviciosCount, medicosCount, resumenReserva;
 
         // Esperar a que el DOM esté completamente cargado
         document.addEventListener('DOMContentLoaded', function() {
@@ -324,6 +320,7 @@
             btnBuscarPaciente = document.getElementById('btn-buscar-paciente');
             pacienteInfo = document.getElementById('paciente-info');
 
+            tipoServicioSelect = document.getElementById('select-tipo-servicio');
             servicioSelect = document.getElementById('select-service');
             medicoSelect = document.getElementById('select-medic');
             btnBuscarHorarios = document.getElementById('btn-buscar-horarios');
@@ -336,9 +333,13 @@
             btnCrearReserva = document.getElementById('btn-crear-reserva');
             btnLimpiarTodo = document.getElementById('btn-limpiar-todo');
 
-            horariosCount = document.getElementById('horarios-count');
-            estadoReserva = document.getElementById('estado-reserva');
+            serviciosCount = document.getElementById('servicios-count');
+            medicosCount = document.getElementById('medicos-count');
             resumenReserva = document.getElementById('resumen-reserva');
+
+            // Guardar todos los servicios y médicos originales
+            todosLosServicios = Array.from(servicioSelect.options).slice(1); // Excluir la primera opción
+            todosMedicos = Array.from(medicoSelect.options).slice(1); // Excluir la primera opción
 
             // Verificar que todos los elementos existan
             if (!dniInput || !btnBuscarPaciente || !servicioSelect || !medicoSelect) {
@@ -351,6 +352,12 @@
             btnBuscarHorarios.addEventListener('click', buscarHorarios);
             btnCrearReserva.addEventListener('click', crearReserva);
             btnLimpiarTodo.addEventListener('click', limpiarTodo);
+
+            // Filtrar servicios cuando cambia el tipo de servicio
+            tipoServicioSelect.addEventListener('change', filtrarServicios);
+
+            // Filtrar médicos cuando cambia el servicio
+            servicioSelect.addEventListener('change', filtrarMedicos);
 
             // Event listener for programacion selection
             document.addEventListener('click', (e) => {
@@ -403,6 +410,82 @@
                 if (e.key === 'Enter') buscarPaciente();
             });
         }); // Fin de DOMContentLoaded
+
+        // Función para filtrar servicios según el tipo seleccionado
+        function filtrarServicios() {
+            const tipoSeleccionado = tipoServicioSelect.value;
+            
+            // Limpiar el select de servicios
+            servicioSelect.innerHTML = '<option value="">Seleccione un servicio</option>';
+            
+            // Si no hay tipo seleccionado, mostrar todos los servicios
+            if (!tipoSeleccionado) {
+                todosLosServicios.forEach(option => {
+                    servicioSelect.appendChild(option.cloneNode(true));
+                });
+                serviciosCount.textContent = todosLosServicios.length;
+            } else {
+                // Filtrar servicios por tipo
+                const serviciosFiltrados = todosLosServicios.filter(option => {
+                    return option.dataset.tipo === tipoSeleccionado;
+                });
+                
+                serviciosFiltrados.forEach(option => {
+                    servicioSelect.appendChild(option.cloneNode(true));
+                });
+                
+                serviciosCount.textContent = serviciosFiltrados.length;
+            }
+            
+            // Resetear médicos cuando cambian los servicios
+            medicoSelect.value = '';
+            resetearMedicos();
+        }
+
+        // Función para filtrar médicos según el servicio seleccionado
+        function filtrarMedicos() {
+            const servicioSeleccionado = servicioSelect.value;
+            
+            if (!servicioSeleccionado) {
+                resetearMedicos();
+                return;
+            }
+            
+            // Obtener la especialidad del servicio seleccionado
+            const opcionServicio = servicioSelect.options[servicioSelect.selectedIndex];
+            const especialidadServicio = opcionServicio.dataset.especialidad;
+            
+            // Limpiar el select de médicos
+            medicoSelect.innerHTML = '<option value="">Cualquier médico disponible</option>';
+            
+            // Si el servicio no tiene especialidad, mostrar todos los médicos
+            if (!especialidadServicio) {
+                todosMedicos.forEach(option => {
+                    medicoSelect.appendChild(option.cloneNode(true));
+                });
+                medicosCount.textContent = todosMedicos.length;
+            } else {
+                // Filtrar médicos por especialidad
+                const medicosFiltrados = todosMedicos.filter(option => {
+                    return option.dataset.especialidad === especialidadServicio;
+                });
+                
+                medicosFiltrados.forEach(option => {
+                    medicoSelect.appendChild(option.cloneNode(true));
+                });
+                
+                medicosCount.textContent = medicosFiltrados.length;
+            }
+        }
+
+        // Función para resetear médicos (mostrar todos)
+        function resetearMedicos() {
+            medicoSelect.innerHTML = '<option value="">Cualquier médico disponible</option>';
+            todosMedicos.forEach(option => {
+                medicoSelect.appendChild(option.cloneNode(true));
+            });
+            medicosCount.textContent = todosMedicos.length;
+        }
 
         // Función para buscar paciente
         async function buscarPaciente() {
@@ -549,7 +632,6 @@
             horarioSeleccionado = elemento.dataset.id;
             horarioData = data;
 
-            estadoReserva.textContent = 'Horario seleccionado';
             actualizarResumen();
             actualizarBotonCrear();
         }
@@ -569,7 +651,6 @@
             horarioSeleccionado = data.id_programacion; // Usar id_programacion como horarioSeleccionado
             horarioData = data;
 
-            estadoReserva.textContent = 'Programación seleccionada';
             actualizarResumen();
             actualizarBotonCrear();
         }
@@ -662,6 +743,7 @@
         // Limpiar todo
         function limpiarTodo() {
             dniInput.value = '';
+            tipoServicioSelect.value = '';
             servicioSelect.value = '';
             medicoSelect.value = '';
 
@@ -678,8 +760,9 @@
             horarioSeleccionado = null;
             horarioData = null;
 
-            horariosCount.textContent = '0';
-            estadoReserva.textContent = 'Sin iniciar';
+            // Resetear contadores
+            resetearMedicos();
+            filtrarServicios();
 
             actualizarBotonCrear();
             mostrarNotificacion('Formulario limpiado', 'success');
