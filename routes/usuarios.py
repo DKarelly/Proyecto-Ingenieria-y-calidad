@@ -63,7 +63,9 @@ def login():
             id_rol = usuario.get('id_rol')
             if id_rol == 1:  # Administrador
                 return redirect(url_for('admin.panel'))
-            else:  # Otros empleados (médico, recepcionista, farmacéutico, laboratorista)
+            elif id_rol == 2:  # Médico
+                return redirect(url_for('medico.panel'))
+            else:  # Otros empleados (recepcionista, farmacéutico, laboratorista)
                 return redirect(url_for('trabajador.panel'))
         else:  # Paciente
             return redirect(url_for('usuarios.perfil'))
