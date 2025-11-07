@@ -127,16 +127,17 @@ class Reserva:
                            prog.fecha as fecha_cita,
                            prog.hora_inicio,
                            prog.hora_fin,
+                           prog.id_servicio,
                            s.nombre as servicio,
                            ts.nombre as tipo_servicio,
                            CONCAT(e.nombres, ' ', e.apellidos) as nombre_empleado,
                            esp.nombre as especialidad
                     FROM RESERVA r
                     INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-                    INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                    LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
                     LEFT JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
-                    INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
-                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                    LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
                     WHERE r.id_paciente = %s
                     ORDER BY prog.fecha DESC, prog.hora_inicio DESC

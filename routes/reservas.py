@@ -7,7 +7,7 @@ from models.paciente import Paciente
 from models.reserva import Reserva
 from models.programacion import Programacion
 from bd import obtener_conexion
-from datetime import date
+from datetime import date, datetime, timedelta
 from models.notificacion import Notificacion
 
 reservas_bp = Blueprint('reservas', __name__)
@@ -562,8 +562,35 @@ def api_reservas_por_paciente():
         return jsonify({'error': 'Parámetro id_paciente requerido'}), 400
     try:
         reservas = Reserva.obtener_por_paciente(int(id_paciente))
-        return jsonify({'reservas': reservas})
+        
+        # Serializar para JSON (convertir datetime y timedelta)
+        reservas_serializadas = []
+        for r in reservas:
+            r_dict = dict(r)
+            
+            # Convertir fecha_registro y fecha_cita
+            for fecha_key in ['fecha_registro', 'fecha_cita']:
+                if r_dict.get(fecha_key) and hasattr(r_dict[fecha_key], 'isoformat'):
+                    r_dict[fecha_key] = r_dict[fecha_key].isoformat()
+            
+            # Convertir timedelta a HH:MM para hora_registro, hora_inicio, hora_fin
+            for hora_key in ['hora_registro', 'hora_inicio', 'hora_fin']:
+                if r_dict.get(hora_key):
+                    if isinstance(r_dict[hora_key], timedelta):
+                        total_seconds = int(r_dict[hora_key].total_seconds())
+                        hours = total_seconds // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        r_dict[hora_key] = f"{hours:02d}:{minutes:02d}"
+                    else:
+                        r_dict[hora_key] = str(r_dict[hora_key])[:5]
+            
+            reservas_serializadas.append(r_dict)
+        
+        return jsonify({'reservas': reservas_serializadas})
     except Exception as e:
+        print(f"[API reservas-por-paciente] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
