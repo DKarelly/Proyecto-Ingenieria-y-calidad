@@ -1774,3 +1774,556 @@ def api_obtener_pacientes():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+# ====================== REPORTE DE EFICIENCIA OPERATIVA ======================
+
+@reportes_bp.route("/eficiencia-operativa")
+def reporte_eficiencia():
+    """Renderiza el template del reporte de eficiencia operativa"""
+    if "usuario_id" not in session:
+        return redirect(url_for("home"))
+    if session.get("tipo_usuario") != "empleado":
+        return redirect(url_for("home"))
+    return render_template("ReporteEficienciaOperativa.html")
+
+
+@reportes_bp.route("/api/especialidades", methods=["GET"])
+def api_especialidades():
+    """Obtiene lista de especialidades"""
+    try:
+        conexion = bd.obtener_conexion()
+        cursor = conexion.cursor(pymysql.cursors.DictCursor)
+        
+        sql = "SELECT id_especialidad, nombre FROM ESPECIALIDAD ORDER BY nombre"
+        cursor.execute(sql)
+        especialidades = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        return jsonify({"especialidades": especialidades})
+        
+    except Exception as e:
+        print(f"Error al obtener especialidades: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@reportes_bp.route("/api/eficiencia-operativa", methods=["POST"])
+def api_eficiencia_operativa():
+    """Genera el reporte de eficiencia operativa"""
+    try:
+        data = request.get_json()
+        fecha_inicio = data.get('fecha_inicio')
+        fecha_fin = data.get('fecha_fin')
+        id_especialidad = data.get('id_especialidad')
+        
+        conexion = bd.obtener_conexion()
+        cursor = conexion.cursor(pymysql.cursors.DictCursor)
+        
+        # Filtro de especialidad
+        filtro_especialidad = ""
+        params_base = [fecha_inicio, fecha_fin]
+        
+        if id_especialidad:
+            filtro_especialidad = "AND e.id_especialidad = %s"
+            params_base.append(id_especialidad)
+        
+        # ========== KPIs ==========
+        
+        # 1. Tiempo promedio de espera (días entre registro y fecha programada)
+        sql_tiempo_espera = f"""
+            SELECT AVG(DATEDIFF(p.fecha, r.fecha_registro)) as promedio_dias
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            AND r.estado != 'Cancelada'
+            {filtro_especialidad}
+        """
+        cursor.execute(sql_tiempo_espera, params_base)
+        tiempo_espera = cursor.fetchone()
+        
+        # 2. Tasa de reprogramación
+        sql_reprogramacion = f"""
+            SELECT 
+                COUNT(DISTINCT r.id_reserva) as total_reservas,
+                COUNT(DISTINCT CASE WHEN r.estado_cancelacion = 'Solicitada' THEN r.id_reserva END) as reprogramadas
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+        """
+        cursor.execute(sql_reprogramacion, params_base)
+        reprogramacion = cursor.fetchone()
+        
+        # 3. Tasa de cancelación
+        sql_cancelacion = f"""
+            SELECT 
+                COUNT(DISTINCT r.id_reserva) as total_reservas,
+                COUNT(DISTINCT CASE WHEN r.estado_cancelacion = 'Cancelada' OR r.estado = 'Cancelada' THEN r.id_reserva END) as canceladas
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+        """
+        cursor.execute(sql_cancelacion, params_base)
+        cancelacion = cursor.fetchone()
+        
+        # 4. Resolución en primera cita (citas completadas sin exámenes ni operaciones)
+        sql_resolucion = f"""
+            SELECT 
+                COUNT(DISTINCT c.id_cita) as total_citas,
+                COUNT(DISTINCT CASE 
+                    WHEN NOT EXISTS (
+                        SELECT 1 FROM EXAMEN ex WHERE ex.id_reserva = r.id_reserva
+                    ) AND NOT EXISTS (
+                        SELECT 1 FROM OPERACION op WHERE op.id_reserva = r.id_reserva
+                    ) THEN c.id_cita 
+                END) as sin_procedimientos
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE c.fecha_cita BETWEEN %s AND %s
+            AND c.estado = 'Completada'
+            {filtro_especialidad}
+        """
+        cursor.execute(sql_resolucion, params_base)
+        resolucion = cursor.fetchone()
+        
+        # Calcular KPIs
+        kpis = {
+            "tiempo_promedio_espera": float(tiempo_espera['promedio_dias'] or 0),
+            "tasa_reprogramacion": (reprogramacion['reprogramadas'] / reprogramacion['total_reservas'] * 100) if reprogramacion['total_reservas'] > 0 else 0,
+            "tasa_cancelacion": (cancelacion['canceladas'] / cancelacion['total_reservas'] * 100) if cancelacion['total_reservas'] > 0 else 0,
+            "resolucion_primera_cita": (resolucion['sin_procedimientos'] / resolucion['total_citas'] * 100) if resolucion['total_citas'] > 0 else 0
+        }
+        
+        # ========== DEMANDA ==========
+        
+        # Reservas por día de semana
+        sql_dia_semana = f"""
+            SELECT DAYOFWEEK(p.fecha) as dia, COUNT(*) as cantidad
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+            GROUP BY dia
+            ORDER BY dia
+        """
+        cursor.execute(sql_dia_semana, params_base)
+        por_dia_raw = cursor.fetchall()
+        
+        # Convertir a array (domingo=1 en MySQL, necesitamos lunes=0)
+        por_dia = [0] * 7
+        for row in por_dia_raw:
+            dia_index = (row['dia'] + 5) % 7  # Convertir domingo=1 a lunes=0
+            por_dia[dia_index] = row['cantidad']
+        
+        # Reservas por horario
+        sql_horario = f"""
+            SELECT 
+                CASE 
+                    WHEN HOUR(p.hora_inicio) >= 8 AND HOUR(p.hora_inicio) < 10 THEN 0
+                    WHEN HOUR(p.hora_inicio) >= 10 AND HOUR(p.hora_inicio) < 12 THEN 1
+                    WHEN HOUR(p.hora_inicio) >= 12 AND HOUR(p.hora_inicio) < 14 THEN 2
+                    WHEN HOUR(p.hora_inicio) >= 14 AND HOUR(p.hora_inicio) < 16 THEN 3
+                    WHEN HOUR(p.hora_inicio) >= 16 AND HOUR(p.hora_inicio) < 18 THEN 4
+                END as horario,
+                COUNT(*) as cantidad
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+            AND HOUR(p.hora_inicio) BETWEEN 8 AND 17
+            GROUP BY horario
+            ORDER BY horario
+        """
+        cursor.execute(sql_horario, params_base)
+        por_horario_raw = cursor.fetchall()
+        
+        por_horario = [0] * 5
+        for row in por_horario_raw:
+            if row['horario'] is not None:
+                por_horario[row['horario']] = row['cantidad']
+        
+        # Heatmap (día x horario)
+        sql_heatmap = f"""
+            SELECT 
+                DAYOFWEEK(p.fecha) as dia,
+                CASE 
+                    WHEN HOUR(p.hora_inicio) >= 8 AND HOUR(p.hora_inicio) < 10 THEN 0
+                    WHEN HOUR(p.hora_inicio) >= 10 AND HOUR(p.hora_inicio) < 12 THEN 1
+                    WHEN HOUR(p.hora_inicio) >= 12 AND HOUR(p.hora_inicio) < 14 THEN 2
+                    WHEN HOUR(p.hora_inicio) >= 14 AND HOUR(p.hora_inicio) < 16 THEN 3
+                    WHEN HOUR(p.hora_inicio) >= 16 AND HOUR(p.hora_inicio) < 18 THEN 4
+                END as horario,
+                COUNT(*) as cantidad
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+            AND HOUR(p.hora_inicio) BETWEEN 8 AND 17
+            GROUP BY dia, horario
+        """
+        cursor.execute(sql_heatmap, params_base)
+        heatmap_raw = cursor.fetchall()
+        
+        # Inicializar matriz 5x7 (5 horarios x 7 días)
+        heatmap = [[0] * 7 for _ in range(5)]
+        for row in heatmap_raw:
+            if row['horario'] is not None:
+                dia_index = (row['dia'] + 5) % 7
+                heatmap[row['horario']][dia_index] = row['cantidad']
+        
+        demanda = {
+            "por_dia": por_dia,
+            "por_horario": por_horario,
+            "heatmap": heatmap
+        }
+        
+        # ========== FLUJO DE ATENCIÓN ==========
+        
+        sql_flujo = f"""
+            SELECT 
+                COUNT(DISTINCT c.id_cita) as total_citas,
+                COUNT(DISTINCT CASE 
+                    WHEN NOT EXISTS (SELECT 1 FROM EXAMEN ex WHERE ex.id_reserva = r.id_reserva)
+                    AND NOT EXISTS (SELECT 1 FROM OPERACION op WHERE op.id_reserva = r.id_reserva)
+                    THEN c.id_cita 
+                END) as sin_procedimientos,
+                COUNT(DISTINCT CASE 
+                    WHEN EXISTS (SELECT 1 FROM EXAMEN ex WHERE ex.id_reserva = r.id_reserva)
+                    AND NOT EXISTS (SELECT 1 FROM OPERACION op WHERE op.id_reserva = r.id_reserva)
+                    THEN c.id_cita 
+                END) as con_examenes,
+                COUNT(DISTINCT CASE 
+                    WHEN NOT EXISTS (SELECT 1 FROM EXAMEN ex WHERE ex.id_reserva = r.id_reserva)
+                    AND EXISTS (SELECT 1 FROM OPERACION op WHERE op.id_reserva = r.id_reserva)
+                    THEN c.id_cita 
+                END) as con_operaciones,
+                COUNT(DISTINCT CASE 
+                    WHEN EXISTS (SELECT 1 FROM EXAMEN ex WHERE ex.id_reserva = r.id_reserva)
+                    AND EXISTS (SELECT 1 FROM OPERACION op WHERE op.id_reserva = r.id_reserva)
+                    THEN c.id_cita 
+                END) as con_ambos
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE c.fecha_cita BETWEEN %s AND %s
+            AND c.estado = 'Completada'
+            {filtro_especialidad}
+        """
+        cursor.execute(sql_flujo, params_base)
+        flujo = cursor.fetchone()
+        
+        # ========== ANÁLISIS POR ESPECIALIDAD ==========
+        
+        sql_especialidades = """
+            SELECT 
+                esp.nombre,
+                COUNT(DISTINCT r.id_reserva) as total,
+                COUNT(DISTINCT CASE WHEN r.estado = 'Completada' THEN r.id_reserva END) as completadas,
+                COUNT(DISTINCT CASE WHEN r.estado = 'Cancelada' OR r.estado_cancelacion = 'Cancelada' THEN r.id_reserva END) as canceladas,
+                AVG(DATEDIFF(p.fecha, r.fecha_registro)) as tiempo_espera
+            FROM ESPECIALIDAD esp
+            LEFT JOIN EMPLEADO e ON esp.id_especialidad = e.id_especialidad
+            LEFT JOIN HORARIO h ON e.id_empleado = h.id_empleado
+            LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario
+            LEFT JOIN RESERVA r ON p.id_programacion = r.id_programacion
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            GROUP BY esp.id_especialidad, esp.nombre
+            HAVING total > 0
+            ORDER BY total DESC
+        """
+        cursor.execute(sql_especialidades, [fecha_inicio, fecha_fin])
+        especialidades = cursor.fetchall()
+        
+        # Convertir Decimal a float
+        for esp in especialidades:
+            esp['tiempo_espera'] = float(esp['tiempo_espera'] or 0)
+        
+        cursor.close()
+        conexion.close()
+        
+        return jsonify({
+            "kpis": kpis,
+            "demanda": demanda,
+            "flujo": flujo,
+            "especialidades": especialidades
+        })
+        
+    except Exception as e:
+        print(f"Error al generar reporte de eficiencia: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+# ============================================================================
+# REPORTE DE DEMANDA Y PREFERENCIAS
+# ============================================================================
+
+@reportes_bp.route("/demanda-preferencias")
+def demanda_preferencias():
+    """Renderiza la página del reporte de Demanda y Preferencias"""
+    if "usuario_id" not in session:
+        return redirect(url_for("home"))
+    if session.get("tipo_usuario") != "empleado":
+        return redirect(url_for("home"))
+    return render_template("ReporteDemandaPreferencias.html")
+
+
+@reportes_bp.route("/api/demanda-preferencias/especialidades", methods=["GET"])
+def get_especialidades_demanda():
+    """Obtiene lista de especialidades para el filtro"""
+    try:
+        conexion, cursor = obtener_conexion_dict()
+        
+        sql = """
+            SELECT DISTINCT esp.id_especialidad, esp.nombre
+            FROM ESPECIALIDAD esp
+            INNER JOIN EMPLEADO e ON esp.id_especialidad = e.id_especialidad
+            INNER JOIN HORARIO h ON e.id_empleado = h.id_empleado
+            WHERE h.estado = 'Activo'
+            ORDER BY esp.nombre
+        """
+        cursor.execute(sql)
+        especialidades = cursor.fetchall()
+        
+        cursor.close()
+        conexion.close()
+        
+        return jsonify(especialidades)
+        
+    except Exception as e:
+        print(f"Error al obtener especialidades: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@reportes_bp.route("/api/demanda-preferencias", methods=["POST"])
+def generar_reporte_demanda_preferencias():
+    """Genera el reporte de demanda y preferencias"""
+    try:
+        data = request.get_json()
+        fecha_inicio = data.get('fecha_inicio')
+        fecha_fin = data.get('fecha_fin')
+        id_especialidad = data.get('id_especialidad')
+        
+        if not fecha_inicio or not fecha_fin:
+            return jsonify({"error": "Fechas requeridas"}), 400
+            
+        conexion, cursor = obtener_conexion_dict()
+        
+        # Filtro de especialidad
+        filtro_especialidad = ""
+        params_especialidad = [fecha_inicio, fecha_fin]
+        if id_especialidad and id_especialidad != "":
+            filtro_especialidad = " AND esp.id_especialidad = %s"
+            params_especialidad.append(id_especialidad)
+        
+        # 1. KPIs Generales
+        sql_kpis = f"""
+            SELECT 
+                COUNT(DISTINCT r.id_reserva) as total_reservas,
+                COUNT(DISTINCT r.id_paciente) as pacientes_unicos,
+                COUNT(DISTINCT p.id_programacion) as servicios_diferentes,
+                AVG(DATEDIFF(p.fecha, r.fecha_registro)) as dias_anticipacion
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+        """
+        cursor.execute(sql_kpis, params_especialidad)
+        kpis = cursor.fetchone()
+        
+        # Convertir a tipos nativos
+        kpis = {
+            'total_reservas': int(kpis['total_reservas'] or 0),
+            'pacientes_unicos': int(kpis['pacientes_unicos'] or 0),
+            'servicios_diferentes': int(kpis['servicios_diferentes'] or 0),
+            'dias_anticipacion': float(kpis['dias_anticipacion'] or 0)
+        }
+        
+        # 2. Top Servicios más solicitados
+        sql_top_servicios = f"""
+            SELECT 
+                s.nombre as servicio,
+                esp.nombre as especialidad,
+                COUNT(r.id_reserva) as total_reservas,
+                SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) as completadas,
+                ROUND((SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) / COUNT(r.id_reserva) * 100), 1) as tasa_exito
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+            GROUP BY s.id_servicio, s.nombre, esp.nombre
+            ORDER BY total_reservas DESC
+            LIMIT 10
+        """
+        cursor.execute(sql_top_servicios, params_especialidad)
+        top_servicios = cursor.fetchall()
+        
+        # Convertir a tipos nativos
+        for srv in top_servicios:
+            srv['total_reservas'] = int(srv['total_reservas'])
+            srv['completadas'] = int(srv['completadas'])
+            srv['tasa_exito'] = float(srv['tasa_exito'] or 0)
+        
+        # 3. Exámenes más frecuentes (Servicios tipo 4 = Exámenes)
+        sql_examenes = f"""
+            SELECT 
+                s.nombre as examen,
+                COUNT(r.id_reserva) as frecuencia,
+                COUNT(DISTINCT p.id_programacion) as servicios_asociados
+            FROM SERVICIO s
+            INNER JOIN PROGRAMACION p ON s.id_servicio = p.id_servicio
+            INNER JOIN RESERVA r ON p.id_programacion = r.id_programacion
+            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            AND s.id_tipo_servicio = 4
+            {filtro_especialidad}
+            GROUP BY s.id_servicio, s.nombre
+            ORDER BY frecuencia DESC
+            LIMIT 10
+        """
+        cursor.execute(sql_examenes, params_especialidad)
+        examenes = cursor.fetchall()
+        
+        for ex in examenes:
+            ex['frecuencia'] = int(ex['frecuencia'])
+            ex['servicios_asociados'] = int(ex['servicios_asociados'])
+        
+        # 4. Top Médicos más recomendados (con más reservas)
+        sql_top_medicos = f"""
+            SELECT 
+                CONCAT(e.nombres, ' ', e.apellidos) as medico,
+                esp.nombre as especialidad,
+                COUNT(r.id_reserva) as total_reservas,
+                SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) as completadas,
+                SUM(CASE WHEN r.estado = 'Cancelada' THEN 1 ELSE 0 END) as canceladas,
+                ROUND((SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) / COUNT(r.id_reserva) * 100), 1) as tasa_exito,
+                ROUND(AVG(DATEDIFF(p.fecha, r.fecha_registro)), 1) as demanda_anticipada
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+            GROUP BY e.id_empleado, e.nombres, e.apellidos, esp.nombre
+            ORDER BY total_reservas DESC
+            LIMIT 15
+        """
+        cursor.execute(sql_top_medicos, params_especialidad)
+        top_medicos = cursor.fetchall()
+        
+        for med in top_medicos:
+            med['total_reservas'] = int(med['total_reservas'])
+            med['completadas'] = int(med['completadas'])
+            med['canceladas'] = int(med['canceladas'])
+            med['tasa_exito'] = float(med['tasa_exito'] or 0)
+            med['demanda_anticipada'] = float(med['demanda_anticipada'] or 0)
+        
+        # 5. Distribución por tipo de servicio
+        sql_tipo_servicio = f"""
+            SELECT 
+                tipo,
+                COUNT(*) as cantidad
+            FROM (
+                SELECT 
+                    CASE 
+                        WHEN s.nombre LIKE '%%Consulta%%' THEN 'Consultas'
+                        WHEN s.nombre LIKE '%%Examen%%' OR s.nombre LIKE '%%Análisis%%' THEN 'Exámenes'
+                        WHEN s.nombre LIKE '%%Cirugía%%' OR s.nombre LIKE '%%Operación%%' THEN 'Cirugías'
+                        WHEN s.nombre LIKE '%%Terapia%%' THEN 'Terapias'
+                        ELSE 'Otros'
+                    END as tipo
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE r.fecha_registro BETWEEN %s AND %s
+                {filtro_especialidad}
+            ) AS subquery
+            GROUP BY tipo
+            ORDER BY cantidad DESC
+        """
+        cursor.execute(sql_tipo_servicio, params_especialidad)
+        tipo_servicio = cursor.fetchall()
+        
+        for ts in tipo_servicio:
+            ts['cantidad'] = int(ts['cantidad'])
+        
+        # 6. Tendencia mensual de reservas
+        sql_tendencia = f"""
+            SELECT 
+                DATE_FORMAT(r.fecha_registro, '%%Y-%%m') as mes,
+                COUNT(r.id_reserva) as total_reservas
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            WHERE r.fecha_registro BETWEEN %s AND %s
+            {filtro_especialidad}
+            GROUP BY mes
+            ORDER BY mes
+        """
+        cursor.execute(sql_tendencia, params_especialidad)
+        tendencia = cursor.fetchall()
+        
+        for t in tendencia:
+            t['total_reservas'] = int(t['total_reservas'])
+        
+        cursor.close()
+        conexion.close()
+        
+        return jsonify({
+            "kpis": kpis,
+            "top_servicios": top_servicios,
+            "examenes": examenes,
+            "top_medicos": top_medicos,
+            "tipo_servicio": tipo_servicio,
+            "tendencia": tendencia
+        })
+        
+    except Exception as e:
+        print(f"Error al generar reporte de demanda: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
