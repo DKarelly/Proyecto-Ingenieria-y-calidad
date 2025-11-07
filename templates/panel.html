@@ -139,18 +139,7 @@
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
-
-                    <!-- Notificaciones -->
-                    <a href="/admin/panel?subsistema=notificaciones" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">notifications</span>
-                            </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Notificaciones</h2>
-                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </a>
-
+                    
                     <!-- Incidencias -->
                     <a href="/admin/panel?subsistema=incidencias" class="group">
                         <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
@@ -455,36 +444,27 @@
 
                 {% if subsistema == 'reportes' %}
                 <!-- REPORTES -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <!-- Consultar por categoría -->
-                    <a href="{{ url_for('reportes.consultar_por_categoria') }}" class="group">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 max-w-4xl">
+                    <!-- Reporte de Eficiencia Operativa -->
+                    <a href="{{ url_for('reportes.reporte_eficiencia') }}" class="group">
                         <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">folder_open</span>
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-500/20 dark:to-blue-600/20 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                                <span class="material-symbols-outlined text-white dark:text-cyan-400 text-3xl">trending_up</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar por categoría</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight mb-2">📊 Eficiencia Operativa</h2>
+                            <p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Tiempos, reprogramaciones y flujo de atención</p>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
-                    <!-- Generar reporte actividad -->
-                    <a href="{{ url_for('reportes.generar_reporte_actividad') }}" class="group">
+                    <!-- Reporte de Demanda y Preferencias -->
+                    <a href="{{ url_for('reportes.demanda_preferencias') }}" class="group">
                         <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">bar_chart</span>
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-500/20 dark:to-pink-600/20 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                                <span class="material-symbols-outlined text-white dark:text-purple-400 text-3xl">pie_chart</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Generar reporte actividad</h2>
-                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </a>
-
-                    <!-- Reporte ocupación recursos -->
-                    <a href="{{ url_for('reportes.ocupacion_recursos') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">monitoring</span>
-                            </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Reporte ocupación recursos</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight mb-2">📈 Demanda y Preferencias</h2>
+                            <p class="text-xs text-text-secondary-light dark:text-text-secondary-dark">Servicios populares y médicos recomendados</p>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>

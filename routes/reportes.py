@@ -2200,21 +2200,22 @@ def generar_reporte_demanda_preferencias():
             srv['completadas'] = int(srv['completadas'])
             srv['tasa_exito'] = float(srv['tasa_exito'] or 0)
         
-        # 3. Exámenes más frecuentes
+        # 3. Exámenes más frecuentes (Servicios tipo 4 = Exámenes)
         sql_examenes = f"""
             SELECT 
-                pe.nombre_examen as examen,
-                COUNT(pe.id_programa_examen) as frecuencia,
-                COUNT(DISTINCT pe.id_programacion) as servicios_asociados
-            FROM PROGRAMA_EXAMEN pe
-            INNER JOIN PROGRAMACION p ON pe.id_programacion = p.id_programacion
+                s.nombre as examen,
+                COUNT(r.id_reserva) as frecuencia,
+                COUNT(DISTINCT p.id_programacion) as servicios_asociados
+            FROM SERVICIO s
+            INNER JOIN PROGRAMACION p ON s.id_servicio = p.id_servicio
             INNER JOIN RESERVA r ON p.id_programacion = r.id_programacion
             INNER JOIN HORARIO h ON p.id_horario = h.id_horario
             INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
             INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
             WHERE r.fecha_registro BETWEEN %s AND %s
+            AND s.id_tipo_servicio = 4
             {filtro_especialidad}
-            GROUP BY pe.nombre_examen
+            GROUP BY s.id_servicio, s.nombre
             ORDER BY frecuencia DESC
             LIMIT 10
         """
@@ -2228,7 +2229,7 @@ def generar_reporte_demanda_preferencias():
         # 4. Top Médicos más recomendados (con más reservas)
         sql_top_medicos = f"""
             SELECT 
-                CONCAT(e.nombre, ' ', e.apellido) as medico,
+                CONCAT(e.nombres, ' ', e.apellidos) as medico,
                 esp.nombre as especialidad,
                 COUNT(r.id_reserva) as total_reservas,
                 SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) as completadas,
@@ -2242,7 +2243,7 @@ def generar_reporte_demanda_preferencias():
             INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
             WHERE r.fecha_registro BETWEEN %s AND %s
             {filtro_especialidad}
-            GROUP BY e.id_empleado, e.nombre, e.apellido, esp.nombre
+            GROUP BY e.id_empleado, e.nombres, e.apellidos, esp.nombre
             ORDER BY total_reservas DESC
             LIMIT 15
         """
@@ -2259,22 +2260,26 @@ def generar_reporte_demanda_preferencias():
         # 5. Distribución por tipo de servicio
         sql_tipo_servicio = f"""
             SELECT 
-                CASE 
-                    WHEN s.nombre LIKE '%Consulta%' THEN 'Consultas'
-                    WHEN s.nombre LIKE '%Examen%' OR s.nombre LIKE '%Análisis%' THEN 'Exámenes'
-                    WHEN s.nombre LIKE '%Cirugía%' OR s.nombre LIKE '%Operación%' THEN 'Cirugías'
-                    WHEN s.nombre LIKE '%Terapia%' THEN 'Terapias'
-                    ELSE 'Otros'
-                END as tipo,
-                COUNT(r.id_reserva) as cantidad
-            FROM RESERVA r
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-            WHERE r.fecha_registro BETWEEN %s AND %s
-            {filtro_especialidad}
+                tipo,
+                COUNT(*) as cantidad
+            FROM (
+                SELECT 
+                    CASE 
+                        WHEN s.nombre LIKE '%%Consulta%%' THEN 'Consultas'
+                        WHEN s.nombre LIKE '%%Examen%%' OR s.nombre LIKE '%%Análisis%%' THEN 'Exámenes'
+                        WHEN s.nombre LIKE '%%Cirugía%%' OR s.nombre LIKE '%%Operación%%' THEN 'Cirugías'
+                        WHEN s.nombre LIKE '%%Terapia%%' THEN 'Terapias'
+                        ELSE 'Otros'
+                    END as tipo
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE r.fecha_registro BETWEEN %s AND %s
+                {filtro_especialidad}
+            ) AS subquery
             GROUP BY tipo
             ORDER BY cantidad DESC
         """
@@ -2287,7 +2292,7 @@ def generar_reporte_demanda_preferencias():
         # 6. Tendencia mensual de reservas
         sql_tendencia = f"""
             SELECT 
-                DATE_FORMAT(r.fecha_registro, '%Y-%m') as mes,
+                DATE_FORMAT(r.fecha_registro, '%%Y-%%m') as mes,
                 COUNT(r.id_reserva) as total_reservas
             FROM RESERVA r
             INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
