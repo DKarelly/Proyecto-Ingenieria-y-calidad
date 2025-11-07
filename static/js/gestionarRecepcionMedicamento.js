@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
             medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
             // Guardar medicamentos para búsqueda
             window.medicamentos = medicamentos;
+            // Mostrar notificaciones de vencimiento
+            mostrarNotificacionesVencimiento(medicamentos);
             inicializarPaginacion({
                 datos: medicamentos,
                 registrosPorPagina: 20, /* CANTIDAD DE FILAS EN LA PAGINACION */
@@ -442,6 +444,52 @@ document.addEventListener('DOMContentLoaded', () => {
             ocultarSugerenciasMedicamento();
         }
     });
+
+    // Función para mostrar notificaciones de vencimiento
+    function mostrarNotificacionesVencimiento(medicamentos) {
+        const contenedor = document.getElementById('notificaciones-vencimiento');
+        if (!contenedor) return;
+
+        contenedor.innerHTML = '';
+
+        const hoy = new Date();
+        const proximos30Dias = new Date();
+        proximos30Dias.setDate(hoy.getDate() + 30);
+
+        const medicamentosVenciendo = medicamentos.filter(medicamento => {
+            if (!medicamento.fecha_vencimiento) return false;
+            const fechaVencimiento = new Date(medicamento.fecha_vencimiento);
+            return fechaVencimiento >= hoy && fechaVencimiento <= proximos30Dias;
+        });
+
+        if (medicamentosVenciendo.length === 0) return;
+
+        medicamentosVenciendo.forEach(medicamento => {
+            const fechaVencimiento = new Date(medicamento.fecha_vencimiento);
+            const diasRestantes = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+
+            const notificacion = document.createElement('div');
+            notificacion.className = 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm';
+            notificacion.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-yellow-800">
+                            <i class="fas fa-pills mr-1"></i>
+                            ${escapeHtml(medicamento.nombre)}
+                        </h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p><i class="fas fa-clock mr-1"></i> Vence en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}</p>
+                            <p><i class="fas fa-boxes mr-1"></i> Stock actual: ${medicamento.stock || 0}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(notificacion);
+        });
+    }
 
     // Inicializar
     cargarMedicamentos();
