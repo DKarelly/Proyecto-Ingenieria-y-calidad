@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Demanda y Preferencias</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        .chart-container { 
+            height: 320px; 
+            position: relative;
+        }
+        .chart-container-small { 
+            height: 280px; 
+            position: relative;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .kpi-card-green {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        .kpi-card-blue {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+        }
+        .kpi-card-orange {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+        .table-responsive {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-gold { background-color: #fbbf24; color: #78350f; }
+        .badge-silver { background-color: #e5e7eb; color: #1f2937; }
+        .badge-bronze { background-color: #f97316; color: #7c2d12; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <div class="no-print">
+        {% include 'header_admin.html' %}
+    </div>
+
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Título y Exportar -->
+        <div class="flex justify-between items-center mb-6 no-print">
+            <h1 class="text-3xl font-bold text-gray-800">📊 Reporte de Demanda y Preferencias</h1>
+            <button onclick="exportarPDF()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
+                📄 Exportar PDF
+            </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6 no-print">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">📅 Fecha Inicio</label>
+                    <input type="date" id="fechaInicio" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">📅 Fecha Fin</label>
+                    <input type="date" id="fechaFin" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">👨‍⚕️ Especialidad</label>
+                    <select id="especialidadFiltro" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">Todas las especialidades</option>
+                    </select>
+                </div>
+                <div>
+                    <button onclick="cargarReporte()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-md transition">
+                        🔍 Generar Reporte
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">🔄 El reporte se actualiza automáticamente al cambiar los filtros</p>
+        </div>
+
+        <!-- Contenido del Reporte (para PDF) -->
+        <div id="reportContent">
+            <!-- Título para PDF -->
+            <div class="text-center mb-6 hidden print:block">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 Reporte de Demanda y Preferencias</h1>
+                <p class="text-gray-600" id="fecha-reporte-pdf"></p>
+            </div>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="kpi-card">
+                    <div class="text-sm opacity-90 mb-1">Total de Reservas</div>
+                    <div class="text-3xl font-bold" id="kpi-total-reservas">0</div>
+                </div>
+                <div class="kpi-card kpi-card-green">
+                    <div class="text-sm opacity-90 mb-1">Pacientes Únicos</div>
+                    <div class="text-3xl font-bold" id="kpi-pacientes-unicos">0</div>
+                </div>
+                <div class="kpi-card kpi-card-blue">
+                    <div class="text-sm opacity-90 mb-1">Servicios Diferentes</div>
+                    <div class="text-3xl font-bold" id="kpi-servicios-diferentes">0</div>
+                </div>
+                <div class="kpi-card kpi-card-orange">
+                    <div class="text-sm opacity-90 mb-1">Anticipación Promedio</div>
+                    <div class="text-3xl font-bold" id="kpi-dias-anticipacion">0</div>
+                    <div class="text-xs opacity-90">días</div>
+                </div>
+            </div>
+
+            <!-- Gráficos Principales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Top Servicios -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🏥 Top 10 Servicios Más Solicitados</h3>
+                    <div class="chart-container">
+                        <canvas id="chartTopServicios"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tipo de Servicio -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">📋 Distribución por Tipo de Servicio</h3>
+                    <div class="chart-container">
+                        <canvas id="chartTipoServicio"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exámenes y Tendencia -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Exámenes Frecuentes -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">🔬 Exámenes Más Frecuentes</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chartExamenes"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tendencia Mensual -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">📈 Tendencia de Reservas</h3>
+                    <div class="chart-container-small">
+                        <canvas id="chartTendencia"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Top Médicos -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">⭐ Top 15 Médicos Más Recomendados</h3>
+                <div class="table-responsive">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Posición</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Médico</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Especialidad</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Reservas</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Completadas</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Tasa de Éxito</th>
+                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase">Anticipación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaTopMedicos" class="bg-white divide-y divide-gray-200">
+                            <!-- Datos dinámicos -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tabla de Top Servicios -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">📊 Detalle de Servicios</h3>
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700">Servicio</th>
+                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700">Especialidad</th>
+                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700">Total</th>
+                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700">Completadas</th>
+                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700">Éxito</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaDetalleServicios" class="bg-white divide-y divide-gray-200">
+                        <!-- Datos dinámicos -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="no-print mt-8">
+        {% include 'footer.html' %}
+    </div>
+
+    <script src="{{ url_for('static', filename='js/reporte-demanda.js') }}"></script>
+</body>
+</html>
