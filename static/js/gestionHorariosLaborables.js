@@ -82,12 +82,20 @@ function inicializarEventos() {
         }
     }
 
-    // Botón buscar
-    const btnBuscar = document.getElementById('btnBuscar');
-    if (btnBuscar) {
-        btnBuscar.onclick = function () {
-            buscarHorarios();
-        }
+    // Búsqueda dinámica
+    const filtroEmpleado = document.getElementById('filtroEmpleado');
+    const filtroHorario = document.getElementById('filtroHorario');
+
+    if (filtroEmpleado) {
+        filtroEmpleado.addEventListener('input', function() {
+            filtrarHorariosDinamicamente();
+        });
+    }
+
+    if (filtroHorario) {
+        filtroHorario.addEventListener('input', function() {
+            filtrarHorariosDinamicamente();
+        });
     }
 
     // Funcionalidad de modales
@@ -360,28 +368,22 @@ function eliminarHorario() {
     });
 }
 
-function buscarHorarios() {
-    const filtroEmpleado = document.getElementById('filtroEmpleado').value;
+function filtrarHorariosDinamicamente() {
+    const filtroEmpleado = document.getElementById('filtroEmpleado').value.toLowerCase();
     const filtroHorario = document.getElementById('filtroHorario').value;
 
-    const data = {};
-    if (filtroEmpleado) data.termino = filtroEmpleado;
-    if (filtroHorario) data.fecha = filtroHorario;
+    const horariosFiltrados = todosLosHorariosLab.filter(horario => {
+        const coincideEmpleado = !filtroEmpleado || (horario.empleado && horario.empleado.toLowerCase().includes(filtroEmpleado));
+        const coincideFecha = !filtroHorario || (horario.fecha && horario.fecha.startsWith(filtroHorario));
 
-    fetch('/admin/api/horarios/buscar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(horarios => {
-        mostrarHorarios(horarios);
-    })
-    .catch(error => {
-        console.error('Error al buscar horarios:', error);
-        mostrarMensaje('Error al buscar horarios', 'error');
+        return coincideEmpleado && coincideFecha;
+    });
+
+    // Actualizar la paginación con los datos filtrados
+    inicializarPaginacion({
+        datos: horariosFiltrados,
+        registrosPorPagina: 20,
+        renderFuncion: mostrarHorarios
     });
 }
 
