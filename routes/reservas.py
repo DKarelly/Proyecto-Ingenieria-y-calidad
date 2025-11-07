@@ -7,7 +7,7 @@ from models.paciente import Paciente
 from models.reserva import Reserva
 from models.programacion import Programacion
 from bd import obtener_conexion
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from models.notificacion import Notificacion
 
 reservas_bp = Blueprint('reservas', __name__)
@@ -2285,7 +2285,9 @@ def api_horarios_disponibles_reprogramacion():
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
-    if session.get('tipo_usuario') != 'paciente':
+    # Permitir tanto pacientes como empleados (admin) para reprogramar
+    tipo_usuario = session.get('tipo_usuario')
+    if tipo_usuario not in ['paciente', 'empleado']:
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     data = request.get_json() or {}
@@ -2293,7 +2295,7 @@ def api_horarios_disponibles_reprogramacion():
     id_servicio = data.get('id_servicio')
     fecha = data.get('fecha')
     
-    print(f"[API horarios-reprogramacion] Datos recibidos: id_reserva={id_reserva}, id_servicio={id_servicio}, fecha={fecha}")
+    print(f"[API horarios-reprogramacion] Tipo usuario: {tipo_usuario}, Datos: id_reserva={id_reserva}, id_servicio={id_servicio}, fecha={fecha}")
 
     # Validar solo id_reserva y fecha (id_servicio es opcional)
     if not id_reserva or not fecha:
@@ -2304,15 +2306,30 @@ def api_horarios_disponibles_reprogramacion():
     conexion = None
     try:
         usuario_id = session.get('usuario_id')
-        paciente = Paciente.obtener_por_usuario(usuario_id)
         
-        if not paciente:
-            return jsonify({'error': 'Paciente no encontrado'}), 404
-        
-        id_paciente = paciente.get('id_paciente')
-
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
+            # Primero, obtener el id_paciente y datos de la reserva
+            sql_get_reserva = """
+                SELECT r.id_paciente, r.id_reserva
+                FROM RESERVA r
+                WHERE r.id_reserva = %s
+            """
+            cursor.execute(sql_get_reserva, (id_reserva,))
+            reserva_info = cursor.fetchone()
+            
+            if not reserva_info:
+                return jsonify({'error': 'Reserva no encontrada'}), 404
+            
+            id_paciente = reserva_info['id_paciente']
+            
+            # Para pacientes, validar que la reserva sea suya
+            if tipo_usuario == 'paciente':
+                paciente = Paciente.obtener_por_usuario(usuario_id)
+                if not paciente or paciente.get('id_paciente') != id_paciente:
+                    return jsonify({'error': 'No tienes permiso para acceder a esta reserva'}), 403
+            
+            # Obtener horario actual de la reserva
             sql_verificar = """
                 SELECT r.id_reserva, p.id_horario, h.hora_inicio, h.hora_fin
                 FROM RESERVA r
@@ -2435,7 +2452,9 @@ def api_reprogramar_reserva():
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
-    if session.get('tipo_usuario') != 'paciente':
+    # Permitir tanto pacientes como empleados (admin) para reprogramar
+    tipo_usuario = session.get('tipo_usuario')
+    if tipo_usuario not in ['paciente', 'empleado']:
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     data = request.get_json() or {}
@@ -2448,20 +2467,34 @@ def api_reprogramar_reserva():
     if not all([id_reserva, nueva_fecha, nueva_hora]):
         return jsonify({'error': 'Faltan datos requeridos (id_reserva, nueva_fecha, nueva_hora)'}), 400
     
-    print(f"[API reprogramar] Datos: id_reserva={id_reserva}, fecha={nueva_fecha}, hora={nueva_hora}, id_servicio={id_servicio}")
+    print(f"[API reprogramar] Tipo usuario: {tipo_usuario}, Datos: id_reserva={id_reserva}, fecha={nueva_fecha}, hora={nueva_hora}, id_servicio={id_servicio}")
 
     conexion = None
     try:
         usuario_id = session.get('usuario_id')
-        paciente = Paciente.obtener_por_usuario(usuario_id)
         
-        if not paciente:
-            return jsonify({'error': 'Paciente no encontrado'}), 404
-        
-        id_paciente = paciente.get('id_paciente')
-
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
+            # Primero obtener el id_paciente de la reserva
+            sql_get_reserva = """
+                SELECT r.id_paciente, r.id_reserva
+                FROM RESERVA r
+                WHERE r.id_reserva = %s
+            """
+            cursor.execute(sql_get_reserva, (id_reserva,))
+            reserva_info = cursor.fetchone()
+            
+            if not reserva_info:
+                return jsonify({'error': 'Reserva no encontrada'}), 404
+            
+            id_paciente = reserva_info['id_paciente']
+            
+            # Para pacientes, validar que la reserva sea suya
+            if tipo_usuario == 'paciente':
+                paciente = Paciente.obtener_por_usuario(usuario_id)
+                if not paciente or paciente.get('id_paciente') != id_paciente:
+                    return jsonify({'error': 'No tienes permiso para acceder a esta reserva'}), 403
+        
             # Obtener la reserva actual y su id_servicio si no se proporcionó
             sql_verificar = """
                 SELECT r.id_reserva, r.id_programacion, r.tipo, p.id_servicio

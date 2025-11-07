@@ -195,16 +195,17 @@ n<!DOCTYPE html>
                 const data2 = await resp2.json();
                 const todasLasReservas = data2.reservas || [];
 
+                console.log('[Reprogramar] Response completa:', data2);
                 console.log('[Reprogramar] Todas las reservas recibidas:', todasLasReservas);
                 
                 // Mostrar solo reservas pendientes
                 const reservasPendientes = todasLasReservas.filter(r => {
                     const estado = (r.estado || '').trim().toLowerCase();
-                    console.log('[Reprogramar] Revisando estado:', estado, 'Raw:', r.estado);
+                    console.log(`[Reprogramar] Reserva ${r.id_reserva}: estado="${r.estado}" → lowercase="${estado}" → ¿pendiente? ${estado === 'pendiente'}`);
                     return estado === 'pendiente';
                 });
 
-                console.log('[Reprogramar] Reservas totales:', todasLasReservas.length, 'Pendientes:', reservasPendientes.length);
+                console.log('[Reprogramar] Filtrado completado: Reservas totales:', todasLasReservas.length, 'Pendientes:', reservasPendientes.length);
 
                 renderReservas(reservasPendientes);
                 document.getElementById('total-reservas').textContent = reservasPendientes.length;
@@ -258,7 +259,7 @@ n<!DOCTYPE html>
                                 <span class="font-semibold text-gray-700">${rangoHora}</span>
                             </div>
                             <div class="text-sm text-gray-600 space-y-1">
-                                <p><i class="fas fa-stethoscope mr-2 text-gray-400"></i>${r.servicio || 'Sin servicio'}</p>
+                                <p><i class="fas fa-stethoscope mr-2 text-gray-400"></i>${r.servicio || r.tipo_servicio || 'Sin servicio específico'}</p>
                                 <p><i class="fas fa-user-md mr-2 text-gray-400"></i>Dr. ${r.nombre_empleado || 'Sin asignar'}</p>
                             </div>
                         </div>
@@ -307,9 +308,13 @@ n<!DOCTYPE html>
                             </div>
                             
                             <div class="mb-6">
-                                <h3 class="font-semibold text-gray-700 mb-2">Servicio:</h3>
-                                <p class="text-lg text-gray-900">${reserva.servicio}</p>
-                                <p class="text-sm text-gray-500 mt-1">Reserva actual: ${reserva.fecha_cita} ${reserva.hora_inicio ? reserva.hora_inicio.substring(0, 5) : ''}</p>
+                                <h3 class="font-semibold text-gray-700 mb-2">Información de la Reserva:</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                                    <p class="text-gray-900"><strong>Servicio:</strong> ${reserva.servicio || reserva.tipo_servicio || 'Sin servicio específico'}</p>
+                                    <p class="text-gray-900"><strong>Profesional:</strong> Dr. ${reserva.nombre_empleado || 'Sin asignar'}</p>
+                                    <p class="text-gray-900"><strong>Especialidad:</strong> ${reserva.especialidad || 'No especificada'}</p>
+                                    <p class="text-sm text-gray-600 mt-3"><i class="fas fa-clock mr-2"></i>Reserva actual: ${reserva.fecha_cita} ${reserva.hora_inicio ? reserva.hora_inicio.substring(0, 5) : ''}</p>
+                                </div>
                             </div>
                             
                             <div class="mb-4">
