@@ -147,8 +147,8 @@
     </div>
 
     <!-- Modal para mostrar servicios -->
-    <div id="servicios-modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl transform transition-all">
+    <div id="servicios-modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl transform transition-all flex flex-col max-h-[85vh] mx-auto my-8" role="dialog" aria-modal="true">
             <div class="bg-cyan-600 text-white px-6 py-4 rounded-t-lg">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xl font-bold flex items-center">
@@ -160,7 +160,7 @@
                     </button>
                 </div>
             </div>
-            <div class="p-6">
+            <div class="p-6 flex-1 overflow-y-auto">
                 <div id="medico-info" class="mb-4 bg-gray-50 p-4 rounded-lg">
                     <!-- Info del médico -->
                 </div>

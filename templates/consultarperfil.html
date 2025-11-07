@@ -22,12 +22,37 @@
         <!-- Botón de regreso -->
         <div class="mb-6">
             {% if usuario and usuario.tipo_usuario == 'empleado' %}
-            <a href="/cuentas/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver al Panel
-            </a>
+                {% if usuario.get('origen') == 'gestion_usuarios' %}
+                <a href="/cuentas/gestionar-cuentas-internas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Gestión de Usuarios
+                </a>
+                {% else %}
+                <a href="/cuentas/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver al Panel
+                </a>
+                {% endif %}
+            {% elif usuario and usuario.tipo_usuario == 'paciente' %}
+                {% if usuario.get('origen') == 'gestion_usuarios' %}
+                <a href="/cuentas/gestionar-cuentas-internas?tab=pacientes" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Gestión de Usuarios
+                </a>
+                {% else %}
+                <a href="/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver al Inicio
+                </a>
+                {% endif %}
             {% else %}
             <a href="/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

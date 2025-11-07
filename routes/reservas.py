@@ -65,8 +65,8 @@ def panel():
     
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
-    
-    return render_template('panel.html', subsistema='reservas')
+    # Redirigir al dashboard principal unificado
+    return redirect(url_for('admin_panel', subsistema='reservas'))
 
 @reservas_bp.route('/consultar-servicio-medico')
 def consultar_servicio_medico():

@@ -6,11 +6,17 @@
     <title>Recuperar Contraseña - Clínica Unión</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
         }
     </style>
 </head>
@@ -20,11 +26,9 @@
     <div class="max-w-7xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver a Cuentas
+            <a href="/admin/panel?subsistema=cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-all duration-200 hover:translate-x-1">
+                <span class="material-symbols-outlined mr-2">arrow_back</span>
+                Volver al Panel
             </a>
         </div>
 
@@ -33,7 +37,7 @@
             <div class="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
                 <div class="text-center mb-8">
                     <div class="inline-flex items-center justify-center w-16 h-16 bg-cyan-100 rounded-full mb-4">
-                        <i class="fa-solid fa-key text-cyan-600 text-2xl"></i>
+                        <span class="material-symbols-outlined text-cyan-600 text-3xl">lock_reset</span>
                     </div>
                     <h1 class="text-3xl font-bold text-gray-800">Recuperar Contraseña</h1>
                     <p class="mt-2 text-sm text-gray-600">Ingrese su correo para recibir un código de verificación</p>
@@ -126,9 +130,9 @@
                         <button 
                             type="submit" 
                             id="btn-submit"
-                            class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors inline-flex items-center justify-center"
+                            class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center"
                         >
-                            <i class="fa-solid fa-check-circle mr-2"></i>
+                            <span class="material-symbols-outlined mr-2">lock_reset</span>
                             Verificar y Cambiar Contraseña
                         </button>
                         <p id="msg-submit" class="mt-3 text-center text-sm hidden"></p>

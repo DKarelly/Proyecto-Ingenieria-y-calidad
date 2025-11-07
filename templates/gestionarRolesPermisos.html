@@ -6,12 +6,172 @@
     <title>Gestión de Roles y Permisos - Clínica Unión</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
+        }
+
+        /* Animaciones de modal */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-overlay {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            animation: slideUp 0.3s ease-out;
+        }
+
+        /* Estilos de validación */
+        .input-field.valid {
+            border-color: #10b981 !important;
+            background-color: #f0fdf4;
+        }
+
+        .input-field.invalid {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2;
+        }
+
+        .validation-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .validation-message {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            min-height: 1rem;
+        }
+
+        .validation-message.valid {
+            color: #10b981;
+        }
+
+        .validation-message.invalid {
+            color: #ef4444;
+        }
+
+        /* Efectos hover en botones */
+        .action-btn {
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        /* Loading state */
+        .btn-loading {
+            position: relative;
+            color: transparent !important;
+        }
+
+        .btn-loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spinner 0.6s linear infinite;
+        }
+
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Badge de permisos */
+        .permission-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .permission-badge:hover {
+            transform: scale(1.05);
+        }
+
+        /* Checkbox personalizado */
+        .custom-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.375rem;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .custom-checkbox:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .custom-checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 0.875rem;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .custom-checkbox:hover {
+            border-color: #3b82f6;
+        }
+
+        /* Sombras modernas */
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-shadow-hover:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
     </style>
 </head>
@@ -21,50 +181,93 @@
     <div class="max-w-7xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver a Cuentas
+            <a href="/admin/panel?subsistema=cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-all duration-200 hover:translate-x-1">
+                <span class="material-symbols-outlined mr-2">arrow_back</span>
+                Volver al Panel
             </a>
         </div>
         
         <!-- Header con título y botones -->
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Gestión de Roles y Permisos</h1>
-            <div class="flex gap-4">
-                <button id="new-role-button" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 inline-flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    <i class="fa-solid fa-plus mr-2"></i>
-                    Crear Nuevo Rol
-                </button>
-                <button id="manage-permissions-button" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 inline-flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                    <i class="fa-solid fa-shield-halved mr-2"></i>
-                    Gestionar Permisos
-                </button>
+        <div class="bg-white rounded-2xl card-shadow p-6 mb-8">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl">
+                        <span class="material-symbols-outlined text-white text-3xl">admin_panel_settings</span>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Gestión de Roles y Permisos</h1>
+                        <p class="text-gray-600 text-sm mt-1">Administra los roles y sus permisos asociados</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="new-role-button" class="action-btn bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 inline-flex items-center justify-center shadow-lg hover:shadow-xl">
+                        <span class="material-symbols-outlined mr-2">add_circle</span>
+                        Crear Nuevo Rol
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Modal de Crear Nuevo Rol -->
-        <div id="new-role-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-8 relative max-h-[90vh] overflow-y-auto">
-                <button id="close-new-role-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-times text-xl"></i>
+        <!-- Modal de Crear/Editar Rol -->
+        <div id="new-role-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 overflow-y-auto modal-overlay">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative max-h-[90vh] overflow-y-auto modal-content">
+                <button id="close-new-role-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-all">
+                    <span class="material-symbols-outlined">close</span>
                 </button>
-                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Crear Nuevo Rol</h2>
-                <form id="new-role-form" method="POST" class="space-y-4">
-                    <div>
-                        <label for="role-name" class="block text-sm font-semibold text-gray-700 mb-2">Nombre del Rol</label>
-                        <input type="text" id="role-name" name="nombre" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="Ej: Administrador, Doctor, Enfermero" required>
+                
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-gradient-to-br from-cyan-500 to-blue-600 p-2 rounded-xl">
+                        <span class="material-symbols-outlined text-white text-2xl">shield_person</span>
                     </div>
+                    <h2 class="text-2xl font-bold text-gray-800">Crear Nuevo Rol</h2>
+                </div>
+
+                <form id="new-role-form" method="POST" class="space-y-6">
                     <div>
-                        <label for="role-description" class="block text-sm font-semibold text-gray-700 mb-2">Descripción</label>
-                        <textarea id="role-description" name="descripcion" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" rows="3" placeholder="Describe las responsabilidades y alcance del rol" required></textarea>
+                        <label for="role-name" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1">badge</span>
+                            Nombre del Rol
+                        </label>
+                        <div class="input-wrapper">
+                            <input 
+                                type="text" 
+                                id="role-name" 
+                                name="nombre" 
+                                class="input-field w-full px-4 py-3 pr-10 border-2 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" 
+                                placeholder="Ej: Administrador, Doctor, Enfermero" 
+                                required>
+                            <span class="validation-icon hidden">
+                                <span class="material-symbols-outlined text-green-500">check_circle</span>
+                            </span>
+                        </div>
+                        <p class="validation-message"></p>
                     </div>
-                    <div class="flex justify-end gap-4 pt-4">
-                        <button type="button" id="cancel-new-role" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-colors btn btn-outline">Cancelar</button>
-                        <button type="submit" class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 font-semibold transition-colors inline-flex items-center btn btn-primary">
-                            <i class="fa-solid fa-check mr-2"></i>
-                            Crear Rol
+
+                    <div>
+                        <label for="role-description" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1">description</span>
+                            Descripción
+                        </label>
+                        <div class="input-wrapper">
+                            <textarea 
+                                id="role-description" 
+                                name="descripcion" 
+                                class="input-field w-full px-4 py-3 border-2 border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all resize-none" 
+                                rows="4" 
+                                placeholder="Describe las responsabilidades y alcance del rol"
+                                required></textarea>
+                        </div>
+                        <p class="validation-message"></p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                        <button type="button" id="cancel-new-role" class="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center">
+                            <span class="material-symbols-outlined text-sm mr-2">check_circle</span>
+                            <span class="button-text">Crear Rol</span>
                         </button>
                     </div>
                 </form>
@@ -72,74 +275,107 @@
         </div>
 
         <!-- Modal de Gestionar Permisos -->
-        <div id="manage-permissions-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl p-8 relative max-h-[90vh] overflow-y-auto">
-                <button id="close-permissions-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-times text-xl"></i>
+        <div id="manage-permissions-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 overflow-y-auto modal-overlay">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-8 relative max-h-[90vh] overflow-y-auto modal-content">
+                <button id="close-permissions-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-all">
+                    <span class="material-symbols-outlined">close</span>
                 </button>
-                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Gestionar Permisos</h2>
+                
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-xl">
+                        <span class="material-symbols-outlined text-white text-2xl">security</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">Gestionar Permisos</h2>
+                </div>
                 
                 <!-- Contenedor de permisos dinámico -->
-                <div id="permisos-container" class="space-y-6">
+                <div id="permisos-container" class="space-y-6 mb-6">
                     <!-- Los permisos se cargarán dinámicamente aquí -->
-                    <div class="text-center text-gray-500 py-8">
-                        <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Cargando permisos...
+                    <div class="text-center text-gray-500 py-12">
+                        <div class="inline-block relative">
+                            <span class="material-symbols-outlined text-6xl text-blue-600 animate-spin">progress_activity</span>
+                        </div>
+                        <p class="mt-4 font-medium">Cargando permisos...</p>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
-                    <button type="button" id="cancel-permissions" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-colors btn btn-outline">Cancelar</button>
-                    <button type="button" id="save-permissions" class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 font-semibold transition-colors inline-flex items-center btn btn-primary">
-                        <i class="fa-solid fa-save mr-2"></i>
+                <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                    <button type="button" id="cancel-permissions" class="px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
+                        Cancelar
+                    </button>
+                    <button type="button" id="save-permissions" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center">
+                        <span class="material-symbols-outlined text-sm mr-2">save</span>
                         Guardar Cambios
                     </button>
                 </div>
             </div>
         </div>
 
+        <!-- Modal de Confirmación -->
+        <div id="confirmation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden items-center justify-center p-4 modal-overlay">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative modal-content">
+                <div class="flex flex-col items-center text-center">
+                    <div id="confirm-icon-container" class="mb-4">
+                        <!-- El icono se cambiará dinámicamente -->
+                    </div>
+                    <h3 id="confirm-title" class="text-2xl font-bold text-gray-800 mb-3"></h3>
+                    <p id="confirm-message" class="text-gray-600 mb-6"></p>
+                    
+                    <div class="flex gap-3 w-full">
+                        <button type="button" id="confirm-cancel" class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
+                            <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
+                            Cancelar
+                        </button>
+                        <button type="button" id="confirm-accept" class="flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center">
+                            <span class="material-symbols-outlined text-sm mr-2" id="confirm-accept-icon">check_circle</span>
+                            <span id="confirm-accept-text">Aceptar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabla de Roles -->
-        <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+        <div class="bg-white rounded-2xl card-shadow overflow-hidden border border-gray-200">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gradient-to-r from-cyan-50 to-blue-50">
+                    <thead class="bg-gradient-to-r from-cyan-50 via-blue-50 to-indigo-50">
                         <tr>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Rol</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Permisos</th>
-                            <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <span class="inline-flex items-center">
+                                    <span class="material-symbols-outlined text-sm mr-2">badge</span>
+                                    Rol
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <span class="inline-flex items-center">
+                                    <span class="material-symbols-outlined text-sm mr-2">description</span>
+                                    Descripción
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <span class="inline-flex items-center">
+                                    <span class="material-symbols-outlined text-sm mr-2">security</span>
+                                    Permisos
+                                </span>
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <span class="inline-flex items-center">
+                                    <span class="material-symbols-outlined text-sm mr-2">settings</span>
+                                    Acciones
+                                </span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200" id="tabla-roles">
                         <!-- Los roles se cargarán dinámicamente aquí -->
                         <tr id="loading-row">
-                            <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Cargando roles...
-                            </td>
-                        </tr>
-                    </tbody>
-                                    </span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">
-                                        Ver Historiales
-                                    </span>
+                            <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                                <div class="inline-block relative mb-4">
+                                    <span class="material-symbols-outlined text-6xl text-blue-600 animate-spin">progress_activity</span>
                                 </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                <div class="flex items-center justify-center gap-3">
-                                    <button class="text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar">
-                                        <i class="fa-solid fa-pen-to-square text-lg"></i>
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar">
-                                        <i class="fa-solid fa-trash-can text-lg"></i>
-                                    </button>
-                                </div>
+                                <p class="font-medium">Cargando roles...</p>
                             </td>
                         </tr>
                     </tbody>
@@ -154,6 +390,7 @@
         // ==================== VARIABLES GLOBALES ====================
         const newRoleModal = document.getElementById('new-role-modal');
         const permissionsModal = document.getElementById('manage-permissions-modal');
+        const confirmationModal = document.getElementById('confirmation-modal');
         const newRoleButton = document.getElementById('new-role-button');
         const closeNewRoleModal = document.getElementById('close-new-role-modal');
         const closePermissionsModal = document.getElementById('close-permissions-modal');
@@ -166,49 +403,202 @@
         let permisosData = {};
         let rolActualEdicion = null;
         let rolActualPermisos = null;
+        let confirmCallback = null;
+
+        // ==================== FUNCIONES DE VALIDACIÓN ====================
+        function validarNombreRol(nombre) {
+            const trimmed = nombre.trim();
+            if (trimmed.length === 0) {
+                return { valido: false, mensaje: 'El nombre del rol es obligatorio' };
+            }
+            if (trimmed.length < 3) {
+                return { valido: false, mensaje: 'El nombre debe tener al menos 3 caracteres' };
+            }
+            if (trimmed.length > 50) {
+                return { valido: false, mensaje: 'El nombre no puede exceder 50 caracteres' };
+            }
+            if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(trimmed)) {
+                return { valido: false, mensaje: 'El nombre solo puede contener letras y espacios' };
+            }
+            return { valido: true, mensaje: 'Nombre válido' };
+        }
+
+        function validarDescripcion(descripcion) {
+            const trimmed = descripcion.trim();
+            if (trimmed.length === 0) {
+                return { valido: false, mensaje: 'La descripción es obligatoria' };
+            }
+            if (trimmed.length < 10) {
+                return { valido: false, mensaje: 'La descripción debe tener al menos 10 caracteres' };
+            }
+            if (trimmed.length > 250) {
+                return { valido: false, mensaje: 'La descripción no puede exceder 250 caracteres' };
+            }
+            return { valido: true, mensaje: 'Descripción válida' };
+        }
+
+        function aplicarValidacion(input, validacion) {
+            const wrapper = input.closest('.input-wrapper');
+            const icon = wrapper ? wrapper.querySelector('.validation-icon') : null;
+            const mensaje = input.parentElement.querySelector('.validation-message');
+
+            if (validacion.valido) {
+                input.classList.remove('invalid');
+                input.classList.add('valid');
+                if (icon) {
+                    icon.classList.remove('hidden');
+                    icon.innerHTML = '<span class="material-symbols-outlined text-green-500">check_circle</span>';
+                }
+                if (mensaje) {
+                    mensaje.textContent = validacion.mensaje;
+                    mensaje.classList.remove('invalid');
+                    mensaje.classList.add('valid');
+                }
+            } else {
+                input.classList.remove('valid');
+                input.classList.add('invalid');
+                if (icon) {
+                    icon.classList.remove('hidden');
+                    icon.innerHTML = '<span class="material-symbols-outlined text-red-500">error</span>';
+                }
+                if (mensaje) {
+                    mensaje.textContent = validacion.mensaje;
+                    mensaje.classList.remove('valid');
+                    mensaje.classList.add('invalid');
+                }
+            }
+        }
+
+        // ==================== MODAL DE CONFIRMACIÓN ====================
+        function mostrarConfirmacion(opciones) {
+            return new Promise((resolve) => {
+                const { titulo, mensaje, tipo = 'info', textoAceptar = 'Aceptar', textoIconoAceptar = 'check_circle' } = opciones;
+                
+                // Configurar icono según tipo
+                const iconContainer = document.getElementById('confirm-icon-container');
+                const acceptButton = document.getElementById('confirm-accept');
+                
+                let iconoHTML = '';
+                let colorBoton = '';
+                
+                switch(tipo) {
+                    case 'danger':
+                        iconoHTML = '<div class="bg-red-100 p-4 rounded-full"><span class="material-symbols-outlined text-red-600 text-5xl">warning</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700';
+                        break;
+                    case 'warning':
+                        iconoHTML = '<div class="bg-yellow-100 p-4 rounded-full"><span class="material-symbols-outlined text-yellow-600 text-5xl">error</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700';
+                        break;
+                    case 'success':
+                        iconoHTML = '<div class="bg-green-100 p-4 rounded-full"><span class="material-symbols-outlined text-green-600 text-5xl">check_circle</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700';
+                        break;
+                    case 'info':
+                    default:
+                        iconoHTML = '<div class="bg-blue-100 p-4 rounded-full"><span class="material-symbols-outlined text-blue-600 text-5xl">info</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700';
+                        break;
+                }
+                
+                iconContainer.innerHTML = iconoHTML;
+                document.getElementById('confirm-title').textContent = titulo;
+                document.getElementById('confirm-message').textContent = mensaje;
+                document.getElementById('confirm-accept-text').textContent = textoAceptar;
+                document.getElementById('confirm-accept-icon').textContent = textoIconoAceptar;
+                
+                // Aplicar color al botón
+                acceptButton.className = `flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center ${colorBoton}`;
+                
+                // Mostrar modal
+                abrirModal(confirmationModal);
+                
+                // Configurar callbacks
+                const handleAccept = () => {
+                    cerrarModal(confirmationModal);
+                    cleanup();
+                    resolve(true);
+                };
+                
+                const handleCancel = () => {
+                    cerrarModal(confirmationModal);
+                    cleanup();
+                    resolve(false);
+                };
+                
+                const cleanup = () => {
+                    document.getElementById('confirm-accept').removeEventListener('click', handleAccept);
+                    document.getElementById('confirm-cancel').removeEventListener('click', handleCancel);
+                };
+                
+                document.getElementById('confirm-accept').addEventListener('click', handleAccept);
+                document.getElementById('confirm-cancel').addEventListener('click', handleCancel);
+            });
+        }
 
         // ==================== FUNCIONES DE MODAL ====================
+        function abrirModal(modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function cerrarModal(modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
         newRoleButton.addEventListener('click', () => {
             newRoleForm.reset();
             rolActualEdicion = null;
             newRoleModal.querySelector('h2').textContent = 'Crear Nuevo Rol';
-            newRoleModal.querySelector('button[type="submit"]').innerHTML = '<i class="fa-solid fa-check mr-2"></i>Crear Rol';
-            newRoleModal.classList.remove('hidden');
-            newRoleModal.classList.add('flex');
+            newRoleModal.querySelector('.button-text').textContent = 'Crear Rol';
+            
+            // Limpiar validaciones
+            document.querySelectorAll('.input-field').forEach(input => {
+                input.classList.remove('valid', 'invalid');
+            });
+            document.querySelectorAll('.validation-icon').forEach(icon => {
+                icon.classList.add('hidden');
+            });
+            document.querySelectorAll('.validation-message').forEach(msg => {
+                msg.textContent = '';
+                msg.classList.remove('valid', 'invalid');
+            });
+            
+            abrirModal(newRoleModal);
         });
 
-        closeNewRoleModal.addEventListener('click', () => {
-            newRoleModal.classList.add('hidden');
-            newRoleModal.classList.remove('flex');
-        });
-
-        cancelNewRole.addEventListener('click', () => {
-            newRoleModal.classList.add('hidden');
-            newRoleModal.classList.remove('flex');
-        });
-
+        closeNewRoleModal.addEventListener('click', () => cerrarModal(newRoleModal));
+        cancelNewRole.addEventListener('click', () => cerrarModal(newRoleModal));
         newRoleModal.addEventListener('click', (e) => {
-            if (e.target === newRoleModal) {
-                newRoleModal.classList.add('hidden');
-                newRoleModal.classList.remove('flex');
-            }
+            if (e.target === newRoleModal) cerrarModal(newRoleModal);
         });
 
-        closePermissionsModal.addEventListener('click', () => {
-            permissionsModal.classList.add('hidden');
-            permissionsModal.classList.remove('flex');
-        });
-
-        cancelPermissions.addEventListener('click', () => {
-            permissionsModal.classList.add('hidden');
-            permissionsModal.classList.remove('flex');
-        });
-
+        closePermissionsModal.addEventListener('click', () => cerrarModal(permissionsModal));
+        cancelPermissions.addEventListener('click', () => cerrarModal(permissionsModal));
         permissionsModal.addEventListener('click', (e) => {
-            if (e.target === permissionsModal) {
-                permissionsModal.classList.add('hidden');
-                permissionsModal.classList.remove('flex');
+            if (e.target === permissionsModal) cerrarModal(permissionsModal);
+        });
+
+        // Cerrar modales con ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!newRoleModal.classList.contains('hidden')) cerrarModal(newRoleModal);
+                if (!permissionsModal.classList.contains('hidden')) cerrarModal(permissionsModal);
             }
+        });
+
+        // ==================== VALIDACIONES EN TIEMPO REAL ====================
+        document.getElementById('role-name').addEventListener('input', function() {
+            const validacion = validarNombreRol(this.value);
+            aplicarValidacion(this, validacion);
+        });
+
+        document.getElementById('role-description').addEventListener('input', function() {
+            const validacion = validarDescripcion(this.value);
+            aplicarValidacion(this, validacion);
         });
 
         // ==================== CARGAR DATOS INICIALES ====================
@@ -250,9 +640,10 @@
             if (rolesData.length === 0) {
                 tablaRoles.innerHTML = `
                     <tr>
-                        <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fa-solid fa-inbox text-4xl mb-2 text-gray-300"></i>
-                            <p>No hay roles registrados</p>
+                        <td colspan="4" class="px-6 py-12 text-center text-gray-500">
+                            <span class="material-symbols-outlined text-6xl text-gray-300 block mb-3">folder_off</span>
+                            <p class="font-medium">No hay roles registrados</p>
+                            <p class="text-sm mt-1">Crea un nuevo rol para comenzar</p>
                         </td>
                     </tr>
                 `;
@@ -260,48 +651,62 @@
             }
 
             const iconos = {
-                'Administrador': { icon: 'fa-user-shield', color: 'cyan' },
-                'Médico': { icon: 'fa-user-doctor', color: 'blue' },
-                'Recepcionista': { icon: 'fa-user-tie', color: 'purple' },
-                'Farmacéutico': { icon: 'fa-pills', color: 'green' },
-                'Laboratorista': { icon: 'fa-flask', color: 'orange' }
+                'Administrador': { icon: 'admin_panel_settings', color: 'cyan' },
+                'Médico': { icon: 'medical_services', color: 'blue' },
+                'Doctor': { icon: 'medical_services', color: 'blue' },
+                'Recepcionista': { icon: 'badge', color: 'purple' },
+                'Farmacéutico': { icon: 'medication', color: 'green' },
+                'Laboratorista': { icon: 'science', color: 'orange' },
+                'Enfermero': { icon: 'local_hospital', color: 'pink' },
+                'Enfermera': { icon: 'local_hospital', color: 'pink' }
             };
 
             tablaRoles.innerHTML = rolesData.map(rol => {
-                const icono = iconos[rol.nombre] || { icon: 'fa-user', color: 'gray' };
+                const icono = iconos[rol.nombre] || { icon: 'person', color: 'gray' };
+                const colorClasses = {
+                    cyan: 'bg-cyan-100 text-cyan-700',
+                    blue: 'bg-blue-100 text-blue-700',
+                    purple: 'bg-purple-100 text-purple-700',
+                    green: 'bg-green-100 text-green-700',
+                    orange: 'bg-orange-100 text-orange-700',
+                    pink: 'bg-pink-100 text-pink-700',
+                    gray: 'bg-gray-100 text-gray-700'
+                };
+                
                 return `
                     <tr class="hover:bg-gray-50 transition-all duration-200">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    <div class="h-10 w-10 rounded-full bg-${icono.color}-100 flex items-center justify-center">
-                                        <i class="fa-solid ${icono.icon} text-${icono.color}-600"></i>
+                                <div class="flex-shrink-0 h-12 w-12">
+                                    <div class="h-12 w-12 rounded-xl ${colorClasses[icono.color]} flex items-center justify-center shadow-sm">
+                                        <span class="material-symbols-outlined text-2xl">${icono.icon}</span>
                                     </div>
                                 </div>
                                 <div class="ml-4">
                                     <div class="text-sm font-semibold text-gray-900">${rol.nombre}</div>
+                                    <div class="text-xs text-gray-500">ID: ${rol.id_rol}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm text-gray-600">${rol.descripcion || 'Sin descripción'}</div>
+                            <div class="text-sm text-gray-700 max-w-md">${rol.descripcion || '<span class="text-gray-400 italic">Sin descripción</span>'}</div>
                         </td>
                         <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                                <i class="fa-solid fa-shield-halved mr-1"></i>
-                                ${rol.total_permisos} permisos
+                            <span class="permission-badge bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700">
+                                <span class="material-symbols-outlined text-sm mr-1">security</span>
+                                ${rol.total_permisos || 0} permisos
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            <div class="flex items-center justify-center gap-3">
-                                <button onclick="abrirGestionPermisos(${rol.id_rol})" class="text-blue-600 hover:text-blue-900 hover:bg-blue-50 p-2 rounded-lg transition-all duration-200" title="Gestionar Permisos">
-                                    <i class="fa-solid fa-shield-halved text-lg"></i>
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="abrirGestionPermisos(${rol.id_rol})" class="action-btn text-purple-600 hover:text-purple-900 hover:bg-purple-50 p-2 rounded-lg transition-all duration-200" title="Gestionar Permisos">
+                                    <span class="material-symbols-outlined">security</span>
                                 </button>
-                                <button onclick="editarRol(${rol.id_rol})" class="text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar">
-                                    <i class="fa-solid fa-pen-to-square text-lg"></i>
+                                <button onclick="editarRol(${rol.id_rol})" class="action-btn text-cyan-600 hover:text-cyan-900 hover:bg-cyan-50 p-2 rounded-lg transition-all duration-200" title="Editar Rol">
+                                    <span class="material-symbols-outlined">edit</span>
                                 </button>
-                                <button onclick="eliminarRol(${rol.id_rol})" class="text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar">
-                                    <i class="fa-solid fa-trash-can text-lg"></i>
+                                <button onclick="eliminarRol(${rol.id_rol})" class="action-btn text-red-600 hover:text-red-900 hover:bg-red-50 p-2 rounded-lg transition-all duration-200" title="Eliminar Rol">
+                                    <span class="material-symbols-outlined">delete</span>
                                 </button>
                             </div>
                         </td>
@@ -314,23 +719,54 @@
         newRoleForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const nombreInput = document.getElementById('role-name');
+            const descripcionInput = document.getElementById('role-description');
+            
+            // Validar antes de enviar
+            const validacionNombre = validarNombreRol(nombreInput.value);
+            const validacionDescripcion = validarDescripcion(descripcionInput.value);
+            
+            aplicarValidacion(nombreInput, validacionNombre);
+            aplicarValidacion(descripcionInput, validacionDescripcion);
+            
+            if (!validacionNombre.valido || !validacionDescripcion.valido) {
+                mostrarError('Por favor, corrige los errores en el formulario');
+                return;
+            }
+
+            // Mostrar confirmación
+            const accion = rolActualEdicion ? 'actualizar' : 'crear';
+            const confirmado = await mostrarConfirmacion({
+                titulo: rolActualEdicion ? '¿Actualizar Rol?' : '¿Crear Nuevo Rol?',
+                mensaje: rolActualEdicion 
+                    ? `¿Estás seguro de actualizar el rol "${nombreInput.value.trim()}"?`
+                    : `¿Estás seguro de crear el rol "${nombreInput.value.trim()}"?`,
+                tipo: 'info',
+                textoAceptar: rolActualEdicion ? 'Actualizar' : 'Crear',
+                textoIconoAceptar: rolActualEdicion ? 'edit' : 'add_circle'
+            });
+
+            if (!confirmado) return;
+            
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.classList.add('btn-loading');
+            submitButton.disabled = true;
+            
             const formData = {
-                nombre: document.getElementById('role-name').value.trim(),
-                descripcion: document.getElementById('role-description').value.trim(),
+                nombre: nombreInput.value.trim(),
+                descripcion: descripcionInput.value.trim(),
                 estado: 'Activo'
             };
 
             try {
                 let response;
                 if (rolActualEdicion) {
-                    // Actualizar rol existente
                     response = await fetch(`/cuentas/api/roles/${rolActualEdicion}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(formData)
                     });
                 } else {
-                    // Crear nuevo rol
                     response = await fetch('/cuentas/api/roles', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -342,8 +778,7 @@
                 
                 if (data.success) {
                     mostrarExito(data.message);
-                    newRoleModal.classList.add('hidden');
-                    newRoleModal.classList.remove('flex');
+                    cerrarModal(newRoleModal);
                     await cargarRoles();
                 } else {
                     mostrarError(data.message);
@@ -351,6 +786,9 @@
             } catch (error) {
                 mostrarError('Error de conexión al guardar el rol');
                 console.error(error);
+            } finally {
+                submitButton.classList.remove('btn-loading');
+                submitButton.disabled = false;
             }
         });
 
@@ -361,12 +799,19 @@
 
             rolActualEdicion = idRol;
             newRoleModal.querySelector('h2').textContent = 'Editar Rol';
-            newRoleModal.querySelector('button[type="submit"]').innerHTML = '<i class="fa-solid fa-check mr-2"></i>Guardar Cambios';
-            document.getElementById('role-name').value = rol.nombre;
-            document.getElementById('role-description').value = rol.descripcion || '';
+            newRoleModal.querySelector('.button-text').textContent = 'Guardar Cambios';
             
-            newRoleModal.classList.remove('hidden');
-            newRoleModal.classList.add('flex');
+            const nombreInput = document.getElementById('role-name');
+            const descripcionInput = document.getElementById('role-description');
+            
+            nombreInput.value = rol.nombre;
+            descripcionInput.value = rol.descripcion || '';
+            
+            // Validar inmediatamente
+            aplicarValidacion(nombreInput, validarNombreRol(nombreInput.value));
+            aplicarValidacion(descripcionInput, validarDescripcion(descripcionInput.value));
+            
+            abrirModal(newRoleModal);
         }
 
         // ==================== ELIMINAR ROL ====================
@@ -374,9 +819,15 @@
             const rol = rolesData.find(r => r.id_rol === idRol);
             if (!rol) return;
 
-            if (!confirm(`¿Está seguro de eliminar el rol "${rol.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
-                return;
-            }
+            const confirmado = await mostrarConfirmacion({
+                titulo: '¿Eliminar Rol?',
+                mensaje: `¿Estás seguro de eliminar el rol "${rol.nombre}"? Esta acción no se puede deshacer y los usuarios con este rol perderán sus permisos asociados.`,
+                tipo: 'danger',
+                textoAceptar: 'Eliminar',
+                textoIconoAceptar: 'delete'
+            });
+            
+            if (!confirmado) return;
 
             try {
                 const response = await fetch(`/cuentas/api/roles/${idRol}`, {
@@ -405,15 +856,13 @@
             rolActualPermisos = idRol;
             permissionsModal.querySelector('h2').textContent = `Gestionar Permisos - ${rol.nombre}`;
 
-            // Cargar permisos actuales del rol
             try {
                 const response = await fetch(`/cuentas/api/roles/${idRol}/permisos`);
                 const data = await response.json();
                 
                 if (data.success) {
                     renderizarPermisos(data.permisos_ids);
-                    permissionsModal.classList.remove('hidden');
-                    permissionsModal.classList.add('flex');
+                    abrirModal(permissionsModal);
                 } else {
                     mostrarError('Error al cargar permisos del rol');
                 }
@@ -427,28 +876,46 @@
             const contenedor = document.getElementById('permisos-container');
             
             if (Object.keys(permisosData).length === 0) {
-                contenedor.innerHTML = '<p class="text-gray-500">Cargando permisos...</p>';
+                contenedor.innerHTML = `
+                    <div class="text-center text-gray-500 py-12">
+                        <span class="material-symbols-outlined text-6xl text-blue-600 animate-spin">progress_activity</span>
+                        <p class="mt-4 font-medium">Cargando permisos...</p>
+                    </div>
+                `;
                 return;
             }
 
+            const moduloIconos = {
+                'Usuarios': 'group',
+                'Pacientes': 'patient_list',
+                'Citas': 'calendar_month',
+                'Reservas': 'event',
+                'Reportes': 'assessment',
+                'Farmacia': 'medication',
+                'Configuración': 'settings',
+                'Seguridad': 'security'
+            };
+
             let html = '';
             for (const [modulo, permisos] of Object.entries(permisosData)) {
+                const icono = moduloIconos[modulo] || 'folder';
                 html += `
-                    <div class="mb-6">
-                        <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center">
-                            <i class="fa-solid fa-folder-open mr-2 text-blue-600"></i>
+                    <div class="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <h4 class="text-sm font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="material-symbols-outlined mr-2 text-blue-600">${icono}</span>
                             ${modulo}
+                            <span class="ml-2 text-xs font-normal text-gray-500">(${permisos.length} permisos)</span>
                         </h4>
-                        <div class="space-y-2 ml-6">
+                        <div class="space-y-2 ml-8">
                             ${permisos.map(permiso => `
-                                <label class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                <label class="flex items-start space-x-3 p-3 hover:bg-white rounded-lg cursor-pointer transition-all duration-200 group">
                                     <input type="checkbox" 
                                            value="${permiso.id_permiso}" 
-                                           class="permiso-checkbox mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                           class="custom-checkbox permiso-checkbox"
                                            ${permisosActivos.includes(permiso.id_permiso) ? 'checked' : ''}>
                                     <div class="flex-1">
-                                        <span class="text-sm font-medium text-gray-900">${permiso.nombre}</span>
-                                        <p class="text-xs text-gray-500">${permiso.descripcion || ''}</p>
+                                        <span class="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">${permiso.nombre}</span>
+                                        ${permiso.descripcion ? `<p class="text-xs text-gray-500 mt-1">${permiso.descripcion}</p>` : ''}
                                     </div>
                                 </label>
                             `).join('')}
@@ -467,6 +934,21 @@
             const checkboxes = document.querySelectorAll('.permiso-checkbox:checked');
             const permisosSeleccionados = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
+            const rol = rolesData.find(r => r.id_rol === rolActualPermisos);
+            const confirmado = await mostrarConfirmacion({
+                titulo: '¿Guardar Permisos?',
+                mensaje: `¿Estás seguro de actualizar los permisos del rol "${rol?.nombre}"? Se asignarán ${permisosSeleccionados.length} permisos.`,
+                tipo: 'info',
+                textoAceptar: 'Guardar',
+                textoIconoAceptar: 'save'
+            });
+
+            if (!confirmado) return;
+
+            const saveButton = document.getElementById('save-permissions');
+            saveButton.classList.add('btn-loading');
+            saveButton.disabled = true;
+
             try {
                 const response = await fetch(`/cuentas/api/roles/${rolActualPermisos}/permisos`, {
                     method: 'POST',
@@ -478,8 +960,7 @@
                 
                 if (data.success) {
                     mostrarExito(data.message);
-                    permissionsModal.classList.add('hidden');
-                    permissionsModal.classList.remove('flex');
+                    cerrarModal(permissionsModal);
                     await cargarRoles();
                 } else {
                     mostrarError(data.message);
@@ -487,17 +968,66 @@
             } catch (error) {
                 mostrarError('Error de conexión al guardar permisos');
                 console.error(error);
+            } finally {
+                saveButton.classList.remove('btn-loading');
+                saveButton.disabled = false;
             }
         });
 
         // ==================== UTILIDADES ====================
         function mostrarExito(mensaje) {
-            alert('✓ ' + mensaje);
+            // Crear notificación toast moderna
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl z-[100] flex items-center gap-3 animate-slideIn';
+            toast.innerHTML = `
+                <span class="material-symbols-outlined">check_circle</span>
+                <span class="font-medium">${mensaje}</span>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         function mostrarError(mensaje) {
-            alert('✗ ' + mensaje);
+            // Crear notificación toast moderna
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-xl shadow-2xl z-[100] flex items-center gap-3 animate-slideIn';
+            toast.innerHTML = `
+                <span class="material-symbols-outlined">error</span>
+                <span class="font-medium">${mensaje}</span>
+            `;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
+
+        // Animaciones para toasts
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(400px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes fadeOut {
+                from {
+                    opacity: 1;
+                }
+                to {
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
 
         // ==================== INICIALIZACIÓN ====================
         document.addEventListener('DOMContentLoaded', async () => {
