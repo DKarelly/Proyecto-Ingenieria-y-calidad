@@ -1,4 +1,5 @@
- // Gestión de Horarios Laborables
+let todosLosHorariosLab = []; 
+// Gestión de Horarios Laborables
 document.addEventListener('DOMContentLoaded', function() {
     cargarHorarios();
     inicializarEventos();
@@ -118,7 +119,13 @@ function cargarHorarios() {
     fetch('/admin/api/horarios')
         .then(response => response.json())
         .then(data => {
-            mostrarHorarios(data);
+            todosLosHorariosLab = data; // guarda copia completa
+            // Usa la paginación genérica
+            inicializarPaginacion({
+                datos: todosLosHorariosLab,
+                registrosPorPagina: 20,
+                renderFuncion: mostrarHorarios
+            });
         })
         .catch(error => {
             console.error('Error al cargar horarios:', error);

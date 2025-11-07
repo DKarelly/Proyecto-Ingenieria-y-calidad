@@ -149,6 +149,19 @@
             <!-- Los horarios se cargarán dinámicamente desde la base de datos -->
         </table>
       </div>
+      <!-- Paginación -->
+      <div
+        class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+        <!-- Texto de registros -->
+        <div class="text-sm text-gray-600 text-center md:text-left">
+          Mostrando <span id="inicio-rango" class="font-medium">0</span>-
+          <span id="fin-rango" class="font-medium">0</span> de
+          <span id="total-registros" class="font-medium">0</span> registros
+        </div>
+
+        <!-- Controles de paginación -->
+        <nav id="paginacionNumeros" class="flex items-center space-x-2" aria-label="Pagination"></nav>
+      </div>
     </div>
   </div>
 
@@ -375,6 +388,7 @@
     </div>
   </div>
 
+  <script src="/static/js/paginacion.js"></script>
   <script src="{{ url_for('static', filename='js/gestionHorariosLaborables.js') }}"></script>
 
   {% include 'footer.html' %}

@@ -85,8 +85,8 @@ function cargarRecursos() {
             // Usa la paginación genérica
             inicializarPaginacion({
                 datos: todosLosRecursos,
-                registrosPorPagina: 8,
-                renderFuncion: poblarTabla
+                registrosPorPagina: 20,
+                renderFuncion: todosLosHorariosLab
             });
         })
         .catch(error => {
