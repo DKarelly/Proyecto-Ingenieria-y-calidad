@@ -49,14 +49,14 @@
         <div class="bg-white rounded-lg shadow-md mb-6">
             <div class="border-b border-gray-200">
                 <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                    <button onclick="showTab('empleados')" class="tab-button active py-4 px-1 text-gray-600 hover:text-cyan-600 transition-colors whitespace-nowrap flex items-center gap-2">
+                    <button onclick="showTab('empleados', this)" class="tab-button active py-4 px-1 text-gray-600 hover:text-cyan-600 transition-colors whitespace-nowrap flex items-center gap-2">
                         <i class="fa-solid fa-user-tie"></i>
                         Empleados
                         <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {{ empleados|length if empleados else 0 }}
                         </span>
                     </button>
-                    <button onclick="showTab('pacientes')" class="tab-button py-4 px-1 text-gray-600 hover:text-cyan-600 transition-colors whitespace-nowrap flex items-center gap-2">
+                    <button onclick="showTab('pacientes', this)" class="tab-button py-4 px-1 text-gray-600 hover:text-cyan-600 transition-colors whitespace-nowrap flex items-center gap-2">
                         <i class="fa-solid fa-users"></i>
                         Pacientes
                         <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -135,10 +135,10 @@
                                         {% endif %}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="editarEmpleado({{ empleado.id_empleado }})" class="text-cyan-600 hover:text-cyan-900 mr-3" title="Editar">
+                                        <button data-id="{{ empleado.id_empleado }}" onclick="editarEmpleado(this.dataset.id)" class="text-cyan-600 hover:text-cyan-900 mr-3" title="Editar">
                                             <i class="fa-solid fa-edit"></i>
                                         </button>
-                                        <button onclick="verDetalleUsuario({{ empleado.id_usuario }})" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
+                                        <button data-id="{{ empleado.id_usuario }}" onclick="verDetalleUsuario(this.dataset.id)" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
                                     </td>
@@ -224,10 +224,10 @@
                                         {% endif %}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="editarPaciente({{ paciente.id_paciente }})" class="text-cyan-600 hover:text-cyan-900 mr-3" title="Editar">
+                                        <button data-id="{{ paciente.id_paciente }}" onclick="editarPaciente(this.dataset.id)" class="text-cyan-600 hover:text-cyan-900 mr-3" title="Editar">
                                             <i class="fa-solid fa-edit"></i>
                                         </button>
-                                        <button onclick="verDetalleUsuario({{ paciente.id_usuario }})" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
+                                        <button data-id="{{ paciente.id_usuario }}" onclick="verDetalleUsuario(this.dataset.id)" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
                                             <i class="fa-solid fa-eye"></i>
                                         </button>
                                     </td>
@@ -253,7 +253,7 @@
 
     <script>
         // Función para cambiar entre tabs
-        function showTab(tabName) {
+    function showTab(tabName, el) {
             // Ocultar todos los tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -266,7 +266,9 @@
             
             // Mostrar el tab seleccionado
             document.getElementById('tab-' + tabName).classList.add('active');
-            event.target.classList.add('active');
+            if (el) {
+                el.classList.add('active');
+            }
         }
 
         // Búsqueda en tiempo real para empleados

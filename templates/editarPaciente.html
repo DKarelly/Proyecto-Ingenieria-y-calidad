@@ -281,16 +281,21 @@
                 </div>
             </form>
         </div>
-    </div>
-    </div>
+            </div>
+            </div>
 
-<script>
-    const pacienteData = {
-        id_distrito: {{ paciente.id_ubicacion or 0 }},
-        distrito: "{{ paciente.distrito }}",
-        provincia: "{{ paciente.provincia }}",
-        departamento: "{{ paciente.departamento }}"
-    };
+        <!-- Inyectamos los datos como JSON en un atributo data para evitar errores de lint en <script> -->
+        <div id="paciente-data" data-json='{{ {
+            "id_distrito": paciente.id_ubicacion | default(0),
+            "distrito": paciente.distrito | default(''),
+            "provincia": paciente.provincia | default(''),
+            "departamento": paciente.departamento | default('')
+        } | tojson }}' hidden></div>
+
+        <script>
+            // Recuperar datos del paciente desde el atributo data-json (sin Jinja dentro del script)
+            const pacienteDataEl = document.getElementById('paciente-data');
+            const pacienteData = pacienteDataEl ? JSON.parse(pacienteDataEl.dataset.json || '{}') : {};
 
     let departamentos = [];
     let provincias = [];

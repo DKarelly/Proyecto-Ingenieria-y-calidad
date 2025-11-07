@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -80,10 +81,6 @@
                 <a href="/admin/panel?subsistema=reservas" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg {% if subsistema == 'reservas' %}bg-primary-light text-primary-dark dark:bg-primary/10 dark:text-primary{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-slate-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
                     <span class="material-symbols-outlined text-xl {% if subsistema == 'reservas' %}filled{% endif %}">calendar_month</span>
                     Reservas
-                </a>
-                <a href="/admin/panel?subsistema=notificaciones" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg {% if subsistema == 'notificaciones' %}bg-primary-light text-primary-dark dark:bg-primary/10 dark:text-primary{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-slate-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
-                    <span class="material-symbols-outlined text-xl {% if subsistema == 'notificaciones' %}filled{% endif %}">notifications</span>
-                    Notificaciones
                 </a>
                 <a href="/admin/panel?subsistema=incidencias" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-lg {% if subsistema == 'incidencias' %}bg-primary-light text-primary-dark dark:bg-primary/10 dark:text-primary{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-slate-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
                     <span class="material-symbols-outlined text-xl {% if subsistema == 'incidencias' %}filled{% endif %}">flag</span>
@@ -202,48 +199,47 @@
 
                 {% if subsistema == 'cuentas' %}
                 <!-- CUENTAS Y AUTENTICACIÓN -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Registrar cuenta paciente -->
                     <a href="/cuentas/registrar-cuenta-paciente" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">person_add</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Registrar cuenta paciente</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Registrar cuenta paciente</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Gestión de Usuarios -->
-                    <a href="/usuarios/gestion" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                    <a href="/cuentas/gestionar-cuentas-internas" class="group">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">group</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestión de Usuarios</h2>
-                            <p class="text-xs text-text-secondary-light dark:text-text-secondary-dark mt-2">Empleados y Pacientes</p>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestión de Usuarios</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Recuperar contraseña -->
                     <a href="/cuentas/recuperar-contrasena" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">lock_reset</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Recuperar contraseña</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Recuperar contraseña</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Gestionar roles y permisos -->
                     <a href="/cuentas/gestionar-roles-permisos" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">admin_panel_settings</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar roles y permisos</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar roles y permisos</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
@@ -252,58 +248,58 @@
 
                 {% if subsistema == 'administracion' %}
                 <!-- ADMINISTRACIÓN Y GESTIÓN -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <a href="{{ url_for('admin.gestionar_catalogo_servicios') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
                                 <span class="material-symbols-outlined text-primary text-3xl">medical_services</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar catálogo servicios</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar catálogo servicios</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
                     <a href="{{ url_for('admin.gestionar_programacion') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
                                 <span class="material-symbols-outlined text-primary text-3xl">event_available</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar Programación</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar Programación</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
                     <a href="{{ url_for('admin.gestionar_recursos_fisicos') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
                                 <span class="material-symbols-outlined text-primary text-3xl">apartment</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar recursos físicos</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar recursos físicos</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
                     <a href="{{ url_for('admin.gestionar_horarios_laborales') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
                                 <span class="material-symbols-outlined text-primary text-3xl">schedule</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar horarios laborales</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar horarios laborales</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
                     <a href="{{ url_for('admin.gestionar_bloqueo_horarios') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
                                 <span class="material-symbols-outlined text-primary text-3xl">block</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar bloqueo horarios</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar bloqueo horarios</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
                     <a href="{{ url_for('admin.consultar_agenda_medica') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300 ease-in-out">
                                 <span class="material-symbols-outlined text-primary text-3xl">calendar_today</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar agenda médica</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar agenda médica</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
@@ -312,118 +308,69 @@
 
                 {% if subsistema == 'reservas' %}
                 <!-- RESERVAS -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Consultar servicio por médico -->
                     <a href="/reservas/consultar-servicio-medico" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">person_search</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar servicio por médico</h2>
-                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </a>
-
-                    <!-- Consultar servicio por tipo -->
-                    <a href="/reservas/consultar-servicio-tipo" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">list_alt</span>
-                            </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar servicio por tipo</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar servicio por médico</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Consultar calendario disponibilidad -->
                     <a href="{{ url_for('reservas.consultar_disponibilidad') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">event_available</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar calendario disponibilidad</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar calendario disponibilidad</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Generar reserva -->
                     <a href="/reservas/generar-reserva" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">add_box</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Generar reserva</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Generar reserva</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Generar reporte servicios -->
                     <a href="/reservas/reporte-servicios" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">description</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Generar reporte servicios</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Generar reporte servicios</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Reprogramar servicio médico -->
                     <a href="/reservas/reprogramar-reserva" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">update</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Reprogramar servicio médico</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Reprogramar servicio médico</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Gestionar cancelación cita -->
                     <a href="/reservas/gestionar-cancelaciones" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">cancel</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar cancelación cita</h2>
-                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </a>
-                </div>
-                {% endif %}
-
-                {% if subsistema == 'notificaciones' %}
-                <!-- NOTIFICACIONES -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                    <!-- Gestionar confirmación reserva -->
-                    <a href="/notificaciones/gestionar-confirmacion-reserva" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">check_circle</span>
-                            </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar confirmación reserva</h2>
-                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </a>
-
-                    <!-- Gestionar recordatorio reserva -->
-                    <a href="/notificaciones/gestionar-recordatorio-reserva" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">notifications_active</span>
-                            </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar recordatorio reserva</h2>
-                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
-                        </div>
-                    </a>
-
-                    <!-- Gestionar recordatorio cambios -->
-                    <a href="/notificaciones/gestionar-recordatorio-cambios" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
-                                <span class="material-symbols-outlined text-primary text-3xl">info</span>
-                            </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar recordatorio cambios</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar cancelación cita</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
@@ -432,47 +379,47 @@
 
                 {% if subsistema == 'incidencias' %}
                 <!-- INCIDENCIAS -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Generar incidencia -->
                     <a href="{{ url_for('seguridad.generar_incidencia') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">report_problem</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Generar incidencia</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Generar incidencia</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Asignar responsable -->
                     <a href="{{ url_for('seguridad.asignar_responsable') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">assignment_ind</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Asignar responsable</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Asignar responsable</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Consultar historial -->
                     <a href="{{ url_for('admin.consultar_incidencia') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">history</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar historial</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar historial</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Generar informe -->
                     <a href="/seguridad/incidencias/generar-informe" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">summarize</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Generar informe</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Generar informe</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
@@ -481,25 +428,25 @@
 
                 {% if subsistema == 'seguridad' %}
                 <!-- SEGURIDAD -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Consultar actividad -->
                     <a href="{{ url_for('seguridad.consultar_actividad') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">assignment</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar actividad</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar actividad</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Gestionar respaldo manual -->
                     <a href="#" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">backup</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar respaldo manual</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar respaldo manual</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
@@ -508,36 +455,36 @@
 
                 {% if subsistema == 'reportes' %}
                 <!-- REPORTES -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <!-- Consultar por categoría -->
                     <a href="{{ url_for('reportes.consultar_por_categoria') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">folder_open</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Consultar por categoría</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Consultar por categoría</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Generar reporte actividad -->
                     <a href="{{ url_for('reportes.generar_reporte_actividad') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">bar_chart</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Generar reporte actividad</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Generar reporte actividad</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Reporte ocupación recursos -->
                     <a href="{{ url_for('reportes.ocupacion_recursos') }}" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">monitoring</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Reporte ocupación recursos</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Reporte ocupación recursos</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
@@ -546,25 +493,36 @@
 
                 {% if subsistema == 'farmacia' %}
                 <!-- FARMACIA -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Gestionar Medicamentos -->
+                    <a href="/farmacia/gestionar-medicamentos" class="group">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
+                                <span class="material-symbols-outlined text-primary text-3xl">medication</span>
+                            </div>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar Medicamentos</h2>
+                            <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
+                        </div>
+                    </a>
+
                     <!-- Gestionar recepción de medicamentos -->
                     <a href="/farmacia/gestionar-recepcion-medicamentos" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">inventory</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar recepción de medicamentos</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar recepción de medicamentos</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>
 
                     <!-- Gestionar entrega de medicamentos -->
                     <a href="/farmacia/gestionar-entrega-medicamentos" class="group">
-                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out">
-                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform duration-300">
+                        <div class="relative bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-subtle hover:shadow-subtle-hover hover:-translate-y-1.5 transition-all duration-300 ease-in-out h-48">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-primary-light to-cyan-100 dark:from-primary/5 dark:to-primary/10 flex items-center justify-center mb-4 transform group-hover:scale-110 transition-transform duration-300">
                                 <span class="material-symbols-outlined text-primary text-3xl">local_pharmacy</span>
                             </div>
-                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base">Gestionar entrega de medicamentos</h2>
+                            <h2 class="font-display font-semibold text-text-primary-light dark:text-text-primary-dark text-base leading-tight">Gestionar entrega de medicamentos</h2>
                             <span class="absolute top-4 right-4 text-text-secondary-light/0 group-hover:text-text-secondary-light/50 dark:group-hover:text-text-secondary-dark/50 transition-all duration-300 material-symbols-outlined">arrow_forward</span>
                         </div>
                     </a>

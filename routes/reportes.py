@@ -31,7 +31,8 @@ def panel():
         return redirect(url_for("home"))
     if session.get("tipo_usuario") != "empleado":
         return redirect(url_for("home"))
-    return render_template("panel.html", subsistema="reportes")
+    # Redirigir al dashboard principal unificado
+    return redirect(url_for('admin_panel', subsistema='reportes'))
 
 @reportes_bp.route("/consultar-por-categoria")
 def consultar_por_categoria():
