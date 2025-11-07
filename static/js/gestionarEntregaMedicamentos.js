@@ -170,12 +170,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/farmacia/api/entregas');
             if (!response.ok) throw new Error('Error al cargar entregas');
             const entregas = await response.json();
-            renderizarEntregas(entregas);
+            // Ordenar entregas por id de menor a mayor
+            entregas.sort((a, b) => a.id - b.id);
+            inicializarPaginacion({
+                datos: entregas,
+                registrosPorPagina: 20, /* CANTIDAD DE FILAS PARA LA TABLA */
+                renderFuncion: renderizarEntregas
+            });
         } catch (error) {
             console.error('Error:', error);
             mostrarError('Error al cargar las entregas');
         }
-    }
+    } 
 
     function renderizarEntregas(entregas) {
         if (!tablaEntregas) return;
