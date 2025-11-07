@@ -132,13 +132,13 @@ def consultar_perfil():
         resultado = cursor.fetchone()
         
         if resultado:
-            # Normalizar sexo: aceptar 'M'/'F' o 'Masculino'/'Femenino'
+            # Normalizar sexo: solo 'Masculino'/'Femenino'
             sexo_val = resultado.get('sexo')
             if sexo_val in (None, ''):
                 sexo_paciente = 'No especificado'
-            elif sexo_val.upper() == 'M' or sexo_val == 'Masculino':
+            elif sexo_val == 'Masculino':
                 sexo_paciente = 'Masculino'
-            elif sexo_val.upper() == 'F' or sexo_val == 'Femenino':
+            elif sexo_val == 'Femenino':
                 sexo_paciente = 'Femenino'
             else:
                 sexo_paciente = sexo_val
@@ -196,9 +196,9 @@ def consultar_perfil():
             sexo_val = resultado.get('sexo')
             if sexo_val in (None, ''):
                 sexo_empleado = 'No especificado'
-            elif sexo_val.upper() == 'M' or sexo_val == 'Masculino':
+            elif sexo_val == 'Masculino':
                 sexo_empleado = 'Masculino'
-            elif sexo_val.upper() == 'F' or sexo_val == 'Femenino':
+            elif sexo_val == 'Femenino':
                 sexo_empleado = 'Femenino'
             else:
                 sexo_empleado = sexo_val
@@ -952,10 +952,10 @@ def api_obtener_detalle_usuario(usuario_id):
             'nombres': resultado['nombres'],
             'apellidos': resultado['apellidos'],
             'documento_identidad': resultado['documento_identidad'] or 'No especificado',
-            # Normalizar valor de sexo para la API: aceptar 'M'/'F' o 'Masculino'/'Femenino'
+            # Normalizar valor de sexo para la API: solo 'Masculino'/'Femenino'
             'sexo': (
-                'Masculino' if (resultado['sexo'] and (resultado['sexo'].upper() == 'M' or resultado['sexo'] == 'Masculino'))
-                else 'Femenino' if (resultado['sexo'] and (resultado['sexo'].upper() == 'F' or resultado['sexo'] == 'Femenino'))
+                'Masculino' if (resultado['sexo'] and resultado['sexo'] == 'Masculino')
+                else 'Femenino' if (resultado['sexo'] and resultado['sexo'] == 'Femenino')
                 else 'No especificado'
             ),
             'tipo_usuario': resultado['tipo_usuario'],
