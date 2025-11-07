@@ -1,0 +1,989 @@
+// historial-reservas.js - Gestión del historial de reservas del paciente con pestañas
+
+let reservasData = [];
+let tipoActivo = 1; // Por defecto: CITAS
+
+// Cargar reservas al iniciar
+document.addEventListener('DOMContentLoaded', function() {
+    cargarReservas();
+
+    // Event listeners para filtros
+    document.getElementById('filtroEstado').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroFechaDesde').addEventListener('change', aplicarFiltros);
+    document.getElementById('filtroFechaHasta').addEventListener('change', aplicarFiltros);
+    document.getElementById('btnLimpiarFiltros').addEventListener('click', limpiarFiltros);
+
+    // Event listeners para pestañas
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            cambiarPestana(this);
+        });
+    });
+});
+
+// Función para cambiar de pestaña
+function cambiarPestana(button) {
+    const tipo = parseInt(button.dataset.tipo);
+    tipoActivo = tipo;
+
+    // Actualizar estilos de pestañas
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('border-cyan-500', 'text-cyan-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    button.classList.remove('border-transparent', 'text-gray-500');
+    button.classList.add('border-cyan-500', 'text-cyan-600');
+
+    // Aplicar filtros con el nuevo tipo
+    aplicarFiltros();
+}
+
+// Función para cargar todas las reservas
+async function cargarReservas() {
+    try {
+        const response = await fetch('/reservas/api/paciente/mis-reservas');
+        const data = await response.json();
+
+        if (data.error) {
+            mostrarError(data.error);
+            return;
+        }
+
+        reservasData = data.reservas || [];
+        
+        // Ordenar por fecha programación (más reciente primero)
+        reservasData.sort((a, b) => {
+            const fechaA = new Date(a.fecha_programacion || a.fecha_registro);
+            const fechaB = new Date(b.fecha_programacion || b.fecha_registro);
+            return fechaB - fechaA; // Orden descendente (más reciente primero)
+        });
+        
+        mostrarReservas(reservasData);
+
+    } catch (error) {
+        console.error('Error al cargar reservas:', error);
+        mostrarError('Error al cargar las reservas. Por favor, intenta nuevamente.');
+    }
+}
+
+// Función para mostrar las reservas según la pestaña activa
+function mostrarReservas(reservas) {
+    const container = document.getElementById('reservasContainer');
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+    const contadorResultados = document.getElementById('contadorResultados');
+
+    loadingState.classList.add('hidden');
+
+    if (!reservas || reservas.length === 0) {
+        container.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        contadorResultados.textContent = 'Mostrando 0 reservas';
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+    container.classList.remove('hidden');
+    contadorResultados.textContent = `Mostrando ${reservas.length} reserva${reservas.length !== 1 ? 's' : ''}`;
+
+    // Generar HTML según el tipo activo
+    if (tipoActivo === 1) {
+        // PESTAÑA DE CITAS
+        container.innerHTML = reservas.map(reserva => generarTarjetaCita(reserva)).join('');
+    } else if (tipoActivo === 2) {
+        // PESTAÑA DE OPERACIONES
+        container.innerHTML = reservas.map(reserva => generarTarjetaOperacion(reserva)).join('');
+    } else if (tipoActivo === 3) {
+        // PESTAÑA DE EXÁMENES
+        container.innerHTML = reservas.map(reserva => generarTarjetaExamen(reserva)).join('');
+    }
+}
+
+// Generar tarjeta para CITAS
+function generarTarjetaCita(reserva) {
+    const fechaStr = reserva.fecha_programacion || reserva.fecha_cita;
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
+    const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
+    
+    const tieneExamenesOOperaciones = (reserva.examenes && reserva.examenes.length > 0) || (reserva.operaciones && reserva.operaciones.length > 0);
+    const esCitaCompletada = reserva.estado_reserva === 'Completada';
+
+    let html = `
+        <div class="${bgColorClass} border-2 ${borderColorClass} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-2xl">
+                            🩺
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">${reserva.servicio}</h3>
+                            <p class="text-sm text-gray-600">ID: #${reserva.id_reserva}</p>
+                        </div>
+                    </div>
+                    <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                </div>
+
+                <div class="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                            <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-cyan-600">${fechaFormateada.split(',')[0]}</p>
+                            <p class="text-gray-600">${fechaFormateada.split(',').slice(1).join(',').trim()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Horario</p>
+                            <p class="font-semibold text-gray-800">${reserva.hora_inicio} - ${reserva.hora_fin}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Médico</p>
+                            <p class="font-semibold text-gray-800">${reserva.medico_nombres ? 'Dr(a). ' + reserva.medico_nombres + ' ' + reserva.medico_apellidos : 'Por asignar'}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                                <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Registrada</p>
+                            <p class="font-semibold text-gray-800">${new Date(reserva.fecha_registro).toLocaleDateString('es-ES')}</p>
+                        </div>
+                    </div>
+                </div>
+    `;
+
+    // Si es una cita completada con exámenes/operaciones, mostrar subcarpeta
+    if (esCitaCompletada && tieneExamenesOOperaciones) {
+        html += `
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <button onclick="toggleDetalleCita(${reserva.id_reserva})" class="w-full flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 rounded-lg p-4 transition-all duration-300">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-semibold text-gray-800">Procedimientos Asociados</p>
+                                <p class="text-sm text-gray-600">
+                                    ${reserva.examenes && reserva.examenes.length > 0 ? reserva.examenes.length + ' examen(es)' : ''}
+                                    ${reserva.examenes && reserva.examenes.length > 0 && reserva.operaciones && reserva.operaciones.length > 0 ? ' • ' : ''}
+                                    ${reserva.operaciones && reserva.operaciones.length > 0 ? reserva.operaciones.length + ' operación(es)' : ''}
+                                </p>
+                            </div>
+                        </div>
+                        <svg id="icon-${reserva.id_reserva}" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="transform transition-transform">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div id="detalle-${reserva.id_reserva}" class="hidden mt-3 space-y-3">
+                        ${generarDetallesExamenesOperaciones(reserva)}
+                    </div>
+                </div>
+        `;
+    }
+
+    // Botones de acción (solo si NO es completada y NO tiene cancelación)
+    if (!esCitaCompletada && estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada') {
+        html += `
+                <div class="mt-4 pt-4 border-t border-gray-200 flex gap-3">
+                    <button onclick="abrirModalReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', ${reserva.id_servicio}, '${reserva.fecha_programacion}')" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                        </svg>
+                        Reprogramar
+                    </button>
+                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')" 
+                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Solicitar Cancelación
+                    </button>
+                </div>
+        `;
+    }
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    return html;
+}
+
+// Generar detalles de exámenes y operaciones de una cita completada
+function generarDetallesExamenesOperaciones(reserva) {
+    let html = '';
+
+    // EXÁMENES
+    if (reserva.examenes && reserva.examenes.length > 0) {
+        reserva.examenes.forEach(examen => {
+            const examFecha = examen.fecha_examen ? new Date(examen.fecha_examen + 'T00:00:00').toLocaleDateString('es-ES') : 'No especificada';
+            const puedeReprogramar = examen.estado !== 'Completada';
+            html += `
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🔬</span>
+                            <h5 class="font-semibold text-gray-800">${examen.nombre_servicio || 'Examen'}</h5>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${examen.estado === 'Completada' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                            ${examen.estado === 'Completada' ? '✅ Completada' : '⏳ ' + examen.estado}
+                        </span>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-2 text-sm">
+                        <p class="text-gray-700"><strong>Fecha:</strong> ${examFecha}</p>
+                        ${examen.hora_examen ? `<p class="text-gray-700"><strong>Hora:</strong> ${examen.hora_examen}</p>` : ''}
+                        ${examen.observacion ? `<p class="text-gray-600 col-span-2"><strong>Observaciones:</strong> ${examen.observacion}</p>` : ''}
+                    </div>
+                    ${puedeReprogramar && examen.id_reserva ? `
+                    <div class="mt-3 pt-3 border-t border-purple-300 flex gap-2">
+                        <button onclick="abrirModalReprogramacion(${examen.id_reserva}, '${examen.nombre_servicio || 'Examen'}', ${examen.id_servicio || 'null'}, '${examen.fecha_examen}')" 
+                                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all">
+                            🔄 Reprogramar Examen
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+    }
+
+    // OPERACIONES
+    if (reserva.operaciones && reserva.operaciones.length > 0) {
+        reserva.operaciones.forEach(operacion => {
+            const opFecha = operacion.fecha_operacion ? new Date(operacion.fecha_operacion + 'T00:00:00').toLocaleDateString('es-ES') : 'No especificada';
+            const opCompletada = operacion.hora_fin ? true : false;
+            const puedeReprogramar = !opCompletada;
+            html += `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">⚕️</span>
+                            <h5 class="font-semibold text-gray-800">Operación</h5>
+                        </div>
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold ${opCompletada ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                            ${opCompletada ? '✅ Completada' : '⏳ Pendiente'}
+                        </span>
+                    </div>
+                    <div class="grid md:grid-cols-2 gap-2 text-sm">
+                        <p class="text-gray-700"><strong>Fecha:</strong> ${opFecha}</p>
+                        ${operacion.hora_inicio ? `<p class="text-gray-700"><strong>Hora:</strong> ${operacion.hora_inicio}${operacion.hora_fin ? ' - ' + operacion.hora_fin : ''}</p>` : ''}
+                        ${operacion.observaciones ? `<p class="text-gray-600 col-span-2"><strong>Observaciones:</strong> ${operacion.observaciones}</p>` : ''}
+                    </div>
+                    ${puedeReprogramar && operacion.id_reserva ? `
+                    <div class="mt-3 pt-3 border-t border-red-300 flex gap-2">
+                        <button onclick="abrirModalReprogramacion(${operacion.id_reserva}, 'Operación', null, '${operacion.fecha_operacion}')" 
+                                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all">
+                            🔄 Reprogramar Operación
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+    }
+
+    return html;
+}
+
+// Generar tarjeta para OPERACIONES
+function generarTarjetaOperacion(reserva) {
+    const fechaStr = reserva.fecha_programacion;
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
+    const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
+
+    return `
+        <div class="${bgColorClass} border-2 ${borderColorClass} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-400 to-red-600 rounded-xl flex items-center justify-center text-2xl">
+                            ⚕️
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">${reserva.servicio}</h3>
+                            <p class="text-sm text-gray-600">ID: #${reserva.id_reserva}</p>
+                        </div>
+                    </div>
+                    <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                </div>
+
+                <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-600">
+                            <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-red-600">${fechaFormateada.split(',')[0]}</p>
+                            <p class="text-gray-600">${fechaFormateada.split(',').slice(1).join(',').trim()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-600">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Horario</p>
+                            <p class="font-semibold text-gray-800">${reserva.hora_inicio} - ${reserva.hora_fin}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Médico</p>
+                            <p class="font-semibold text-gray-800">${reserva.medico_nombres ? 'Dr(a). ' + reserva.medico_nombres + ' ' + reserva.medico_apellidos : 'Por asignar'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                ${estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada' && reserva.estado_reserva !== 'Completada' ? `
+                <div class="mt-4 pt-4 border-t border-gray-200 flex gap-3">
+                    <button onclick="abrirModalReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', ${reserva.id_servicio}, '${reserva.fecha_programacion}')" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                        </svg>
+                        Reprogramar
+                    </button>
+                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')" 
+                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Solicitar Cancelación
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// Generar tarjeta para EXÁMENES
+function generarTarjetaExamen(reserva) {
+    const fechaStr = reserva.fecha_programacion;
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
+    const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
+
+    return `
+        <div class="${bgColorClass} border-2 ${borderColorClass} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+            <div class="p-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center text-2xl">
+                            🔬
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">${reserva.servicio}</h3>
+                            <p class="text-sm text-gray-600">ID: #${reserva.id_reserva}</p>
+                        </div>
+                    </div>
+                    <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                </div>
+
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                            <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                        </svg>
+                        <div>
+                            <p class="text-2xl font-bold text-purple-600">${fechaFormateada.split(',')[0]}</p>
+                            <p class="text-gray-600">${fechaFormateada.split(',').slice(1).join(',').trim()}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Horario</p>
+                            <p class="font-semibold text-gray-800">${reserva.hora_inicio} - ${reserva.hora_fin}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-pink-600">
+                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Responsable</p>
+                            <p class="font-semibold text-gray-800">${reserva.medico_nombres ? reserva.medico_nombres + ' ' + reserva.medico_apellidos : 'Por asignar'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                ${estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada' && reserva.estado_reserva !== 'Completada' ? `
+                <div class="mt-4 pt-4 border-t border-gray-200 flex gap-3">
+                    <button onclick="abrirModalReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', ${reserva.id_servicio}, '${reserva.fecha_programacion}')" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                        </svg>
+                        Reprogramar
+                    </button>
+                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')" 
+                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        Solicitar Cancelación
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// Función auxiliar para obtener estilos de estado
+function obtenerEstilosEstado(estadoReserva, estadoCancelacion) {
+    let estadoClass = `status-${estadoReserva}`;
+    let estadoTexto = estadoReserva;
+    let borderColorClass = 'border-gray-100';
+    let bgColorClass = 'bg-white';
+    
+    if (estadoCancelacion === 'Solicitada') {
+        estadoClass = 'bg-gray-300 text-gray-700';
+        estadoTexto = '⏳ Cancelación Solicitada';
+        borderColorClass = 'border-gray-400';
+        bgColorClass = 'bg-gray-50';
+    } else if (estadoCancelacion === 'Cancelada') {
+        estadoClass = 'bg-red-200 text-red-900';
+        estadoTexto = '❌ Cancelada';
+        borderColorClass = 'border-red-300';
+        bgColorClass = 'bg-red-50';
+    }
+
+    return {estadoClass, estadoTexto, borderColorClass, bgColorClass};
+}
+
+// Toggle para mostrar/ocultar detalles de cita completada
+function toggleDetalleCita(idReserva) {
+    const detalle = document.getElementById(`detalle-${idReserva}`);
+    const icon = document.getElementById(`icon-${idReserva}`);
+    
+    if (detalle.classList.contains('hidden')) {
+        detalle.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+    } else {
+        detalle.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+    }
+}
+
+// Función auxiliar para obtener información del tipo
+function getTipoInfo(tipo) {
+    // tipo: 1 = Cita Médica, 2 = Operación, 3 = Examen
+    if (tipo == 1) {
+        return {
+            icono: '🩺',
+            texto: 'Cita Médica',
+            color: 'bg-blue-100 text-blue-800'
+        };
+    } else if (tipo == 2) {
+        return {
+            icono: '⚕️',
+            texto: 'Operación',
+            color: 'bg-red-100 text-red-800'
+        };
+    } else if (tipo == 3) {
+        return {
+            icono: '🔬',
+            texto: 'Examen',
+            color: 'bg-purple-100 text-purple-800'
+        };
+    } else {
+        return {
+            icono: '📋',
+            texto: 'Reserva',
+            color: 'bg-gray-100 text-gray-800'
+        };
+    }
+}
+
+// Función para aplicar filtros
+function aplicarFiltros() {
+    const estado = document.getElementById('filtroEstado').value;
+    const fechaDesde = document.getElementById('filtroFechaDesde').value;
+    const fechaHasta = document.getElementById('filtroFechaHasta').value;
+
+    let reservasFiltradas = [...reservasData];
+
+    // Filtrar por tipo activo (pestaña seleccionada)
+    reservasFiltradas = reservasFiltradas.filter(r => r.tipo == tipoActivo);
+
+    // Filtrar por estado
+    if (estado) {
+        reservasFiltradas = reservasFiltradas.filter(r => r.estado_reserva === estado);
+    }
+
+    // Filtrar por fecha desde
+    if (fechaDesde) {
+        reservasFiltradas = reservasFiltradas.filter(r => {
+            const fechaReserva = r.fecha_programacion || r.fecha_cita;
+            return new Date(fechaReserva) >= new Date(fechaDesde);
+        });
+    }
+
+    // Filtrar por fecha hasta
+    if (fechaHasta) {
+        reservasFiltradas = reservasFiltradas.filter(r => {
+            const fechaReserva = r.fecha_programacion || r.fecha_cita;
+            return new Date(fechaReserva) <= new Date(fechaHasta);
+        });
+    }
+
+    mostrarReservas(reservasFiltradas);
+}
+
+// Función para limpiar filtros
+function limpiarFiltros() {
+    document.getElementById('filtroEstado').value = '';
+    document.getElementById('filtroFechaDesde').value = '';
+    document.getElementById('filtroFechaHasta').value = '';
+    aplicarFiltros(); // Aplica filtros con la pestaña activa
+}
+
+// Función para mostrar errores
+function mostrarError(mensaje) {
+    const container = document.getElementById('reservasContainer');
+    const loadingState = document.getElementById('loadingState');
+    const emptyState = document.getElementById('emptyState');
+
+    loadingState.classList.add('hidden');
+    container.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+
+    emptyState.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-red-300 mb-4">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <h3 class="text-xl font-semibold text-gray-800 mb-2">Error al cargar</h3>
+        <p class="text-gray-600 mb-6">${mensaje}</p>
+        <button onclick="cargarReservas()" class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+            Intentar Nuevamente
+        </button>
+    `;
+}
+
+// ==================== FUNCIONES DE CANCELACIÓN Y REPROGRAMACIÓN ====================
+
+let reservaActual = null;
+
+function abrirModalCancelacion(idReserva, nombreServicio) {
+    reservaActual = { id: idReserva, nombre: nombreServicio };
+    
+    // Crear modal dinámicamente
+    const modalHTML = `
+        <div id="modalCancelacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-3xl">⚠️</span>
+                            Cancelar Reserva
+                        </h2>
+                        <button onclick="cerrarModalCancelacion()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">
+                        <p class="text-sm text-blue-800">
+                            <strong>💡 Recomendación:</strong> Antes de cancelar, considera <strong>reprogramar</strong> tu reserva para otra fecha. 
+                            Es más rápido y mantienes tu lugar en el sistema.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-700 mb-2">Servicio a cancelar:</h3>
+                        <p class="text-lg text-gray-900">${nombreServicio}</p>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block font-semibold text-gray-700 mb-2" for="motivoCancelacion">
+                            Motivo de cancelación <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="motivoCancelacion" 
+                            rows="4" 
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            placeholder="Por favor, explica el motivo de tu cancelación (mínimo 10 caracteres)..."
+                            maxlength="500"
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <span id="contadorCaracteres">0</span>/500 caracteres
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-gray-200 flex gap-3">
+                    <button onclick="cerrarModalCancelacion()" 
+                            class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-all">
+                        Volver
+                    </button>
+                    <button onclick="confirmarCancelacion()" 
+                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-red-600 hover:to-red-700 transition-all">
+                        Confirmar Cancelación
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Contador de caracteres
+    document.getElementById('motivoCancelacion').addEventListener('input', function() {
+        document.getElementById('contadorCaracteres').textContent = this.value.length;
+    });
+}
+
+function cerrarModalCancelacion() {
+    const modal = document.getElementById('modalCancelacion');
+    if (modal) {
+        modal.remove();
+    }
+    reservaActual = null;
+}
+
+async function confirmarCancelacion() {
+    const motivo = document.getElementById('motivoCancelacion').value.trim();
+    
+    if (!motivo || motivo.length < 10) {
+        alert('Por favor, proporciona un motivo válido (mínimo 10 caracteres)');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/reservas/api/solicitar-cancelacion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id_reserva: reservaActual.id,
+                motivo: motivo
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            cerrarModalCancelacion();
+            cargarReservas(); // Recargar la lista
+        } else {
+            alert('❌ Error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al enviar la solicitud. Intenta nuevamente.');
+    }
+}
+
+function abrirModalReprogramacion(idReserva, nombreServicio, idServicio, fechaActual) {
+    reservaActual = { 
+        id: idReserva, 
+        nombre: nombreServicio,
+        idServicio: idServicio,
+        fechaActual: fechaActual
+    };
+    
+    const modalHTML = `
+        <div id="modalReprogramacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="text-3xl">🔄</span>
+                            Reprogramar Reserva
+                        </h2>
+                        <button onclick="cerrarModalReprogramacion()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded">
+                        <p class="text-sm text-green-800">
+                            <strong>✅ Buena elección:</strong> Reprogramar es más rápido que cancelar y volver a reservar.
+                        </p>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-700 mb-2">Servicio:</h3>
+                        <p class="text-lg text-gray-900">${nombreServicio}</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block font-semibold text-gray-700 mb-2" for="nuevaFecha">
+                            Nueva Fecha <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            id="nuevaFecha" 
+                            class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            min="${new Date().toISOString().split('T')[0]}"
+                        />
+                    </div>
+                    
+                    <div id="horariosContainer" class="hidden mb-6">
+                        <label class="block font-semibold text-gray-700 mb-2">
+                            Selecciona un nuevo horario <span class="text-red-500">*</span>
+                        </label>
+                        <div id="horariosLista" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            <!-- Horarios se cargarán aquí -->
+                        </div>
+                        <p id="horaActualInfo" class="text-sm text-gray-600 mt-2"></p>
+                    </div>
+                    
+                    <div id="loadingHorarios" class="hidden text-center py-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                        <p class="text-gray-600 mt-2">Cargando horarios disponibles...</p>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-gray-200 flex gap-3">
+                    <button onclick="cerrarModalReprogramacion()" 
+                            class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-all">
+                        Cancelar
+                    </button>
+                    <button id="btnConfirmarReprogramacion" onclick="confirmarReprogramacion()" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all"
+                            disabled>
+                        Confirmar Reprogramación
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Event listener para fecha
+    document.getElementById('nuevaFecha').addEventListener('change', cargarHorariosDisponibles);
+}
+
+function cerrarModalReprogramacion() {
+    const modal = document.getElementById('modalReprogramacion');
+    if (modal) {
+        modal.remove();
+    }
+    reservaActual = null;
+}
+
+let horaSeleccionada = null;
+
+async function cargarHorariosDisponibles() {
+    const fecha = document.getElementById('nuevaFecha').value;
+    
+    if (!fecha) return;
+    
+    const loadingDiv = document.getElementById('loadingHorarios');
+    const horariosContainer = document.getElementById('horariosContainer');
+    
+    loadingDiv.classList.remove('hidden');
+    horariosContainer.classList.add('hidden');
+    
+    console.log('Datos enviados:', {
+        id_reserva: reservaActual.id,
+        id_servicio: reservaActual.idServicio || null,
+        fecha: fecha
+    });
+    
+    try {
+        const response = await fetch('/reservas/api/horarios-disponibles-reprogramacion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id_reserva: reservaActual.id,
+                id_servicio: reservaActual.idServicio || null,
+                fecha: fecha
+            })
+        });
+        
+        const data = await response.json();
+        
+        console.log('Respuesta del servidor:', data);
+        
+        loadingDiv.classList.add('hidden');
+        
+        if (!response.ok) {
+            horariosContainer.classList.remove('hidden');
+            document.getElementById('horariosLista').innerHTML = `
+                <div class="col-span-full text-center py-4 bg-red-50 rounded-lg">
+                    <p class="text-red-600">Error: ${data.error || 'No se pudieron cargar los horarios'}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        if (data.success && data.horarios.length > 0) {
+            horariosContainer.classList.remove('hidden');
+            const horariosLista = document.getElementById('horariosLista');
+            const horaActualInfo = document.getElementById('horaActualInfo');
+            
+            horaActualInfo.textContent = `Hora actual de tu reserva: ${data.hora_actual}`;
+            
+            horariosLista.innerHTML = data.horarios.sort().map(hora => `
+                <button 
+                    onclick="seleccionarHora('${hora}')" 
+                    class="hora-btn py-2 px-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-sm font-semibold"
+                    data-hora="${hora}">
+                    ${hora}
+                </button>
+            `).join('');
+        } else {
+            horariosContainer.classList.remove('hidden');
+            document.getElementById('horariosLista').innerHTML = `
+                <div class="col-span-full text-center py-4">
+                    <p class="text-gray-600">No hay horarios disponibles para esta fecha.</p>
+                    <p class="text-sm text-gray-500 mt-2">Intenta con otra fecha.</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        loadingDiv.classList.add('hidden');
+        alert('Error al cargar horarios. Intenta nuevamente.');
+    }
+}
+
+function seleccionarHora(hora) {
+    horaSeleccionada = hora;
+    
+    // Actualizar estilos
+    document.querySelectorAll('.hora-btn').forEach(btn => {
+        btn.classList.remove('border-blue-600', 'bg-blue-500', 'text-white');
+        btn.classList.add('border-gray-300');
+    });
+    
+    const btnSeleccionado = document.querySelector(`[data-hora="${hora}"]`);
+    btnSeleccionado.classList.remove('border-gray-300');
+    btnSeleccionado.classList.add('border-blue-600', 'bg-blue-500', 'text-white');
+    
+    // Habilitar botón de confirmar
+    document.getElementById('btnConfirmarReprogramacion').disabled = false;
+}
+
+async function confirmarReprogramacion() {
+    const nuevaFecha = document.getElementById('nuevaFecha').value;
+    
+    if (!nuevaFecha || !horaSeleccionada) {
+        alert('Por favor, selecciona una fecha y una hora');
+        return;
+    }
+    
+    const btnConfirmar = document.getElementById('btnConfirmarReprogramacion');
+    btnConfirmar.disabled = true;
+    btnConfirmar.textContent = 'Procesando...';
+    
+    try {
+        const response = await fetch('/reservas/api/reprogramar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id_reserva: reservaActual.id,
+                nueva_fecha: nuevaFecha,
+                nueva_hora: horaSeleccionada,
+                id_servicio: reservaActual.idServicio || null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            cerrarModalReprogramacion();
+            cargarReservas(); // Recargar la lista
+        } else {
+            alert('❌ Error: ' + data.error);
+            btnConfirmar.disabled = false;
+            btnConfirmar.textContent = 'Confirmar Reprogramación';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al reprogramar. Intenta nuevamente.');
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = 'Confirmar Reprogramación';
+    }
+}
