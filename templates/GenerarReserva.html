@@ -195,48 +195,11 @@
                 </button>
             </div>
 
-            <!-- Lista de Programaciones Generales -->
-            <div id="programaciones-list" class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Programaciones Disponibles</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-gray-300 rounded-lg">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Inicio</th>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Fin</th>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Servicio</th>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Empleado</th>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Estado</th>
-                                <th class="px-4 py-2 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for prog in programaciones %}
-                            <tr class="border-t border-gray-200">
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.fecha }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.hora_inicio }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.hora_fin }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.servicio }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.empleado }}</td>
-                                <td class="px-4 py-2 text-sm text-gray-700">{{ prog.estado }}</td>
-                                <td class="px-4 py-2 text-sm">
-                                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs seleccionar-programacion" data-id="{{ prog.id_programacion }}" data-fecha="{{ prog.fecha }}" data-hora-inicio="{{ prog.hora_inicio }}" data-hora-fin="{{ prog.hora_fin }}" data-servicio="{{ prog.servicio }}" data-empleado="{{ prog.empleado }}">
-                                        Seleccionar
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Mensaje inicial (oculto por defecto) -->
-            <div id="horarios-placeholder" class="hidden text-center py-12">
+            <!-- Mensaje inicial -->
+            <div id="horarios-placeholder" class="text-center py-12">
                 <i class="fas fa-clock text-gray-300 text-6xl mb-4"></i>
                 <p class="text-gray-600 font-semibold text-lg">Busque horarios disponibles</p>
-                <p class="text-gray-500 text-sm mt-2">Primero seleccione un servicio y haga clic en "Buscar Horarios"</p>
+                <p class="text-gray-500 text-sm mt-2">Seleccione un servicio y haga clic en "Buscar Horarios"</p>
             </div>
 
             <!-- Loading -->
@@ -252,8 +215,8 @@
                 <p class="text-gray-500 text-sm mt-2">Intente con otro servicio o médico</p>
             </div>
 
-            <!-- Grid de horarios -->
-            <div id="horarios-picker" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
+            <!-- Contenedor dinámico de horarios agrupados por fecha -->
+            <div id="horarios-container" class="hidden space-y-4"></div>
         </div>
 
         <!-- Paso 4: Confirmar Reserva -->
@@ -309,7 +272,7 @@
         // Elementos del DOM (se inicializarán cuando el DOM esté listo)
         let dniInput, btnBuscarPaciente, pacienteInfo;
         let tipoServicioSelect, servicioSelect, medicoSelect, btnBuscarHorarios;
-        let horariosPlaceholder, horariosLoading, horariosVacio, horariosPicker;
+        let horariosPlaceholder, horariosLoading, horariosVacio, horariosContainer;
         let btnCrearReserva, btnLimpiarTodo;
         let serviciosCount, medicosCount, resumenReserva;
 
@@ -328,7 +291,7 @@
             horariosPlaceholder = document.getElementById('horarios-placeholder');
             horariosLoading = document.getElementById('horarios-loading');
             horariosVacio = document.getElementById('horarios-vacio');
-            horariosPicker = document.getElementById('horarios-picker');
+            horariosContainer = document.getElementById('horarios-container');
 
             btnCrearReserva = document.getElementById('btn-crear-reserva');
             btnLimpiarTodo = document.getElementById('btn-limpiar-todo');
@@ -358,52 +321,6 @@
 
             // Filtrar médicos cuando cambia el servicio
             servicioSelect.addEventListener('change', filtrarMedicos);
-
-            // Event listener for programacion selection
-            document.addEventListener('click', (e) => {
-                if (e.target.classList.contains('seleccionar-programacion')) {
-                    const button = e.target;
-                    const progData = {
-                        id_programacion: button.dataset.id,
-                        fecha: button.dataset.fecha,
-                        hora_inicio: button.dataset.horaInicio,
-                        hora_fin: button.dataset.horaFin,
-                        medico: button.dataset.medico
-                    };
-                    seleccionarProgramacion(button, progData);
-                }
-            });
-
-            // Capturar parámetro 'medico' de la URL y seleccionarlo automáticamente
-            const urlParams = new URLSearchParams(window.location.search);
-            const medicoId = urlParams.get('medico');
-            
-            if (medicoId) {
-                console.log('[GenerarReserva] Parámetro medico detectado:', medicoId);
-                
-                // Verificar si el médico existe en el select
-                const opcionMedico = medicoSelect.querySelector(`option[value="${medicoId}"]`);
-                
-                if (opcionMedico) {
-                    medicoSelect.value = medicoId;
-                    console.log('[GenerarReserva] Médico seleccionado automáticamente:', opcionMedico.textContent);
-                    
-                    // Resaltar visualmente el select
-                    medicoSelect.classList.add('ring-2', 'ring-green-500', 'bg-green-50');
-                    setTimeout(() => {
-                        medicoSelect.classList.remove('ring-2', 'ring-green-500', 'bg-green-50');
-                    }, 2000);
-                } else {
-                    console.error('[GenerarReserva] ERROR: Médico con ID', medicoId, 'no encontrado en la lista');
-                    console.log('[GenerarReserva] Médicos disponibles:', Array.from(medicoSelect.options).map(opt => ({
-                        id: opt.value,
-                        nombre: opt.textContent
-                    })));
-                    
-                    // Mostrar alerta al usuario
-                    alert(`Error: El médico seleccionado (ID: ${medicoId}) no está disponible en este momento. Por favor, selecciona otro médico.`);
-                }
-            }
 
             // Enter en DNI
             dniInput.addEventListener('keypress', (e) => {
@@ -516,7 +433,6 @@
                         </div>
                     `;
                     pacienteSeleccionado = null;
-                    estadoReserva.textContent = 'Sin paciente';
                     actualizarBotonCrear();
                 } else {
                     pacienteSeleccionado = data.paciente;
@@ -527,9 +443,9 @@
                             <p class="text-xs text-gray-500">DNI: ${data.paciente.documento_identidad} | ID: ${data.paciente.id_paciente}</p>
                         </div>
                     `;
-                    estadoReserva.textContent = 'Paciente OK';
                     mostrarNotificacion('Paciente encontrado correctamente', 'success');
                     actualizarResumen();
+                    actualizarBotonCrear();
                 }
             } catch (err) {
                 pacienteInfo.innerHTML = `
@@ -554,63 +470,123 @@
 
             const id_empleado = medicoSelect.value;
 
+            console.log('[GenerarReserva] Buscando horarios para servicio:', id_servicio, 'médico:', id_empleado || 'todos');
+
             // Mostrar loading
             horariosPlaceholder.classList.add('hidden');
             horariosVacio.classList.add('hidden');
-            horariosPicker.classList.add('hidden');
+            horariosContainer.classList.add('hidden');
             horariosLoading.classList.remove('hidden');
 
-            const params = new URLSearchParams();
-            if (id_empleado) params.set('id_empleado', id_empleado);
-            else if (id_servicio) params.set('id_servicio', id_servicio);
-
             try {
-                const resp = await fetch(`/reservas/api/horarios-disponibles?${params.toString()}`);
-                if (!resp.ok) throw new Error('Error al cargar horarios');
+                let url;
+                
+                if (id_empleado) {
+                    // Buscar horarios de un médico específico usando la API de horarios semanales
+                    url = `/reservas/api/horarios-semana/${id_empleado}`;
+                } else {
+                    // Buscar horarios disponibles por servicio
+                    url = `/reservas/api/buscar-horarios-disponibles?id_servicio=${id_servicio}`;
+                }
+
+                console.log('[GenerarReserva] Consultando:', url);
+                const resp = await fetch(url);
+                
+                if (!resp.ok) {
+                    throw new Error('Error al cargar horarios');
+                }
 
                 const data = await resp.json();
                 const horarios = data.horarios || [];
+
+                console.log('[GenerarReserva] Horarios recibidos:', horarios.length);
 
                 horariosLoading.classList.add('hidden');
 
                 if (horarios.length === 0) {
                     horariosVacio.classList.remove('hidden');
-                    horariosCount.textContent = '0';
-                    estadoReserva.textContent = 'Sin horarios';
                     return;
                 }
 
-                // Renderizar horarios
-                horariosPicker.innerHTML = '';
+                // Agrupar horarios por fecha
+                const horariosPorFecha = {};
                 horarios.forEach(h => {
-                    const div = document.createElement('div');
-                    div.className = 'bg-gradient-to-br from-white to-gray-50 border-2 border-gray-300 rounded-lg p-4 text-center hover:border-cyan-500 hover:shadow-lg transition-all duration-200 cursor-pointer horario-card';
-                    div.dataset.id = h.id_horario;
-                    div.dataset.fecha = h.fecha || '';
-                    div.dataset.horaInicio = h.hora_inicio || '';
-                    div.dataset.horaFin = h.hora_fin || '';
-                    div.dataset.empleado = h.empleado || '';
-
-                    const hora = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '';
-                    const horaFin = h.hora_fin ? h.hora_fin.substring(0, 5) : '';
-
-                    div.innerHTML = `
-                        <i class="fas fa-clock text-cyan-600 text-2xl mb-2"></i>
-                        <p class="font-bold text-gray-800 text-lg">${hora}</p>
-                        <p class="text-xs text-gray-600">a ${horaFin}</p>
-                        ${h.fecha ? `<p class="text-xs text-gray-500 mt-1">${h.fecha}</p>` : ''}
-                    `;
-
-                    div.addEventListener('click', () => seleccionarHorario(div, h));
-                    horariosPicker.appendChild(div);
+                    const fecha = h.fecha;
+                    if (!horariosPorFecha[fecha]) {
+                        horariosPorFecha[fecha] = [];
+                    }
+                    horariosPorFecha[fecha].push(h);
                 });
 
-                horariosPicker.classList.remove('hidden');
-                horariosCount.textContent = horarios.length;
-                estadoReserva.textContent = `${horarios.length} horarios`;
+                horariosContainer.innerHTML = '';
+                horariosContainer.classList.remove('hidden');
+
+                // Crear cards por día
+                Object.keys(horariosPorFecha).sort().forEach(fecha => {
+                    const horariosDelDia = horariosPorFecha[fecha];
+                    const fechaObj = new Date(fecha + 'T00:00:00');
+                    
+                    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                    const diaSemana = diasSemana[fechaObj.getDay()];
+                    
+                    const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
+                        day: '2-digit', 
+                        month: 'long', 
+                        year: 'numeric' 
+                    });
+
+                    const diaCard = document.createElement('div');
+                    diaCard.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+                    diaCard.innerHTML = `
+                        <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-calendar-day text-cyan-600 mr-2"></i>
+                            ${diaSemana}, ${fechaFormateada}
+                        </h4>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" data-fecha="${fecha}">
+                        </div>
+                    `;
+
+                    const horariosGrid = diaCard.querySelector('[data-fecha]');
+
+                    horariosDelDia.forEach(h => {
+                        const horarioBtn = document.createElement('button');
+                        horarioBtn.type = 'button';
+                        
+                        const esDisponible = (h.disponibilidad === 'Disponible' || h.disponible === true) && 
+                                           (h.estado === 'Activo' || !h.estado);
+                        
+                        if (esDisponible) {
+                            horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-3 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all horario-card';
+                            horarioBtn.dataset.id = h.id_horario;
+                            horarioBtn.onclick = () => seleccionarHorario(horarioBtn, h);
+                        } else {
+                            horarioBtn.className = 'border-2 border-gray-200 bg-gray-100 rounded-lg p-3 text-sm text-gray-400 cursor-not-allowed';
+                            horarioBtn.disabled = true;
+                        }
+
+                        const profesional = h.profesional || h.medico_nombre || 
+                                          (h.empleado_nombre ? h.empleado_nombre : '') ||
+                                          'Profesional disponible';
+
+                        horarioBtn.innerHTML = `
+                            <div class="font-semibold text-gray-800">${h.hora_inicio} - ${h.hora_fin}</div>
+                            ${profesional !== 'Profesional disponible' ? `<div class="text-xs text-gray-600 mt-1">${profesional}</div>` : ''}
+                            <div class="text-xs mt-1 ${esDisponible ? 'text-green-600' : 'text-red-500'}">
+                                ${esDisponible ? '✓ Disponible' : '✗ Ocupado'}
+                            </div>
+                        `;
+
+                        horariosGrid.appendChild(horarioBtn);
+                    });
+
+                    horariosContainer.appendChild(diaCard);
+                });
+
+                console.log('[GenerarReserva] ✓ Horarios renderizados correctamente');
                 mostrarNotificacion(`Se encontraron ${horarios.length} horarios disponibles`, 'success');
 
             } catch (err) {
+                console.error('[GenerarReserva] Error:', err);
                 horariosLoading.classList.add('hidden');
                 horariosVacio.classList.remove('hidden');
                 mostrarNotificacion('Error al cargar horarios', 'error');
@@ -621,34 +597,15 @@
         function seleccionarHorario(elemento, data) {
             // Remover selección anterior
             document.querySelectorAll('.horario-card').forEach(card => {
-                card.classList.remove('border-green-500', 'bg-green-50');
+                card.classList.remove('border-green-500', 'bg-green-50', 'ring-2', 'ring-cyan-300');
                 card.classList.add('border-gray-300');
             });
 
             // Marcar seleccionado
             elemento.classList.remove('border-gray-300');
-            elemento.classList.add('border-green-500', 'bg-green-50');
+            elemento.classList.add('border-green-500', 'bg-green-50', 'ring-2', 'ring-cyan-300');
 
-            horarioSeleccionado = elemento.dataset.id;
-            horarioData = data;
-
-            actualizarResumen();
-            actualizarBotonCrear();
-        }
-
-        // Función para seleccionar programacion
-        function seleccionarProgramacion(button, data) {
-            // Remover selección anterior de programaciones
-            document.querySelectorAll('.seleccionar-programacion').forEach(btn => {
-                btn.classList.remove('bg-green-500', 'hover:bg-green-700');
-                btn.classList.add('bg-blue-500', 'hover:bg-blue-700');
-            });
-
-            // Marcar seleccionado
-            button.classList.remove('bg-blue-500', 'hover:bg-blue-700');
-            button.classList.add('bg-green-500', 'hover:bg-green-700');
-
-            horarioSeleccionado = data.id_programacion; // Usar id_programacion como horarioSeleccionado
+            horarioSeleccionado = data.id_horario;
             horarioData = data;
 
             actualizarResumen();
@@ -727,7 +684,6 @@
                 }
 
                 mostrarNotificacion(`Reserva creada exitosamente (ID: ${data.id_reserva})`, 'success');
-                estadoReserva.textContent = 'Reserva creada';
 
                 setTimeout(() => {
                     window.location.reload();
@@ -749,8 +705,8 @@
 
             pacienteInfo.innerHTML = '<p class="text-sm text-gray-500 text-center"><i class="fas fa-user-circle text-3xl text-gray-400 mb-2 block"></i>Busque un paciente por DNI</p>';
 
-            horariosPicker.innerHTML = '';
-            horariosPicker.classList.add('hidden');
+            horariosContainer.innerHTML = '';
+            horariosContainer.classList.add('hidden');
             horariosPlaceholder.classList.remove('hidden');
             horariosVacio.classList.add('hidden');
             horariosLoading.classList.add('hidden');
