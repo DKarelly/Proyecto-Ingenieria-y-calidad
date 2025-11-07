@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function configurarEventos() {
-        btnBuscar.addEventListener('click', cargarAgenda);
         btnLimpiar.addEventListener('click', () => {
             limpiarFiltros();
             cargarAgenda();
@@ -38,17 +37,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (termino.length < 2) {
                 ocultarSugerencias();
+                filtrarAgendaDinamicamente();
                 return;
             }
 
             timeoutEmpleado = setTimeout(() => {
                 buscarEmpleados(termino).then(mostrarSugerenciasEmpleados);
             }, 150);
+            filtrarAgendaDinamicamente();
         });
 
         filtroEmpleado.addEventListener('blur', () => setTimeout(ocultarSugerencias, 200));
+
+        filtroFecha.addEventListener('input', filtrarAgendaDinamicamente);
         filtroServicio.addEventListener('change', function() {
             servicioSeleccionado = servicios.find(s => s.id_servicio == this.value) || null;
+            filtrarAgendaDinamicamente();
         });
     }
 
@@ -194,6 +198,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function mostrarSugerenciasEmpleados(sugerencias) {
         mostrarSugerencias(filtroEmpleado, sugerencias, 'empleado');
+    }
+
+    function filtrarAgendaDinamicamente() {
+        const filtroEmp = filtroEmpleado.value.toLowerCase().trim();
+        const filtroFec = filtroFecha.value;
+        const filtroServ = servicioSeleccionado ? servicioSeleccionado.id_servicio : null;
+
+        const agendaFiltrada = agendaCompleta.filter(item => {
+            const coincideEmpleado = !filtroEmp || (item.nombre_empleado && item.nombre_empleado.toLowerCase().includes(filtroEmp));
+            const coincideFecha = !filtroFec || (item.fecha && item.fecha.startsWith(filtroFec));
+            const coincideServicio = !filtroServ || (item.id_servicio == filtroServ);
+
+            return coincideEmpleado && coincideFecha && coincideServicio;
+        });
+
+        // Actualizar la paginación con los datos filtrados
+        inicializarPaginacion({
+            datos: agendaFiltrada,
+            registrosPorPagina: 20,
+            renderFuncion: mostrarAgendaPaginada
+        });
     }
 
     function ocultarSugerencias() {
