@@ -94,6 +94,7 @@ def admin_panel():
 
     # Leer el subsistema desde el querystring para resaltar la sección y mostrar su contenido
     subsistema = request.args.get('subsistema')
+    # Panel único principal
     return render_template('panel.html', subsistema=subsistema)
 
 @app.route("/perfil")

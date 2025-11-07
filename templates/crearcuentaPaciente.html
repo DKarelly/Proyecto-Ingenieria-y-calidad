@@ -6,12 +6,18 @@
     <title>Crear Cuenta de Paciente - Clínica Unión</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
         }
     </style>
 </head>
@@ -22,11 +28,9 @@
     <div class="max-w-4xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver a Cuentas
+            <a href="/admin/panel?subsistema=cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-all duration-200 hover:translate-x-1">
+                <span class="material-symbols-outlined mr-2">arrow_back</span>
+                Volver al Panel
             </a>
         </div>
         
@@ -38,7 +42,7 @@
             <!-- Encabezado del formulario con ícono -->
             <div class="flex items-center gap-4 mb-8 pb-6 border-b border-gray-200">
                 <div class="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl p-4 shadow-lg">
-                    <i class="fa-solid fa-user-plus text-white text-3xl"></i>
+                    <span class="material-symbols-outlined text-white text-4xl">person_add</span>
                 </div>
                 <div>
                     <h2 class="text-2xl font-bold text-gray-800">Datos del Nuevo Paciente</h2>
@@ -312,14 +316,106 @@
                     <button
                         class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 inline-flex items-center justify-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         type="submit"
+                        id="btnSubmitRegistro"
                     >
-                        <i class="fa-solid fa-user-plus mr-2 text-xl"></i>
+                        <span class="material-symbols-outlined mr-2">person_add</span>
                         Crear Cuenta de Paciente
                     </button>
                 </div>
             </form>
         </div>
     </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden items-center justify-center p-4" style="animation: fadeIn 0.3s ease-out;">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative" style="animation: slideUp 0.3s ease-out;">
+            <div class="flex flex-col items-center text-center">
+                <div id="confirm-icon-container" class="mb-4">
+                    <!-- El icono se cambiará dinámicamente -->
+                </div>
+                <h3 id="confirm-title" class="text-2xl font-bold text-gray-800 mb-3"></h3>
+                <p id="confirm-message" class="text-gray-600 mb-6"></p>
+                
+                <div class="flex gap-3 w-full">
+                    <button type="button" id="confirm-cancel" class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirm-accept" class="flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center">
+                        <span class="material-symbols-outlined text-sm mr-2" id="confirm-accept-icon">check_circle</span>
+                        <span id="confirm-accept-text">Aceptar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
+
+    <!-- Modal Viejo de Confirmación (mantener para compatibilidad) -->
+
+    <div id="confirm-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl p-8 relative max-h-[90vh] overflow-y-auto">
+            <button id="close-confirm-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" aria-label="Cerrar">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Confirmar creación de cuenta</h2>
+            <p class="text-gray-600 mb-4">Revisa los datos antes de confirmar. Podrás editar luego desde Gestión de Pacientes.</p>
+
+            <div class="space-y-3 text-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div><span class="font-semibold text-gray-700">Nombres:</span> <span id="conf_nombres" class="text-gray-800"></span></div>
+                    <div><span class="font-semibold text-gray-700">Apellidos:</span> <span id="conf_apellidos" class="text-gray-800"></span></div>
+                    <div><span class="font-semibold text-gray-700">DNI:</span> <span id="conf_dni" class="text-gray-800"></span></div>
+                    <div><span class="font-semibold text-gray-700">Sexo:</span> <span id="conf_sexo" class="text-gray-800"></span></div>
+                    <div><span class="font-semibold text-gray-700">Teléfono:</span> <span id="conf_telefono" class="text-gray-800"></span></div>
+                    <div><span class="font-semibold text-gray-700">Fecha Nac.:</span> <span id="conf_fnac" class="text-gray-800"></span></div>
+                    <div class="md:col-span-2"><span class="font-semibold text-gray-700">Correo:</span> <span id="conf_email" class="text-gray-800"></span></div>
+                    <div class="md:col-span-2"><span class="font-semibold text-gray-700">Ubicación:</span> <span id="conf_ubicacion" class="text-gray-800"></span></div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
+                <button type="button" id="cancel-confirm" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-colors">Cancelar</button>
+                <button type="button" id="accept-confirm" class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 font-semibold transition-colors inline-flex items-center">
+                    <i class="fa-solid fa-check mr-2"></i>
+                    Confirmar y crear
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Footer -->
@@ -420,77 +516,91 @@
             this.value = this.value.replace(/[^0-9]/g, '');
         });
 
-        // Validación del formulario
-        document.getElementById('formRegistroPaciente').addEventListener('submit', function(e) {
-            const dni = document.getElementById('documento-identidad').value;
-            const telefono = document.getElementById('telefono').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            const sexo = document.getElementById('sexo').value;
-            const distrito = document.getElementById('distrito').value;
-            const terms = document.getElementById('terms').checked;
+        // Validación y confirmación del formulario
+        (function(){
+            const form = document.getElementById('formRegistroPaciente');
+            const modal = document.getElementById('confirm-modal');
+            const btnClose = document.getElementById('close-confirm-modal');
+            const btnCancel = document.getElementById('cancel-confirm');
+            const btnAccept = document.getElementById('accept-confirm');
+            let readyToSubmit = false;
 
-            // Validar DNI (8 dígitos)
-            if (!/^\d{8}$/.test(dni)) {
-                e.preventDefault();
-                showNotification('El DNI debe tener exactamente 8 dígitos', 'error');
-                document.getElementById('documento-identidad').focus();
-                return;
+            function openModal() {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             }
 
-            // Validar sexo
-            if (!sexo) {
-                e.preventDefault();
-                showNotification('Debe seleccionar el sexo', 'error');
-                document.getElementById('sexo').focus();
-                return;
+            function fillSummary() {
+                const nombres = document.getElementById('nombres').value.trim();
+                const apellidos = document.getElementById('apellidos').value.trim();
+                const dni = document.getElementById('documento-identidad').value.trim();
+                const sexo = document.getElementById('sexo');
+                const sexoText = sexo.options[sexo.selectedIndex]?.text || '';
+                const telefono = document.getElementById('telefono').value.trim();
+                const fnac = document.getElementById('fecha-nacimiento').value;
+                const email = document.getElementById('email').value.trim();
+                const depSel = document.getElementById('departamento');
+                const provSel = document.getElementById('provincia');
+                const distSel = document.getElementById('distrito');
+                const depText = depSel.options[depSel.selectedIndex]?.text || '';
+                const provText = provSel.options[provSel.selectedIndex]?.text || '';
+                const distText = distSel.options[distSel.selectedIndex]?.text || '';
+
+                document.getElementById('conf_nombres').textContent = nombres;
+                document.getElementById('conf_apellidos').textContent = apellidos;
+                document.getElementById('conf_dni').textContent = dni;
+                document.getElementById('conf_sexo').textContent = sexoText;
+                document.getElementById('conf_telefono').textContent = telefono;
+                document.getElementById('conf_fnac').textContent = fnac;
+                document.getElementById('conf_email').textContent = emailToUnicode(email);
+                document.getElementById('conf_ubicacion').textContent = `${depText} > ${provText} > ${distText}`;
             }
 
-            // Validar teléfono (9 dígitos)
-            if (!/^\d{9}$/.test(telefono)) {
-                e.preventDefault();
-                showNotification('El teléfono debe tener exactamente 9 dígitos', 'error');
-                document.getElementById('telefono').focus();
-                return;
-            }
+            form.addEventListener('submit', function(e) {
+                if (readyToSubmit) {
+                    return; // permitir submit real
+                }
 
-            // Validar ubicación
-            if (!distrito) {
-                e.preventDefault();
-                showNotification('Debe seleccionar un distrito', 'error');
-                document.getElementById('distrito').focus();
-                return;
-            }
+                const dni = document.getElementById('documento-identidad').value;
+                const telefono = document.getElementById('telefono').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const sexo = document.getElementById('sexo').value;
+                const distrito = document.getElementById('distrito').value;
+                const terms = document.getElementById('terms').checked;
 
-            // Validar contraseña (mínimo 6 caracteres)
-            if (password.length < 6) {
-                e.preventDefault();
-                showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
-                document.getElementById('password').focus();
-                return;
-            }
+                // Validaciones básicas existentes
+                if (!/^\d{8}$/.test(dni)) { e.preventDefault(); showNotification('El DNI debe tener exactamente 8 dígitos', 'error'); document.getElementById('documento-identidad').focus(); return; }
+                if (!sexo) { e.preventDefault(); showNotification('Debe seleccionar el sexo', 'error'); document.getElementById('sexo').focus(); return; }
+                if (!/^\d{9}$/.test(telefono)) { e.preventDefault(); showNotification('El teléfono debe tener exactamente 9 dígitos', 'error'); document.getElementById('telefono').focus(); return; }
+                if (!distrito) { e.preventDefault(); showNotification('Debe seleccionar un distrito', 'error'); document.getElementById('distrito').focus(); return; }
+                if (password.length < 6) { e.preventDefault(); showNotification('La contraseña debe tener al menos 6 caracteres', 'error'); document.getElementById('password').focus(); return; }
+                if (password !== confirmPassword) { e.preventDefault(); showNotification('Las contraseñas no coinciden', 'error'); document.getElementById('confirm-password').focus(); return; }
+                if (!terms) { e.preventDefault(); showNotification('Debe aceptar los términos y condiciones', 'warning'); document.getElementById('terms').focus(); return; }
 
-            // Validar que las contraseñas coincidan
-            if (password !== confirmPassword) {
+                // Abrir modal de confirmación
                 e.preventDefault();
-                showNotification('Las contraseñas no coinciden', 'error');
-                document.getElementById('confirm-password').focus();
-                return;
-            }
+                fillSummary();
+                openModal();
+            });
 
-            // Validar términos y condiciones
-            if (!terms) {
-                e.preventDefault();
-                showNotification('Debe aceptar los términos y condiciones', 'warning');
-                document.getElementById('terms').focus();
-                return;
-            }
-
-            // Mostrar indicador de carga
-            const btnSubmit = e.target.querySelector('button[type="submit"]');
-            btnSubmit.disabled = true;
-            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Registrando...';
-        });
+            btnAccept.addEventListener('click', function(){
+                // Mostrar indicador y enviar
+                const btnSubmit = document.getElementById('btnSubmitRegistro');
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Registrando...';
+                readyToSubmit = true;
+                closeModal();
+                form.submit();
+            });
+            btnCancel.addEventListener('click', closeModal);
+            btnClose.addEventListener('click', closeModal);
+            modal.addEventListener('click', function(ev){ if (ev.target === modal) closeModal(); });
+        })();
 
         // Cascading select logic for Departamento -> Provincia -> Distrito
         const departamentoSelect = document.getElementById('departamento');
@@ -590,11 +700,211 @@
             .animate-slide-in {
                 animation: slide-in 0.3s ease-out;
             }
+            .field-error { color: #ef4444; font-size: 0.8rem; margin-top: 0.25rem; display: none; }
+            .has-error input, .has-error select { border-color: #ef4444 !important; }
+            .has-error input:focus, .has-error select:focus { border-color: #ef4444 !important; --tw-ring-color: rgba(239,68,68,0.2) !important; }
         `;
         document.head.appendChild(style);
 
         // Load departamentos on page load
         loadDepartamentos();
+
+        // ==================== VALIDACIÓN EN TIEMPO REAL ====================
+        const fieldContainers = new Map();
+        function ensureErrorNode(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return null;
+            let container = input.closest('div');
+            if (!container) container = input.parentElement || input;
+            fieldContainers.set(inputId, container);
+            let err = container.querySelector(`[data-error-for="${inputId}"]`);
+            if (!err) {
+                err = document.createElement('p');
+                err.className = 'field-error';
+                err.setAttribute('data-error-for', inputId);
+                container.appendChild(err);
+            }
+            return err;
+        }
+
+        function setFieldError(inputId, message) {
+            const input = document.getElementById(inputId);
+            const err = ensureErrorNode(inputId);
+            const container = fieldContainers.get(inputId);
+            if (!input || !err || !container) return;
+            if (message) {
+                err.textContent = message;
+                err.style.display = 'block';
+                container.classList.add('has-error');
+                input.setAttribute('aria-invalid', 'true');
+            } else {
+                err.textContent = '';
+                err.style.display = 'none';
+                container.classList.remove('has-error');
+                input.removeAttribute('aria-invalid');
+            }
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const validators = {
+            'nombres': v => !v ? 'El nombre es obligatorio' : (v.trim().length < 2 ? 'El nombre debe tener al menos 2 caracteres' : ''),
+            'apellidos': v => !v ? 'Los apellidos son obligatorios' : (v.trim().length < 2 ? 'Los apellidos deben tener al menos 2 caracteres' : ''),
+            'documento-identidad': v => (/^\d{8}$/.test(v) ? '' : 'El DNI debe tener exactamente 8 dígitos'),
+            'sexo': v => (!!v ? '' : 'Debe seleccionar el sexo'),
+            'telefono': v => (/^\d{9}$/.test(v) ? '' : 'El teléfono debe tener exactamente 9 dígitos'),
+            'fecha-nacimiento': v => (!!v ? '' : 'Debe seleccionar fecha de nacimiento'),
+            'email': v => (emailRegex.test(v) ? '' : 'Correo electrónico inválido'),
+            'departamento': v => (!!v ? '' : 'Seleccione un departamento'),
+            'provincia': v => (!!v ? '' : 'Seleccione una provincia'),
+            'distrito': v => (!!v ? '' : 'Seleccione un distrito'),
+            'password': v => (v && v.length >= 6 ? '' : 'La contraseña debe tener al menos 6 caracteres'),
+            'confirm-password': v => (v === document.getElementById('password').value ? '' : 'Las contraseñas no coinciden')
+        };
+
+        const realtimeIds = ['nombres','apellidos','documento-identidad','sexo','telefono','fecha-nacimiento','email','departamento','provincia','distrito','password','confirm-password'];
+        realtimeIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const evt = (el.tagName === 'SELECT' || el.type === 'date') ? 'change' : 'input';
+            el.addEventListener(evt, () => {
+                let val = el.value;
+                if (id === 'documento-identidad' || id === 'telefono') {
+                    const digits = val.replace(/[^0-9]/g, '');
+                    if (digits !== val) { el.value = digits; val = digits; }
+                }
+                if (id === 'confirm-password') {
+                    // si cambia passwd, revalida ambos
+                    setFieldError('password', validators['password'](document.getElementById('password').value));
+                }
+                setFieldError(id, validators[id] ? validators[id](val) : '');
+            });
+        });
+
+        // ==================== PUNYCODE A UNICODE PARA DOMINIOS (IDN) ====================
+        function basicToDigit(codePoint) {
+            if (codePoint - 48 < 10) return codePoint - 22; // '0'-'9' => 26..35 -> -22 => 0..9
+            if (codePoint - 65 < 26) return codePoint - 65; // 'A'-'Z' => 0..25
+            if (codePoint - 97 < 26) return codePoint - 97; // 'a'-'z' => 0..25
+            return 36;
+        }
+
+        function adapt(delta, numPoints, firstTime) {
+            const base = 36, tMin = 1, tMax = 26, skew = 38, damp = 700;
+            delta = firstTime ? Math.floor(delta / damp) : Math.floor(delta / 2);
+            delta += Math.floor(delta / numPoints);
+            let k = 0;
+            while (delta > Math.floor(((36 - 1) * 26) / 2)) {
+                delta = Math.floor(delta / (36 - 1));
+                k += 36;
+            }
+            return k + Math.floor(((36 - 1 + 1) * delta) / (delta + skew));
+        }
+
+        function punycodeDecode(input) {
+            const base = 36, tMin = 1, tMax = 26, initialBias = 72, initialN = 128, delimiter = 45 /* '-' */;
+            // Copy basic code points
+            let n = initialN, i = 0, bias = initialBias;
+            let output = [];
+            const lastDelim = input.lastIndexOf(String.fromCharCode(delimiter));
+            let b = 0;
+            if (lastDelim !== -1) {
+                for (let j = 0; j < lastDelim; j++) {
+                    output.push(input.charCodeAt(j));
+                }
+                b = lastDelim + 1;
+            }
+            let index = b;
+            while (index < input.length) {
+                let oldi = i;
+                let w = 1;
+                for (let k = base;; k += base) {
+                    if (index >= input.length) return input; // malformed
+                    const digit = basicToDigit(input.charCodeAt(index++));
+                    if (digit >= base) return input; // invalid
+                    i += digit * w;
+                    const t = k <= bias ? tMin : (k >= bias + tMax ? tMax : k - bias);
+                    if (digit < t) break;
+                    w *= (base - t);
+                }
+                const outLen = output.length + 1;
+                bias = adapt(i - oldi, outLen, oldi === 0);
+                n += Math.floor(i / outLen);
+                i = i % outLen;
+                output.splice(i, 0, n);
+                i++;
+            }
+            try {
+                return String.fromCodePoint(...output);
+            } catch (e) {
+                return input; // fallback
+            }
+        }
+
+        function idnDomainToUnicode(domain) {
+            return domain.split('.').map(label => {
+                if (label.toLowerCase().startsWith('xn--')) {
+                    return punycodeDecode(label.slice(4));
+                }
+                return label;
+            }).join('.');
+        }
+
+        function emailToUnicode(email) {
+            const parts = email.split('@');
+            if (parts.length !== 2) return email;
+            const [local, domain] = parts;
+            return `${local}@${idnDomainToUnicode(domain)}`;
+        }
+
+        // Actualiza el email en el resumen si se detecta punycode
+        document.getElementById('email')?.addEventListener('input', function(){
+            const unicodeEmail = emailToUnicode(this.value.trim());
+            const confEmail = document.getElementById('conf_email');
+            if (confEmail && document.getElementById('confirm-modal') && !document.getElementById('confirm-modal').classList.contains('hidden')) {
+                confEmail.textContent = unicodeEmail;
+            }
+        });
+    </script>
+
+    <!-- Script de confirmación modal -->
+    <script src="{{ url_for('static', filename='js/confirmation-modal.js') }}"></script>
+    <script>
+        // Interceptar el envío del formulario para mostrar confirmación
+        const formRegistro = document.getElementById('formRegistroPaciente');
+        let confirmedSubmit = false;
+        
+        if (formRegistro) {
+            formRegistro.addEventListener('submit', async function(e) {
+                if (confirmedSubmit) {
+                    return; // Permitir envío real
+                }
+                
+                e.preventDefault();
+                
+                // Obtener datos del formulario
+                const nombres = document.getElementById('nombres').value.trim();
+                const apellidos = document.getElementById('apellidos').value.trim();
+                
+                // Mostrar confirmación
+                const confirmado = await mostrarConfirmacion({
+                    titulo: '¿Crear Cuenta de Paciente?',
+                    mensaje: `¿Estás seguro de registrar al paciente ${nombres} ${apellidos}? Se creará una cuenta de acceso con el email proporcionado.`,
+                    tipo: 'success',
+                    textoAceptar: 'Crear Paciente',
+                    textoIconoAceptar: 'person_add'
+                });
+                
+                if (confirmado) {
+                    confirmedSubmit = true;
+                    const btnSubmit = document.getElementById('btnSubmitRegistro');
+                    if (btnSubmit) {
+                        btnSubmit.disabled = true;
+                        btnSubmit.innerHTML = '<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Registrando...';
+                    }
+                    this.submit();
+                }
+            });
+        }
     </script>
 </body>
 </html>

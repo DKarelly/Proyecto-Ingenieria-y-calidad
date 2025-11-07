@@ -18,7 +18,8 @@ def panel():
     if id_rol is None or id_rol not in [1, 2, 3, 4, 5]:
         return redirect(url_for('home'))
 
-    return render_template('panel.html', subsistema='seguridad')
+    # Redirigir al dashboard principal unificado
+    return redirect(url_for('admin_panel', subsistema='seguridad'))
 
 # =======================================
 # MÓDULO SEGURIDAD
@@ -48,7 +49,8 @@ def incidencias():
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
     
-    return render_template('panel.html', subsistema='incidencias')
+    # Redirigir al dashboard principal unificado
+    return redirect(url_for('admin_panel', subsistema='incidencias'))
 
 @seguridad_bp.route('/incidencias/generar-incidencia')
 def generar_incidencia():

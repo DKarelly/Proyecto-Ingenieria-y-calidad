@@ -279,6 +279,16 @@
 
     {% include 'footer.html' %}
 
+    <!-- Datos del empleado para JS (evitar Jinja dentro del script) -->
+    <div id="empleado-data" data-json='{{ {
+        "id_departamento": empleado.id_departamento if empleado else 0,
+        "id_provincia": empleado.id_provincia if empleado else 0,
+        "id_distrito": empleado.id_distrito if empleado else 0,
+        "distrito": empleado.distrito if empleado else "",
+        "provincia": empleado.provincia if empleado else "",
+        "departamento": empleado.departamento if empleado else ""
+    } | tojson }}' hidden></div>
+
     <script>
         // Variable global para especialidades
         let especialidadesData = [];
@@ -372,23 +382,9 @@
         });
 
         // Cascading select logic for Departamento -> Provincia -> Distrito
-        const empleadoData = {
-            {% if empleado %}
-            id_departamento: {{ empleado.id_departamento or 0 }},
-            id_provincia: {{ empleado.id_provincia or 0 }},
-            id_distrito: {{ empleado.id_distrito or 0 }},
-            distrito: "{{ empleado.distrito or '' }}",
-            provincia: "{{ empleado.provincia or '' }}",
-            departamento: "{{ empleado.departamento or '' }}"
-            {% else %}
-            id_departamento: 0,
-            id_provincia: 0,
-            id_distrito: 0,
-            distrito: "",
-            provincia: "",
-            departamento: ""
-            {% endif %}
-        };
+        // Evitar Jinja dentro del script: leer datos preinyectados en un data-json
+        const empleadoDataEl = document.getElementById('empleado-data');
+        const empleadoData = empleadoDataEl ? JSON.parse(empleadoDataEl.dataset.json || '{}') : {};
 
         let departamentos = [];
         let provincias = [];
