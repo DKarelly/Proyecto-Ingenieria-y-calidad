@@ -530,7 +530,12 @@ def generar_reserva():
         servicios = Servicio.obtener_todos()
         medicos = Empleado.obtener_medicos()
         programaciones = Programacion.obtener_todos()
-        return render_template('GenerarReserva.html', servicios=servicios, medicos=medicos, programaciones=programaciones)
+        tipos_servicio = TipoServicio.obtener_todos()
+        return render_template('GenerarReserva.html', 
+                             servicios=servicios, 
+                             medicos=medicos, 
+                             programaciones=programaciones,
+                             tipos_servicio=tipos_servicio)
     
     # Si no es ni empleado ni paciente, redirigir al home
     return redirect(url_for('home'))
