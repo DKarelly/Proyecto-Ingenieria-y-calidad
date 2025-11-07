@@ -7,7 +7,7 @@ from models.paciente import Paciente
 from models.reserva import Reserva
 from models.programacion import Programacion
 from bd import obtener_conexion
-from datetime import date
+from datetime import date, timedelta, time
 from models.notificacion import Notificacion
 
 reservas_bp = Blueprint('reservas', __name__)
