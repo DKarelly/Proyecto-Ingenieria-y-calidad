@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+n<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -134,7 +134,7 @@
                 </div>
                 <div>
                     <h2 class="text-lg font-semibold text-gray-800">Seleccionar Reserva a Reprogramar</h2>
-                    <p class="text-sm text-gray-500">Elige la reserva que deseas modificar</p>
+                    <p class="text-sm text-gray-500">Elige la reserva que deseas modificar (mostrar solo pendientes)</p>
                 </div>
             </div>
 
@@ -145,140 +145,20 @@
                 </div>
             </div>
         </div>
-
-        <!-- Paso 3: Seleccionar Nuevo Horario -->
-        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-8">
-            <div class="flex items-center mb-4">
-                <div class="flex items-center justify-center h-10 w-10 bg-cyan-500 text-white rounded-full font-bold mr-4">
-                    3
-                </div>
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-800">Seleccionar Nuevo Horario</h2>
-                    <p class="text-sm text-gray-500">Elige la nueva fecha y hora de atención</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Médico -->
-                <div class="flex flex-col">
-                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
-                        <i class="fas fa-user-md mr-1"></i>
-                        MÉDICO
-                    </label>
-                    <select id="select-medic" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
-                        <option value="">Seleccione un médico</option>
-                        {% for m in medicos %}
-                        <option value="{{ m.id_empleado }}">{{ m.nombres }} {{ m.apellidos }}{% if m.especialidad %} — {{ m.especialidad }}{% endif %}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Fecha -->
-                <div class="flex flex-col">
-                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
-                        <i class="fas fa-calendar mr-1"></i>
-                        FECHA
-                    </label>
-                    <input
-                        type="date"
-                        id="fecha-select"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors"
-                    >
-                </div>
-            </div>
-
-            <button id="btn-buscar-horarios" class="w-full md:w-auto bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md mb-6" disabled>
-                <i class="fas fa-clock mr-2"></i>
-                Buscar Horarios
-            </button>
-
-            <!-- Grid de horarios -->
-            <div id="horarios-grid-container" class="hidden">
-                <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p class="text-sm text-blue-800">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Selecciona un horario disponible
-                    </p>
-                </div>
-                <div id="horarios-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                    <!-- Horarios se cargarán aquí -->
-                </div>
-            </div>
-
-            <div id="no-horarios" class="hidden text-center py-8 text-gray-500">
-                <i class="fas fa-clock text-4xl mb-3"></i>
-                <p>No hay horarios disponibles para la fecha seleccionada</p>
-            </div>
-        </div>
-
-        <!-- Paso 4: Confirmar Reprogramación -->
-        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm">
-            <div class="flex items-center mb-4">
-                <div class="flex items-center justify-center h-10 w-10 bg-cyan-500 text-white rounded-full font-bold mr-4">
-                    4
-                </div>
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-800">Confirmar y Reprogramar</h2>
-                    <p class="text-sm text-gray-500">Revisa los cambios antes de confirmar</p>
-                </div>
-            </div>
-
-            <!-- Resumen -->
-            <div id="resumen-reprogramacion" class="hidden space-y-3 mb-6">
-                <div class="p-4 bg-gray-50 rounded-lg">
-                    <p class="text-xs text-gray-500 mb-1">RESERVA ACTUAL</p>
-                    <p class="font-semibold text-gray-800" id="resumen-actual"></p>
-                </div>
-                <div class="flex items-center justify-center">
-                    <i class="fas fa-arrow-down text-cyan-600 text-2xl"></i>
-                </div>
-                <div class="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
-                    <p class="text-xs text-cyan-600 mb-1">NUEVA RESERVA</p>
-                    <p class="font-semibold text-gray-800" id="resumen-nuevo"></p>
-                </div>
-            </div>
-
-            <div class="flex gap-4">
-                <button id="btn-limpiar" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-sm">
-                    <i class="fas fa-eraser mr-2"></i>
-                    Limpiar Todo
-                </button>
-                <button id="btn-reprogramar" disabled class="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-calendar-check mr-2"></i>
-                    Reprogramar Reserva
-                </button>
-            </div>
-        </div>
     </div>
 
     {% include 'footer.html' %}
 
     <script>
-        // Variables globales
+        // Variables globales - SOLO los elementos que existen en el HTML
         const btnBuscarPaciente = document.getElementById('btn-search-paciente');
-        const btnBuscarHorarios = document.getElementById('btn-buscar-horarios');
-        const btnReprogramar = document.getElementById('btn-reprogramar');
-        const btnLimpiar = document.getElementById('btn-limpiar');
         const dniInput = document.getElementById('search-dni');
         const citasList = document.getElementById('citas-list');
         const pacienteInfo = document.getElementById('paciente-info');
-        const selectMedic = document.getElementById('select-medic');
-        const fechaSelect = document.getElementById('fecha-select');
-        const horariosGrid = document.getElementById('horarios-grid');
-        const horariosGridContainer = document.getElementById('horarios-grid-container');
-        const noHorarios = document.getElementById('no-horarios');
-        const resumenContainer = document.getElementById('resumen-reprogramacion');
 
         let pacienteSeleccionado = null;
         let reservaSeleccionada = null;
-        let horarioSeleccionado = null;
-        let horariosData = [];
-
-        // Configurar fecha mínima (hoy)
-        const hoy = new Date();
-        const fechaMin = hoy.toISOString().split('T')[0];
-        fechaSelect.min = fechaMin;
-        fechaSelect.value = fechaMin;
+        let horaSeleccionada = null;
 
         // Buscar paciente
         btnBuscarPaciente.addEventListener('click', async function() {
@@ -313,22 +193,36 @@
                 // Obtener reservas
                 const resp2 = await fetch(`/reservas/api/reservas-por-paciente?id_paciente=${pacienteSeleccionado.id_paciente}`);
                 const data2 = await resp2.json();
-                const reservas = data2.reservas || [];
+                const todasLasReservas = data2.reservas || [];
 
-                renderReservas(reservas);
-                document.getElementById('total-reservas').textContent = reservas.length;
-                document.getElementById('estado-proceso').textContent = 'Paciente encontrado';
+                console.log('[Reprogramar] Response completa:', data2);
+                console.log('[Reprogramar] Todas las reservas recibidas:', todasLasReservas);
+                
+                // Mostrar solo reservas pendientes
+                const reservasPendientes = todasLasReservas.filter(r => {
+                    const estado = (r.estado || '').trim().toLowerCase();
+                    console.log(`[Reprogramar] Reserva ${r.id_reserva}: estado="${r.estado}" → lowercase="${estado}" → ¿pendiente? ${estado === 'pendiente'}`);
+                    return estado === 'pendiente';
+                });
+
+                console.log('[Reprogramar] Filtrado completado: Reservas totales:', todasLasReservas.length, 'Pendientes:', reservasPendientes.length);
+
+                renderReservas(reservasPendientes);
+                document.getElementById('total-reservas').textContent = reservasPendientes.length;
+                document.getElementById('estado-proceso').textContent = reservasPendientes.length ? 'Paciente encontrado' : 'Sin reservas pendientes';
 
             } catch (err) {
+                console.error('[Reprogramar] Error:', err);
                 citasList.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-triangle text-4xl mb-3"></i><p>Error al buscar</p></div>';
-                mostrarNotificacion('Error al buscar paciente', 'error');
+                mostrarNotificacion('Error al buscar paciente: ' + err.message, 'error');
+                document.getElementById('estado-proceso').textContent = 'Error';
             }
         });
 
         // Renderizar reservas
         function renderReservas(reservas) {
             if (!reservas || reservas.length === 0) {
-                citasList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-inbox text-4xl mb-3"></i><p>No hay reservas para este paciente</p></div>';
+                citasList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-inbox text-4xl mb-3"></i><p>No hay reservas pendientes para este paciente</p></div>';
                 return;
             }
 
@@ -336,7 +230,21 @@
             const grid = document.createElement('div');
             grid.className = 'grid grid-cols-1 gap-3';
 
+            console.log('[Reprogramar] Renderizando', reservas.length, 'reservas pendientes');
+
             reservas.forEach(r => {
+                // Estado badge
+                const estado = (r.estado || '').toLowerCase();
+                const estadoBadge = estado === 'pendiente'
+                    ? '<span class="ml-2 px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 font-semibold">Pendiente</span>'
+                    : `<span class="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600 font-semibold">${estado}</span>`;
+
+                // Formateo fecha/hora
+                const fecha = r.fecha_cita || 'Sin fecha';
+                const horaIni = r.hora_inicio ? r.hora_inicio.substring(0,5) : '-';
+                const horaFin = r.hora_fin ? r.hora_fin.substring(0,5) : '';
+                const rangoHora = horaFin ? `${horaIni} - ${horaFin}` : horaIni;
+
                 const card = document.createElement('div');
                 card.className = 'border-2 border-gray-200 rounded-lg p-4 hover:border-cyan-400 transition-all cursor-pointer';
                 card.innerHTML = `
@@ -344,48 +252,27 @@
                         <div class="flex-1">
                             <div class="flex items-center mb-2">
                                 <i class="fas fa-calendar-day text-cyan-600 mr-2"></i>
-                                <span class="font-bold text-gray-800">${r.fecha_cita || 'Sin fecha'}</span>
-                                <span class="mx-2 text-gray-400">|</span>
+                                <span class="font-bold text-gray-800">${fecha}</span>
+                                ${estadoBadge}
+                                <span class="mx-2 text-gray-300">|</span>
                                 <i class="fas fa-clock text-cyan-600 mr-2"></i>
-                                <span class="font-semibold text-gray-700">${r.hora_inicio ? r.hora_inicio.substring(0, 5) : '-'}</span>
+                                <span class="font-semibold text-gray-700">${rangoHora}</span>
                             </div>
                             <div class="text-sm text-gray-600 space-y-1">
-                                <p><i class="fas fa-stethoscope mr-2 text-gray-400"></i>${r.servicio || 'Sin servicio'}</p>
+                                <p><i class="fas fa-stethoscope mr-2 text-gray-400"></i>${r.servicio || r.tipo_servicio || 'Sin servicio específico'}</p>
                                 <p><i class="fas fa-user-md mr-2 text-gray-400"></i>Dr. ${r.nombre_empleado || 'Sin asignar'}</p>
                             </div>
                         </div>
                         <button class="seleccionar-reserva bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all" data-reserva='${JSON.stringify(r)}'>
-                            Seleccionar
+                            Reprogramar
                         </button>
                     </div>
                 `;
 
                 card.querySelector('.seleccionar-reserva').addEventListener('click', function() {
                     reservaSeleccionada = JSON.parse(this.dataset.reserva);
-
-                    // Marcar como seleccionado
-                    document.querySelectorAll('.seleccionar-reserva').forEach(btn => {
-                        btn.classList.remove('bg-green-500', 'hover:bg-green-600');
-                        btn.classList.add('bg-cyan-500', 'hover:bg-cyan-600');
-                        btn.textContent = 'Seleccionar';
-                    });
-
-                    this.classList.remove('bg-cyan-500', 'hover:bg-cyan-600');
-                    this.classList.add('bg-green-500', 'hover:bg-green-600');
-                    this.innerHTML = '<i class="fas fa-check mr-1"></i> Seleccionada';
-
-                    // Habilitar búsqueda de horarios
-                    btnBuscarHorarios.disabled = false;
-
-                    // Limpiar horarios anteriores
-                    horariosGrid.innerHTML = '';
-                    horariosGridContainer.classList.add('hidden');
-                    noHorarios.classList.add('hidden');
-                    horarioSeleccionado = null;
-
-                    document.getElementById('estado-proceso').textContent = 'Reserva seleccionada';
-                    actualizarResumen();
-                    mostrarNotificacion('Reserva seleccionada. Ahora elige el nuevo horario', 'success');
+                    console.log('[Reprogramar] Reserva seleccionada:', reservaSeleccionada);
+                    abrirModalReprogramacion(reservaSeleccionada);
                 });
 
                 grid.appendChild(card);
@@ -394,138 +281,231 @@
             citasList.appendChild(grid);
         }
 
-        // Buscar horarios
-        btnBuscarHorarios.addEventListener('click', async function() {
-            if (!selectMedic.value) {
-                mostrarNotificacion('Selecciona un médico', 'error');
-                return;
+        // Modal de reprogramación
+        function abrirModalReprogramacion(reserva) {
+            const modalHTML = `
+                <div id="modalReprogramacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div class="p-6 border-b border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                    <span class="text-3xl">🔄</span>
+                                    Reprogramar Reserva
+                                </h2>
+                                <button onclick="cerrarModalReprogramacion()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6">
+                            <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded">
+                                <p class="text-sm text-green-800">
+                                    <strong>✅ Nota:</strong> Reprogramar es más rápido que cancelar y crear una nueva reserva.
+                                </p>
+                            </div>
+                            
+                            <div class="mb-6">
+                                <h3 class="font-semibold text-gray-700 mb-2">Información de la Reserva:</h3>
+                                <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                                    <p class="text-gray-900"><strong>Servicio:</strong> ${reserva.servicio || reserva.tipo_servicio || 'Sin servicio específico'}</p>
+                                    <p class="text-gray-900"><strong>Profesional:</strong> Dr. ${reserva.nombre_empleado || 'Sin asignar'}</p>
+                                    <p class="text-gray-900"><strong>Especialidad:</strong> ${reserva.especialidad || 'No especificada'}</p>
+                                    <p class="text-sm text-gray-600 mt-3"><i class="fas fa-clock mr-2"></i>Reserva actual: ${reserva.fecha_cita} ${reserva.hora_inicio ? reserva.hora_inicio.substring(0, 5) : ''}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="block font-semibold text-gray-700 mb-2" for="nuevaFecha">
+                                    Nueva Fecha <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="date" 
+                                    id="nuevaFecha" 
+                                    class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                    min="${new Date().toISOString().split('T')[0]}"
+                                />
+                            </div>
+                            
+                            <div id="horariosContainer" class="hidden mb-6">
+                                <label class="block font-semibold text-gray-700 mb-2">
+                                    Selecciona un nuevo horario <span class="text-red-500">*</span>
+                                </label>
+                                <div id="horariosLista" class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                                    <!-- Horarios se cargarán aquí -->
+                                </div>
+                            </div>
+                            
+                            <div id="loadingHorarios" class="hidden text-center py-4">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                                <p class="text-gray-600 mt-2">Cargando horarios disponibles...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 border-t border-gray-200 flex gap-3">
+                            <button onclick="cerrarModalReprogramacion()" 
+                                    class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-all">
+                                Cancelar
+                            </button>
+                            <button id="btnConfirmarReprogramacion" onclick="confirmarReprogramacion()" 
+                                    class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50"
+                                    disabled>
+                                Confirmar Reprogramación
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            
+            // Event listener para fecha
+            document.getElementById('nuevaFecha').addEventListener('change', cargarHorariosDisponiblesModal);
+        }
+
+        function cerrarModalReprogramacion() {
+            const modal = document.getElementById('modalReprogramacion');
+            if (modal) {
+                modal.remove();
             }
+            horaSeleccionada = null;
+            reservaSeleccionada = null;
+        }
 
-            const id_empleado = selectMedic.value;
-            const fecha = fechaSelect.value;
-            const id_servicio = reservaSeleccionada ? reservaSeleccionada.id_servicio : '';
-
-            const params = new URLSearchParams();
-            params.set('fecha', fecha);
-            if (id_empleado) params.set('id_empleado', id_empleado);
-            else if (id_servicio) params.set('id_servicio', id_servicio);
-
-            horariosGridContainer.classList.add('hidden');
-            noHorarios.classList.remove('hidden');
-            noHorarios.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500 mx-auto"></div></div>';
-
+        async function cargarHorariosDisponiblesModal() {
+            const fecha = document.getElementById('nuevaFecha').value;
+            
+            if (!fecha) return;
+            
+            const loadingDiv = document.getElementById('loadingHorarios');
+            const horariosContainer = document.getElementById('horariosContainer');
+            
+            loadingDiv.classList.remove('hidden');
+            horariosContainer.classList.add('hidden');
+            
             try {
-                const resp = await fetch(`/reservas/api/horarios-disponibles?${params.toString()}`);
-                const data = await resp.json();
-                horariosData = data.horarios || [];
-
-                document.getElementById('total-horarios').textContent = horariosData.length;
-
-                if (horariosData.length === 0) {
-                    noHorarios.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-clock text-4xl mb-3"></i><p>No hay horarios disponibles</p></div>';
+                const response = await fetch('/reservas/api/horarios-disponibles-reprogramacion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_reserva: reservaSeleccionada.id_reserva,
+                        id_servicio: reservaSeleccionada.id_servicio || null,
+                        fecha: fecha
+                    })
+                });
+                
+                const data = await response.json();
+                
+                console.log('[Modal Reprogramación] Respuesta:', data);
+                
+                loadingDiv.classList.add('hidden');
+                
+                if (!response.ok) {
+                    horariosContainer.classList.remove('hidden');
+                    document.getElementById('horariosLista').innerHTML = `
+                        <div class="col-span-full text-center py-4 bg-red-50 rounded-lg">
+                            <p class="text-red-600">Error: ${data.error || 'No se pudieron cargar los horarios'}</p>
+                        </div>
+                    `;
                     return;
                 }
-
-                noHorarios.classList.add('hidden');
-                horariosGridContainer.classList.remove('hidden');
-
-                horariosGrid.innerHTML = '';
-                horariosData.forEach(h => {
-                    const btn = document.createElement('button');
-                    btn.className = 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300 rounded-lg p-4 text-center hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1';
-                    btn.innerHTML = `
-                        <i class="fas fa-clock text-green-600 text-xl mb-2"></i>
-                        <p class="font-bold text-gray-800">${h.hora_inicio ? h.hora_inicio.substring(0, 5) : ''}</p>
-                        <p class="text-xs text-gray-600 mt-1">a ${h.hora_fin ? h.hora_fin.substring(0, 5) : ''}</p>
+                
+                if (data.success && data.horarios && data.horarios.length > 0) {
+                    horariosContainer.classList.remove('hidden');
+                    const horariosLista = document.getElementById('horariosLista');
+                    
+                    horariosLista.innerHTML = data.horarios.sort().map(hora => `
+                        <button 
+                            onclick="seleccionarHoraModal('${hora}')" 
+                            class="hora-btn py-2 px-3 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-sm font-semibold"
+                            data-hora="${hora}">
+                            ${hora}
+                        </button>
+                    `).join('');
+                } else {
+                    horariosContainer.classList.remove('hidden');
+                    document.getElementById('horariosLista').innerHTML = `
+                        <div class="col-span-full text-center py-4">
+                            <p class="text-gray-600">No hay horarios disponibles para esta fecha.</p>
+                            <p class="text-sm text-gray-500 mt-2">Intenta con otra fecha.</p>
+                        </div>
                     `;
-                    btn.dataset.id = h.id_horario;
-                    btn.addEventListener('click', function() {
-                        horarioSeleccionado = this.dataset.id;
-
-                        // Marcar seleccionado
-                        document.querySelectorAll('#horarios-grid button').forEach(b => {
-                            b.classList.remove('border-cyan-500', 'bg-cyan-100', 'from-cyan-50', 'to-cyan-100');
-                            b.classList.add('from-green-50', 'to-green-100', 'border-green-300');
-                        });
-
-                        this.classList.remove('from-green-50', 'to-green-100', 'border-green-300');
-                        this.classList.add('border-cyan-500', 'bg-cyan-100', 'from-cyan-50', 'to-cyan-100');
-
-                        document.getElementById('estado-proceso').textContent = 'Listo para reprogramar';
-                        actualizarResumen();
-                        actualizarBotonReprogramar();
-                    });
-
-                    horariosGrid.appendChild(btn);
-                });
-
-                mostrarNotificacion(`Se encontraron ${horariosData.length} horario(s) disponibles`, 'success');
-
-            } catch (err) {
-                noHorarios.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fas fa-exclamation-triangle text-4xl mb-3"></i><p>Error al cargar horarios</p></div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                loadingDiv.classList.add('hidden');
                 mostrarNotificacion('Error al cargar horarios', 'error');
             }
-        });
-
-        // Actualizar resumen
-        function actualizarResumen() {
-            if (reservaSeleccionada && horarioSeleccionado) {
-                const horario = horariosData.find(h => h.id_horario == horarioSeleccionado);
-
-                document.getElementById('resumen-actual').textContent = `${reservaSeleccionada.servicio} - ${reservaSeleccionada.fecha_cita} ${reservaSeleccionada.hora_inicio ? reservaSeleccionada.hora_inicio.substring(0, 5) : ''}`;
-                document.getElementById('resumen-nuevo').textContent = `${reservaSeleccionada.servicio} - ${fechaSelect.value} ${horario ? horario.hora_inicio.substring(0, 5) : ''}`;
-
-                resumenContainer.classList.remove('hidden');
-            } else {
-                resumenContainer.classList.add('hidden');
-            }
         }
 
-        // Actualizar botón reprogramar
-        function actualizarBotonReprogramar() {
-            if (pacienteSeleccionado && reservaSeleccionada && horarioSeleccionado) {
-                btnReprogramar.disabled = false;
-            } else {
-                btnReprogramar.disabled = true;
-            }
+        function seleccionarHoraModal(hora) {
+            horaSeleccionada = hora;
+            
+            // Actualizar estilos
+            document.querySelectorAll('.hora-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'bg-blue-500', 'text-white');
+                btn.classList.add('border-gray-300');
+            });
+            
+            const btnSeleccionado = document.querySelector(`[data-hora="${hora}"]`);
+            btnSeleccionado.classList.remove('border-gray-300');
+            btnSeleccionado.classList.add('border-blue-600', 'bg-blue-500', 'text-white');
+            
+            // Habilitar botón de confirmar
+            document.getElementById('btnConfirmarReprogramacion').disabled = false;
         }
 
-        // Reprogramar
-        btnReprogramar.addEventListener('click', async function() {
-            if (!confirm('¿Confirma que desea reprogramar esta reserva?')) return;
-
+        async function confirmarReprogramacion() {
+            const nuevaFecha = document.getElementById('nuevaFecha').value;
+            
+            if (!nuevaFecha || !horaSeleccionada) {
+                mostrarNotificacion('Por favor, selecciona una fecha y una hora', 'error');
+                return;
+            }
+            
+            const btnConfirmar = document.getElementById('btnConfirmarReprogramacion');
+            btnConfirmar.disabled = true;
+            btnConfirmar.textContent = 'Procesando...';
+            
             try {
-                const payload = {
-                    id_reserva: reservaSeleccionada.id_reserva,
-                    id_horario: horarioSeleccionado
-                };
-
-                const resp = await fetch('/reservas/api/reprogramar-reserva', {
+                const response = await fetch('/reservas/api/reprogramar', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_reserva: reservaSeleccionada.id_reserva,
+                        nueva_fecha: nuevaFecha,
+                        nueva_hora: horaSeleccionada,
+                        id_servicio: reservaSeleccionada.id_servicio || null
+                    })
                 });
-
-                const data = await resp.json();
-
-                if (!resp.ok) {
-                    throw new Error(data.error || 'No se pudo reprogramar');
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarNotificacion('✅ ' + data.message, 'success');
+                    cerrarModalReprogramacion();
+                    // Limpiar todo
+                    dniInput.value = '';
+                    citasList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-calendar-times text-4xl mb-3"></i><p>Busca un paciente para ver sus reservas</p></div>';
+                    document.getElementById('estado-proceso').textContent = 'Sin iniciar';
+                } else {
+                    mostrarNotificacion('❌ Error: ' + data.error, 'error');
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.textContent = 'Confirmar Reprogramación';
                 }
-
-                mostrarNotificacion('Reserva reprogramada exitosamente', 'success');
-                setTimeout(() => window.location.reload(), 2000);
-
-            } catch (err) {
-                mostrarNotificacion('Error al reprogramar: ' + err.message, 'error');
+            } catch (error) {
+                console.error('Error:', error);
+                mostrarNotificacion('❌ Error al reprogramar: ' + error.message, 'error');
+                btnConfirmar.disabled = false;
+                btnConfirmar.textContent = 'Confirmar Reprogramación';
             }
-        });
-
-        // Limpiar todo
-        btnLimpiar.addEventListener('click', function() {
-            if (confirm('¿Desea limpiar todos los datos ingresados?')) {
-                window.location.reload();
-            }
-        });
+        }
 
         // Mostrar notificación
         function mostrarNotificacion(mensaje, tipo) {
