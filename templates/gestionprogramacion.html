@@ -139,13 +139,6 @@ Estado
                         Limpiar
                     </button>
                 </div>
-
-                <div class="flex items-end col-span-3">
-                    <button type="submit" id="btnBuscar" class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg btn">
-                        <i class="fas fa-search"></i>
-                        Buscar
-                    </button>
-                </div>
             </form>
         </div>
 
@@ -167,9 +160,22 @@ Estado
                         </tr>
                     </thead>
                     <tbody id="tabla-programacion-body" class="divide-y divide-gray-200">
-                        </tr>
+                        <!-- Filas de la tabla se llenarán dinámicamente -->
                     </tbody>
                 </table>
+            </div>
+            <!-- Paginación -->
+            <div
+                class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+                <!-- Texto de registros -->
+                <div class="text-sm text-gray-600 text-center md:text-left">
+                    Mostrando <span id="inicio-rango" class="font-medium">0</span>-
+                    <span id="fin-rango" class="font-medium">0</span> de
+                    <span id="total-registros" class="font-medium">0</span> registros
+                </div> 
+
+                <!-- Controles de paginación -->
+                <nav id="paginacionNumeros" class="flex items-center space-x-2" aria-label="Pagination"></nav>
             </div>
         </div>
     </div>
@@ -223,6 +229,8 @@ Tipo Servicio
                         </select>
                     </div>
                 </div>
+                <input type="hidden" id="idEmpleado" name="idEmpleado">
+                <input type="hidden" id="idHorario" name="idHorario">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -234,20 +242,6 @@ Servicio
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-ID Empleado
-                        </label>
-                        <input type="text" id="idEmpleado" name="idEmpleado" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-ID Horario
-                        </label>
-                        <input type="text" id="idHorario" name="idHorario" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
 Nombre Empleado
                         </label>
                         <div class="relative">
@@ -255,11 +249,11 @@ Nombre Empleado
                             <div id="suggestions-empleado" class="absolute bg-white border border-gray-300 rounded mt-1 w-full max-h-40 overflow-y-auto z-10 hidden"></div>
                         </div>
                     </div>
-                    <div class="flex items-end">
-                        <button type="button" id="btnLimpiarRegistrar" class="bg-yellow-200 hover:bg-yellow-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-broom"></i>
-                        </button>
-                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="btnLimpiarRegistrar" class="bg-yellow-200 hover:bg-yellow-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-broom"></i>
+                    </button>
                 </div>
                 <!-- Tabla pequeña del horario del empleado -->
                 <div>
@@ -308,13 +302,8 @@ Horario del Empleado
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
             <form id="formModificarProgramacion" class="space-y-4">
+                <input type="hidden" id="idProgramacionEdit" name="idProgramacionEdit">
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-ID Programación
-                        </label>
-                        <input type="text" id="idProgramacionEdit" name="idProgramacionEdit" placeholder="ID de la programacion" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
 Fecha
@@ -356,6 +345,8 @@ Estado
                         </select>
                     </div>
                 </div>
+                <input type="hidden" id="idEmpleadoEdit" name="idEmpleadoEdit">
+                <input type="hidden" id="idHorarioEdit" name="idHorarioEdit">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -367,31 +358,12 @@ Servicio
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">
-ID Empleado
-                        </label>
-                        <input type="text" id="idEmpleadoEdit" name="idEmpleadoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-ID Horario
-                        </label>
-                        <input type="text" id="idHorarioEdit" name="idHorarioEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
 Nombre Empleado
                         </label>
                         <div class="relative">
                             <input type="text" id="nombreEmpleadoEdit" name="nombreEmpleadoEdit" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500" autocomplete="off">
                             <div id="suggestions-empleado-edit" class="absolute bg-white border border-gray-300 rounded mt-1 w-full max-h-40 overflow-y-auto z-10 hidden"></div>
                         </div>
-                    </div>
-                    <div class="flex items-end">
-                        <button type="button" id="btnLimpiarEditar" class="bg-yellow-200 hover:bg-yellow-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                            <i class="fas fa-broom"></i>
-                        </button>
                     </div>
                 </div>
                 <!-- Tabla pequeña del horario del empleado -->
@@ -417,9 +389,9 @@ Horario del Empleado
                     </div>
                 </div>
                 <div class="flex gap-4 pt-4">
-                    <button type="button" id="btnCancelarEditar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                        <i class="fas fa-times mr-2"></i>
-                        Cancelar
+                    <button type="button" id="btnLimpiarEditar" class="flex-1 bg-yellow-200 hover:bg-yellow-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                        <i class="fas fa-broom mr-2"></i>
+                        Limpiar
                     </button>
                     <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                         <i class="fas fa-save mr-2"></i>
@@ -436,11 +408,11 @@ Horario del Empleado
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
                 <h2 class="text-2xl font-bold text-gray-800">
                     <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-                    Confirmar Eliminación
+                    Confirmar Dar de Baja
                 </h2>
                 <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
             </div>
-            <p class="text-gray-600 mb-6">¿Está seguro que desea eliminar este recurso físico?</p>
+            <p class="text-gray-600 mb-6">¿Está seguro que desea dar de baja a este recurso físico?</p>
             <div class="flex gap-4">
                 <button id="btnCancelarEliminar" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
                     <i class="fas fa-times mr-2"></i>
@@ -448,12 +420,13 @@ Horario del Empleado
                 </button>
                 <button id="btnConfirmarEliminar" class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
                     <i class="fas fa-trash-alt mr-2"></i>
-                    Eliminar
+                    Dar de Baja
                 </button>
             </div>
         </div>
     </div>
 
+    <script src="/static/js/paginacion.js"></script>
     <script src="{{ url_for('static', filename='js/gestionprogramacion.js') }}"></script>
 
     {% include 'footer.html' %}

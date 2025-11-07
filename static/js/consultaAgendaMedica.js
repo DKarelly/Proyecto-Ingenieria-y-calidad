@@ -1,5 +1,4 @@
-// consultaAgendaMedica.js - Funcionalidad para Consultar Agenda Médica
-
+// consultaAgendaMedica.js - Funcionalidad para Consultar Agenda Médica con paginación
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos del DOM
     const filtroEmpleado = document.getElementById('filtroEmpleado');
@@ -9,11 +8,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnLimpiar = document.getElementById('btnLimpiar');
     const tablaAgenda = document.getElementById('tablaAgenda');
 
-    // Variables para autocomplete
+    // Variables globales
     let servicios = [];
     let empleadoSeleccionado = null;
     let servicioSeleccionado = null;
     let timeoutEmpleado;
+    let agendaCompleta = []; // 👈 guardará todos los datos para paginar
 
     // Inicializar la página
     inicializar();
@@ -21,19 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function inicializar() {
         cargarServicios();
         cargarAgenda();
-
-        // Configurar eventos
         configurarEventos();
     }
 
     function configurarEventos() {
-        // Botón buscar
-        btnBuscar.addEventListener('click', function() {
-            cargarAgenda();
-        });
-
-        // Botón limpiar
-        btnLimpiar.addEventListener('click', function() {
+        btnLimpiar.addEventListener('click', () => {
             limpiarFiltros();
             cargarAgenda();
         });
@@ -45,34 +37,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (termino.length < 2) {
                 ocultarSugerencias();
+                filtrarAgendaDinamicamente();
                 return;
             }
 
             timeoutEmpleado = setTimeout(() => {
-                buscarEmpleados(termino).then(sugerencias => {
-                    mostrarSugerenciasEmpleados(sugerencias);
-                });
-            }, 100);
+                buscarEmpleados(termino).then(mostrarSugerenciasEmpleados);
+            }, 150);
+            filtrarAgendaDinamicamente();
         });
 
-        filtroEmpleado.addEventListener('blur', function() {
-            setTimeout(() => ocultarSugerencias(), 200);
-        });
+        filtroEmpleado.addEventListener('blur', () => setTimeout(ocultarSugerencias, 200));
 
-        // Evento para servicio (select)
+        filtroFecha.addEventListener('input', filtrarAgendaDinamicamente);
         filtroServicio.addEventListener('change', function() {
             servicioSeleccionado = servicios.find(s => s.id_servicio == this.value) || null;
+            filtrarAgendaDinamicamente();
         });
     }
 
-
-
+    // 🔹 Cargar servicios para el filtro
     function cargarServicios() {
         fetch('/admin/api/servicios/buscar-agenda')
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 servicios = data;
-                // Llenar el select de servicios
                 const selectServicio = document.getElementById('filtroServicio');
                 selectServicio.innerHTML = '<option value="">Todos los servicios</option>';
                 data.forEach(servicio => {
@@ -82,74 +71,64 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectServicio.appendChild(option);
                 });
             })
-            .catch(error => {
-                console.error('Error al cargar servicios:', error);
-                // Mostrar mensaje de error al usuario
-                const selectServicio = document.getElementById('filtroServicio');
-                selectServicio.innerHTML = '<option value="">Error al cargar servicios</option>';
+            .catch(err => {
+                console.error('Error al cargar servicios:', err);
+                document.getElementById('filtroServicio').innerHTML =
+                    '<option value="">Error al cargar servicios</option>';
             });
     }
 
+    // 🔹 Cargar la agenda médica (POST con filtros)
     function cargarAgenda() {
         const data = {};
 
-        // Buscar por nombre del empleado (si se ingresa texto)
-        if (filtroEmpleado.value.trim()) {
-            data.nombre_empleado = filtroEmpleado.value.trim();
-        }
-
-        // Buscar por fecha
-        if (filtroFecha.value) {
-            data.fecha = filtroFecha.value;
-        }
-
-        // Buscar por ID del servicio seleccionado
-        if (servicioSeleccionado) {
-            data.id_servicio = servicioSeleccionado.id_servicio;
-        }
+        if (filtroEmpleado.value.trim()) data.nombre_empleado = filtroEmpleado.value.trim();
+        if (filtroFecha.value) data.fecha = filtroFecha.value;
+        if (servicioSeleccionado) data.id_servicio = servicioSeleccionado.id_servicio;
 
         fetch('/admin/api/agenda/consultar', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
-                mostrarAgenda(data);
+                agendaCompleta = data || [];
+                inicializarPaginacion({
+                    datos: agendaCompleta,
+                    registrosPorPagina: 20, // 👈 20 filas por página
+                    renderFuncion: mostrarAgendaPaginada
+                });
             })
-            .catch(error => {
-                console.error('Error al cargar agenda:', error);
+            .catch(err => {
+                console.error('Error al cargar agenda:', err);
                 mostrarError('Error al cargar la agenda médica');
             });
     }
 
-    function mostrarAgenda(agenda) {
+    // 🔹 Función que renderiza solo los datos de la página actual
+    function mostrarAgendaPaginada(datosPagina) {
         tablaAgenda.innerHTML = '';
 
-        if (agenda.length === 0) {
+        if (!datosPagina || datosPagina.length === 0) {
             tablaAgenda.innerHTML = `
                 <tr>
                     <td colspan="10" class="px-6 py-8 text-center text-gray-500">
                         <i class="fas fa-calendar-times text-4xl mb-4"></i>
                         <p>No se encontraron registros de agenda médica</p>
                     </td>
-                </tr>
-            `;
+                </tr>`;
             return;
         }
 
-        agenda.forEach(item => {
-            const fila = crearFilaAgenda(item);
-            tablaAgenda.appendChild(fila);
+        datosPagina.forEach(item => {
+            tablaAgenda.appendChild(crearFilaAgenda(item));
         });
     }
 
     function crearFilaAgenda(item) {
         const fila = document.createElement('tr');
         fila.className = 'hover:bg-gray-50 transition-colors';
-
         const estadoClass = obtenerClaseEstado(item.estado_atencion);
 
         fila.innerHTML = `
@@ -174,32 +153,27 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
         `;
 
-        // Agregar evento al botón de detalle
-        const btnDetalle = fila.querySelector('.btn-ver-detalle');
-        btnDetalle.addEventListener('click', function() {
+        fila.querySelector('.btn-ver-detalle').addEventListener('click', function() {
             mostrarDetalleAgenda(JSON.parse(this.dataset.item));
         });
 
         return fila;
     }
 
+    // 🧩 Funciones auxiliares (sin cambios)
     function buscarEmpleados(termino) {
         return fetch(`/admin/api/empleados/buscar?termino=${encodeURIComponent(termino)}`)
-            .then(response => response.json())
-            .then(data => data)
-            .catch(error => {
-                console.error('Error al buscar empleados:', error);
-                return [];
-            });
+            .then(res => res.json())
+            .catch(() => []);
     }
 
     function mostrarSugerencias(input, sugerencias, tipo) {
         ocultarSugerencias();
-
         if (sugerencias.length === 0) return;
 
         const contenedor = document.createElement('div');
-        contenedor.className = 'absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto';
+        contenedor.className =
+            'absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto';
         contenedor.id = `sugerencias-${tipo}`;
 
         sugerencias.forEach(item => {
@@ -211,13 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 opcion.addEventListener('click', () => {
                     input.value = opcion.textContent;
                     empleadoSeleccionado = item;
-                    ocultarSugerencias();
-                });
-            } else if (tipo === 'servicio') {
-                opcion.textContent = item.nombre;
-                opcion.addEventListener('click', () => {
-                    input.value = opcion.textContent;
-                    servicioSeleccionado = item;
                     ocultarSugerencias();
                 });
             }
@@ -233,17 +200,30 @@ document.addEventListener('DOMContentLoaded', function() {
         mostrarSugerencias(filtroEmpleado, sugerencias, 'empleado');
     }
 
-    function ocultarSugerencias() {
-        const sugerencias = document.querySelectorAll('[id^="sugerencias-"]');
-        sugerencias.forEach(sug => sug.remove());
+    function filtrarAgendaDinamicamente() {
+        const filtroEmp = filtroEmpleado.value.toLowerCase().trim();
+        const filtroFec = filtroFecha.value;
+        const filtroServ = servicioSeleccionado ? servicioSeleccionado.id_servicio : null;
+
+        const agendaFiltrada = agendaCompleta.filter(item => {
+            const coincideEmpleado = !filtroEmp || (item.nombre_empleado && item.nombre_empleado.toLowerCase().includes(filtroEmp));
+            const coincideFecha = !filtroFec || (item.fecha && item.fecha.startsWith(filtroFec));
+            const coincideServicio = !filtroServ || (item.id_servicio == filtroServ);
+
+            return coincideEmpleado && coincideFecha && coincideServicio;
+        });
+
+        // Actualizar la paginación con los datos filtrados
+        inicializarPaginacion({
+            datos: agendaFiltrada,
+            registrosPorPagina: 20,
+            renderFuncion: mostrarAgendaPaginada
+        });
     }
 
-    // Ocultar sugerencias al hacer clic fuera
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#filtroEmpleado') && !e.target.closest('#sugerencias-empleado')) {
-            ocultarSugerencias();
-        }
-    });
+    function ocultarSugerencias() {
+        document.querySelectorAll('[id^="sugerencias-"]').forEach(s => s.remove());
+    }
 
     function limpiarFiltros() {
         filtroEmpleado.value = '';
@@ -251,13 +231,11 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroServicio.value = '';
         empleadoSeleccionado = null;
         servicioSeleccionado = null;
-        // Resetear el select de servicios
         filtroServicio.selectedIndex = 0;
     }
 
     function mostrarDetalleAgenda(item) {
-        // Poblar los campos del modal con los datos del item
-        document.getElementById('detalleIdEmpleado').textContent = item.id_empleado || '-';
+        //document.getElementById('detalleIdEmpleado').textContent = item.id_empleado || '-';
         document.getElementById('detalleDoctor').textContent = item.nombre_empleado || '-';
         document.getElementById('detalleTipo').textContent = item.tipo || '-';
         document.getElementById('detalleTipoReserva').textContent = item.tipo_reserva || '-';
@@ -269,47 +247,22 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('detalleDiagnostico').textContent = item.diagnostico || '-';
         document.getElementById('detalleObservaciones').textContent = item.observaciones || '-';
 
-        // Mostrar el modal
         const modal = document.getElementById('modalDetalle');
         modal.classList.add('show');
 
-        // Configurar cierre del modal
-        const closeBtn = modal.querySelector('.close');
-        closeBtn.onclick = function() {
-            modal.classList.remove('show');
+        modal.querySelector('.close').onclick = () => modal.classList.remove('show');
+        window.onclick = e => {
+            if (e.target === modal) modal.classList.remove('show');
         };
-
-        // Cerrar al hacer clic fuera del contenido del modal
-        window.onclick = function(event) {
-            if (event.target === modal) {
-                modal.classList.remove('show');
-            }
-        };
-    }
-
-    function obtenerDiaSemana(fecha) {
-        if (!fecha) return '-';
-        const date = new Date(fecha);
-        return date.toLocaleDateString('es-ES', { weekday: 'long' });
-    }
-
-    function obtenerDisponibilidad(estado) {
-        if (!estado) return 'No disponible';
-        const estadoLower = estado.toLowerCase();
-        if (estadoLower.includes('confirmad') || estadoLower.includes('activo')) {
-            return 'Disponible';
-        }
-        return 'No disponible';
     }
 
     function obtenerClaseEstado(estado) {
         if (!estado) return 'inactivo';
-
-        const estadoLower = estado.toLowerCase();
-        if (estadoLower.includes('confirmad') || estadoLower.includes('activo')) return 'activo';
-        if (estadoLower.includes('pendiente')) return 'pendiente';
-        if (estadoLower.includes('cancelad') || estadoLower.includes('inactivo')) return 'inactivo';
-        return 'activo'; // default
+        const e = estado.toLowerCase();
+        if (e.includes('confirmad') || e.includes('activo')) return 'activo';
+        if (e.includes('pendiente')) return 'pendiente';
+        if (e.includes('cancelad') || e.includes('inactivo')) return 'inactivo';
+        return 'activo';
     }
 
     function formatearFecha(fecha) {
@@ -319,7 +272,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function mostrarError(mensaje) {
-        // Aquí puedes implementar un sistema de notificaciones
         console.error(mensaje);
         alert(mensaje);
     }

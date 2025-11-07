@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.target === modalEliminar) {
             modalEliminar.classList.remove('show');
         }
-    });
+    }); 
 
     // Event listener para el botón btnLimpiarRegistrar
     const btnLimpiarRegistrar = document.getElementById('btnLimpiarRegistrar');
@@ -234,11 +234,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Buscar con filtros
-    if (btnBuscar) {
-        btnBuscar.addEventListener('click', function(event) {
-            event.preventDefault();
-            loadProgramaciones(); // Recargar programaciones con filtros aplicados
+    // Event listeners para filtros dinámicos
+    const filtroFechaInput = document.getElementById('filtroFecha');
+    if (filtroFechaInput) {
+        filtroFechaInput.addEventListener('change', function() {
+            loadProgramaciones();
+        });
+    }
+
+    const filtroTipoServicioSelect = document.getElementById('filtroTipoServicio');
+    if (filtroTipoServicioSelect) {
+        filtroTipoServicioSelect.addEventListener('change', function() {
+            const selectedTipo = this.value;
+            loadServicios('filtroServicio', selectedTipo || null);
+            loadProgramaciones();
+        });
+    }
+
+    const filtroServicioSelect = document.getElementById('filtroServicio');
+    if (filtroServicioSelect) {
+        filtroServicioSelect.addEventListener('change', function() {
+            loadProgramaciones();
+        });
+    }
+
+    const filtroEstadoSelect = document.getElementById('filtroEstado');
+    if (filtroEstadoSelect) {
+        filtroEstadoSelect.addEventListener('change', function() {
+            loadProgramaciones();
         });
     }
 
@@ -270,6 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.getElementById('filtroNombreEmpleado').value = fullName;
                             document.getElementById('filtroIdEmpleado').value = employee.id_empleado;
                             suggestionsDiv.classList.add('hidden');
+                            loadProgramaciones(); // Recargar programaciones al seleccionar empleado
                         });
                         suggestionsDiv.appendChild(suggestionItem);
                     });
@@ -284,9 +308,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener para el input filtroNombreEmpleado
     const filtroNombreEmpleadoInput = document.getElementById('filtroNombreEmpleado');
     if (filtroNombreEmpleadoInput) {
+        // Usamos un timeout para debounce en input y recargar programaciones
+        let debounceTimer;
         filtroNombreEmpleadoInput.addEventListener('input', function() {
             const nombre = this.value.trim();
             loadEmployeeSuggestionsFiltro(nombre);
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                loadProgramaciones();
+            }, 500); // Espera 500ms después de que el usuario deje de escribir
             if (nombre.length < 2) {
                 document.getElementById('filtroIdEmpleado').value = '';
                 document.getElementById('suggestions-empleado-filtro').classList.add('hidden');
