@@ -84,13 +84,21 @@ class Usuario:
                            p.id_paciente,
                            CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
                            p.documento_identidad as documento_paciente,
-                           p.sexo as sexo_paciente,
+                           CASE 
+                               WHEN p.sexo = 'M' THEN 'Masculino'
+                               WHEN p.sexo = 'F' THEN 'Femenino'
+                               ELSE p.sexo
+                           END as sexo_paciente,
                            p.fecha_nacimiento,
                            p.id_distrito as id_distrito_paciente,
                            e.id_empleado,
                            CONCAT(e.nombres, ' ', e.apellidos) as nombre_empleado,
                            e.documento_identidad as documento_empleado,
-                           e.sexo as sexo_empleado,
+                           CASE 
+                               WHEN e.sexo = 'M' THEN 'Masculino'
+                               WHEN e.sexo = 'F' THEN 'Femenino'
+                               ELSE e.sexo
+                           END as sexo_empleado,
                            e.fecha_nacimiento as fecha_nacimiento_empleado,
                            e.id_distrito as id_distrito_empleado,
                            r.nombre as rol_empleado,

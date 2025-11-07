@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button.active {
+            border-bottom: 3px solid #0891b2;
+            color: #0891b2;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/admin/" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Panel
+            </a>
+        </div>
+        
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Usuarios</h1>
+            <p class="text-gray-600">Administre empleados y pacientes del sistema</p>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="bg-white rounded-lg shadow-md mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                    <button onclick="showTab('empleados')" class="tab-button active py-4 px-1 text-gray-600 hover:text-cyan-600 transition-colors whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-user-tie"></i>
+                        Empleados
+                        <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {{ empleados|length if empleados else 0 }}
+                        </span>
+                    </button>
+                    <button onclick="showTab('pacientes')" class="tab-button py-4 px-1 text-gray-600 hover:text-cyan-600 transition-colors whitespace-nowrap flex items-center gap-2">
+                        <i class="fa-solid fa-users"></i>
+                        Pacientes
+                        <span class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            {{ pacientes|length if pacientes else 0 }}
+                        </span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab Content: Empleados -->
+        <div id="tab-empleados" class="tab-content active">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <!-- Toolbar -->
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div class="flex-1 max-w-md">
+                        <div class="relative">
+                            <input type="text" id="search-empleados" placeholder="Buscar empleados..." 
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <a href="/cuentas/gestionar-cuentas-internas" class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-semibold">
+                        <i class="fa-solid fa-user-plus mr-2"></i>
+                        Nuevo Empleado
+                    </a>
+                </div>
+
+                <!-- Tabla Empleados -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="empleados-tbody">
+                            {% if empleados %}
+                                {% for empleado in empleados %}
+                                <tr class="hover:bg-gray-50 empleado-row">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                                <i class="fa-solid fa-user-tie text-blue-600"></i>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">{{ empleado.nombres }} {{ empleado.apellidos }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ empleado.documento_identidad }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500">{{ empleado.correo }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            {{ empleado.rol }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if empleado.estado == 'Activo' or empleado.estado == 'activo' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            <i class="fa-solid fa-circle-check mr-1"></i> Activo
+                                        </span>
+                                        {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            <i class="fa-solid fa-circle-xmark mr-1"></i> Inactivo
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="editarEmpleado({{ empleado.id_empleado }})" class="text-cyan-600 hover:text-cyan-900 mr-3" title="Editar">
+                                            <i class="fa-solid fa-edit"></i>
+                                        </button>
+                                        <button onclick="verDetalleUsuario({{ empleado.id_usuario }})" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center">
+                                        <i class="fa-solid fa-users-slash text-4xl text-gray-300 mb-4"></i>
+                                        <p class="text-gray-500">No hay empleados registrados</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Pacientes -->
+        <div id="tab-pacientes" class="tab-content">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <!-- Toolbar -->
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div class="flex-1 max-w-md">
+                        <div class="relative">
+                            <input type="text" id="search-pacientes" placeholder="Buscar pacientes..." 
+                                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                    <a href="/cuentas/registrar-cuenta-paciente" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                        <i class="fa-solid fa-plus mr-2"></i>
+                        Nuevo Paciente
+                    </a>
+                </div>
+
+                <!-- Tabla Pacientes -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correo</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="pacientes-tbody">
+                            {% if pacientes %}
+                                {% for paciente in pacientes %}
+                                <tr class="hover:bg-gray-50 paciente-row">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                                                <i class="fa-solid fa-user text-green-600"></i>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">{{ paciente.nombres }} {{ paciente.apellidos }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ paciente.documento_identidad }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500">{{ paciente.correo }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-500">{{ paciente.telefono or 'N/A' }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if paciente.estado == 'Activo' or paciente.estado == 'activo' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            <i class="fa-solid fa-circle-check mr-1"></i> Activo
+                                        </span>
+                                        {% else %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                            <i class="fa-solid fa-circle-xmark mr-1"></i> Inactivo
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="editarPaciente({{ paciente.id_paciente }})" class="text-cyan-600 hover:text-cyan-900 mr-3" title="Editar">
+                                            <i class="fa-solid fa-edit"></i>
+                                        </button>
+                                        <button onclick="verDetalleUsuario({{ paciente.id_usuario }})" class="text-blue-600 hover:text-blue-900" title="Ver detalle">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center">
+                                        <i class="fa-solid fa-user-slash text-4xl text-gray-300 mb-4"></i>
+                                        <p class="text-gray-500">No hay pacientes registrados</p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
+
+    <script>
+        // Función para cambiar entre tabs
+        function showTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remover clase active de todos los botones
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Mostrar el tab seleccionado
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Búsqueda en tiempo real para empleados
+        document.getElementById('search-empleados').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('.empleado-row').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Búsqueda en tiempo real para pacientes
+        document.getElementById('search-pacientes').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            document.querySelectorAll('.paciente-row').forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Función para redirigir a editar empleado
+            function verDetalleUsuario(idUsuario) {
+                const modal = document.getElementById('modal-detalle-usuario');
+                const loading = document.getElementById('modal-loading');
+                const content = document.getElementById('modal-content');
+                const errorBox = document.getElementById('modal-error');
+                // Reset estado
+                errorBox.classList.add('hidden');
+                errorBox.textContent = '';
+                content.classList.add('hidden');
+                loading.classList.remove('hidden');
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+                window.scrollTo({top:0,behavior:'smooth'});
+
+                fetch(`/usuarios/api/usuarios/${idUsuario}`)
+                    .then(async response => {
+                        if (!response.ok) {
+                            let msg = 'Error al obtener usuario';
+                            try {
+                                const data = await response.json();
+                                if (data && data.error) msg = data.error;
+                            } catch(_) {}
+                            throw new Error(msg);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        const nz = v => (v && v !== 'N/A') ? v : 'No disponible';
+                        document.getElementById('modal-nombre').textContent = nz(data.nombre_empleado || data.nombre_paciente);
+                        document.getElementById('modal-tipo').textContent = data.tipo_usuario === 'empleado' ? 'Empleado' : 'Paciente';
+                        document.getElementById('modal-documento').textContent = nz(data.documento_empleado || data.documento_paciente);
+                        document.getElementById('modal-correo').textContent = nz(data.correo);
+                        document.getElementById('modal-telefono').textContent = nz(data.telefono_empleado || data.telefono_paciente);
+                        document.getElementById('modal-sexo').textContent = nz(data.sexo_empleado || data.sexo_paciente);
+
+                        const rolContainer = document.getElementById('modal-rol-container');
+                        const especialidadContainer = document.getElementById('modal-especialidad-container');
+                        const ubicacionContainer = document.getElementById('modal-ubicacion-container');
+                        const tipoSangreContainer = document.getElementById('modal-tipo-sangre-container');
+
+                        if (data.tipo_usuario === 'empleado') {
+                            document.getElementById('modal-rol').textContent = nz(data.rol);
+                            document.getElementById('modal-especialidad').textContent = nz(data.especialidad);
+                            document.getElementById('modal-ubicacion').textContent = nz(data.ubicacion);
+                            rolContainer.classList.remove('hidden');
+                            especialidadContainer.classList.remove('hidden');
+                            ubicacionContainer.classList.remove('hidden');
+                            tipoSangreContainer.classList.add('hidden');
+                        } else {
+                            document.getElementById('modal-tipo-sangre').textContent = nz(data.tipo_sangre);
+                            tipoSangreContainer.classList.remove('hidden');
+                            rolContainer.classList.add('hidden');
+                            especialidadContainer.classList.add('hidden');
+                            ubicacionContainer.classList.add('hidden');
+                        }
+
+                    document.getElementById('modal-estado').textContent = (data.estado === 'activo' ? 'Activo' : 'Inactivo');
+                    document.getElementById('modal-fecha-registro').textContent = nz(data.fecha_creacion);
+                    document.getElementById('modal-fecha-nacimiento').textContent = nz(data.fecha_nacimiento);
+
+                    // Actualizar enlace "Ver Perfil Completo"
+                    const perfilLink = document.getElementById('modal-ver-perfil');
+                    if (perfilLink && data.id_usuario) {
+                        perfilLink.href = `/usuarios/perfil?id=${data.id_usuario}`;
+                    }
+
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                    })
+                    .catch(error => {
+                        loading.classList.add('hidden');
+                        errorBox.textContent = error.message;
+                        errorBox.classList.remove('hidden');
+                        console.error('Error:', error);
+                    });
+            }
+        function cerrarModal() {
+            document.getElementById('modal-detalle-usuario').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+            const loading = document.getElementById('modal-loading');
+            const content = document.getElementById('modal-content');
+            const errorBox = document.getElementById('modal-error');
+            if (loading && content && errorBox) {
+                loading.classList.remove('hidden');
+                content.classList.add('hidden');
+                errorBox.classList.add('hidden');
+                errorBox.textContent = '';
+            }
+        }
+
+        // Cerrar modal al hacer clic en el backdrop
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('modal-detalle-usuario');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        cerrarModal();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Modal de Detalle de Usuario -->
+    <div id="modal-detalle-usuario" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-start justify-center p-4 pt-10 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full" onclick="event.stopPropagation()">
+            <!-- Header del Modal -->
+            <div class="bg-gradient-to-r from-cyan-600 to-blue-600 px-6 py-4 rounded-t-xl flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fa-solid fa-user-circle mr-3"></i>
+                    Detalles del Usuario
+                </h3>
+                <button onclick="cerrarModal()" class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fa-solid fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Body del Modal -->
+            <div class="p-6">
+                <!-- Spinner de carga -->
+                <div id="modal-loading" class="flex items-center justify-center py-16">
+                    <div class="flex flex-col items-center">
+                        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-cyan-500 border-opacity-70 border-r-4 border-b-4 border-gray-200"></div>
+                        <p class="mt-6 text-cyan-700 font-medium">Cargando datos del usuario...</p>
+                    </div>
+                </div>
+                <!-- Contenido principal oculto hasta cargar -->
+                <div id="modal-content" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Tipo de Usuario -->
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Tipo de Usuario</label>
+                        <span id="modal-tipo" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-100 text-cyan-800"></span>
+                    </div>
+
+                    <!-- Nombre Completo -->
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Nombre Completo</label>
+                        <p id="modal-nombre" class="text-gray-900 font-semibold text-lg"></p>
+                    </div>
+
+                    <!-- Documento -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-id-card mr-2 text-cyan-600"></i>Documento
+                        </label>
+                        <p id="modal-documento" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Correo Electrónico -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-envelope mr-2 text-cyan-600"></i>Correo Electrónico
+                        </label>
+                        <p id="modal-correo" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Teléfono -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-phone mr-2 text-cyan-600"></i>Teléfono
+                        </label>
+                        <p id="modal-telefono" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Sexo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-venus-mars mr-2 text-cyan-600"></i>Sexo
+                        </label>
+                        <p id="modal-sexo" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Rol (solo empleados) -->
+                    <div id="modal-rol-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-user-tag mr-2 text-cyan-600"></i>Rol
+                        </label>
+                        <p id="modal-rol" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Especialidad (solo empleados) -->
+                    <div id="modal-especialidad-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-stethoscope mr-2 text-cyan-600"></i>Especialidad
+                        </label>
+                        <p id="modal-especialidad" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Ubicación (solo empleados) -->
+                    <div id="modal-ubicacion-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-map-marker-alt mr-2 text-cyan-600"></i>Ubicación
+                        </label>
+                        <p id="modal-ubicacion" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Tipo de Sangre (solo pacientes) -->
+                    <div id="modal-tipo-sangre-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-tint mr-2 text-cyan-600"></i>Tipo de Sangre
+                        </label>
+                        <p id="modal-tipo-sangre" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Estado -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-circle-check mr-2 text-cyan-600"></i>Estado
+                        </label>
+                        <p id="modal-estado" class="text-gray-900"></p>
+                    </div>
+
+                    <!-- Fecha de Registro -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-calendar-plus mr-2 text-cyan-600"></i>Fecha de Registro
+                        </label>
+                        <p id="modal-fecha-registro" class="text-gray-900 font-medium"></p>
+                    </div>
+
+                    <!-- Fecha de Nacimiento -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">
+                            <i class="fa-solid fa-birthday-cake mr-2 text-cyan-600"></i>Fecha de Nacimiento
+                        </label>
+                        <p id="modal-fecha-nacimiento" class="text-gray-900"></p>
+                    </div>
+                </div>
+                <!-- Mensaje de error -->
+                <div id="modal-error" class="hidden mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg" role="alert"></div>
+                </div>
+            </div>
+
+            <!-- Footer del Modal -->
+            <div class="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-between items-center">
+                <!-- Botón Ver Perfil Completo -->
+                <a id="modal-ver-perfil" href="#" target="_blank" class="px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 flex items-center shadow-md hover:shadow-lg">
+                    <i class="fa-solid fa-external-link-alt mr-2"></i>
+                    Ver Perfil Completo
+                </a>
+                <!-- Botón Cerrar -->
+                <button onclick="cerrarModal()" class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors duration-200 flex items-center">
+                    <i class="fa-solid fa-times mr-2"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

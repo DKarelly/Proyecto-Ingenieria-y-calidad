@@ -190,7 +190,7 @@ class Programacion:
                     params.append(fecha)
 
                 if id_empleado:
-                    sql += " AND p.id_empleado = %s"
+                    sql += " AND e.id_empleado = %s"
                     params.append(id_empleado)
 
                 if estado:

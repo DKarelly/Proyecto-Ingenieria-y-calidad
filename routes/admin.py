@@ -19,12 +19,18 @@ def panel():
     if session.get('tipo_usuario') != 'empleado':
         return redirect(url_for('home'))
 
-    # Verificar que el rol esté entre 1 y 5
+    # Restringir acceso: solo Administrador (rol 1) puede ver el panel de administración
     id_rol = session.get('id_rol')
-    if id_rol is None or id_rol not in [1, 2, 3, 4, 5]:
-        return redirect(url_for('home'))
+    if id_rol != 1:
+        # Redirigir según el rol del empleado
+        if id_rol == 2:  # Médico
+            return redirect(url_for('medico.panel'))
+        else:            # Otros empleados (recepción, farmacia, etc.)
+            return redirect(url_for('trabajador.panel'))
 
-    return render_template('panel.html', subsistema='administracion')
+    # Aceptar query param ?subsistema=... para unificar navegación
+    subsistema = request.args.get('subsistema', 'administracion')
+    return render_template('panel.html', subsistema=subsistema)
 
 @admin_bp.route('/consultar-agenda-medica')
 def consultar_agenda_medica():

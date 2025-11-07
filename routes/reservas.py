@@ -7,7 +7,8 @@ from models.paciente import Paciente
 from models.reserva import Reserva
 from models.programacion import Programacion
 from bd import obtener_conexion
-from datetime import date, datetime, timedelta, time
+from datetime import date
+from models.notificacion import Notificacion
 
 reservas_bp = Blueprint('reservas', __name__)
 
@@ -618,6 +619,31 @@ def api_reprogramar_reserva_old():
                 conexion.rollback()
                 return jsonify({'error': res.get('error')}), 500
 
+        # Crear notificación para el paciente sobre la reprogramación
+        try:
+            id_paciente = reserva.get('id_paciente')
+            estado_actual = reserva.get('estado', 'Pendiente')
+            
+            # Notificación inmediata de reprogramación
+            try:
+                Notificacion.crear('Reserva Reprogramada', f'Su reserva fue reprogramada para {fecha} a las {hora_inicio}', 'reprogramacion', id_paciente, id_reserva)
+            except Exception as e:
+                print(f"Error creando notificación reprogramacion inmediata: {e}")
+            
+            # Notificación del estado actual
+            try:
+                Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, estado_actual)
+            except Exception as e:
+                print(f"Error creando notificación de estado tras reprogramación: {e}")
+            
+            # Programar recordatorio en la nueva fecha
+            try:
+                Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha, hora_inicio)
+            except Exception as e:
+                print(f"Error programando recordatorio tras reprogramacion: {e}")
+        except Exception as e:
+            print(f"Error procesando notificaciones tras reprogramacion: {e}")
+
         return jsonify({'success': True, 'id_programacion': nuevo_id_programacion})
 
     except Exception as e:
@@ -666,7 +692,45 @@ def api_crear_reserva():
         res = Reserva.crear(1, int(id_paciente), int(id_programacion))
         if res.get('error'):
             return jsonify({'error': res['error']}), 500
-        return jsonify({'success': True, 'id_reserva': res.get('id_reserva')}), 201
+        
+        id_reserva = res.get('id_reserva')
+        
+        # Obtener el estado de la reserva recién creada (normalmente será 'Pendiente')
+        conexion_notif = obtener_conexion()
+        try:
+            with conexion_notif.cursor() as cursor:
+                cursor.execute("SELECT estado FROM RESERVA WHERE id_reserva = %s", (id_reserva,))
+                reserva_data = cursor.fetchone()
+                estado_reserva = reserva_data.get('estado', 'Pendiente') if reserva_data else 'Pendiente'
+        except Exception as e:
+            print(f"Error obteniendo estado de reserva: {e}")
+            estado_reserva = 'Pendiente'
+        finally:
+            try:
+                conexion_notif.close()
+            except:
+                pass
+        
+        # Crear notificaciones
+        try:
+            # 1. Notificación de confirmación de creación
+            Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+        except Exception as e:
+            print(f"Error creando notificación de confirmación (API): {e}")
+        
+        try:
+            # 2. Notificación del estado actual de la reserva
+            Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, estado_reserva)
+        except Exception as e:
+            print(f"Error creando notificación de estado (API): {e}")
+        
+        try:
+            # 3. Programar recordatorio para la fecha de la cita (se mostrará 24h antes)
+            Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha, hora_inicio)
+        except Exception as e:
+            print(f"Error programando recordatorio de cita (API): {e}")
+        
+        return jsonify({'success': True, 'id_reserva': id_reserva}), 201
 
     except Exception as e:
         if conexion:
@@ -1477,6 +1541,26 @@ def paciente_crear_reserva():
             conexion.commit()
 
         tipo_reserva = 'servicio' if id_servicio else 'cita'
+
+        # Crear notificaciones para el paciente
+        try:
+            # 1. Notificación de confirmación de creación
+            Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+        except Exception as e:
+            print(f"Error creando notificación de confirmación: {e}")
+        
+        try:
+            # 2. Notificación del estado actual de la reserva (Pendiente)
+            Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, 'Pendiente')
+        except Exception as e:
+            print(f"Error creando notificación de estado: {e}")
+
+        # 3. Programar recordatorio para la fecha/hora de la cita
+        try:
+            Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha, hora_inicio)
+        except Exception as e:
+            print(f"Error programando recordatorio de cita: {e}")
+
         return jsonify({
             'success': True,
             'id_reserva': id_reserva,

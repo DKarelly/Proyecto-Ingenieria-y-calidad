@@ -1,0 +1,428 @@
+/* Estilos específicos para el Portal Médico */
+
+:root {
+  --medico-cyan: #06B6D4;
+  --medico-teal: #14B8A6;
+  --medico-emerald: #10B981;
+  --medico-cyan-light: #E0F9FC;
+  --medico-teal-light: #CCFBF1;
+  --medico-emerald-light: #D1FAE5;
+}
+
+/* Animaciones */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Cards médicas con gradientes */
+.medico-card {
+  background: linear-gradient(135deg, var(--medico-cyan) 0%, var(--medico-teal) 100%);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.25);
+  transition: all 0.3s ease;
+}
+
+.medico-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px -5px rgba(6, 182, 212, 0.35);
+}
+
+.medico-card-stat {
+  animation: scale-in 0.4s ease-out;
+}
+
+/* Badges de estado médico */
+.medico-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.medico-badge-pendiente {
+  background: linear-gradient(135deg, #FEF3C7, #FCD34D);
+  color: #92400E;
+}
+
+.medico-badge-completada {
+  background: linear-gradient(135deg, #D1FAE5, #6EE7B7);
+  color: #065F46;
+}
+
+.medico-badge-cancelada {
+  background: linear-gradient(135deg, #FEE2E2, #FCA5A5);
+  color: #991B1B;
+}
+
+.medico-badge-en-proceso {
+  background: linear-gradient(135deg, #DBEAFE, #93C5FD);
+  color: #1E3A8A;
+}
+
+/* Citas en el dashboard */
+.cita-card {
+  border-radius: 1rem;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  animation: slide-in-right 0.4s ease-out;
+}
+
+.cita-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.cita-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Botones médicos */
+.btn-medico-primary {
+  background: linear-gradient(135deg, var(--medico-cyan), var(--medico-teal));
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+}
+
+.btn-medico-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(6, 182, 212, 0.4);
+}
+
+.btn-medico-secondary {
+  background: white;
+  color: var(--medico-cyan);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: 2px solid var(--medico-cyan);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-medico-secondary:hover {
+  background: var(--medico-cyan-light);
+  border-color: var(--medico-teal);
+}
+
+/* Tablas médicas */
+.medico-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.medico-table thead th {
+  background: linear-gradient(to right, #F8FAFC, #F1F5F9);
+  color: #334155;
+  font-weight: 700;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid #E2E8F0;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.medico-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.medico-table tbody tr:hover {
+  background: linear-gradient(to right, var(--medico-cyan-light), var(--medico-teal-light));
+  transform: scale(1.01);
+}
+
+.medico-table tbody td {
+  padding: 1rem;
+  border-bottom: 1px solid #E5E7EB;
+  color: #374151;
+}
+
+/* Formularios médicos */
+.medico-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.medico-form-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.medico-form-input,
+.medico-form-select,
+.medico-form-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #D1D5DB;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.medico-form-input:focus,
+.medico-form-select:focus,
+.medico-form-textarea:focus {
+  outline: none;
+  border-color: var(--medico-cyan);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+/* Sidebar médico */
+.medico-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  color: #6B7280;
+}
+
+.medico-sidebar-item:hover {
+  background: linear-gradient(to right, #F0F9FF, #E0F2FE);
+  color: var(--medico-cyan);
+  transform: translateX(4px);
+}
+
+.medico-sidebar-item.active {
+  background: linear-gradient(to right, var(--medico-cyan-light), var(--medico-teal-light));
+  color: var(--medico-cyan);
+  border: 1px solid var(--medico-cyan);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.15);
+}
+
+/* Notificaciones médicas */
+.medico-notification {
+  display: flex;
+  align-items: start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border-left: 4px solid var(--medico-cyan);
+  background: linear-gradient(to right, var(--medico-cyan-light), white);
+  transition: all 0.3s ease;
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.medico-notification:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+}
+
+.medico-notification-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--medico-cyan);
+  animation: pulse-soft 2s infinite;
+}
+
+/* Estadísticas del dashboard */
+.stat-card {
+  background: linear-gradient(135deg, var(--medico-cyan), var(--medico-teal));
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  color: white;
+  box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.25);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  transition: all 0.5s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 15px 35px -5px rgba(6, 182, 212, 0.35);
+}
+
+.stat-card:hover::before {
+  top: -25%;
+  right: -25%;
+}
+
+/* Accesos rápidos */
+.quick-access-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.quick-access-item:hover {
+  background: linear-gradient(to right, var(--medico-cyan-light), var(--medico-teal-light));
+  transform: translateX(4px);
+}
+
+.quick-access-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.quick-access-item:hover .quick-access-icon {
+  transform: rotate(5deg) scale(1.1);
+}
+
+/* Calendario médico */
+.calendar-day {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.calendar-day:hover {
+  background: var(--medico-cyan-light);
+  border-color: var(--medico-cyan);
+}
+
+.calendar-day.has-appointment {
+  background: linear-gradient(135deg, var(--medico-cyan-light), var(--medico-teal-light));
+  border-color: var(--medico-cyan);
+  font-weight: 600;
+}
+
+.calendar-day.today {
+  background: linear-gradient(135deg, var(--medico-cyan), var(--medico-teal));
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .medico-card {
+    padding: 1rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .cita-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading animation */
+.medico-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(6, 182, 212, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--medico-cyan);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tooltips médicos */
+.medico-tooltip {
+  position: relative;
+}
+
+.medico-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  background: #1F2937;
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  margin-bottom: 0.5rem;
+}
+
+.medico-tooltip:hover::after {
+  opacity: 1;
+}

@@ -20,12 +20,21 @@ class Notificacion:
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
+                # Allow scheduling notifications for a future date/time by using
+                # optional override attributes set on this class temporarily.
                 ahora = datetime.now()
+                fecha_envio = ahora.date()
+                hora_envio = ahora.time()
+                # Backwards compatible: some callers will not provide overrides.
+                if hasattr(Notificacion, '_override_fecha_envio') and Notificacion._override_fecha_envio:
+                    fecha_envio = Notificacion._override_fecha_envio
+                if hasattr(Notificacion, '_override_hora_envio') and Notificacion._override_hora_envio:
+                    hora_envio = Notificacion._override_hora_envio
+
                 sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
                          hora_envio, id_reserva, id_paciente) 
                          VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (titulo, mensaje, tipo, ahora.date(), 
-                                   ahora.time(), id_reserva, id_paciente))
+                cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, id_paciente))
                 conexion.commit()
                 return {'success': True, 'id_notificacion': cursor.lastrowid}
         except Exception as e:
@@ -80,13 +89,14 @@ class Notificacion:
 
     @staticmethod
     def obtener_por_paciente(id_paciente):
-        """Obtiene notificaciones de un paciente"""
+        """Obtiene notificaciones de un paciente con estado de reserva"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 sql = """
-                    SELECT n.*
+                    SELECT n.*, r.estado as estado_reserva
                     FROM NOTIFICACION n
+                    LEFT JOIN RESERVA r ON n.id_reserva = r.id_reserva
                     WHERE n.id_paciente = %s
                     ORDER BY n.fecha_envio DESC, n.hora_envio DESC
                 """
@@ -173,14 +183,37 @@ class Notificacion:
         """Crea una notificación de recordatorio de cita"""
         titulo = "Recordatorio de Cita"
         mensaje = f"Tiene una cita programada para el {fecha_cita} a las {hora_cita}"
-        return Notificacion.crear(titulo, mensaje, 'recordatorio', id_paciente, id_reserva)
+        # Temporarily override the fecha/hora used by crear to schedule this notification
+        try:
+            Notificacion._override_fecha_envio = fecha_cita
+            Notificacion._override_hora_envio = hora_cita
+            return Notificacion.crear(titulo, mensaje, 'recordatorio', id_paciente, id_reserva)
+        finally:
+            Notificacion._override_fecha_envio = None
+            Notificacion._override_hora_envio = None
 
     @staticmethod
     def crear_confirmacion_reserva(id_paciente, id_reserva):
         """Crea una notificación de confirmación de reserva"""
-        titulo = "Reserva Confirmada"
-        mensaje = "Su reserva ha sido confirmada exitosamente"
+        titulo = "Reserva Generada"
+        mensaje = "Su reserva ha sido generada exitosamente"
         return Notificacion.crear(titulo, mensaje, 'confirmacion', id_paciente, id_reserva)
+    
+    @staticmethod
+    def crear_notificacion_estado_reserva(id_paciente, id_reserva, estado):
+        """Crea una notificación informando el estado actual de la reserva"""
+        titulo = "Estado de Reserva"
+        
+        # Mensajes personalizados según el estado
+        mensajes_estado = {
+            'Pendiente': 'Su reserva está pendiente de confirmación',
+            'Confirmada': 'Su reserva ha sido confirmada',
+            'Cancelada': 'Su reserva ha sido cancelada',
+            'Completada': 'Su reserva ha sido completada'
+        }
+        
+        mensaje = mensajes_estado.get(estado, f'Su reserva está en estado: {estado}')
+        return Notificacion.crear(titulo, mensaje, 'estado', id_paciente, id_reserva)
 
     @staticmethod
     def crear_cancelacion_reserva(id_paciente, id_reserva, motivo):
@@ -188,3 +221,41 @@ class Notificacion:
         titulo = "Reserva Cancelada"
         mensaje = f"Su reserva ha sido cancelada. Motivo: {motivo}"
         return Notificacion.crear(titulo, mensaje, 'cancelacion', id_paciente, id_reserva)
+
+    @staticmethod
+    def marcar_como_leida(id_notificacion):
+        """Marca una notificación como leída"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                ahora = datetime.now()
+                sql = """UPDATE NOTIFICACION 
+                         SET leida = TRUE, fecha_leida = %s 
+                         WHERE id_notificacion = %s"""
+                cursor.execute(sql, (ahora, id_notificacion))
+                conexion.commit()
+                return {'success': True}
+        except Exception as e:
+            conexion.rollback()
+            return {'error': str(e)}
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def marcar_todas_como_leidas(id_paciente):
+        """Marca todas las notificaciones de un paciente como leídas"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                ahora = datetime.now()
+                sql = """UPDATE NOTIFICACION 
+                         SET leida = TRUE, fecha_leida = %s 
+                         WHERE id_paciente = %s AND leida = FALSE"""
+                cursor.execute(sql, (ahora, id_paciente))
+                conexion.commit()
+                return {'success': True, 'count': cursor.rowcount}
+        except Exception as e:
+            conexion.rollback()
+            return {'error': str(e)}
+        finally:
+            conexion.close()

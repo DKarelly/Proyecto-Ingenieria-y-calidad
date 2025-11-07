@@ -25,7 +25,9 @@
             <form method="POST" class="space-y-6" id="form-editar-perfil">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="nombres" class="block text-sm font-semibold text-gray-700 mb-2">Nombres</label>
+                        <label for="nombres" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Nombres <span class="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
                             id="nombres"
@@ -33,10 +35,18 @@
                             value="{% if usuario.tipo_usuario == 'paciente' %}{{ (usuario.nombre_paciente or '').split(' ', 1)[0] }}{% else %}{{ (usuario.nombre_empleado or '').split(' ', 1)[0] }}{% endif %}"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                             placeholder="Tus nombres"
+                            required
+                            minlength="2"
+                            maxlength="50"
+                            pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                            title="Solo se permiten letras y espacios (máximo 50 caracteres)"
                         >
+                        <p class="text-xs text-gray-500 mt-1">Solo letras, máximo 50 caracteres</p>
                     </div>
                     <div>
-                        <label for="apellidos" class="block text-sm font-semibold text-gray-700 mb-2">Apellidos</label>
+                        <label for="apellidos" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Apellidos <span class="text-red-500">*</span>
+                        </label>
                         <input
                             type="text"
                             id="apellidos"
@@ -44,7 +54,13 @@
                             value="{% if usuario.tipo_usuario == 'paciente' %}{% if usuario.nombre_paciente and ' ' in usuario.nombre_paciente %}{{ usuario.nombre_paciente.split(' ', 1)[1] }}{% endif %}{% else %}{% if usuario.nombre_empleado and ' ' in usuario.nombre_empleado %}{{ usuario.nombre_empleado.split(' ', 1)[1] }}{% endif %}{% endif %}"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                             placeholder="Tus apellidos"
+                            required
+                            minlength="2"
+                            maxlength="50"
+                            pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$"
+                            title="Solo se permiten letras y espacios (máximo 50 caracteres)"
                         >
+                        <p class="text-xs text-gray-500 mt-1">Solo letras, máximo 50 caracteres</p>
                     </div>
                 </div>
 
@@ -66,18 +82,27 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="correo" class="block text-sm font-semibold text-gray-700 mb-2">Correo</label>
+                        <label for="correo" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Correo Electrónico <span class="text-red-500">*</span>
+                        </label>
                         <input
                             type="email"
                             id="correo"
                             name="correo"
                             value="{{ usuario.correo or '' }}"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
-                            placeholder="usted@ejemplo.com"
+                            placeholder="correo@ejemplo.com"
+                            required
+                            maxlength="100"
+                            pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                            title="Ingrese un correo electrónico válido"
                         >
+                        <p class="text-xs text-gray-500 mt-1">Formato: usuario@dominio.com</p>
                     </div>
                     <div>
-                        <label for="telefono" class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                        <label for="telefono" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Teléfono <span class="text-red-500">*</span>
+                        </label>
                         <input
                             type="tel"
                             id="telefono"
@@ -85,7 +110,13 @@
                             value="{{ usuario.telefono or '' }}"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                             placeholder="987654321"
+                            required
+                            minlength="7"
+                            maxlength="15"
+                            pattern="^[0-9]+$"
+                            title="Solo se permiten números (7-15 dígitos)"
                         >
+                        <p class="text-xs text-gray-500 mt-1">Solo números, 7-15 dígitos</p>
                     </div>
                 </div>
 
@@ -93,7 +124,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="fecha_nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Fecha de Nacimiento
+                            Fecha de Nacimiento <span class="text-red-500">*</span>
                             <span class="text-xs text-gray-500">(Debes ser mayor de 18 años)</span>
                         </label>
                         <input
@@ -103,19 +134,23 @@
                             value="{% if usuario.tipo_usuario == 'paciente' %}{% if usuario.fecha_nacimiento %}{{ usuario.fecha_nacimiento.strftime('%Y-%m-%d') if usuario.fecha_nacimiento is not string else usuario.fecha_nacimiento }}{% endif %}{% else %}{% if usuario.fecha_nacimiento_empleado %}{{ usuario.fecha_nacimiento_empleado.strftime('%Y-%m-%d') if usuario.fecha_nacimiento_empleado is not string else usuario.fecha_nacimiento_empleado }}{% endif %}{% endif %}"
                             max="{{ max_fecha }}"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            required
                         >
                         <p class="text-xs text-gray-500 mt-1">Edad mínima: 18 años</p>
                     </div>
                     <div>
-                        <label for="sexo" class="block text-sm font-semibold text-gray-700 mb-2">Sexo</label>
+                        <label for="sexo" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Sexo <span class="text-red-500">*</span>
+                        </label>
                         <select
                             id="sexo"
                             name="sexo"
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            required
                         >
                             <option value="">Seleccione</option>
-                            <option value="M" {% if (usuario.tipo_usuario == 'paciente' and usuario.sexo_paciente == 'M') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'M') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'Masculino') %}selected{% endif %}>Masculino</option>
-                            <option value="F" {% if (usuario.tipo_usuario == 'paciente' and usuario.sexo_paciente == 'F') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'F') or (usuario.tipo_usuario == 'empleado' and usuario.sexo_empleado == 'Femenino') %}selected{% endif %}>Femenino</option>
+                            <option value="Masculino" {% if (usuario.tipo_usuario == 'paciente' and (usuario.sexo_paciente == 'M' or usuario.sexo_paciente == 'Masculino')) or (usuario.tipo_usuario == 'empleado' and (usuario.sexo_empleado == 'M' or usuario.sexo_empleado == 'Masculino')) %}selected{% endif %}>Masculino</option>
+                            <option value="Femenino" {% if (usuario.tipo_usuario == 'paciente' and (usuario.sexo_paciente == 'F' or usuario.sexo_paciente == 'Femenino')) or (usuario.tipo_usuario == 'empleado' and (usuario.sexo_empleado == 'F' or usuario.sexo_empleado == 'Femenino')) %}selected{% endif %}>Femenino</option>
                         </select>
                     </div>
                 </div>
@@ -136,7 +171,84 @@
 
     {% include 'footer.html' %}
     <script>
-        // Carga en cascada de ubicación con preselección por nombres
+        // ==================== VALIDACIONES EN TIEMPO REAL ====================
+        
+        // Validación de solo letras para nombres y apellidos
+        function validarSoloLetras(input) {
+            input.addEventListener('input', function(e) {
+                // Remover cualquier caracter que no sea letra o espacio
+                this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+                
+                // Limitar a 50 caracteres
+                if (this.value.length > 50) {
+                    this.value = this.value.substring(0, 50);
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                // Eliminar espacios múltiples y trim
+                this.value = this.value.replace(/\s+/g, ' ').trim();
+            });
+        }
+        
+        // Validación de solo números para teléfono
+        function validarSoloNumeros(input) {
+            input.addEventListener('input', function(e) {
+                // Remover cualquier caracter que no sea número
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                // Limitar a 15 caracteres
+                if (this.value.length > 15) {
+                    this.value = this.value.substring(0, 15);
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                // Validar longitud mínima
+                if (this.value.length > 0 && this.value.length < 7) {
+                    alert('El teléfono debe tener al menos 7 dígitos');
+                    this.setCustomValidity('El teléfono debe tener al menos 7 dígitos');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+        }
+        
+        // Validación de correo electrónico
+        function validarCorreo(input) {
+            input.addEventListener('blur', function() {
+                const correo = this.value.trim();
+                const regexCorreo = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                
+                if (correo && !regexCorreo.test(correo)) {
+                    alert('Por favor, ingrese un correo electrónico válido');
+                    this.setCustomValidity('Correo electrónico inválido');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+            
+            input.addEventListener('input', function() {
+                // Limitar a 100 caracteres
+                if (this.value.length > 100) {
+                    this.value = this.value.substring(0, 100);
+                }
+            });
+        }
+        
+        // Aplicar validaciones a los campos
+        const nombresInput = document.getElementById('nombres');
+        const apellidosInput = document.getElementById('apellidos');
+        const telefonoInput = document.getElementById('telefono');
+        const correoInput = document.getElementById('correo');
+        
+        validarSoloLetras(nombresInput);
+        validarSoloLetras(apellidosInput);
+        validarSoloNumeros(telefonoInput);
+        validarCorreo(correoInput);
+        
+        // ==================== CARGA EN CASCADA DE UBICACIÓN ====================
+        
         const usuarioDepartamento = "{{ usuario.departamento or '' }}";
         const usuarioProvincia = "{{ usuario.provincia or '' }}";
         const usuarioDistrito = "{{ usuario.distrito or '' }}";
@@ -187,7 +299,6 @@
                 if (dist.nombre === usuarioDistrito) opt.selected = true;
                 selDist.appendChild(opt);
             });
-            // Actualizar hidden con id seleccionado
             document.getElementById('id_distrito').value = selDist.value || '';
         }
 
@@ -197,7 +308,8 @@
             document.getElementById('id_distrito').value = e.target.value || '';
         });
 
-        // Validación de edad mínima (18 años)
+        // ==================== VALIDACIÓN DE EDAD MÍNIMA ====================
+        
         const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
         
         // Calcular fecha máxima permitida (18 años atrás desde hoy)
@@ -213,13 +325,61 @@
             if (fechaSeleccionada > fechaMaxima) {
                 alert('Debes ser mayor de 18 años. Por favor, selecciona una fecha válida.');
                 this.value = '';
+                this.setCustomValidity('Debes ser mayor de 18 años');
+            } else {
+                this.setCustomValidity('');
             }
         });
 
-        // Validación antes de enviar el formulario
+        // ==================== VALIDACIÓN ANTES DE ENVIAR ====================
+        
         document.getElementById('form-editar-perfil').addEventListener('submit', function(e) {
-            const fechaNacimiento = document.getElementById('fecha_nacimiento').value;
+            // Validar nombres
+            const nombres = nombresInput.value.trim();
+            if (nombres.length < 2) {
+                e.preventDefault();
+                alert('Los nombres deben tener al menos 2 caracteres');
+                nombresInput.focus();
+                return false;
+            }
             
+            // Validar apellidos
+            const apellidos = apellidosInput.value.trim();
+            if (apellidos.length < 2) {
+                e.preventDefault();
+                alert('Los apellidos deben tener al menos 2 caracteres');
+                apellidosInput.focus();
+                return false;
+            }
+            
+            // Validar correo
+            const correo = correoInput.value.trim();
+            const regexCorreo = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!regexCorreo.test(correo)) {
+                e.preventDefault();
+                alert('Por favor, ingrese un correo electrónico válido');
+                correoInput.focus();
+                return false;
+            }
+            
+            // Validar teléfono
+            const telefono = telefonoInput.value.trim();
+            if (telefono.length < 7 || telefono.length > 15) {
+                e.preventDefault();
+                alert('El teléfono debe tener entre 7 y 15 dígitos');
+                telefonoInput.focus();
+                return false;
+            }
+            
+            if (!/^[0-9]+$/.test(telefono)) {
+                e.preventDefault();
+                alert('El teléfono solo debe contener números');
+                telefonoInput.focus();
+                return false;
+            }
+            
+            // Validar fecha de nacimiento
+            const fechaNacimiento = fechaNacimientoInput.value;
             if (fechaNacimiento) {
                 const fechaSeleccionada = new Date(fechaNacimiento);
                 const hoy = new Date();
@@ -229,7 +389,6 @@
                 const mesNacimiento = fechaSeleccionada.getMonth();
                 const diaNacimiento = fechaSeleccionada.getDate();
                 
-                // Ajustar edad si aún no ha cumplido años este año
                 let edadReal = edad;
                 if (mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
                     edadReal--;
@@ -237,12 +396,31 @@
                 
                 if (edadReal < 18) {
                     e.preventDefault();
-                    alert('Debes ser mayor de 18 años para registrarte.');
+                    alert('Debes ser mayor de 18 años para actualizar tu perfil.');
                     return false;
                 }
             }
+            
+            // Validar sexo
+            const sexo = document.getElementById('sexo').value;
+            if (!sexo) {
+                e.preventDefault();
+                alert('Por favor, seleccione su sexo');
+                document.getElementById('sexo').focus();
+                return false;
+            }
+            
+            // Validar ubicación
+            const distrito = document.getElementById('distrito').value;
+            if (!distrito) {
+                e.preventDefault();
+                alert('Por favor, seleccione su departamento, provincia y distrito');
+                return false;
+            }
         });
 
+        // ==================== INICIALIZACIÓN ====================
+        
         document.addEventListener('DOMContentLoaded', async () => {
             await cargarDepartamentos();
         });

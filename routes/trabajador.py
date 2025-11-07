@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for
+from flask import Blueprint, render_template, session, redirect, url_for, request
 from functools import wraps
 
 trabajador_bp = Blueprint('trabajador', __name__)
@@ -30,29 +30,36 @@ def trabajador_required(f):
 @trabajador_bp.route('/cuentas')
 @trabajador_required
 def cuentas():
-    """Módulo de cuentas para trabajadores"""
-    return render_template('panel_trabajador.html', subsistema='cuentas')
+    """Módulo de cuentas para trabajadores (redirect unificado)"""
+    return redirect(url_for('trabajador.panel', subsistema='cuentas'))
 
 @trabajador_bp.route('/administracion')
 @trabajador_required
 def administracion():
-    """Módulo de administración para trabajadores"""
-    return render_template('panel_trabajador.html', subsistema='administracion')
+    """Módulo de administración para trabajadores (redirect unificado)"""
+    return redirect(url_for('trabajador.panel', subsistema='administracion'))
 
 @trabajador_bp.route('/incidencias')
 @trabajador_required
 def incidencias():
-    """Módulo de incidencias para trabajadores"""
-    return render_template('panel_trabajador.html', subsistema='incidencias')
+    """Módulo de incidencias para trabajadores (redirect unificado)"""
+    return redirect(url_for('trabajador.panel', subsistema='incidencias'))
 
 @trabajador_bp.route('/reportes')
 @trabajador_required
 def reportes():
-    """Módulo de reportes para trabajadores"""
-    return render_template('panel_trabajador.html', subsistema='reportes')
+    """Módulo de reportes para trabajadores (redirect unificado)"""
+    return redirect(url_for('trabajador.panel', subsistema='reportes'))
 
-@trabajador_bp.route('/cancelaciones')
+@trabajador_bp.route('/')
 @trabajador_required
-def cancelaciones():
-    """Gestión de solicitudes de cancelación de reservas"""
-    return render_template('GestionarSolicitudesCancelacion.html')
+def panel():
+    """Dashboard principal del trabajador (conmutador por subsistema vía query param)."""
+    subsistema = request.args.get('subsistema')
+    return render_template('panel_trabajador_limpio.html', subsistema=subsistema)
+
+@trabajador_bp.route('/panel')
+@trabajador_required
+def panel_legacy():
+    """Compatibilidad con ruta antigua /trabajador/panel"""
+    return redirect(url_for('trabajador.panel'))

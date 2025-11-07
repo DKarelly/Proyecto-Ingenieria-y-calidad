@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Servicios - Clínica Unión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc]">
+    {% include 'header_admin.html' %}
+
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón Volver -->
+        <div class="mb-6">
+            <a href="/reservas/" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                <span class="font-medium">Volver al Panel de Reservas</span>
+            </a>
+        </div>
+
+        <!-- Título -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-black text-gray-800">
+                <i class="fas fa-chart-bar text-cyan-600 mr-3"></i>
+                Reporte de Servicios
+            </h1>
+            <p class="text-gray-600 mt-2">Genera reportes detallados sobre las reservas realizadas, canceladas o atendidas en un periodo determinado</p>
+        </div>
+
+        <!-- Dashboard de Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Total Registros -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-sm font-semibold uppercase tracking-wide">Total Registros</p>
+                        <p class="text-3xl font-bold text-blue-800 mt-2" id="total-registros">0</p>
+                    </div>
+                    <div class="bg-blue-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-list text-blue-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservas Confirmadas -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Confirmadas</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2" id="total-confirmadas">0</p>
+                    </div>
+                    <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservas Canceladas -->
+            <div class="bg-gradient-to-br from-red-50 to-red-100 border-l-4 border-red-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-red-600 text-sm font-semibold uppercase tracking-wide">Canceladas</p>
+                        <p class="text-3xl font-bold text-red-800 mt-2" id="total-canceladas">0</p>
+                    </div>
+                    <div class="bg-red-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-times-circle text-red-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservas Atendidas -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Atendidas</p>
+                        <p class="text-3xl font-bold text-purple-800 mt-2" id="total-atendidas">0</p>
+                    </div>
+                    <div class="bg-purple-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-clipboard-check text-purple-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="bg-white border border-cyan-200 rounded-lg p-6 shadow-sm mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-filter text-cyan-600 text-xl mr-3"></i>
+                <h2 class="text-lg font-semibold text-gray-800">Filtros de Búsqueda</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Servicio -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-stethoscope mr-1"></i>
+                        SERVICIO
+                    </label>
+                    <select id="select-service" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
+                        <option value="">Todos los servicios</option>
+                        {% for s in servicios %}
+                        <option value="{{ s.id_servicio }}">{{ s.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Fecha Inicio -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-calendar-alt mr-1"></i>
+                        FECHA INICIO
+                    </label>
+                    <input
+                        type="date"
+                        id="fecha-inicio"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors"
+                    >
+                </div>
+
+                <!-- Fecha Fin -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-calendar-check mr-1"></i>
+                        FECHA FIN
+                    </label>
+                    <input
+                        type="date"
+                        id="fecha-fin"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors"
+                    >
+                </div>
+
+                <!-- Estado -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-600 tracking-wider mb-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        ESTADO
+                    </label>
+                    <select id="select-estado" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white hover:border-cyan-400 transition-colors">
+                        <option value="">Todos los estados</option>
+                        <option value="confirmada">Confirmada</option>
+                        <option value="cancelada">Cancelada</option>
+                        <option value="atendida">Atendida</option>
+                        <option value="pendiente">Pendiente</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6 flex gap-4">
+                <button
+                    id="btn-generate-report"
+                    class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                    <i class="fas fa-search mr-2"></i>
+                    Generar Reporte
+                </button>
+                <button
+                    id="btn-export-excel"
+                    class="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                    <i class="fas fa-file-excel mr-2"></i>
+                    Exportar
+                </button>
+                <button
+                    id="btn-limpiar"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-sm">
+                    <i class="fas fa-eraser mr-2"></i>
+                    Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla de Resultados -->
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <div class="flex items-center">
+                    <i class="fas fa-table text-cyan-600 text-2xl mr-3"></i>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Resultados del Reporte</h2>
+                        <p class="text-sm text-gray-500 mt-1" id="subtitulo-tabla">Selecciona los filtros y genera el reporte</p>
+                    </div>
+                </div>
+                <div id="loading-indicator" class="hidden">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-4 border-cyan-500"></div>
+                </div>
+            </div>
+
+            <!-- Placeholder inicial -->
+            <div id="placeholder-mensaje" class="text-center py-16">
+                <i class="fas fa-chart-line text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">Genera tu reporte personalizado</h3>
+                <p class="text-gray-500">Selecciona los filtros deseados y presiona "Generar Reporte"</p>
+            </div>
+
+            <!-- Mensaje sin resultados -->
+            <div id="no-resultados" class="hidden text-center py-16">
+                <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-600 mb-2">No se encontraron registros</h3>
+                <p class="text-gray-500">No hay datos que coincidan con los filtros seleccionados</p>
+            </div>
+
+            <!-- Tabla -->
+            <div id="tabla-container" class="hidden overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-cyan-50 to-blue-50 border-b-2 border-cyan-300">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-calendar-day mr-2 text-cyan-600"></i>Fecha
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-clock mr-2 text-cyan-600"></i>Hora
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-user mr-2 text-cyan-600"></i>Paciente
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-id-card mr-2 text-cyan-600"></i>DNI
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-stethoscope mr-2 text-cyan-600"></i>Servicio
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-user-md mr-2 text-cyan-600"></i>Médico
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                <i class="fas fa-info-circle mr-2 text-cyan-600"></i>Estado
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-body" class="divide-y divide-gray-200">
+                        <!-- Filas generadas dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Variables globales
+        const btnGenerarReporte = document.getElementById('btn-generate-report');
+        const btnExportar = document.getElementById('btn-export-excel');
+        const btnLimpiar = document.getElementById('btn-limpiar');
+        const selectServicio = document.getElementById('select-service');
+        const selectEstado = document.getElementById('select-estado');
+        const fechaInicio = document.getElementById('fecha-inicio');
+        const fechaFin = document.getElementById('fecha-fin');
+        const reportBody = document.getElementById('report-body');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const placeholderMensaje = document.getElementById('placeholder-mensaje');
+        const noResultados = document.getElementById('no-resultados');
+        const tablaContainer = document.getElementById('tabla-container');
+        const subtituloTabla = document.getElementById('subtitulo-tabla');
+
+        let reportData = [];
+
+        // Limpiar filtros
+        btnLimpiar.addEventListener('click', function() {
+            selectServicio.value = '';
+            selectEstado.value = '';
+            fechaInicio.value = '';
+            fechaFin.value = '';
+
+            // Resetear vista
+            placeholderMensaje.classList.remove('hidden');
+            noResultados.classList.add('hidden');
+            tablaContainer.classList.add('hidden');
+            btnExportar.disabled = true;
+
+            // Resetear estadísticas
+            actualizarEstadisticas([]);
+            subtituloTabla.textContent = 'Selecciona los filtros y genera el reporte';
+        });
+
+        // Generar reporte
+        btnGenerarReporte.addEventListener('click', async function() {
+            await cargarReporte();
+        });
+
+        // Exportar a Excel (CSV)
+        btnExportar.addEventListener('click', function() {
+            if (reportData.length === 0) return;
+
+            // Crear CSV
+            let csv = 'Fecha,Hora,Paciente,DNI,Servicio,Médico,Estado\n';
+            reportData.forEach(r => {
+                const fecha = r.fecha || '';
+                const hora = r.hora_inicio ? r.hora_inicio.substring(0, 5) : '';
+                const paciente = r.paciente || '';
+                const dni = r.documento_identidad || '';
+                const servicio = r.servicio || '';
+                const medico = r.empleado || '';
+                const estado = r.estado || '';
+
+                csv += `"${fecha}","${hora}","${paciente}","${dni}","${servicio}","${medico}","${estado}"\n`;
+            });
+
+            // Descargar
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `reporte_servicios_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            mostrarNotificacion('Reporte exportado exitosamente', 'success');
+        });
+
+        // Cargar reporte
+        async function cargarReporte() {
+            const id_servicio = selectServicio.value;
+            const estado = selectEstado.value;
+            const fecha_inicio = fechaInicio.value;
+            const fecha_fin = fechaFin.value;
+
+            // Construir parámetros
+            const params = new URLSearchParams();
+            if (id_servicio) params.set('id_servicio', id_servicio);
+            if (estado) params.set('estado', estado);
+            if (fecha_inicio) params.set('fecha_inicio', fecha_inicio);
+            if (fecha_fin) params.set('fecha_fin', fecha_fin);
+
+            // Mostrar loading
+            loadingIndicator.classList.remove('hidden');
+            placeholderMensaje.classList.add('hidden');
+            noResultados.classList.add('hidden');
+            tablaContainer.classList.add('hidden');
+
+            try {
+                const resp = await fetch(`/reservas/api/reporte-servicios?${params.toString()}`);
+
+                if (!resp.ok) {
+                    throw new Error('Error al cargar el reporte');
+                }
+
+                const data = await resp.json();
+                reportData = data.report || [];
+
+                // Ocultar loading
+                loadingIndicator.classList.add('hidden');
+
+                if (reportData.length === 0) {
+                    noResultados.classList.remove('hidden');
+                    btnExportar.disabled = true;
+                    actualizarEstadisticas([]);
+                    subtituloTabla.textContent = 'No se encontraron resultados';
+                    return;
+                }
+
+                // Mostrar tabla
+                tablaContainer.classList.remove('hidden');
+                btnExportar.disabled = false;
+
+                // Actualizar estadísticas
+                actualizarEstadisticas(reportData);
+
+                // Actualizar subtítulo
+                subtituloTabla.textContent = `Mostrando ${reportData.length} registro(s)`;
+
+                // Renderizar filas
+                reportBody.innerHTML = '';
+                reportData.forEach(r => {
+                    reportBody.appendChild(renderRow(r));
+                });
+
+                mostrarNotificacion(`Se encontraron ${reportData.length} registro(s)`, 'success');
+
+            } catch (err) {
+                loadingIndicator.classList.add('hidden');
+                noResultados.classList.remove('hidden');
+                mostrarNotificacion('Error al cargar el reporte', 'error');
+            }
+        }
+
+        // Renderizar fila
+        function renderRow(r) {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-cyan-50 transition-all duration-200';
+
+            // Fecha
+            const tdFecha = document.createElement('td');
+            tdFecha.className = 'px-6 py-4 whitespace-nowrap';
+            tdFecha.innerHTML = `<span class="text-gray-800 font-medium">${r.fecha || '-'}</span>`;
+
+            // Hora
+            const tdHora = document.createElement('td');
+            tdHora.className = 'px-6 py-4 whitespace-nowrap';
+            const hora = r.hora_inicio ? r.hora_inicio.substring(0, 5) : '-';
+            tdHora.innerHTML = `<span class="text-gray-700">${hora}</span>`;
+
+            // Paciente
+            const tdPaciente = document.createElement('td');
+            tdPaciente.className = 'px-6 py-4';
+            tdPaciente.innerHTML = `<div class="text-sm font-semibold text-gray-800">${r.paciente || '-'}</div>`;
+
+            // DNI
+            const tdDNI = document.createElement('td');
+            tdDNI.className = 'px-6 py-4 whitespace-nowrap';
+            tdDNI.innerHTML = `<span class="text-gray-600 font-mono">${r.documento_identidad || '-'}</span>`;
+
+            // Servicio
+            const tdServicio = document.createElement('td');
+            tdServicio.className = 'px-6 py-4';
+            tdServicio.innerHTML = `<span class="text-gray-700">${r.servicio || '-'}</span>`;
+
+            // Médico
+            const tdMedico = document.createElement('td');
+            tdMedico.className = 'px-6 py-4';
+            tdMedico.innerHTML = `<span class="text-gray-700">Dr. ${r.empleado || '-'}</span>`;
+
+            // Estado
+            const tdEstado = document.createElement('td');
+            tdEstado.className = 'px-6 py-4 text-center';
+            const estado = (r.estado || '').toLowerCase();
+            let badgeClass = 'bg-gray-100 text-gray-700';
+            let iconClass = 'fa-question-circle';
+
+            if (estado === 'confirmada') {
+                badgeClass = 'bg-green-100 text-green-700';
+                iconClass = 'fa-check-circle';
+            } else if (estado === 'cancelada') {
+                badgeClass = 'bg-red-100 text-red-700';
+                iconClass = 'fa-times-circle';
+            } else if (estado === 'atendida') {
+                badgeClass = 'bg-purple-100 text-purple-700';
+                iconClass = 'fa-clipboard-check';
+            } else if (estado === 'pendiente') {
+                badgeClass = 'bg-yellow-100 text-yellow-700';
+                iconClass = 'fa-clock';
+            }
+
+            tdEstado.innerHTML = `
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${badgeClass}">
+                    <i class="fas ${iconClass} mr-1"></i>
+                    ${r.estado || '-'}
+                </span>
+            `;
+
+            tr.appendChild(tdFecha);
+            tr.appendChild(tdHora);
+            tr.appendChild(tdPaciente);
+            tr.appendChild(tdDNI);
+            tr.appendChild(tdServicio);
+            tr.appendChild(tdMedico);
+            tr.appendChild(tdEstado);
+
+            return tr;
+        }
+
+        // Actualizar estadísticas
+        function actualizarEstadisticas(data) {
+            const total = data.length;
+            const confirmadas = data.filter(r => (r.estado || '').toLowerCase() === 'confirmada').length;
+            const canceladas = data.filter(r => (r.estado || '').toLowerCase() === 'cancelada').length;
+            const atendidas = data.filter(r => (r.estado || '').toLowerCase() === 'atendida').length;
+
+            document.getElementById('total-registros').textContent = total;
+            document.getElementById('total-confirmadas').textContent = confirmadas;
+            document.getElementById('total-canceladas').textContent = canceladas;
+            document.getElementById('total-atendidas').textContent = atendidas;
+        }
+
+        // Mostrar notificación
+        function mostrarNotificacion(mensaje, tipo) {
+            const toast = document.createElement('div');
+            const bgColor = tipo === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = tipo === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center animate-fade-in`;
+            toast.innerHTML = `
+                <i class="fas ${icon} mr-3 text-xl"></i>
+                <span>${mensaje}</span>
+            `;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Sesión de usuario
+        (function() {
+            if (window.usuario) {
+                const u = window.usuario;
+                const nameEl = document.getElementById('admin-username');
+                const roleEl = document.getElementById('admin-role');
+                if (nameEl && u.nombre) nameEl.textContent = u.nombre;
+                if (roleEl && u.rol) roleEl.textContent = u.rol;
+            }
+        })();
+    </script>
+
+    <style>
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+    </style>
+</body>
+</html>

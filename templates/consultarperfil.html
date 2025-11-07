@@ -148,6 +148,12 @@
                 {% endif %}
                 
                 {% if usuario.tipo_usuario == 'empleado' %}
+                <!-- Sexo (solo empleados) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+                    <p class="text-gray-500 text-sm font-medium">Sexo</p>
+                    <p class="text-gray-800 font-semibold md:col-span-2">{{ usuario.sexo_empleado or 'No especificado' }}</p>
+                </div>
+                
                 <!-- Rol (solo empleados) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Rol</p>

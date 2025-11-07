@@ -4,29 +4,29 @@ let todosLosRecursos = []; // Almacena todos los recursos para búsqueda dinámi
 document.addEventListener('DOMContentLoaded', function() {
     cargarRecursos();
 
-    // Event listener para búsqueda dinámica
-    const searchInput = document.getElementById('search-recurso');
-    const clearSearchBtn = document.getElementById('clear-search-recurso');
+    // Event listeners para filtros
+    const filtroTipo = document.getElementById('filtroTipo');
+    const filtroRecurso = document.getElementById('filtroRecurso');
+    const btnBuscar = document.getElementById('btnBuscar');
+    const btnLimpiar = document.getElementById('btnLimpiar');
 
-    searchInput.addEventListener('input', function() {
-        const termino = this.value.trim();
+    // Cargar tipos de recurso para filtro
+    cargarTiposRecurso();
 
-        // Mostrar/ocultar botón de limpiar
-        if (termino) {
-            clearSearchBtn.classList.remove('hidden');
-        } else {
-            clearSearchBtn.classList.add('hidden');
-        }
-
-        // Búsqueda dinámica en tiempo real
-        filtrarRecursos(termino);
+    // Event listener para búsqueda
+    filtroRecurso.addEventListener('input', function() {
+        // Búsqueda dinámica con debounce
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+            buscarRecursos();
+        }, 500);
     });
 
-    clearSearchBtn.addEventListener('click', function() {
-        searchInput.value = '';
-        this.classList.add('hidden');
-        filtrarRecursos('');
-        searchInput.focus();
+    filtroTipo.addEventListener('change', buscarRecursos);
+
+    btnLimpiar.addEventListener('click', function(e) {
+        e.preventDefault();
+        limpiarFiltros();
     });
 
     // Event listeners para modales
@@ -80,7 +80,14 @@ function cargarRecursos() {
     fetch('/admin/api/recursos')
         .then(response => response.json())
         .then(data => {
-            poblarTabla(data);
+            todosLosRecursos = data; // guarda copia completa
+
+            // Usa la paginación genérica
+            inicializarPaginacion({
+                datos: todosLosRecursos,
+                registrosPorPagina: 20,
+                renderFuncion: poblarTabla
+            });
         })
         .catch(error => {
             console.error('Error cargando recursos:', error);
@@ -244,13 +251,12 @@ function cargarRecursoParaEditar(id_recurso) {
         .then(response => response.json())
         .then(recurso => {
             // Rellenar el modal de edición
-            document.getElementById('codigoRecurso').value = recurso.id_recurso;
+            document.getElementById('idRecursoEdit').value = recurso.id_recurso;
             document.getElementById('nombreRecursoEdit').value = recurso.nombre;
             document.getElementById('estadoRecursoEdit').value = recurso.estado;
-            document.getElementById('tipoRecursoEdit').value = recurso.id_tipo_recurso;
 
-            // Cargar tipos de recurso para el select de edición
-            cargarTiposRecursoEditar();
+            // Cargar tipos de recurso para el select de edición y seleccionar el actual
+            cargarTiposRecursoEditar(recurso.id_tipo_recurso);
 
             // Mostrar el modal
             document.getElementById('modalModificarRecurso').classList.add('show');
@@ -261,7 +267,7 @@ function cargarRecursoParaEditar(id_recurso) {
         });
 }
 
-function cargarTiposRecursoEditar() {
+function cargarTiposRecursoEditar(selectedId = null) {
     fetch('/admin/api/tipos-recurso')
         .then(response => response.json())
         .then(data => {
@@ -274,6 +280,11 @@ function cargarTiposRecursoEditar() {
                 option.textContent = tipo.nombre;
                 select.appendChild(option);
             });
+
+            // Seleccionar el tipo actual si se proporciona
+            if (selectedId) {
+                select.value = selectedId;
+            }
         })
         .catch(error => {
             console.error('Error cargando tipos de recurso para editar:', error);
@@ -307,7 +318,7 @@ document.getElementById('formModificarRecurso').addEventListener('submit', modif
 function modificarRecurso(event) {
     event.preventDefault();
 
-    const id_recurso = document.getElementById('codigoRecurso').value;
+    const id_recurso = document.getElementById('idRecursoEdit').value;
     const formData = new FormData(event.target);
     const data = {
         nombre: formData.get('nombreRecursoEdit'),
