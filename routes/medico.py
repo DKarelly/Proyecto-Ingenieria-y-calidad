@@ -5,10 +5,188 @@ Gestiona el panel médico y sus funcionalidades
 
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, date
+from bd import obtener_conexion
 
 # Crear el Blueprint
 medico_bp = Blueprint('medico', __name__, url_prefix='/medico')
+
+# Funciones auxiliares para obtener datos
+def obtener_estadisticas_medico(id_empleado):
+    """
+    Obtiene las estadísticas del médico desde la base de datos
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener el id_horario del médico
+        cursor.execute("""
+            SELECT id_horario FROM HORARIO 
+            WHERE id_empleado = %s
+        """, (id_empleado,))
+        horarios = cursor.fetchall()
+        horarios_ids = [h['id_horario'] for h in horarios]
+        
+        if not horarios_ids:
+            return {
+                'citas_hoy': 0,
+                'citas_pendientes': 0,
+                'citas_completadas': 0,
+                'pacientes_semana': 0,
+                'diagnosticos_pendientes': 0
+            }
+        
+        # Citas de hoy
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            WHERE p.fecha = CURDATE()
+            AND p.id_horario IN ({})
+        """.format(','.join(['%s'] * len(horarios_ids))), horarios_ids)
+        citas_hoy = cursor.fetchone()['total']
+        
+        # Citas pendientes hoy
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            WHERE p.fecha = CURDATE()
+            AND r.estado = 'Pendiente'
+            AND p.id_horario IN ({})
+        """.format(','.join(['%s'] * len(horarios_ids))), horarios_ids)
+        citas_pendientes = cursor.fetchone()['total']
+        
+        # Citas completadas hoy
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            WHERE p.fecha = CURDATE()
+            AND r.estado = 'Completada'
+            AND p.id_horario IN ({})
+        """.format(','.join(['%s'] * len(horarios_ids))), horarios_ids)
+        citas_completadas = cursor.fetchone()['total']
+        
+        # Pacientes atendidos esta semana
+        cursor.execute("""
+            SELECT COUNT(DISTINCT r.id_paciente) as total
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            WHERE YEARWEEK(p.fecha, 1) = YEARWEEK(CURDATE(), 1)
+            AND p.id_horario IN ({})
+        """.format(','.join(['%s'] * len(horarios_ids))), horarios_ids)
+        pacientes_semana = cursor.fetchone()['total']
+        
+        # Diagnósticos pendientes (reservas confirmadas o en proceso)
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            WHERE r.estado IN ('Confirmada', 'En proceso')
+            AND p.id_horario IN ({})
+        """.format(','.join(['%s'] * len(horarios_ids))), horarios_ids)
+        diagnosticos_pendientes = cursor.fetchone()['total']
+        
+        return {
+            'citas_hoy': citas_hoy,
+            'citas_pendientes': citas_pendientes,
+            'citas_completadas': citas_completadas,
+            'pacientes_semana': pacientes_semana,
+            'diagnosticos_pendientes': diagnosticos_pendientes
+        }
+        
+    except Exception as e:
+        print(f"Error al obtener estadísticas: {e}")
+        return {
+            'citas_hoy': 0,
+            'citas_pendientes': 0,
+            'citas_completadas': 0,
+            'pacientes_semana': 0,
+            'diagnosticos_pendientes': 0
+        }
+    finally:
+        if conexion:
+            conexion.close()
+
+
+def obtener_citas_hoy(id_empleado):
+    """
+    Obtiene las citas del día actual del médico
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener el id_horario del médico
+        cursor.execute("""
+            SELECT id_horario FROM HORARIO 
+            WHERE id_empleado = %s
+        """, (id_empleado,))
+        horarios = cursor.fetchall()
+        horarios_ids = [h['id_horario'] for h in horarios]
+        
+        if not horarios_ids:
+            return []
+        
+        # Obtener citas de hoy con información del paciente
+        cursor.execute("""
+            SELECT 
+                r.id_reserva,
+                r.estado,
+                r.tipo,
+                p.fecha,
+                p.hora_inicio,
+                p.hora_fin,
+                pac.nombre1 as nombre_paciente,
+                pac.apellido_paterno,
+                pac.apellido_materno,
+                s.nombre as tipo_servicio
+            FROM RESERVA r
+            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+            INNER JOIN PACIENTE pac ON r.id_paciente = pac.id_paciente
+            LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE p.fecha = CURDATE()
+            AND p.id_horario IN ({})
+            ORDER BY p.hora_inicio
+        """.format(','.join(['%s'] * len(horarios_ids))), horarios_ids)
+        
+        citas = cursor.fetchall()
+        
+        # Formatear los datos
+        citas_formateadas = []
+        for cita in citas:
+            # Formatear hora
+            hora = cita['hora_inicio'].strftime('%I:%M %p') if cita['hora_inicio'] else 'N/A'
+            
+            # Nombre completo del paciente
+            nombre_completo = f"{cita['nombre_paciente']} {cita['apellido_paterno']}"
+            if cita['apellido_materno']:
+                nombre_completo += f" {cita['apellido_materno']}"
+            
+            # Tipo de servicio o consulta
+            tipo_consulta = cita['tipo_servicio'] if cita['tipo_servicio'] else 'Consulta General'
+            
+            citas_formateadas.append({
+                'id': cita['id_reserva'],
+                'paciente': nombre_completo,
+                'hora': hora,
+                'tipo': tipo_consulta,
+                'estado': cita['estado']
+            })
+        
+        return citas_formateadas
+        
+    except Exception as e:
+        print(f"Error al obtener citas de hoy: {e}")
+        return []
+    finally:
+        if conexion:
+            conexion.close()
+
 
 # Decorador para verificar que el usuario es médico
 def medico_required(f):
@@ -40,6 +218,7 @@ def panel():
     Muestra el dashboard o el subsistema solicitado
     """
     subsistema = request.args.get('subsistema', None)
+    id_empleado = session.get('id_empleado')
 
     # Obtener información del médico desde la sesión
     usuario = {
@@ -47,13 +226,21 @@ def panel():
         'nombre': session.get('nombre_usuario'),
         'email': session.get('email_usuario'),
         'rol': session.get('rol', 'Médico'),
-        'id_empleado': session.get('id_empleado')
+        'id_empleado': id_empleado
     }
+
+    # Obtener estadísticas del médico
+    stats = obtener_estadisticas_medico(id_empleado)
+    
+    # Obtener citas de hoy
+    citas_hoy = obtener_citas_hoy(id_empleado)
 
     return render_template(
         'panel_medico.html',
         subsistema=subsistema,
-        usuario=usuario
+        usuario=usuario,
+        stats=stats,
+        citas_hoy=citas_hoy
     )
 
 
