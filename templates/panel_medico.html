@@ -135,45 +135,35 @@
                 </div>
 
                 <!-- Estadísticas Rápidas -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                     <!-- Citas de Hoy -->
                     <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-6 text-white shadow-medical">
                         <div class="flex items-center justify-between mb-4">
                             <span class="material-symbols-outlined text-4xl opacity-80">event</span>
-                            <span class="text-3xl font-bold">8</span>
+                            <span class="text-3xl font-bold">{{ stats.citas_hoy }}</span>
                         </div>
                         <h3 class="text-sm font-medium opacity-90 mb-1">Citas de Hoy</h3>
-                        <p class="text-xs opacity-75">2 pendientes, 6 completadas</p>
+                        <p class="text-xs opacity-75">{{ stats.citas_pendientes }} pendientes, {{ stats.citas_completadas }} completadas</p>
                     </div>
 
                     <!-- Pacientes Atendidos -->
                     <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white shadow-medical">
                         <div class="flex items-center justify-between mb-4">
                             <span class="material-symbols-outlined text-4xl opacity-80">groups</span>
-                            <span class="text-3xl font-bold">24</span>
+                            <span class="text-3xl font-bold">{{ stats.pacientes_semana }}</span>
                         </div>
                         <h3 class="text-sm font-medium opacity-90 mb-1">Pacientes Esta Semana</h3>
-                        <p class="text-xs opacity-75">+12% vs semana anterior</p>
+                        <p class="text-xs opacity-75">Pacientes únicos atendidos</p>
                     </div>
 
                     <!-- Diagnósticos Pendientes -->
                     <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-medical">
                         <div class="flex items-center justify-between mb-4">
                             <span class="material-symbols-outlined text-4xl opacity-80">clinical_notes</span>
-                            <span class="text-3xl font-bold">5</span>
+                            <span class="text-3xl font-bold">{{ stats.diagnosticos_pendientes }}</span>
                         </div>
                         <h3 class="text-sm font-medium opacity-90 mb-1">Diagnósticos Pendientes</h3>
                         <p class="text-xs opacity-75">Requieren atención</p>
-                    </div>
-
-                    <!-- Satisfacción -->
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-medical">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="material-symbols-outlined text-4xl opacity-80">star</span>
-                            <span class="text-3xl font-bold">4.9</span>
-                        </div>
-                        <h3 class="text-sm font-medium opacity-90 mb-1">Calificación Promedio</h3>
-                        <p class="text-xs opacity-75">Basado en 124 opiniones</p>
                     </div>
                 </div>
 
@@ -190,56 +180,41 @@
                         </div>
 
                         <div class="space-y-4">
-                            <!-- Cita 1 -->
-                            <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl border border-cyan-100 hover:shadow-md transition-shadow">
-                                <div class="flex-shrink-0">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
-                                        JP
+                            {% if citas_hoy %}
+                                {% for cita in citas_hoy %}
+                                <div class="flex items-center gap-4 p-4 {% if cita.estado == 'Pendiente' or cita.estado == 'Confirmada' %}bg-gradient-to-r from-cyan-50 to-teal-50 border-cyan-100{% else %}bg-gray-50 border-gray-200{% endif %} rounded-xl border hover:shadow-md transition-shadow">
+                                    <div class="flex-shrink-0">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                                            {{ cita.paciente.split()[0][0] }}{{ cita.paciente.split()[1][0] if cita.paciente.split()|length > 1 else '' }}
+                                        </div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-800">{{ cita.paciente }}</h4>
+                                        <p class="text-sm text-gray-600">{{ cita.tipo }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-semibold {% if cita.estado == 'Pendiente' or cita.estado == 'Confirmada' %}text-cyan-600{% else %}text-gray-600{% endif %}">{{ cita.hora }}</p>
+                                        {% if cita.estado == 'Pendiente' %}
+                                        <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full mt-1">Pendiente</span>
+                                        {% elif cita.estado == 'Confirmada' %}
+                                        <span class="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full mt-1">Confirmada</span>
+                                        {% elif cita.estado == 'Completada' %}
+                                        <span class="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full mt-1">Completada</span>
+                                        {% elif cita.estado == 'Cancelada' %}
+                                        <span class="inline-block px-2 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full mt-1">Cancelada</span>
+                                        {% else %}
+                                        <span class="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full mt-1">{{ cita.estado }}</span>
+                                        {% endif %}
                                     </div>
                                 </div>
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-800">Juan Pérez García</h4>
-                                    <p class="text-sm text-gray-600">Consulta General</p>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-8 text-gray-500">
+                                    <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">event_busy</span>
+                                    <p class="font-medium">No hay citas programadas para hoy</p>
+                                    <p class="text-sm mt-1">Revisa tu agenda para ver próximas citas</p>
                                 </div>
-                                <div class="text-right">
-                                    <p class="font-semibold text-cyan-600">10:00 AM</p>
-                                    <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full mt-1">Pendiente</span>
-                                </div>
-                            </div>
-
-                            <!-- Cita 2 -->
-                            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                                <div class="flex-shrink-0">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-                                        MG
-                                    </div>
-                                </div>
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-800">María García López</h4>
-                                    <p class="text-sm text-gray-600">Control de Presión</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-semibold text-gray-600">09:30 AM</p>
-                                    <span class="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full mt-1">Completada</span>
-                                </div>
-                            </div>
-
-                            <!-- Cita 3 -->
-                            <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-cyan-50 to-teal-50 rounded-xl border border-cyan-100 hover:shadow-md transition-shadow">
-                                <div class="flex-shrink-0">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold">
-                                        CL
-                                    </div>
-                                </div>
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-800">Carlos López Martínez</h4>
-                                    <p class="text-sm text-gray-600">Revisión de Resultados</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-semibold text-cyan-600">11:30 AM</p>
-                                    <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full mt-1">Pendiente</span>
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
                     </div>
 
