@@ -18,25 +18,25 @@ class Reserva:
         self.id_programacion = id_programacion
 
     @staticmethod
+    @staticmethod
     def crear(tipo, id_paciente, id_programacion, tipo_reserva='CITA_MEDICA', cita_origen_id=None):
         """Crea una nueva reserva
         
         Args:
-            tipo: Tipo de reserva (campo heredado, puede ser 1)
+            tipo: Tipo de reserva (1 por defecto)
             id_paciente: ID del paciente
             id_programacion: ID de la programación
-            tipo_reserva: 'CITA_MEDICA', 'OPERACION' o 'EXAMEN'
-            cita_origen_id: ID de la cita que originó esta reserva (para operaciones/exámenes)
+            tipo_reserva: Parámetro heredado (se ignora, solo para compatibilidad)
+            cita_origen_id: Parámetro heredado (se ignora, solo para compatibilidad)
         """
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 ahora = datetime.now()
-                sql = """INSERT INTO RESERVA (fecha_registro, hora_registro, tipo, tipo_reserva,
-                         estado, cita_origen_id, id_paciente, id_programacion) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (ahora.date(), ahora.time(), tipo, tipo_reserva,
-                                   'pendiente', cita_origen_id, id_paciente, id_programacion))
+                # NOTA: La tabla RESERVA solo tiene: id_reserva, fecha_registro, hora_registro, tipo, estado, motivo_cancelacion, id_paciente, id_programacion
+                sql = """INSERT INTO RESERVA (fecha_registro, hora_registro, tipo, estado, id_paciente, id_programacion) 
+                         VALUES (%s, %s, %s, %s, %s, %s)"""
+                cursor.execute(sql, (ahora.date(), ahora.time(), tipo, 'Pendiente', id_paciente, id_programacion))
                 conexion.commit()
                 return {'success': True, 'id_reserva': cursor.lastrowid}
         except Exception as e:
@@ -118,7 +118,7 @@ class Reserva:
 
     @staticmethod
     def obtener_por_paciente(id_paciente):
-        """Obtiene reservas de un paciente específico"""
+        """Obtiene reservas de un paciente específico con información del servicio desde PROGRAMACION"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -127,16 +127,17 @@ class Reserva:
                            prog.fecha as fecha_cita,
                            prog.hora_inicio,
                            prog.hora_fin,
+                           prog.id_servicio,
                            s.nombre as servicio,
                            ts.nombre as tipo_servicio,
                            CONCAT(e.nombres, ' ', e.apellidos) as nombre_empleado,
                            esp.nombre as especialidad
                     FROM RESERVA r
                     INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-                    INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                    LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
                     LEFT JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
-                    INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
-                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                    LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
                     WHERE r.id_paciente = %s
                     ORDER BY prog.fecha DESC, prog.hora_inicio DESC
