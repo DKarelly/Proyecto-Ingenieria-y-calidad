@@ -30,7 +30,7 @@
             <div class="flex items-center gap-6">
                 <a href="/" class="group flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 rounded-lg">
                     <div class="bg-gray-50 p-2 rounded-xl group-hover:bg-cyan-50 transition-all duration-300 border border-gray-200">
-                        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-10 w-auto">
+                        <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-10 w-auto" loading="lazy" decoding="async" fetchpriority="high">
                     </div>
                 </a>
                 <div class="hidden md:block">
@@ -150,7 +150,7 @@
     }
 </style>
 
-<script>
+<script defer>
     // Menú desplegable del usuario y efectos del header
     document.addEventListener('DOMContentLoaded', function() {
         const userMenuButton = document.getElementById('userMenuButton');
@@ -185,6 +185,8 @@
             }
         };
         applyAdminShadow();
-        window.addEventListener('scroll', applyAdminShadow, { passive: true });
+    window.addEventListener('scroll', applyAdminShadow, { passive: true });
+        
+    // Optimización: evitar layout thrashing leyendo scrollY una sola vez por frame (ya simple, se deja así)
     });
 </script>
