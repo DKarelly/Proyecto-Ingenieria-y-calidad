@@ -41,9 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const resp = await fetch('/farmacia/api/medicamentos', { credentials: 'same-origin' });
             if (!resp.ok) throw new Error('Error al obtener medicamentos');
             const medicamentos = await resp.json();
+            // Ordenar medicamentos por id de menor a mayor
+            medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
             // Guardar medicamentos para búsqueda
             window.medicamentos = medicamentos;
-            renderTabla(medicamentos);
+            inicializarPaginacion({
+                datos: medicamentos,
+                registrosPorPagina: 20, /* CANTIDAD DE FILAS EN LA PAGINACION */
+                renderFuncion: renderTabla
+            });
         } catch (err) {
             console.error(err);
         }

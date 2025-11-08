@@ -183,6 +183,57 @@ def api_buscar_empleados():
     empleados = Incidencia.buscar_empleados(termino)
     return jsonify(empleados)
 
+@seguridad_bp.route('/api/incidencias/sin-asignar', methods=['GET'])
+def api_incidencias_sin_asignar():
+    """API para obtener incidencias sin asignar empleado responsable"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    try:
+        incidencias = Incidencia.obtener_sin_asignar()
+        return jsonify(incidencias if incidencias else [])
+    except Exception as e:
+        print(f"Error al obtener incidencias sin asignar: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@seguridad_bp.route('/api/empleados', methods=['GET'])
+def api_obtener_empleados():
+    """API para obtener todos los empleados disponibles"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    try:
+        from models.empleado import Empleado
+        empleados = Empleado.obtener_todos()
+        return jsonify(empleados if empleados else [])
+    except Exception as e:
+        print(f"Error al obtener empleados: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@seguridad_bp.route('/api/incidencias/<int:id_incidencia>/asignar', methods=['POST'])
+def api_asignar_empleado_incidencia(id_incidencia):
+    """API para asignar un empleado a una incidencia"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+
+    try:
+        data = request.get_json()
+        id_empleado = data.get('id_empleado')
+        estado = data.get('estado', 'En proceso')
+        
+        if not id_empleado:
+            return jsonify({'error': 'id_empleado es requerido'}), 400
+
+        resultado = Incidencia.asignar_empleado(id_incidencia, id_empleado, estado)
+        
+        if resultado.get('error'):
+            return jsonify(resultado), 400
+        
+        return jsonify(resultado), 200
+    except Exception as e:
+        print(f"Error al asignar empleado: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 # =======================================
 # API para Consultar Actividad
 # =======================================
