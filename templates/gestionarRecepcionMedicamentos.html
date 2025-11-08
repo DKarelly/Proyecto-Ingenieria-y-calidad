@@ -133,6 +133,8 @@
                                 Fecha Registro</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                                 Fecha Vencimiento</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Estado</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
                                 Controles</th>
                         </tr>
@@ -160,219 +162,251 @@
 
     <!-- Modal Registrar Recepción -->
     <div id="modalRegistrarRecepcion" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-box-open text-cyan-600 mr-2"></i>
-                    Registrar Nueva Recepción
-                </h2>
-                <button
-                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
-            </div>
-            <form id="formRegistrarRecepcion" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-pills text-gray-500 mr-1"></i>
-                        Nombre del Medicamento
-                    </label>
-                    <input type="text" id="nombreMedicamento" name="nombreMedicamento"
-                        placeholder="Nombre del medicamento"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
-                        list="medicamentos-list"
-                        required>
-                    <datalist id="medicamentos-list"></datalist>
+        <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-box-open mr-3"></i>
+                        Registrar Nueva Recepción
+                    </h2>
+                    <button class="close text-white hover:text-gray-200 text-3xl font-bold transition-colors">&times;</button>
                 </div>
+            </div>
+            <form id="formRegistrarRecepcion" class="p-8 space-y-6">
+                <!-- Nombre y Stock -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-pills text-cyan-600 mr-2"></i>
+                            Nombre del Medicamento
+                        </label>
+                        <input type="text" id="nombreMedicamento" name="nombreMedicamento"
+                            placeholder="Nombre del medicamento"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
+                            list="medicamentos-list"
+                            required>
+                        <datalist id="medicamentos-list"></datalist>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-hashtag text-cyan-600 mr-2"></i>
+                            Stock
+                        </label>
+                        <input type="number" id="stock" name="stock" min="1" placeholder="Cantidad"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
+                            required>
+                    </div>
+                </div>
+                <!-- Fecha y Estado -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-calendar-times text-cyan-600 mr-2"></i>
+                            Fecha de Vencimiento
+                        </label>
+                        <input type="date" id="fecha_vencimiento" name="fecha_vencimiento"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
+                            required>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-toggle-on text-cyan-600 mr-2"></i>
+                            Estado
+                        </label>
+                        <select id="estado" name="estado"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm">
+                            <option value="Activo">Activo</option>
+                            <option value="Inactivo">Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- Descripción -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-info-circle text-gray-500 mr-1"></i>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-info-circle text-cyan-600 mr-2"></i>
                         Descripción
                     </label>
                     <textarea id="descripcion" name="descripcion" rows="3" placeholder="Descripción del medicamento"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                        Stock
-                    </label>
-                    <input type="number" id="stock" name="stock" min="1" placeholder="Cantidad"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
-                        required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
-                        Fecha de Vencimiento
-                    </label>
-                    <input type="date" id="fecha_vencimiento" name="fecha_vencimiento"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
-                        required>
-                </div>
-                <div class="flex gap-4 pt-4">
-                    <button type="button"
-                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                        <i class="fas fa-times mr-2"></i>
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                        class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-                        <i class="fas fa-save mr-2"></i>
-                        Guardar
-                    </button>
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"></textarea>
                 </div>
             </form>
+            <div class="bg-gray-50 px-8 py-6 flex justify-end gap-4">
+                <button type="button"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg close">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button type="submit" form="formRegistrarRecepcion"
+                    class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <i class="fas fa-save mr-2"></i>
+                    Guardar
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Modal Modificar Medicamento -->
     <div id="modalModificarRecepcion" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-pen-to-square text-blue-600 mr-2"></i>
-                    Modificar Medicamento
-                </h2>
-                <button
-                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+        <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-pen-to-square mr-3"></i>
+                        Modificar Medicamento
+                    </h2>
+                    <button class="close text-white hover:text-gray-200 text-3xl font-bold transition-colors">&times;</button>
+                </div>
             </div>
-            <form id="formModificarRecepcion" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                            ID Medicamento
-                        </label>
-                        <input type="text" id="idMedicamento" value="1" placeholder="ID del medicamento"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100" readonly>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-pills text-gray-500 mr-1"></i>
+            <form id="formModificarRecepcion" class="p-8 space-y-6">
+                <!-- ID oculto para el método -->
+                <input type="hidden" id="idMedicamento" name="idMedicamento" value="1">
+                <!-- Nombre y Stock -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-pills text-cyan-600 mr-2"></i>
                             Nombre del Medicamento
                         </label>
                         <input type="text" id="nombreMedicamentoEdit" name="nombreMedicamentoEdit" value="Paracetamol"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
                             required>
                     </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-hashtag text-cyan-600 mr-2"></i>
                             Stock
                         </label>
                         <input type="number" id="stockEdit" name="stockEdit" value="100" min="1"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
                             required>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-calendar text-gray-500 mr-1"></i>
+                </div>
+                <!-- Fechas -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-calendar text-cyan-600 mr-2"></i>
                             Fecha de Registro
                         </label>
                         <input type="date" id="fechaRegistroEdit" name="fechaRegistroEdit" value="2023-10-01"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
+                            required>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-calendar-times text-cyan-600 mr-2"></i>
+                            Fecha de Vencimiento
+                        </label>
+                        <input type="date" id="fechaVencimientoEdit" name="fechaVencimientoEdit"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"
                             required>
                     </div>
                 </div>
+                <!-- Estado -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
-                        Fecha de Vencimiento
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-toggle-on text-cyan-600 mr-2"></i>
+                        Estado
                     </label>
-                    <input type="date" id="fechaVencimientoEdit" name="fechaVencimientoEdit"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"
-                        required>
+                    <select id="estadoEdit" name="estadoEdit"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm">
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
                 </div>
+                <!-- Descripción -->
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-info-circle text-gray-500 mr-1"></i>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-info-circle text-cyan-600 mr-2"></i>
                         Descripción
                     </label>
                     <textarea id="descripcionEdit" name="descripcionEdit" rows="3"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500"></textarea>
-                </div>
-                <div class="flex gap-4 pt-4">
-                    <button type="button"
-                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-                        <i class="fas fa-times mr-2"></i>
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                        class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-                        <i class="fas fa-save mr-2"></i>
-                        Guardar Cambios
-                    </button>
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 shadow-sm"></textarea>
                 </div>
             </form>
+            <div class="bg-gray-50 px-8 py-6 flex justify-end gap-4">
+                <button type="button"
+                    class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg close">
+                    <i class="fas fa-times mr-2"></i>
+                    Cancelar
+                </button>
+                <button type="submit" form="formModificarRecepcion"
+                    class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
+                    <i class="fas fa-save mr-2"></i>
+                    Guardar Cambios
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Modal Ver Detalles -->
     <div id="modalVerDetalles" class="modal">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-eye text-cyan-600 mr-2"></i>
-                    Detalles de la Recepción
-                </h2>
-                <button
-                    class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+        <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i class="fas fa-eye mr-3"></i>
+                        Detalles de la Recepción
+                    </h2>
+                    <button id="closeDetalles"
+                        class="text-white hover:text-gray-200 text-3xl font-bold transition-colors">&times;</button>
+                </div>
             </div>
-            <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
-                            ID
-                        </label>
-                        <p id="detalleId" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-pills text-gray-500 mr-1"></i>
+            <div class="p-8 space-y-6">
+                <!-- Nombre y Stock -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-pills text-cyan-600 mr-2"></i>
                             Nombre
                         </label>
-                        <p id="detalleNombre" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                        <p id="detalleNombre" class="text-lg text-gray-900 bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg border border-gray-200 shadow-sm"></p>
                     </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-info-circle text-gray-500 mr-1"></i>
-                            Descripción
-                        </label>
-                        <p id="detalleDescripcion" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-hashtag text-gray-500 mr-1"></i>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-hashtag text-cyan-600 mr-2"></i>
                             Stock
                         </label>
-                        <p id="detalleStock" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                        <p id="detalleStock" class="text-lg text-gray-900 bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg border border-gray-200 shadow-sm"></p>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-calendar text-gray-500 mr-1"></i>
+                <!-- Fechas -->
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-calendar text-cyan-600 mr-2"></i>
                             Fecha Registro
                         </label>
-                        <p id="detalleFechaRegistro" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg"></p>
+                        <p id="detalleFechaRegistro" class="text-lg text-gray-900 bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg border border-gray-200 shadow-sm"></p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            <i class="fas fa-calendar-times text-gray-500 mr-1"></i>
+                    <div class="flex-1">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-calendar-times text-cyan-600 mr-2"></i>
                             Fecha Vencimiento
                         </label>
-                        <p id="detalleFechaVencimiento" class="text-sm text-gray-900 bg-gray-100 px-3 py-2 rounded-lg">
-                        </p>
+                        <p id="detalleFechaVencimiento" class="text-lg text-gray-900 bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg border border-gray-200 shadow-sm"></p>
                     </div>
                 </div>
+                <!-- Estado -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-toggle-on text-cyan-600 mr-2"></i>
+                        Estado
+                    </label>
+                    <p id="detalleEstado" class="text-lg text-gray-900 bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg border border-gray-200 shadow-sm"></p>
+                </div>
+                <!-- Descripción -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-info-circle text-cyan-600 mr-2"></i>
+                        Descripción
+                    </label>
+                    <p id="detalleDescripcion" class="text-lg text-gray-900 bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 rounded-lg border border-gray-200 shadow-sm min-h-[3rem]"></p>
+                </div>
             </div>
-            <div class="flex gap-4 pt-4">
-                <button type="button"
-                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors close">
+            <div class="bg-gray-50 px-8 py-6 flex justify-end">
+                <button id="btnCerrarDetalles" type="button"
+                    class="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
                     <i class="fas fa-times mr-2"></i>
                     Cerrar
                 </button>

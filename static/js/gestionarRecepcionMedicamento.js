@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cerrar modales (botones .close)
     document.addEventListener('click', (e) => {
-        if (e.target.matches('.close')) {
+        if (e.target.matches('.close') || e.target.id === 'closeDetalles' || e.target.id === 'btnCerrarDetalles') {
             [modalRegistrar, modalModificar, modalEliminar, modalVerDetalles].forEach(m => m && m.classList.remove('show'));
         }
     });
@@ -68,8 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Filtrar solo medicamentos con estado 'Activo'
+        const medicamentosActivos = medicamentos.filter(m => m.estado === 'Activo');
+
         // Ordenar medicamentos por id de menor a mayor
-        medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
+        medicamentosActivos.sort((a, b) => a.id_medicamento - b.id_medicamento);
 
         // Poblar datalist con nombres de medicamentos para autocompletar
         const datalist = document.getElementById('medicamentos-list');
@@ -82,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        medicamentos.forEach(m => {
+        medicamentosActivos.forEach(m => {
             const tr = document.createElement('tr');
             tr.dataset.id = m.id_medicamento;
             tr.dataset.idMedicamento = m.id_medicamento;
@@ -91,14 +94,20 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.dataset.cantidad = m.stock != null ? String(m.stock) : '';
             tr.dataset.fechaRegistro = m.fecha_registro || '';
             tr.dataset.fechaVencimiento = m.fecha_vencimiento || '';
+            tr.dataset.estado = m.estado || '';
 
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.id_medicamento}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.nombre)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.descripcion || '')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-48 truncate">${escapeHtml(m.descripcion || '')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.stock ?? ''}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.fecha_registro || ''}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.fecha_vencimiento || ''}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <span class="badge-${(m.estado || '').toLowerCase()} px-2 py-1 rounded-full text-xs font-medium">
+                        ${m.estado || ''}
+                    </span>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button class="ver-detalle text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles"> <i class="fas fa-eye"></i> </button>
                     <button class="btn-editar text-blue-600 hover:text-blue-900 mr-3" title="Editar"> <i class="fas fa-edit"></i> </button>
@@ -125,12 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function abrirDetalle(tr) {
         if (!modalVerDetalles) return;
-        setText('detalleId', tr.dataset.id);
         setText('detalleNombre', tr.dataset.medicamento);
         setText('detalleDescripcion', tr.dataset.descripcion);
         setText('detalleStock', tr.dataset.cantidad);
         setText('detalleFechaRegistro', tr.dataset.fechaRegistro);
         setText('detalleFechaVencimiento', tr.dataset.fechaVencimiento);
+        setText('detalleEstado', tr.dataset.estado);
         modalVerDetalles.classList.add('show');
     }
 
@@ -142,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('fechaRegistroEdit').value = tr.dataset.fechaRegistro || '';
         document.getElementById('fechaVencimientoEdit').value = tr.dataset.fechaVencimiento || '';
         document.getElementById('descripcionEdit').value = tr.dataset.descripcion || '';
+        document.getElementById('estadoEdit').value = tr.dataset.estado || '';
         modalModificar.classList.add('show');
 
         // Asegurar validación y configuración del input stock en el modal de modificar
@@ -199,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const descripcion = document.getElementById('descripcion').value.trim();
             const stockVal = document.getElementById('stock').value;
             const fechaVencimiento = document.getElementById('fecha_vencimiento').value;
+            const estado = document.getElementById('estado').value.trim();
 
             if (!nombre || stockVal === '' || !fechaVencimiento) {
                 alert('Complete los campos obligatorios: nombre, stock, fecha de vencimiento.');
@@ -216,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento })
+                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento, estado })
                 });
                 const data = await resp.json();
                 if (resp.ok) {
@@ -244,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const stockVal = document.getElementById('stockEdit').value;
             const fechaVencimiento = document.getElementById('fechaVencimientoEdit').value;
             const descripcion = document.getElementById('descripcionEdit').value.trim();
+            const estado = document.getElementById('estadoEdit').value.trim();
 
             if (!id || !nombre || stockVal === '' || !fechaVencimiento) {
                 alert('Complete los campos obligatorios para modificar.');
@@ -261,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento })
+                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento, estado })
                 });
                 const data = await resp.json();
                 if (resp.ok) {
