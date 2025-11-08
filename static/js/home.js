@@ -111,6 +111,46 @@ function initializeAuthModals() {
         if (firstInput) firstInput.focus();
     };
 
+    // --- Password strength meter helpers ---
+    function scorePassword(pw) {
+        if (!pw) return { score: 0, label: 'Muy débil', color: '#ef4444' };
+        let score = 0;
+
+        // longitud
+        if (pw.length >= 6) score += 10;
+        if (pw.length >= 8) score += 15;
+        if (pw.length >= 12) score += 20;
+
+        // variedad
+        if (/[a-z]/.test(pw)) score += 15;
+        if (/[A-Z]/.test(pw)) score += 15;
+        if (/\d/.test(pw)) score += 15;
+        if (/[^A-Za-z0-9]/.test(pw)) score += 15;
+
+        if (score > 100) score = 100;
+
+        let label = 'Muy débil';
+        let color = '#ef4444'; // rojo
+        if (score >= 90) { label = 'Muy fuerte'; color = '#0ea5a4'; } // teal
+        else if (score >= 75) { label = 'Fuerte'; color = '#06b6d4'; } // cyan
+        else if (score >= 50) { label = 'Media'; color = '#f59e0b'; } // amarillo
+        else if (score >= 30) { label = 'Débil'; color = '#f97316'; } // naranja
+
+        return { score, label, color };
+    }
+
+    function updatePasswordStrength(pw) {
+        const bar = document.getElementById('password-strength-bar');
+        const text = document.getElementById('password-strength-text');
+        if (!bar || !text) return;
+
+        const { score, label, color } = scorePassword(pw);
+        bar.style.width = score + '%';
+        bar.style.background = color;
+        bar.style.transition = 'width 200ms ease, background 200ms ease';
+        text.textContent = label;
+        text.style.color = color;
+    }
     const closeModal = (modal) => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
@@ -201,18 +241,249 @@ function initializeAuthModals() {
         this.value = this.value.replace(/[^0-9]/g, '');
     });
 
-    // Manejo del formulario de registro
+    // Manejo del formulario de registro con validaciones cliente
     const registerForm = document.querySelector('#register-modal form');
+    const showFieldError = (field, message) => {
+        clearFieldError(field);
+        field.classList.add('border-red-500');
+        const msg = document.createElement('p');
+        msg.className = 'input-error text-xs text-red-600 mt-1';
+        msg.textContent = message;
+        field.parentNode.appendChild(msg);
+    };
+
+    const clearFieldError = (field) => {
+        field.classList.remove('border-red-500');
+        const next = field.parentNode.querySelector('.input-error');
+        if (next) next.remove();
+    };
+
+    const clearAllErrors = (form) => {
+        form.querySelectorAll('.input-error').forEach(el => el.remove());
+        form.querySelectorAll('.border-red-500').forEach(f => f.classList.remove('border-red-500'));
+    };
+
+    const validateRegister = () => {
+        clearAllErrors(registerForm);
+        const nombres = document.getElementById('register-nombres');
+        const apellidos = document.getElementById('register-apellidos');
+        const documento = document.getElementById('register-documento');
+        const sexo = document.getElementById('register-sexo');
+        const telefono = document.getElementById('register-telefono');
+        const correo = document.getElementById('register-email');
+        const nacimiento = document.getElementById('register-nacimiento');
+        const departamento = document.getElementById('register-departamento');
+        const provincia = document.getElementById('register-provincia');
+        const distrito = document.getElementById('register-distrito');
+        const password = document.getElementById('register-password');
+
+        // Validaciones simples
+        if (!nombres.value || nombres.value.trim().length < 2) {
+            showFieldError(nombres, 'Ingrese al menos 2 caracteres en nombres');
+            nombres.focus();
+            return false;
+        }
+
+        if (!apellidos.value || apellidos.value.trim().length < 2) {
+            showFieldError(apellidos, 'Ingrese al menos 2 caracteres en apellidos');
+            apellidos.focus();
+            return false;
+        }
+
+        if (!/^\d{8}$/.test(documento.value)) {
+            showFieldError(documento, 'El DNI debe tener 8 dígitos');
+            documento.focus();
+            return false;
+        }
+
+        if (!sexo.value) {
+            showFieldError(sexo, 'Seleccione un sexo');
+            sexo.focus();
+            return false;
+        }
+
+        if (!/^\d{9}$/.test(telefono.value)) {
+            showFieldError(telefono, 'El teléfono debe tener 9 dígitos');
+            telefono.focus();
+            return false;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(correo.value)) {
+            showFieldError(correo, 'Correo electrónico inválido');
+            correo.focus();
+            return false;
+        }
+
+        if (!nacimiento.value) {
+            showFieldError(nacimiento, 'Ingrese la fecha de nacimiento');
+            nacimiento.focus();
+            return false;
+        } else {
+            const today = new Date();
+            const dob = new Date(nacimiento.value);
+            const age = today.getFullYear() - dob.getFullYear() - (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate()) ? 1 : 0);
+            if (isNaN(age) || age < 18) {
+                showFieldError(nacimiento, 'Debes ser mayor de 18 años');
+                nacimiento.focus();
+                return false;
+            }
+        }
+
+        if (!departamento.value) {
+            showFieldError(departamento, 'Seleccione un departamento');
+            departamento.focus();
+            return false;
+        }
+
+        if (!provincia.value) {
+            showFieldError(provincia, 'Seleccione una provincia');
+            provincia.focus();
+            return false;
+        }
+
+        if (!distrito.value) {
+            showFieldError(distrito, 'Seleccione un distrito');
+            distrito.focus();
+            return false;
+        }
+
+        if (!password.value || password.value.length < 6) {
+            showFieldError(password, 'La contraseña debe tener al menos 6 caracteres');
+            password.focus();
+            return false;
+        }
+
+        return true;
+    };
+
+    // Validación en tiempo real por campo
+    // touched tracking: no mostrar errores hasta que el usuario toque el campo
+    const touched = {};
+
+    const validateField = (field) => {
+        const id = field.id;
+        const val = field.value.trim();
+
+        // evitar validar selects vacíos con input event
+        if (field.tagName.toLowerCase() === 'select') {
+            // solo validar cuando haya un value
+        }
+
+        // reglas por campo
+        try {
+            if (id === 'register-nombres') {
+                if (!val || val.length < 2) {
+                    if (touched[id]) showFieldError(field, 'Mínimo 2 caracteres');
+                } else clearFieldError(field);
+            } else if (id === 'register-apellidos') {
+                if (!val || val.length < 2) {
+                    if (touched[id]) showFieldError(field, 'Mínimo 2 caracteres');
+                } else clearFieldError(field);
+            } else if (id === 'register-documento') {
+                if (!/^\d{0,8}$/.test(val)) {
+                    if (touched[id]) showFieldError(field, 'Solo dígitos');
+                } else if (val.length > 0 && val.length < 8) {
+                    if (touched[id]) showFieldError(field, 'DNI incompleto');
+                } else if (val.length === 8) {
+                    clearFieldError(field);
+                } else {
+                    clearFieldError(field);
+                }
+            } else if (id === 'register-sexo') {
+                if (!val) {
+                    if (touched[id]) showFieldError(field, 'Seleccione una opción');
+                } else clearFieldError(field);
+            } else if (id === 'register-telefono') {
+                if (!/^\d*$/.test(val)) {
+                    if (touched[id]) showFieldError(field, 'Solo dígitos');
+                } else if (val.length > 0 && val.length < 9) {
+                    if (touched[id]) showFieldError(field, 'Número incompleto');
+                } else if (val.length === 9) clearFieldError(field);
+                else clearFieldError(field);
+            } else if (id === 'register-email') {
+                const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!val) {
+                    if (touched[id]) showFieldError(field, 'Ingrese un correo');
+                } else if (!re.test(val)) {
+                    if (touched[id]) showFieldError(field, 'Correo inválido');
+                } else clearFieldError(field);
+            } else if (id === 'register-nacimiento') {
+                if (!val) {
+                    if (touched[id]) showFieldError(field, 'Ingrese fecha');
+                } else {
+                    const today = new Date();
+                    const dob = new Date(val);
+                    const age = today.getFullYear() - dob.getFullYear() - (today.getMonth() < dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate()) ? 1 : 0);
+                    if (isNaN(age)) {
+                        if (touched[id]) showFieldError(field, 'Fecha inválida');
+                    } else if (age < 18) {
+                        if (touched[id]) showFieldError(field, 'Debes ser mayor de 18 años');
+                    } else clearFieldError(field);
+                }
+            } else if (id === 'register-departamento' || id === 'register-provincia' || id === 'register-distrito') {
+                if (!val) {
+                    if (touched[id]) showFieldError(field, 'Seleccione una opción');
+                } else clearFieldError(field);
+            } else if (id === 'register-password') {
+                if (!val || val.length < 6) {
+                    if (touched[id]) showFieldError(field, 'Mínimo 6 caracteres');
+                } else {
+                    // chequeo básico de complejidad (letra + número)
+                    const ok = /[A-Za-z]/.test(val) && /\d/.test(val);
+                    if (!ok) {
+                        if (touched[id]) showFieldError(field, 'Incluye letras y números');
+                    } else clearFieldError(field);
+                }
+            }
+        } catch (err) {
+            // si algo falla, no romper la UX
+            // console.warn('validateField error', err);
+        }
+    };
+
+    // Asignar listeners: input para campos de texto, change para selects y date
+    const realtimeFields = [
+        'register-nombres','register-apellidos','register-documento','register-telefono','register-email','register-password'
+    ];
+    realtimeFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => { validateField(el); if (id === 'register-password') updatePasswordStrength(el.value); });
+            el.addEventListener('focus', () => { touched[id] = true; });
+            el.addEventListener('blur', () => { touched[id] = true; validateField(el); if (id === 'register-password') updatePasswordStrength(el.value); });
+            // inicializar indicador si ya hay valor (p. ej. retorno al formulario)
+            if (id === 'register-password' && el.value) updatePasswordStrength(el.value);
+        }
+    });
+
+    const changeFields = ['register-sexo','register-nacimiento','register-departamento','register-provincia','register-distrito'];
+    changeFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => validateField(el));
+            el.addEventListener('focus', () => { touched[id] = true; });
+            el.addEventListener('blur', () => { touched[id] = true; validateField(el); });
+        }
+    });
+
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        if (!validateRegister()) return;
+
+        const submitBtn = registerForm.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Registrando...';
+
         const formData = {
-            nombres: document.getElementById('register-nombres').value,
-            apellidos: document.getElementById('register-apellidos').value,
-            documento_identidad: document.getElementById('register-documento').value,
+            nombres: document.getElementById('register-nombres').value.trim(),
+            apellidos: document.getElementById('register-apellidos').value.trim(),
+            documento_identidad: document.getElementById('register-documento').value.trim(),
             sexo: document.getElementById('register-sexo').value,
-            telefono: document.getElementById('register-telefono').value,
-            correo: document.getElementById('register-email').value,
+            telefono: document.getElementById('register-telefono').value.trim(),
+            correo: document.getElementById('register-email').value.trim(),
             fecha_nacimiento: document.getElementById('register-nacimiento').value,
             id_departamento: document.getElementById('register-departamento').value,
             id_provincia: document.getElementById('register-provincia').value,
@@ -232,19 +503,70 @@ function initializeAuthModals() {
             const data = await response.json();
 
             if (data.success) {
-                alert('¡Registro exitoso! Ahora puedes iniciar sesión');
-                closeModal(registerModal);
-                openModal(loginModal);
-                registerForm.reset();
-                // Resetear selectores
-                document.getElementById('register-provincia').disabled = true;
-                document.getElementById('register-distrito').disabled = true;
+                // feedback más profesional
+                const successMsg = document.createElement('div');
+                successMsg.className = 'text-sm text-green-600 text-center my-4';
+                successMsg.textContent = 'Registro exitoso. Ahora puedes iniciar sesión.';
+                registerForm.parentNode.insertBefore(successMsg, registerForm.nextSibling);
+
+                setTimeout(() => {
+                    closeModal(registerModal);
+                    openModal(loginModal);
+                    registerForm.reset();
+                    document.getElementById('register-provincia').disabled = true;
+                    document.getElementById('register-distrito').disabled = true;
+                    successMsg.remove();
+                }, 1200);
             } else {
-                alert(data.error || 'Error al registrarse');
+                // Mostrar errores del servidor junto al campo correspondiente si es posible
+                const serverMsg = data && data.error ? data.error.toString() : null;
+                if (serverMsg) {
+                    // elegir campo por palabras clave
+                    const lower = serverMsg.toLowerCase();
+                    const emailField = document.getElementById('register-email');
+                    const docField = document.getElementById('register-documento');
+                    const departamentoField = document.getElementById('register-departamento');
+                    const provinciaField = document.getElementById('register-provincia');
+                    const distritoField = document.getElementById('register-distrito');
+
+                    const mapAndShow = (field) => {
+                        if (!field) return false;
+                        showFieldError(field, serverMsg);
+                        field.focus();
+                        return true;
+                    };
+
+                    if (/correo|email/.test(lower)) {
+                        mapAndShow(emailField);
+                    } else if (/documento|dni/.test(lower)) {
+                        mapAndShow(docField);
+                    } else if (/departamento/.test(lower)) {
+                        mapAndShow(departamentoField);
+                    } else if (/provincia/.test(lower)) {
+                        mapAndShow(provinciaField);
+                    } else if (/distrito/.test(lower)) {
+                        mapAndShow(distritoField);
+                    } else {
+                        // si no podemos mapear, mostrar error global arriba del formulario
+                        clearAllErrors(registerForm);
+                        const globalErr = document.createElement('div');
+                        globalErr.className = 'text-sm text-red-600 text-center my-4 server-error';
+                        globalErr.textContent = serverMsg;
+                        // eliminar errores globales previos
+                        const prev = registerForm.parentNode.querySelector('.server-error');
+                        if (prev) prev.remove();
+                        registerForm.parentNode.insertBefore(globalErr, registerForm);
+                    }
+                } else {
+                    alert('Error al registrarse');
+                }
             }
         } catch (error) {
             console.error('Error:', error);
             alert('Error al conectar con el servidor');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
         }
     });
 
