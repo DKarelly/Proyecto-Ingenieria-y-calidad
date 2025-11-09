@@ -3,24 +3,25 @@ from datetime import date, time
 
 class Horario:
     def __init__(self, id_horario=None, id_empleado=None, fecha=None,
-                 hora_inicio=None, hora_fin=None, estado='disponible'):
+                 hora_inicio=None, hora_fin=None, disponibilidad=None, estado='Activo'):
         self.id_horario = id_horario
         self.id_empleado = id_empleado
         self.fecha = fecha
         self.hora_inicio = hora_inicio
         self.hora_fin = hora_fin
+        self.disponibilidad = disponibilidad
         self.estado = estado
 
     @staticmethod
-    def crear(id_empleado, fecha, hora_inicio, hora_fin):
+    def crear(id_empleado, fecha, hora_inicio, hora_fin, disponibilidad='Disponible', estado='Activo'):
         """Crea un nuevo horario"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                sql = """INSERT INTO HORARIO (id_empleado, fecha, hora_inicio, 
-                         hora_fin, estado) VALUES (%s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (id_empleado, fecha, hora_inicio, 
-                                   hora_fin, 'disponible'))
+                sql = """INSERT INTO HORARIO (id_empleado, fecha, hora_inicio,
+                         hora_fin, disponibilidad, estado) VALUES (%s, %s, %s, %s, %s, %s)"""
+                cursor.execute(sql, (id_empleado, fecha, hora_inicio,
+                                   hora_fin, disponibilidad, estado))
                 conexion.commit()
                 return {'success': True, 'id_horario': cursor.lastrowid}
         except Exception as e:
@@ -127,14 +128,14 @@ class Horario:
                     FROM HORARIO h
                     INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                     LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                    WHERE h.fecha = %s AND h.estado = 'disponible'
+                    WHERE h.fecha = %s AND h.disponibilidad = 'Disponible' AND h.estado = 'Activo'
                 """
                 params = [fecha]
-                
+
                 if id_empleado:
                     sql += " AND h.id_empleado = %s"
                     params.append(id_empleado)
-                
+
                 sql += " ORDER BY h.hora_inicio"
                 cursor.execute(sql, tuple(params))
                 return cursor.fetchall()
@@ -158,34 +159,38 @@ class Horario:
             conexion.close()
 
     @staticmethod
-    def actualizar(id_horario, fecha=None, hora_inicio=None, 
-                  hora_fin=None, estado=None):
+    def actualizar(id_horario, fecha=None, hora_inicio=None,
+                  hora_fin=None, disponibilidad=None, estado=None):
         """Actualiza un horario existente"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 campos = []
                 valores = []
-                
+
                 if fecha:
                     campos.append("fecha = %s")
                     valores.append(fecha)
-                
+
                 if hora_inicio:
                     campos.append("hora_inicio = %s")
                     valores.append(hora_inicio)
-                
+
                 if hora_fin:
                     campos.append("hora_fin = %s")
                     valores.append(hora_fin)
-                
+
+                if disponibilidad:
+                    campos.append("disponibilidad = %s")
+                    valores.append(disponibilidad)
+
                 if estado:
                     campos.append("estado = %s")
                     valores.append(estado)
-                
+
                 if not campos:
                     return {'error': 'No hay campos para actualizar'}
-                
+
                 valores.append(id_horario)
                 sql = f"UPDATE HORARIO SET {', '.join(campos)} WHERE id_horario = %s"
                 cursor.execute(sql, tuple(valores))

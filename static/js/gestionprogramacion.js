@@ -2,7 +2,7 @@
 
 // Variables de paginación para la tabla de horarios de empleados
 let currentPage = 1;
-const itemsPerPage = 5;
+const itemsPerPage = 3;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos de modal
@@ -753,29 +753,50 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error cargando programación:', error));
     };
 
+    // Variable para almacenar el ID de la programación a eliminar
+    let idProgramacionEliminar = null;
+
     window.eliminarProgramacion = function(id) {
-        // Confirmar desactivación
-        if (confirm('¿Está seguro que desea desactivar esta programación?')) {
-            fetch(`/admin/api/programaciones/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ estado: 'Inactiva' })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    alert('Programación desactivada exitosamente');
-                    loadProgramaciones(); // Recargar la tabla
-                } else {
-                    alert('Error: ' + result.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error al desactivar la programación');
-            });
-        }
+        idProgramacionEliminar = id;
+        modalEliminar.classList.add('show');
     };
+
+    // Event listeners para los botones del modal de eliminación
+    const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
+    if (btnCancelarEliminar) {
+        btnCancelarEliminar.addEventListener('click', function() {
+            modalEliminar.classList.remove('show');
+            idProgramacionEliminar = null;
+        });
+    }
+
+    const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+    if (btnConfirmarEliminar) {
+        btnConfirmarEliminar.addEventListener('click', function() {
+            if (idProgramacionEliminar) {
+                fetch(`/admin/api/programaciones/${idProgramacionEliminar}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ estado: 'Inactiva' })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('Programación desactivada exitosamente');
+                        modalEliminar.classList.remove('show');
+                        loadProgramaciones(); // Recargar la tabla
+                        idProgramacionEliminar = null;
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al desactivar la programación');
+                });
+            }
+        });
+    }
 });
