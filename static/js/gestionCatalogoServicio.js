@@ -1,4 +1,6 @@
 // Gestion Catalogo Servicio - JavaScript
+let idServicioEliminar = null; // Variable global para el ID del servicio a eliminar
+
 document.addEventListener('DOMContentLoaded', function () {
     cargarTiposServicio();
     cargarEspecialidades();
@@ -71,6 +73,20 @@ document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('modalModificarServicio');
             if (modal) modal.classList.remove('show');
         });
+    }
+
+    // Modal eliminar servicio
+    const btnCancelarEliminar = document.getElementById('btnCancelarEliminar');
+    if (btnCancelarEliminar) {
+        btnCancelarEliminar.addEventListener('click', function () {
+            const modal = document.getElementById('modalEliminar');
+            if (modal) modal.classList.remove('show');
+        });
+    }
+
+    const btnConfirmarEliminar = document.getElementById('btnConfirmarEliminar');
+    if (btnConfirmarEliminar) {
+        btnConfirmarEliminar.addEventListener('click', eliminarServicio);
     }
 });
 
@@ -500,24 +516,40 @@ function cargarTiposServicioEditar(servicio) {
 }
 
 function confirmarEliminarServicio(id_servicio) {
-    if (confirm('¿Está seguro que desea desactivar este servicio?')) {
-        fetch(`/admin/api/servicios/${id_servicio}`, {
-            method: 'DELETE'
+    idServicioEliminar = id_servicio; // Guardar el ID en la variable global
+    const modal = document.getElementById('modalEliminar');
+    if (modal) modal.classList.add('show');
+}
+
+function eliminarServicio() {
+    if (!idServicioEliminar) return;
+
+    const data = {
+        estado: 'Inactivo'
+    };
+
+    fetch(`/admin/api/servicios/${idServicioEliminar}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Servicio desactivado exitosamente');
+                const modal = document.getElementById('modalEliminar');
+                if (modal) modal.classList.remove('show');
+                cargarServicios(); // Recargar la tabla
+            } else {
+                alert('Error al desactivar el servicio: ' + (result.message || 'Error desconocido'));
+            }
         })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    alert('Servicio desactivado exitosamente');
-                    cargarServicios(); // Recargar la tabla
-                } else {
-                    alert('Error al desactivar el servicio: ' + (result.message || 'Error desconocido'));
-                }
-            })
-            .catch(error => {
-                console.error('Error eliminando servicio:', error);
-                alert('Error al desactivar el servicio');
-            });
-    }
+        .catch(error => {
+            console.error('Error desactivando servicio:', error);
+            alert('Error al desactivar el servicio');
+        });
 }
 
 function modificarServicio(event) {

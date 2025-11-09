@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cerrar modales (botones .close)
     document.addEventListener('click', (e) => {
-        if (e.target.matches('.close')) {
+        if (e.target.matches('.close') || e.target.id === 'closeDetalles' || e.target.id === 'btnCerrarDetalles') {
             [modalRegistrar, modalModificar, modalEliminar, modalVerDetalles].forEach(m => m && m.classList.remove('show'));
         }
     });
@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
             medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
             // Guardar medicamentos para búsqueda
             window.medicamentos = medicamentos;
+            // Mostrar notificaciones de vencimiento
+            mostrarNotificacionesVencimiento(medicamentos);
             inicializarPaginacion({
                 datos: medicamentos,
                 registrosPorPagina: 20, /* CANTIDAD DE FILAS EN LA PAGINACION */
@@ -66,8 +68,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Filtrar solo medicamentos con estado 'Activo'
+        const medicamentosActivos = medicamentos.filter(m => m.estado === 'Activo');
+
         // Ordenar medicamentos por id de menor a mayor
-        medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
+        medicamentosActivos.sort((a, b) => a.id_medicamento - b.id_medicamento);
 
         // Poblar datalist con nombres de medicamentos para autocompletar
         const datalist = document.getElementById('medicamentos-list');
@@ -80,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        medicamentos.forEach(m => {
+        medicamentosActivos.forEach(m => {
             const tr = document.createElement('tr');
             tr.dataset.id = m.id_medicamento;
             tr.dataset.idMedicamento = m.id_medicamento;
@@ -89,14 +94,20 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.dataset.cantidad = m.stock != null ? String(m.stock) : '';
             tr.dataset.fechaRegistro = m.fecha_registro || '';
             tr.dataset.fechaVencimiento = m.fecha_vencimiento || '';
+            tr.dataset.estado = m.estado || '';
 
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.id_medicamento}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.nombre)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.descripcion || '')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-48 truncate">${escapeHtml(m.descripcion || '')}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.stock ?? ''}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.fecha_registro || ''}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.fecha_vencimiento || ''}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                    <span class="badge-${(m.estado || '').toLowerCase()} px-2 py-1 rounded-full text-xs font-medium">
+                        ${m.estado || ''}
+                    </span>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                     <button class="ver-detalle text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles"> <i class="fas fa-eye"></i> </button>
                     <button class="btn-editar text-blue-600 hover:text-blue-900 mr-3" title="Editar"> <i class="fas fa-edit"></i> </button>
@@ -123,12 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function abrirDetalle(tr) {
         if (!modalVerDetalles) return;
-        setText('detalleId', tr.dataset.id);
         setText('detalleNombre', tr.dataset.medicamento);
         setText('detalleDescripcion', tr.dataset.descripcion);
         setText('detalleStock', tr.dataset.cantidad);
         setText('detalleFechaRegistro', tr.dataset.fechaRegistro);
         setText('detalleFechaVencimiento', tr.dataset.fechaVencimiento);
+        setText('detalleEstado', tr.dataset.estado);
         modalVerDetalles.classList.add('show');
     }
 
@@ -140,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('fechaRegistroEdit').value = tr.dataset.fechaRegistro || '';
         document.getElementById('fechaVencimientoEdit').value = tr.dataset.fechaVencimiento || '';
         document.getElementById('descripcionEdit').value = tr.dataset.descripcion || '';
+        document.getElementById('estadoEdit').value = tr.dataset.estado || '';
         modalModificar.classList.add('show');
 
         // Asegurar validación y configuración del input stock en el modal de modificar
@@ -197,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const descripcion = document.getElementById('descripcion').value.trim();
             const stockVal = document.getElementById('stock').value;
             const fechaVencimiento = document.getElementById('fecha_vencimiento').value;
+            const estado = document.getElementById('estado').value.trim();
 
             if (!nombre || stockVal === '' || !fechaVencimiento) {
                 alert('Complete los campos obligatorios: nombre, stock, fecha de vencimiento.');
@@ -214,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento })
+                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento, estado })
                 });
                 const data = await resp.json();
                 if (resp.ok) {
@@ -242,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const stockVal = document.getElementById('stockEdit').value;
             const fechaVencimiento = document.getElementById('fechaVencimientoEdit').value;
             const descripcion = document.getElementById('descripcionEdit').value.trim();
+            const estado = document.getElementById('estadoEdit').value.trim();
 
             if (!id || !nombre || stockVal === '' || !fechaVencimiento) {
                 alert('Complete los campos obligatorios para modificar.');
@@ -259,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento })
+                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento, estado })
                 });
                 const data = await resp.json();
                 if (resp.ok) {
@@ -284,9 +298,100 @@ document.addEventListener('DOMContentLoaded', () => {
             ev.preventDefault();
             const formFiltros = document.getElementById('formFiltros');
             if (formFiltros) formFiltros.reset();
+            // Mostrar todas las filas al limpiar filtros
+            const filas = tablaBody.querySelectorAll('tr');
+            filas.forEach(fila => {
+                fila.style.display = '';
+            });
             cargarMedicamentos();
         });
     }
+
+    // Evento para buscar medicamento en el filtro de búsqueda
+    const filtroMedicamentoInput = document.getElementById('filtroMedicamento');
+    if (filtroMedicamentoInput) {
+        filtroMedicamentoInput.addEventListener('input', function() {
+            buscarMedicamentoFiltro(this.value);
+        });
+    }
+
+    function buscarMedicamentoFiltro(termino) {
+        if (!window.medicamentos || termino.length < 2) {
+            ocultarSugerenciasFiltro();
+            return;
+        }
+
+        const medicamentosFiltrados = window.medicamentos.filter(medicamento =>
+            medicamento.nombre.toLowerCase().includes(termino.toLowerCase())
+        );
+
+        mostrarSugerenciasFiltro(medicamentosFiltrados);
+    }
+
+    function mostrarSugerenciasFiltro(medicamentos) {
+        // Remover sugerencias anteriores
+        const sugerenciasAnteriores = document.querySelector('.sugerencias-filtro');
+        if (sugerenciasAnteriores) {
+            sugerenciasAnteriores.remove();
+        }
+
+        if (medicamentos.length === 0) {
+            return;
+        }
+
+        const inputFiltro = document.getElementById('filtroMedicamento');
+        const sugerenciasDiv = document.createElement('div');
+        sugerenciasDiv.className = 'sugerencias-filtro absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1';
+        sugerenciasDiv.style.width = inputFiltro.offsetWidth + 'px';
+
+        medicamentos.forEach(medicamento => {
+            const opcion = document.createElement('div');
+            opcion.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
+            opcion.textContent = medicamento.nombre;
+            opcion.onclick = function() {
+                seleccionarMedicamentoFiltro(medicamento);
+                sugerenciasDiv.remove();
+            };
+            sugerenciasDiv.appendChild(opcion);
+        });
+
+        // Posicionar las sugerencias
+        inputFiltro.parentNode.style.position = 'relative';
+        inputFiltro.parentNode.appendChild(sugerenciasDiv);
+    }
+
+    function seleccionarMedicamentoFiltro(medicamento) {
+        document.getElementById('filtroMedicamento').value = medicamento.nombre;
+        ocultarSugerenciasFiltro();
+        // Filtrar la tabla por el medicamento seleccionado
+        filtrarTablaPorMedicamento(medicamento.nombre);
+    }
+
+    function filtrarTablaPorMedicamento(nombreMedicamento) {
+        const filas = tablaBody.querySelectorAll('tr');
+        filas.forEach(fila => {
+            const nombreEnFila = fila.dataset.medicamento.toLowerCase();
+            if (nombreEnFila.includes(nombreMedicamento.toLowerCase())) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+    }
+
+    function ocultarSugerenciasFiltro() {
+        const sugerencias = document.querySelector('.sugerencias-filtro');
+        if (sugerencias) {
+            sugerencias.remove();
+        }
+    }
+
+    // Ocultar sugerencias al hacer clic fuera
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#filtroMedicamento') && !e.target.closest('.sugerencias-filtro')) {
+            ocultarSugerenciasFiltro();
+        }
+    });
 
     function buscarMedicamento(termino) {
         if (!window.medicamentos || termino.length < 2) {
@@ -351,6 +456,52 @@ document.addEventListener('DOMContentLoaded', () => {
             ocultarSugerenciasMedicamento();
         }
     });
+
+    // Función para mostrar notificaciones de vencimiento
+    function mostrarNotificacionesVencimiento(medicamentos) {
+        const contenedor = document.getElementById('notificaciones-vencimiento');
+        if (!contenedor) return;
+
+        contenedor.innerHTML = '';
+
+        const hoy = new Date();
+        const proximos30Dias = new Date();
+        proximos30Dias.setDate(hoy.getDate() + 30);
+
+        const medicamentosVenciendo = medicamentos.filter(medicamento => {
+            if (!medicamento.fecha_vencimiento) return false;
+            const fechaVencimiento = new Date(medicamento.fecha_vencimiento);
+            return fechaVencimiento >= hoy && fechaVencimiento <= proximos30Dias;
+        });
+
+        if (medicamentosVenciendo.length === 0) return;
+
+        medicamentosVenciendo.forEach(medicamento => {
+            const fechaVencimiento = new Date(medicamento.fecha_vencimiento);
+            const diasRestantes = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
+
+            const notificacion = document.createElement('div');
+            notificacion.className = 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm';
+            notificacion.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-yellow-800">
+                            <i class="fas fa-pills mr-1"></i>
+                            ${escapeHtml(medicamento.nombre)}
+                        </h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p><i class="fas fa-clock mr-1"></i> Vence en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}</p>
+                            <p><i class="fas fa-boxes mr-1"></i> Stock actual: ${medicamento.stock || 0}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(notificacion);
+        });
+    }
 
     // Inicializar
     cargarMedicamentos();

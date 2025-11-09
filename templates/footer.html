@@ -8,7 +8,7 @@
             <!-- Marca -->
             <div>
                 <div class="flex items-center gap-3 mb-4">
-                    <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-10 w-auto">
+                    <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-10 w-auto" loading="lazy" decoding="async" fetchpriority="low">
                     <span class="sr-only">Clínica Unión</span>
                 </div>
                 <p class="text-sm text-gray-600 leading-relaxed">Cuidamos tu salud con calidez, tecnología y un equipo comprometido.</p>
@@ -74,13 +74,13 @@
                 </form>
 
                 <div class="mt-5 flex items-center gap-3" aria-label="Redes sociales">
-                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors" aria-label="Twitter">
+                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors will-change-transform" aria-label="Twitter">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-twitter"><path d="M22 4s-.7 2.1-2 3.4c1.6 1.4 3.3 4.9 3.3 4.9s-5.2-.8-6.1-2.4c-1.1 1.1-2.5 2.1-4.6 2.5H4.2c-1.1 0-2.2-.4-2.2-2.2s1.1-2.3 2.2-2.3c1 .2 2.3.1 3.4-.4C8.7 8.1 9.1 7 9.1 7s-2.1-.2-2.1-2.3c0-1.2 1-2.1 2.1-2.1H12c3.4 0 5.6 2.3 5.6 2.3s2.1-.2 2.1 1.1c0 .9-.8 1.9-1.5 2.4.9-.1 2.4-1 2.4-1z"/></svg>
                     </a>
-                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors" aria-label="Facebook">
+                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors will-change-transform" aria-label="Facebook">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     </a>
-                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors" aria-label="Instagram">
+                    <a href="#" class="h-9 w-9 rounded-full bg-gray-100 text-gray-600 hover:bg-cyan-50 hover:text-cyan-700 grid place-items-center transition-colors will-change-transform" aria-label="Instagram">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                     </a>
                 </div>
