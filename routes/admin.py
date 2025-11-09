@@ -440,12 +440,13 @@ def api_crear_horario():
     fecha = data.get('fecha')
     hora_inicio = data.get('hora_inicio')
     hora_fin = data.get('hora_fin')
-    estado = data.get('estado', 'disponible')
+    disponibilidad = data.get('disponibilidad', 'Disponible')
+    estado = data.get('estado', 'Activo')
 
     if not id_empleado or not fecha or not hora_inicio or not hora_fin:
         return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
 
-    resultado = Horario.crear(id_empleado, fecha, hora_inicio, hora_fin)
+    resultado = Horario.crear(id_empleado, fecha, hora_inicio, hora_fin, disponibilidad, estado)
     if 'success' in resultado:
         return jsonify({'success': True, 'message': 'Horario creado exitosamente'})
     else:

@@ -292,7 +292,15 @@ function cargarTiposRecursoEditar(selectedId = null) {
 }
 
 function confirmarEliminarRecurso(id_recurso) {
-    if (confirm('¿Está seguro que desea desactivar este recurso?')) {
+    // Mostrar el modal de confirmación
+    document.getElementById('modalEliminar').classList.add('show');
+
+    // Configurar el botón de confirmar eliminación
+    document.getElementById('btnConfirmarEliminar').onclick = function() {
+        // Ocultar el modal
+        document.getElementById('modalEliminar').classList.remove('show');
+
+        // Realizar la petición de eliminación
         fetch(`/admin/api/recursos/${id_recurso}`, {
             method: 'DELETE'
         })
@@ -309,7 +317,12 @@ function confirmarEliminarRecurso(id_recurso) {
             console.error('Error eliminando recurso:', error);
             alert('Error al desactivar el recurso');
         });
-    }
+    };
+
+    // Configurar el botón de cancelar
+    document.getElementById('btnCancelarEliminar').onclick = function() {
+        document.getElementById('modalEliminar').classList.remove('show');
+    };
 }
 
 // Event listener para el formulario de modificar recurso

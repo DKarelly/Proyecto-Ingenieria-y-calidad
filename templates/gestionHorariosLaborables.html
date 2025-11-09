@@ -159,87 +159,91 @@
 
   <!-- Modal Registrar Nuevo Horario -->
   <div id="modalRegistrarHorario" class="modal">
-    <div class="modal-content">
-      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-        <h2 class="text-2xl font-bold text-gray-800">
-          <i class="fas fa-calendar-days text-cyan-600 mr-2"></i>
-          Registrar Nuevo Horario
-        </h2>
-        <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+    <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+      <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold flex items-center">
+            <i class="fas fa-calendar-days text-white mr-3"></i>
+            Registrar Nuevo Horario
+          </h2>
+          <button class="close text-white hover:text-gray-200 text-3xl font-bold transition-colors">&times;</button>
+        </div>
       </div>
-      <form id="formRegistrarHorario" class="space-y-4">
+      <form id="formRegistrarHorario" class="p-8 space-y-6">
         <input type="hidden" id="idEmpleado" name="idEmpleado">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-user text-gray-500 mr-1"></i>
+              <i class="fas fa-user text-cyan-600 mr-2"></i>
               Nombre del Empleado
             </label>
             <input type="text" id="nombreEmpleado" name="nombreEmpleado" placeholder="Buscar empleado..."
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
             <small class="text-xs text-gray-500 mt-1">Escribe el nombre para filtrar y obtener el ID.</small>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-calendar text-gray-500 mr-1"></i>
+              <i class="fas fa-calendar text-cyan-600 mr-2"></i>
               Fecha
             </label>
             <input type="date" id="fecha" name="fecha"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-clock text-gray-500 mr-1"></i>
+              <i class="fas fa-clock text-cyan-600 mr-2"></i>
               Hora Inicio
             </label>
             <input type="time" id="horaInicio" name="horaInicio"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-clock text-gray-500 mr-1"></i>
+              <i class="fas fa-clock text-cyan-600 mr-2"></i>
               Hora Fin
             </label>
             <input type="time" id="horaFin" name="horaFin"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-check-circle text-gray-500 mr-1"></i>
+              <i class="fas fa-check-circle text-cyan-600 mr-2"></i>
               Disponibilidad
             </label>
             <select id="disponibilidad" name="disponibilidad"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option value="">Seleccionar</option>
-              <option>Disponible</option>
-              <option>No disponible</option>
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
+              <option value="" disabled selected>Seleccionar</option>
+              <option value="Disponible">Disponible</option>
+              <option value="Ocupado">Ocupado</option>
+              <option value="Completado">Completado</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+              <i class="fas fa-toggle-on text-cyan-600 mr-2"></i>
               Estado
             </label>
             <select id="estado" name="estado"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option value="">Seleccionar</option>
-              <option>Activo</option>
-              <option>Inactivo</option>
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
+              <option value="" disabled selected>Seleccionar</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
             </select>
           </div>
-
         </div>
-        <div class="flex gap-4 pt-4">
-          <button type="button"
-            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-            <i class="fas fa-times mr-2"></i>
-            Cancelar
-          </button>
-          <button type="submit"
-            class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-            <i class="fas fa-save mr-2"></i>
-            Guardar
-          </button>
+        <div class="bg-gray-50 px-6 py-4 rounded-lg mt-6">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
+            <button type="button" id="btnCancelarRegistrar"
+              class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors">
+              <i class="fas fa-times mr-2"></i>
+              Cancelar
+            </button>
+            <button type="submit"
+              class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
+              <i class="fas fa-save mr-2"></i>
+              Guardar
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -247,87 +251,91 @@
 
   <!-- Modal Modificar Horario -->
   <div id="modalModificarHorario" class="modal">
-    <div class="modal-content">
-      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-        <h2 class="text-2xl font-bold text-gray-800">
-          <i class="fas fa-calendar-pen text-blue-600 mr-2"></i>
-          Modificar Horario
-        </h2>
-        <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+    <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+      <div class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white p-6">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold flex items-center">
+            <i class="fas fa-calendar-pen text-white mr-3"></i>
+            Modificar Horario
+          </h2>
+          <button class="close text-white hover:text-gray-200 text-3xl font-bold transition-colors">&times;</button>
+        </div>
       </div>
-      <form id="formModificarHorario" class="space-y-4">
+      <form id="formModificarHorario" class="p-8 space-y-6">
         <input type="hidden" id="codigoHorario" name="codigoHorario">
         <input type="hidden" id="idEmpleadoMod" name="idEmpleadoMod">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-user text-gray-500 mr-1"></i>
+              <i class="fas fa-user text-cyan-600 mr-2"></i>
               Nombre del Empleado
             </label>
             <input type="text" id="nombreEmpleadoMod" name="nombreEmpleadoMod" value="Dr. Juan Pérez"
               placeholder="Buscar empleado..."
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
             <small class="text-xs text-gray-500 mt-1">Escribe el nombre para filtrar y obtener el ID.</small>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-calendar text-gray-500 mr-1"></i>
+              <i class="fas fa-calendar text-cyan-600 mr-2"></i>
               Fecha
             </label>
             <input type="date" id="fechaMod" name="fechaMod"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-clock text-gray-500 mr-1"></i>
+              <i class="fas fa-clock text-cyan-600 mr-2"></i>
               Hora Inicio
             </label>
             <input type="time" id="horaInicioMod" name="horaInicioMod" value="08:00"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-clock text-gray-500 mr-1"></i>
+              <i class="fas fa-clock text-cyan-600 mr-2"></i>
               Hora Fin
             </label>
             <input type="time" id="horaFinMod" name="horaFinMod" value="12:00"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-check-circle text-gray-500 mr-1"></i>
+              <i class="fas fa-check-circle text-cyan-600 mr-2"></i>
               Disponibilidad
             </label>
-            <select id="disponibilidadMod" name="disponibilidadMod"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option selected>Disponible</option>
-              <option>No disponible</option>
+            <select id="disponibilidadMod" name="disponibilidad"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
+              <option value="Disponible" selected>Disponible</option>
+              <option value="Ocupado">Ocupado</option>
+              <option value="Completado">Completado</option>
             </select>
           </div>
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2">
-              <i class="fas fa-toggle-on text-gray-500 mr-1"></i>
+              <i class="fas fa-toggle-on text-cyan-600 mr-2"></i>
               Estado
             </label>
             <select id="estadoMod" name="estadoMod"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500">
-              <option selected>Activo</option>
-              <option>Inactivo</option>
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors" required>
+              <option value="Activo" selected>Activo</option>
+              <option value="Inactivo">Inactivo</option>
             </select>
           </div>
-
         </div>
-        <div class="flex gap-4 pt-4">
-          <button type="button"
-            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-            <i class="fas fa-times mr-2"></i>
-            Cancelar
-          </button>
-          <button type="submit"
-            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-            <i class="fas fa-save mr-2"></i>
-            Guardar Cambios
-          </button>
+        <div class="bg-gray-50 px-6 py-4 rounded-lg mt-6">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
+            <button type="button" id="btnCancelarEditar"
+              class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors">
+              <i class="fas fa-times mr-2"></i>
+              Cancelar
+            </button>
+            <button type="submit"
+              class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
+              <i class="fas fa-save mr-2"></i>
+              Guardar Cambios
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -335,26 +343,30 @@
 
   <!-- Modal de confirmación de eliminación -->
   <div id="modalEliminar" class="modal">
-    <div class="modal-content max-w-md">
-      <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-        <h2 class="text-2xl font-bold text-gray-800">
-          <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-          Confirmar Eliminación
-        </h2>
-        <button class="close text-gray-400 hover:text-gray-600 text-2xl font-bold transition-colors">&times;</button>
+    <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+      <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6">
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold flex items-center">
+            <i class="fas fa-pause-circle text-white mr-3"></i>
+            Confirmar Desactivación
+          </h2>
+          <button class="close text-white hover:text-gray-200 text-3xl font-bold transition-colors">&times;</button>
+        </div>
       </div>
-      <p class="text-gray-600 mb-6">¿Está seguro que desea dar de baja este horario laboral?</p>
-      <div class="flex gap-4">
-        <button id="btnCancelarEliminar"
-          class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
-          <i class="fas fa-times mr-2"></i>
-          Cancelar
-        </button>
-        <button id="btnConfirmarEliminar"
-          class="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-md hover:shadow-lg">
-          <i class="fas fa-trash-alt mr-2"></i>
-          Eliminar
-        </button>
+      <div class="p-8 space-y-6">
+        <p class="text-gray-600 mb-6 text-center">¿Está seguro que desea dar de baja este horario laboral?</p>
+        <div class="bg-gray-50 px-6 py-4 rounded-lg mt-6">
+          <div class="flex flex-col sm:flex-row gap-3 justify-end">
+            <button id="btnCancelarEliminar" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors">
+              <i class="fas fa-times mr-2"></i>
+              Cancelar
+            </button>
+            <button id="btnConfirmarEliminar" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg">
+              <i class="fas fa-pause-circle mr-2"></i>
+              Desactivar
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

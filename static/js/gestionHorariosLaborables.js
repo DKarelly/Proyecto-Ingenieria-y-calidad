@@ -232,7 +232,8 @@ function registrarHorario() {
         fecha: formData.get('fecha'),
         hora_inicio: formData.get('horaInicio'),
         hora_fin: formData.get('horaFin'),
-        estado: formData.get('disponibilidad') === 'Disponible' ? 'disponible' : 'no_disponible'
+        disponibilidad: formData.get('disponibilidad'),
+        estado: formData.get('estado')
     };
 
     fetch('/admin/api/horarios', {
@@ -277,20 +278,27 @@ function editarHorario(idHorario) {
 
                 // Formatear horas para input time (HH:MM)
                 if (horario.hora_inicio) {
-                    const horaInicio = horario.hora_inicio.length >= 5 ? horario.hora_inicio.substring(0, 5) : horario.hora_inicio;
-                    document.getElementById('horaInicioMod').value = horaInicio;
+                    const timeStr = horario.hora_inicio.toString();
+                    const parts = timeStr.split(':');
+                    const formatted = parts.length >= 2 ? `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}` : timeStr;
+                    document.getElementById('horaInicioMod').value = formatted;
+                } else {
+                    document.getElementById('horaInicioMod').value = '';
                 }
                 if (horario.hora_fin) {
-                    const horaFin = horario.hora_fin.length >= 5 ? horario.hora_fin.substring(0, 5) : horario.hora_fin;
-                    document.getElementById('horaFinMod').value = horaFin;
+                    const timeStr = horario.hora_fin.toString();
+                    const parts = timeStr.split(':');
+                    const formatted = parts.length >= 2 ? `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}` : timeStr;
+                    document.getElementById('horaFinMod').value = formatted;
+                } else {
+                    document.getElementById('horaFinMod').value = '';
                 }
 
-                // Mapear estado a disponibilidad (disponible/no disponible)
-                const estadoHorario = (horario.estado || '').toLowerCase();
-                document.getElementById('disponibilidadMod').value = estadoHorario === 'disponible' ? 'Disponible' : 'No disponible';
+                // Set disponibilidad
+                document.getElementById('disponibilidadMod').value = horario.disponibilidad || 'Disponible';
 
-                // Estado del horario (activo/inactivo)
-                document.getElementById('estadoMod').value = estadoHorario === 'activo' || estadoHorario === 'disponible' ? 'Activo' : 'Inactivo';
+                // Set estado
+                document.getElementById('estadoMod').value = horario.estado || 'Activo';
 
                 // Guardar el ID del horario para la modificación
                 document.getElementById('formModificarHorario').dataset.idHorario = idHorario;
@@ -315,7 +323,8 @@ function modificarHorario() {
         fecha: formData.get('fechaMod'),
         hora_inicio: formData.get('horaInicioMod'),
         hora_fin: formData.get('horaFinMod'),
-        estado: formData.get('disponibilidadMod') === 'Disponible' ? 'disponible' : 'no_disponible'
+        disponibilidad: formData.get('disponibilidadMod'),
+        estado: formData.get('estadoMod')
     };
 
     fetch(`/admin/api/horarios/${idHorario}`, {
