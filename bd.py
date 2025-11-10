@@ -67,11 +67,11 @@ def inicializar_pool():
         try:
             connection_pool = SimpleConnectionPool(
                 pool_size=10,  # Número de conexiones en el pool
-                host='trolley.proxy.rlwy.net',
-                port=40902,
+                host='tramway.proxy.rlwy.net',
+                port=37865,
                 user='root',
-                password='EOFxUnNipaqUHGATGeTGjiOzlcdEvKwL',
-                db='CLINICA',
+                password='voVwDDOsuNzPptZwHFRJtQViYgiMHCZf',
+                db='bd_calidad',
                 charset='utf8mb4',
                 cursorclass=pymysql.cursors.DictCursor,
                 autocommit=False
@@ -98,11 +98,11 @@ def obtener_conexion():
     
     # Fallback: crear conexión directa si el pool falla
     return pymysql.connect(
-        host='trolley.proxy.rlwy.net',
-        port=40902,
+        host='tramway.proxy.rlwy.net',
+        port=37865,
         user='root',
-        password='EOFxUnNipaqUHGATGeTGjiOzlcdEvKwL',
-        db='CLINICA',
+        password='voVwDDOsuNzPptZwHFRJtQViYgiMHCZf',
+        db='bd_calidad',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
     )
