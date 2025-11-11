@@ -648,6 +648,12 @@
 
             console.log('[GenerarReserva] Buscando horarios para servicio:', id_servicio, 'médico:', id_empleado || 'todos');
 
+            // Resetear selección de horario
+            horarioSeleccionado = null;
+            horarioData = null;
+            resumenReserva.classList.add('hidden');
+            actualizarBotonCrear();
+
             // Mostrar loading
             horariosPlaceholder.classList.add('hidden');
             horariosVacio.classList.add('hidden');
@@ -655,14 +661,12 @@
             horariosLoading.classList.remove('hidden');
 
             try {
-                let url;
+                // SIEMPRE usar el endpoint que devuelve PROGRAMACION correctamente
+                let url = `/reservas/api/buscar-horarios-disponibles?id_servicio=${id_servicio}`;
                 
+                // Si hay médico seleccionado, agregar filtro
                 if (id_empleado) {
-                    // Buscar horarios de un médico específico usando la API de horarios semanales
-                    url = `/reservas/api/horarios-semana/${id_empleado}`;
-                } else {
-                    // Buscar horarios disponibles por servicio
-                    url = `/reservas/api/buscar-horarios-disponibles?id_servicio=${id_servicio}`;
+                    url += `&id_empleado=${id_empleado}`;
                 }
 
                 console.log('[GenerarReserva] Consultando:', url);
@@ -725,32 +729,38 @@
                     const horariosGrid = diaCard.querySelector('[data-fecha]');
 
                     horariosDelDia.forEach(h => {
+                        const esDisponible = h.estado_programacion === 'Disponible';
+                        
+                        console.log('>>> Horario:', h.hora_inicio, 'Estado:', h.estado_programacion, 'Disponible:', esDisponible);
+                        
                         const horarioBtn = document.createElement('button');
                         horarioBtn.type = 'button';
                         
-                        const esDisponible = (h.disponibilidad === 'Disponible' || h.disponible === true) && 
-                                           (h.estado === 'Activo' || !h.estado);
-                        
+                        // Estilos según disponibilidad
                         if (esDisponible) {
-                            horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-3 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all horario-card';
-                            horarioBtn.dataset.id = h.id_horario;
-                            horarioBtn.onclick = () => seleccionarHorario(horarioBtn, h);
+                            horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-3 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all horario-card cursor-pointer';
                         } else {
-                            horarioBtn.className = 'border-2 border-gray-200 bg-gray-100 rounded-lg p-3 text-sm text-gray-400 cursor-not-allowed';
+                            horarioBtn.className = 'border-2 border-gray-300 bg-gray-100 rounded-lg p-3 text-sm cursor-not-allowed opacity-60';
                             horarioBtn.disabled = true;
                         }
-
-                        const profesional = h.profesional || h.medico_nombre || 
-                                          (h.empleado_nombre ? h.empleado_nombre : '') ||
-                                          'Profesional disponible';
+                        
+                        const profesional = h.profesional || h.medico_nombre || 'Profesional disponible';
 
                         horarioBtn.innerHTML = `
-                            <div class="font-semibold text-gray-800">${h.hora_inicio} - ${h.hora_fin}</div>
-                            ${profesional !== 'Profesional disponible' ? `<div class="text-xs text-gray-600 mt-1">${profesional}</div>` : ''}
+                            <div class="font-semibold ${esDisponible ? 'text-gray-800' : 'text-gray-500'}">${h.hora_inicio} - ${h.hora_fin}</div>
+                            ${profesional !== 'Profesional disponible' ? `<div class="text-xs ${esDisponible ? 'text-gray-600' : 'text-gray-400'} mt-1">${profesional}</div>` : ''}
                             <div class="text-xs mt-1 ${esDisponible ? 'text-green-600' : 'text-red-500'}">
-                                ${esDisponible ? '✓ Disponible' : '✗ Ocupado'}
+                                <i class="fas ${esDisponible ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>${esDisponible ? 'Disponible' : 'Ocupado'}
                             </div>
                         `;
+                        
+                        // Solo asignar click si está disponible
+                        if (esDisponible) {
+                            horarioBtn.addEventListener('click', function() {
+                                console.log('>>> CLICK en horario disponible');
+                                seleccionarHorario(horarioBtn, h);
+                            });
+                        }
 
                         horariosGrid.appendChild(horarioBtn);
                     });
@@ -758,8 +768,15 @@
                     horariosContainer.appendChild(diaCard);
                 });
 
-                console.log('[GenerarReserva] ✓ Horarios renderizados correctamente');
-                mostrarNotificacion(`Se encontraron ${horarios.length} horarios disponibles`, 'success');
+                // Contar disponibles vs ocupados
+                const disponibles = horarios.filter(h => h.estado_programacion === 'Disponible').length;
+                const ocupados = horarios.length - disponibles;
+                const mensajeSemana = data.inicio_semana && data.fin_semana 
+                    ? ` (Semana: ${data.inicio_semana} al ${data.fin_semana})` 
+                    : '';
+
+                console.log('[GenerarReserva] ✓ Horarios renderizados:', disponibles, 'disponibles,', ocupados, 'ocupados');
+                mostrarNotificacion(`${disponibles} disponibles, ${ocupados} ocupados${mensajeSemana}`, 'success');
 
             } catch (err) {
                 console.error('[GenerarReserva] Error:', err);
@@ -769,36 +786,36 @@
             }
         }
 
-        // Función para seleccionar horario
+        // Función ULTRA SIMPLE para seleccionar horario
         function seleccionarHorario(elemento, data) {
-            // Remover selección anterior
+            console.log('CLICK - Data recibida:', data);
+            
+            // Validación simple
+            if (!data.id_programacion) {
+                console.error('FALTA id_programacion en:', data);
+                alert('Error: No se puede seleccionar este horario (falta id_programacion)');
+                return;
+            }
+            
+            // Limpiar selección anterior
             document.querySelectorAll('.horario-card').forEach(card => {
-                card.classList.remove('border-green-500', 'bg-green-50', 'ring-4', 'ring-green-300', 'shadow-lg', 'scale-105');
-                card.classList.add('border-gray-300');
+                card.style.border = '2px solid #D1D5DB';
+                card.style.backgroundColor = 'white';
             });
 
-            // Marcar seleccionado con animación y efectos visuales más evidentes
-            elemento.classList.remove('border-gray-300');
-            elemento.classList.add('border-green-500', 'bg-green-50', 'ring-4', 'ring-green-300', 'shadow-lg', 'scale-105');
+            // Marcar este
+            elemento.style.border = '4px solid #10B981';
+            elemento.style.backgroundColor = '#D1FAE5';
 
-            // Agregar icono de check al horario seleccionado
-            const existingCheck = elemento.querySelector('.selected-check');
-            if (!existingCheck) {
-                const checkIcon = document.createElement('div');
-                checkIcon.className = 'selected-check absolute top-1 right-1 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center';
-                checkIcon.innerHTML = '<i class="fas fa-check text-xs"></i>';
-                elemento.style.position = 'relative';
-                elemento.appendChild(checkIcon);
-            }
-
-            horarioSeleccionado = data.id_horario;
+            // Guardar
+            horarioSeleccionado = data.id_programacion;
             horarioData = data;
+            
+            console.log('✓ Seleccionado id_programacion:', horarioSeleccionado);
 
+            // Actualizar UI
             actualizarResumen();
             actualizarBotonCrear();
-            
-            // Scroll suave hacia el resumen
-            resumenReserva.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         // Actualizar resumen
@@ -825,10 +842,31 @@
 
         // Actualizar botón crear
         function actualizarBotonCrear() {
-            if (pacienteSeleccionado && horarioSeleccionado && servicioSelect.value) {
+            const tieneServicio = servicioSelect.value;
+            const tienePaciente = pacienteSeleccionado !== null;
+            const tieneHorario = horarioSeleccionado !== null;
+            
+            console.log('Actualizar botón:', {
+                tieneServicio,
+                tienePaciente, 
+                tieneHorario,
+                servicioValue: servicioSelect.value,
+                paciente: pacienteSeleccionado,
+                horario: horarioSeleccionado
+            });
+            
+            if (tienePaciente && tieneHorario && tieneServicio) {
                 btnCrearReserva.disabled = false;
+                btnCrearReserva.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnCrearReserva.classList.add('hover:bg-green-700');
+                // Asegurar que el HTML esté correcto
+                if (btnCrearReserva.innerHTML.includes('Creando')) {
+                    btnCrearReserva.innerHTML = '<i class="fas fa-check-circle mr-2 text-xl"></i><span class="text-lg">Crear Reserva</span>';
+                }
             } else {
                 btnCrearReserva.disabled = true;
+                btnCrearReserva.classList.add('opacity-50', 'cursor-not-allowed');
+                btnCrearReserva.classList.remove('hover:bg-green-700');
             }
         }
 
@@ -855,7 +893,7 @@
 
             const payload = {
                 id_paciente: pacienteSeleccionado.id_paciente,
-                id_horario: horarioSeleccionado,
+                id_programacion: horarioSeleccionado,
                 id_servicio: id_servicio
             };
 
