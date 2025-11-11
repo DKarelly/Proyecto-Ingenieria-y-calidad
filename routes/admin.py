@@ -654,11 +654,12 @@ def api_crear_programacion():
     hora_fin = data.get('hora_fin')
     id_servicio = data.get('id_servicio')
     id_horario = data.get('id_horario')
+    estado = data.get('estado', 'Disponible')
 
     if not fecha or not hora_inicio or not hora_fin or not id_servicio or not id_horario:
         return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
 
-    resultado = Programacion.crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario)
+    resultado = Programacion.crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario, estado)
     if 'success' in resultado:
         return jsonify({'success': True, 'message': 'Programación creada exitosamente'})
     else:
