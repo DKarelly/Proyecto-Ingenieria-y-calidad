@@ -440,13 +440,12 @@ def api_crear_horario():
     fecha = data.get('fecha')
     hora_inicio = data.get('hora_inicio')
     hora_fin = data.get('hora_fin')
-    disponibilidad = data.get('disponibilidad', 'Disponible')
-    estado = data.get('estado', 'Activo')
+    activo = data.get('activo', 1)
 
     if not id_empleado or not fecha or not hora_inicio or not hora_fin:
         return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
 
-    resultado = Horario.crear(id_empleado, fecha, hora_inicio, hora_fin, disponibilidad, estado)
+    resultado = Horario.crear(id_empleado, fecha, hora_inicio, hora_fin, activo)
     if 'success' in resultado:
         return jsonify({'success': True, 'message': 'Horario creado exitosamente'})
     else:
@@ -462,10 +461,10 @@ def api_actualizar_horario(id_horario):
     fecha = data.get('fecha')
     hora_inicio = data.get('hora_inicio')
     hora_fin = data.get('hora_fin')
-    estado = data.get('estado')
+    activo = data.get('activo', 1)
 
     resultado = Horario.actualizar(id_horario, fecha=fecha, hora_inicio=hora_inicio,
-                                  hora_fin=hora_fin, estado=estado)
+                                  hora_fin=hora_fin, activo=activo)
     if 'success' in resultado:
         return jsonify({'success': True, 'message': 'Horario actualizado exitosamente'})
     else:
@@ -497,7 +496,7 @@ def api_eliminar_horario(id_horario):
         return jsonify({'error': 'No autorizado'}), 401
 
     # Cambiar estado a inactivo en lugar de eliminar
-    resultado = Horario.actualizar_estado(id_horario, 'inactivo')
+    resultado = Horario.actualizar_estado(id_horario, 0)
     if 'success' in resultado:
         return jsonify({'success': True, 'message': 'Horario dado de baja exitosamente'})
     else:
@@ -655,11 +654,12 @@ def api_crear_programacion():
     hora_fin = data.get('hora_fin')
     id_servicio = data.get('id_servicio')
     id_horario = data.get('id_horario')
+    estado = data.get('estado', 'Disponible')
 
     if not fecha or not hora_inicio or not hora_fin or not id_servicio or not id_horario:
         return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
 
-    resultado = Programacion.crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario)
+    resultado = Programacion.crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario, estado)
     if 'success' in resultado:
         return jsonify({'success': True, 'message': 'Programación creada exitosamente'})
     else:

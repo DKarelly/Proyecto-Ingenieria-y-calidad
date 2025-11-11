@@ -20,8 +20,8 @@
     <meta http-equiv="Accept-CH" content="DPR, Viewport-Width, Width">
     <meta name="color-scheme" content="light dark">
     
-    <!-- Tailwind CSS (defer para no bloquear parseo) -->
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <!-- Tailwind CSS compilado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     
     {% block extra_css %}
     <!-- Swiper CSS -->

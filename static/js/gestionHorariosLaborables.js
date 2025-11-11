@@ -178,13 +178,9 @@ function crearFilaHorario(horario) {
     const horaInicio = horario.hora_inicio ? horario.hora_inicio.substring(0, 5) : '';
     const horaFin = horario.hora_fin ? horario.hora_fin.substring(0, 5) : '';
 
-    // Determinar estado de disponibilidad
-    const disponibilidad = (horario.disponibilidad || horario.estado || '').toLowerCase() === 'disponible' ? 'Disponible' : 'No disponible';
-    const claseDisponibilidad = (horario.disponibilidad || horario.estado || '').toLowerCase() === 'disponible' ? 'badge-disponible' : 'badge-no-disponible';
-
     // Determinar estado
-    const estado = (horario.estado || '').toLowerCase() === 'activo' ? 'Activo' : 'Inactivo';
-    const claseEstado = (horario.estado || '').toLowerCase() === 'activo' ? 'badge-activo' : 'badge-inactivo';
+    const estado = horario.activo == 1 ? 'Activo' : 'Inactivo';
+    const claseEstado = horario.activo == 1 ? 'badge-activo' : 'badge-inactivo';
 
     row.innerHTML = `
         <td class="px-6 py-4 text-sm text-gray-900 font-medium">${horario.id_empleado}</td>
@@ -232,8 +228,7 @@ function registrarHorario() {
         fecha: formData.get('fecha'),
         hora_inicio: formData.get('horaInicio'),
         hora_fin: formData.get('horaFin'),
-        disponibilidad: formData.get('disponibilidad'),
-        estado: formData.get('estado')
+        activo: formData.get('estado') === 'Activo' ? 1 : 0
     };
 
     fetch('/admin/api/horarios', {
@@ -294,11 +289,9 @@ function editarHorario(idHorario) {
                     document.getElementById('horaFinMod').value = '';
                 }
 
-                // Set disponibilidad
-                document.getElementById('disponibilidadMod').value = horario.disponibilidad || 'Disponible';
 
                 // Set estado
-                document.getElementById('estadoMod').value = horario.estado || 'Activo';
+                document.getElementById('estadoMod').value = horario.activo == 1 ? 'Activo' : 'Inactivo';
 
                 // Guardar el ID del horario para la modificación
                 document.getElementById('formModificarHorario').dataset.idHorario = idHorario;
@@ -323,8 +316,7 @@ function modificarHorario() {
         fecha: formData.get('fechaMod'),
         hora_inicio: formData.get('horaInicioMod'),
         hora_fin: formData.get('horaFinMod'),
-        disponibilidad: formData.get('disponibilidadMod'),
-        estado: formData.get('estadoMod')
+        activo: formData.get('estadoMod') === 'Activo' ? 1 : 0
     };
 
     fetch(`/admin/api/horarios/${idHorario}`, {

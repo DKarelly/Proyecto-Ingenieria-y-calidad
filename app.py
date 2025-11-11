@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, redirect, url_for, g, request
+from flask import Flask, render_template, session, redirect, url_for, g, request, send_from_directory
 import os
 from dotenv import load_dotenv
 
@@ -7,6 +7,15 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tu_clave_secreta_super_segura_aqui_12345')
+
+# OPTIMIZACIÓN: Deshabilitar caché en desarrollo
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 if app.debug else 31536000
+
+# OPTIMIZACIÓN: Servir archivos estáticos directamente sin pasar por before_request
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    """Servir archivos estáticos optimizados"""
+    return send_from_directory('static', filename, max_age=0 if app.debug else 31536000)
 
 # Inicializar pool de conexiones al arrancar la aplicación
 # Esto mejora el rendimiento al reutilizar conexiones
@@ -50,6 +59,10 @@ def home():
 # Cargar información del usuario completo en `g.user` antes de cada petición
 @app.before_request
 def load_logged_in_user():
+    # OPTIMIZACIÓN: No procesar archivos estáticos
+    if request.path.startswith('/static/'):
+        return
+    
     user_id = session.get('usuario_id')
     if user_id is None:
         g.user = None
@@ -127,4 +140,4 @@ def logout():
     return redirect(url_for('home'))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)

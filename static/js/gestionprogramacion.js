@@ -162,7 +162,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 hora_inicio: formData.get('horaInicio'),
                 hora_fin: formData.get('horaFin'),
                 id_servicio: formData.get('servicioProgramacion'),
-                id_horario: formData.get('idHorario')
+                id_horario: formData.get('idHorario'),
+                estado: formData.get('estadoProgramacion')
             };
 
             fetch('/admin/api/programaciones', {
@@ -402,8 +403,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/admin/api/horarios')
             .then(response => response.json())
             .then(data => {
-                // Filtrar por estado 'Activo'
-                let filteredData = data.filter(schedule => schedule.estado && schedule.estado.toLowerCase() === 'activo');
+                // Filtrar por activo = 1
+                let filteredData = data.filter(schedule => schedule.activo == 1);
 
                 if (employeeIdFilter) {
                     // Filtrar por ID de empleado específico
@@ -442,6 +443,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.getElementById(idEmpleadoField).value = schedule.id_empleado;
                         document.getElementById(nombreEmpleadoField).value = schedule.empleado || 'Nombre no disponible';
                         document.getElementById(idHorarioField).value = schedule.id_horario;
+                        // Cargar la fecha del horario seleccionado
+                        const fechaField = isEdit ? 'fechaProgramacionEdit' : 'fechaProgramacion';
+                        document.getElementById(fechaField).value = schedule.fecha;
                     });
                     row.innerHTML = `
                         <td class="px-4 py-2 text-sm text-gray-700">${schedule.id_empleado}</td>
@@ -667,7 +671,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Función para cargar y mostrar programaciones con filtros
+    // Función para renderizar la tabla de programaciones con datos paginados
+    function renderTablaProgramaciones(datosPagina) {
+        tablaBody.innerHTML = ''; // Limpiar tabla
+        datosPagina.forEach(prog => {
+            let badgeClass = 'badge-inactivo'; // default
+            if (prog.estado === 'Disponible') {
+                badgeClass = 'badge-activo';
+            } else if (prog.estado === 'Ocupado' || prog.estado === 'Bloqueado') {
+                badgeClass = 'badge-inactivo';
+            }
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 text-sm text-gray-700">${prog.id_programacion}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">${prog.fecha}</td>
+                <td class="px-6 py-4 text-sm text-gray-700 text-center">${prog.hora_inicio}</td>
+                <td class="px-6 py-4 text-sm text-gray-700 text-center">${prog.hora_fin}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">${prog.servicio || 'N/A'}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">${prog.tipo_servicio || 'N/A'}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">${prog.empleado || 'N/A'}</td>
+                <td class="px-6 py-4 text-center">
+                    <span class="${badgeClass} text-xs font-semibold px-2 py-1 rounded-full">${prog.estado}</span>
+                </td>
+                <td class="px-6 py-4 text-center text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="editarProgramacion('${prog.id_programacion}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="text-red-600 hover:text-red-900" onclick="eliminarProgramacion('${prog.id_programacion}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tablaBody.appendChild(row);
+        });
+    }
+
+    // Función para cargar y mostrar programaciones con filtros y paginación
     function loadProgramaciones() {
         // Obtener valores de filtros
         const filtroFecha = document.getElementById('filtroFecha').value;
@@ -689,30 +728,11 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                tablaBody.innerHTML = ''; // Limpiar tabla
-                data.forEach(prog => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 text-sm text-gray-700">${prog.id_programacion}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">${prog.fecha}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 text-center">${prog.hora_inicio}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 text-center">${prog.hora_fin}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">${prog.servicio || 'N/A'}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">${prog.tipo_servicio || 'N/A'}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700">${prog.empleado || 'N/A'}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="badge-${prog.estado.toLowerCase()} text-xs font-semibold px-2 py-1 rounded-full">${prog.estado}</span>
-                        </td>
-                        <td class="px-6 py-4 text-center text-sm font-medium">
-                            <button class="text-blue-600 hover:text-blue-900 mr-2" onclick="editarProgramacion('${prog.id_programacion}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="text-red-600 hover:text-red-900" onclick="eliminarProgramacion('${prog.id_programacion}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    tablaBody.appendChild(row);
+                // Inicializar paginación con 20 registros por página
+                inicializarPaginacion({
+                    datos: data,
+                    registrosPorPagina: 20,
+                    renderFuncion: renderTablaProgramaciones
                 });
             })
             .catch(error => console.error('Error cargando programaciones:', error));
@@ -779,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ estado: 'Inactiva' })
+                    body: JSON.stringify({ estado: 'Bloqueado' })
                 })
                 .then(response => response.json())
                 .then(result => {

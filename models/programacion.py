@@ -4,7 +4,7 @@ from datetime import date, time
 class Programacion:
     def __init__(self, id_programacion=None, fecha=None, hora_inicio=None,
                  hora_fin=None, id_servicio=None, id_empleado=None,
-                 id_horario=None, estado='Activo'):
+                 id_horario=None, estado='Disponible'):
         self.id_programacion = id_programacion
         self.fecha = fecha
         self.hora_inicio = hora_inicio
@@ -15,7 +15,7 @@ class Programacion:
         self.estado = estado
 
     @staticmethod
-    def crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario):
+    def crear(fecha, hora_inicio, hora_fin, id_servicio, id_horario, estado='Disponible'):
         """Crea una nueva programación"""
         conexion = obtener_conexion()
         try:
@@ -31,7 +31,7 @@ class Programacion:
                          id_servicio, id_horario, estado)
                          VALUES (%s, %s, %s, %s, %s, %s)"""
                 cursor.execute(sql, (fecha, hora_inicio, hora_fin, id_servicio,
-                                   id_horario, 'Activo'))
+                                   id_horario, estado))
                 conexion.commit()
                 return {'success': True, 'id_programacion': cursor.lastrowid}
         except Exception as e:

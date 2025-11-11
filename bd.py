@@ -2,9 +2,36 @@ import pymysql
 import logging
 from queue import Queue, Empty
 from threading import Lock
+from functools import lru_cache
+from datetime import datetime, timedelta
 
 # Configurar logging
 logging.basicConfig(level=logging.WARNING)
+
+# Cache simple para consultas frecuentes (5 minutos)
+_query_cache = {}
+_cache_timeout = timedelta(minutes=5)
+
+def cache_query(key, data):
+    """Guarda resultado en caché"""
+    _query_cache[key] = {
+        'data': data,
+        'timestamp': datetime.now()
+    }
+
+def get_cached_query(key):
+    """Obtiene resultado del caché si no ha expirado"""
+    if key in _query_cache:
+        cached = _query_cache[key]
+        if datetime.now() - cached['timestamp'] < _cache_timeout:
+            return cached['data']
+        else:
+            del _query_cache[key]
+    return None
+
+def clear_cache():
+    """Limpia el caché"""
+    _query_cache.clear()
 
 # Pool de conexiones simple para mejorar rendimiento
 class SimpleConnectionPool:
@@ -67,11 +94,11 @@ def inicializar_pool():
         try:
             connection_pool = SimpleConnectionPool(
                 pool_size=10,  # Número de conexiones en el pool
-                host='trolley.proxy.rlwy.net',
+                host='tramway.proxy.rlwy.net',
                 port=37865,
                 user='root',
                 password='voVwDDOsuNzPptZwHFRJtQViYgiMHCZf',
-                db='bd_clinica',
+                db='bd_calidad',
                 charset='utf8mb4',
                 cursorclass=pymysql.cursors.DictCursor,
                 autocommit=False
@@ -98,11 +125,11 @@ def obtener_conexion():
     
     # Fallback: crear conexión directa si el pool falla
     return pymysql.connect(
-        host='trolley.proxy.rlwy.net',
+        host='tramway.proxy.rlwy.net',
         port=37865,
         user='root',
         password='voVwDDOsuNzPptZwHFRJtQViYgiMHCZf',
-        db='bd_clinica',
+        db='bd_calidad',
         charset='utf8mb4',
         cursorclass=pymysql.cursors.DictCursor
     )

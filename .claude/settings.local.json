@@ -3,7 +3,9 @@
     "allow": [
       "Bash(python app.py:*)",
       "Bash(python insertar_reportes_prueba.py:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python insertar_horarios.py:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
