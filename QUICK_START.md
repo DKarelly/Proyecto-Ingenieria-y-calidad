@@ -2,7 +2,7 @@
 
 ## Inicio Rápido
 
-### 1. Compilar CSS (una vez)
+### 1. Compilar CSS (una vez hola)
 ```bash
 npm run build:css
 ```
