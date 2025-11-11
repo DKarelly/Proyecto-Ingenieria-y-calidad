@@ -1,12 +1,14 @@
-function inicializarPaginacion({ datos, registrosPorPagina = 10, renderFuncion }) {
+function inicializarPaginacion({ datos, registrosPorPagina = 10, renderFuncion, ids = {} }) {
     let paginaActual = 1;
     const totalRegistros = datos.length;
     const totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
 
-    const inicioRango = document.getElementById("inicio-rango");
-    const finRango = document.getElementById("fin-rango");
-    const totalSpan = document.getElementById("total-registros");
-    const contenedorPaginas = document.getElementById("paginacionNumeros");
+    const { inicioRango: inicioRangoId = "inicio-rango", finRango: finRangoId = "fin-rango", totalRegistros: totalRegistrosId = "total-registros", paginacionNumeros: paginacionNumerosId = "paginacionNumeros" } = ids;
+
+    const inicioRango = document.getElementById(inicioRangoId);
+    const finRango = document.getElementById(finRangoId);
+    const totalSpan = document.getElementById(totalRegistrosId);
+    const contenedorPaginas = document.getElementById(paginacionNumerosId);
 
     if (!inicioRango || !finRango || !totalSpan || !contenedorPaginas) {
         console.error("❌ Error: los elementos de paginación no existen en el HTML.");
