@@ -315,7 +315,7 @@
             especialidad_nombre: '',
             id_empleado: null,
             empleado_nombre: '',
-            id_horario: null,
+            id_programacion: null,
             fecha: '',
             hora_inicio: '',
             hora_fin: '',
@@ -426,9 +426,9 @@
                         this.disabled = true;
                         this.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
 
-                        // Preparar datos - NO incluir id_servicio para reserva de CITA
+                        // Preparar datos - Enviar id_programacion
                         const requestData = {
-                            id_horario: formData.id_horario
+                            id_programacion: formData.id_programacion
                         };
                         
                         // Solo incluir id_servicio si existe (para reserva de SERVICIO)
@@ -646,16 +646,28 @@
         // PASO 3: Cargar horarios de esta semana del médico seleccionado
         async function cargarHorariosSemanales(fechaInicio = null) {
             try {
-                console.log('[Paso3] Cargando horarios para médico ID:', formData.id_empleado, 'desde fecha:', fechaInicio || 'semana actual');
+                console.log('[Paso3] Cargando horarios para servicio ID:', formData.id_servicio, 'y empleado ID:', formData.id_empleado, 'desde fecha:', fechaInicio || 'semana actual');
                 
                 document.getElementById('medicoNombreHorario').textContent = formData.empleado_nombre;
                 
-                // Construir URL con parámetro de fecha si existe
-                let url = `/reservas/api/horarios-semana/${formData.id_empleado}`;
+                // Construir URL con el nuevo endpoint /api/buscar-horarios-disponibles
+                // FILTRAR SOLO CITAS (id_tipo_servicio=1)
+                let url = `/reservas/api/buscar-horarios-disponibles?`;
+                
+                const params = ['id_tipo_servicio=1']; // Solo citas
+                if (formData.id_servicio) {
+                    params.push(`id_servicio=${formData.id_servicio}`);
+                }
+                if (formData.id_empleado) {
+                    params.push(`id_empleado=${formData.id_empleado}`);
+                }
                 if (fechaInicio) {
-                    url += `?fecha_inicio=${fechaInicio}`;
+                    params.push(`fecha=${fechaInicio}`);
                 }
                 
+                url += params.join('&');
+                
+                console.log('[Paso3] URL:', url);
                 const response = await fetch(url);
                 const data = await response.json();
                 
@@ -681,18 +693,19 @@
                     const horariosPorFecha = {};
                     data.horarios.forEach(h => {
                         if (!horariosPorFecha[h.fecha]) {
-                            horariosPorFecha[h.fecha] = {
-                                dia_semana: h.dia_semana,
-                                horarios: []
-                            };
+                            horariosPorFecha[h.fecha] = [];
                         }
-                        horariosPorFecha[h.fecha].horarios.push(h);
+                        horariosPorFecha[h.fecha].push(h);
                     });
 
                     // Crear cards por día
                     Object.keys(horariosPorFecha).sort().forEach(fecha => {
-                        const info = horariosPorFecha[fecha];
+                        const horariosDelDia = horariosPorFecha[fecha];
                         const fechaObj = new Date(fecha + 'T00:00:00');
+                        
+                        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+                        const diaSemana = diasSemana[fechaObj.getDay()];
+                        
                         const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
                             day: '2-digit', 
                             month: 'long', 
@@ -706,7 +719,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 text-cyan-600">
                                     <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
                                 </svg>
-                                ${info.dia_semana}, ${fechaFormateada}
+                                ${diaSemana}, ${fechaFormateada}
                             </h4>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2" data-fecha="${fecha}">
                             </div>
@@ -714,13 +727,15 @@
                         
                         const horariosGrid = diaCard.querySelector('[data-fecha]');
                         
-                        info.horarios.forEach(h => {
+                        horariosDelDia.forEach(h => {
+                            const esDisponible = h.estado_programacion === 'Disponible';
+                            
                             const horarioBtn = document.createElement('button');
                             horarioBtn.type = 'button';
                             
-                            if (h.disponible) {
+                            if (esDisponible) {
                                 horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-2 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all';
-                                horarioBtn.onclick = () => seleccionarHorario(h.id_horario, fecha, h.hora_inicio, h.hora_fin, info.dia_semana, horarioBtn);
+                                horarioBtn.onclick = () => seleccionarHorario(h.id_programacion, fecha, h.hora_inicio, h.hora_fin, diaSemana, horarioBtn);
                             } else {
                                 horarioBtn.className = 'border-2 border-gray-200 bg-gray-100 rounded-lg p-2 text-sm text-gray-400 cursor-not-allowed';
                                 horarioBtn.disabled = true;
@@ -728,8 +743,8 @@
                             
                             horarioBtn.innerHTML = `
                                 <div class="font-semibold">${h.hora_inicio} - ${h.hora_fin}</div>
-                                <div class="text-xs ${h.disponible ? 'text-green-600' : 'text-red-500'}">
-                                    ${h.disponible ? '✓ Disponible' : '✗ No Disponible'}
+                                <div class="text-xs ${esDisponible ? 'text-green-600' : 'text-red-500'}">
+                                    ${esDisponible ? '✓ Disponible' : '✗ Ocupado'}
                                 </div>
                             `;
                             
@@ -739,7 +754,9 @@
                         container.appendChild(diaCard);
                     });
                     
-                    console.log('[Paso3] Cargados', data.horarios.length, 'horarios');
+                    const disponibles = data.horarios.filter(h => h.estado_programacion === 'Disponible').length;
+                    const ocupados = data.horarios.length - disponibles;
+                    console.log('[Paso3] Cargados', data.horarios.length, 'horarios:', disponibles, 'disponibles,', ocupados, 'ocupados');
                 } else {
                     noHorarios.classList.remove('hidden');
                     console.log('[Paso3] No hay horarios disponibles');
@@ -750,7 +767,7 @@
             }
         }
 
-        function seleccionarHorario(id, fecha, horaInicio, horaFin, diaSemana, elemento) {
+        function seleccionarHorario(id_programacion, fecha, horaInicio, horaFin, diaSemana, elemento) {
             // Remover selección previa en todos los horarios
             document.querySelectorAll('#horariosSemanales button').forEach(btn => {
                 if (!btn.disabled) {
@@ -763,13 +780,13 @@
             elemento.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-300');
             elemento.classList.remove('border-gray-300', 'bg-white');
 
-            formData.id_horario = id;
+            formData.id_programacion = id_programacion;
             formData.fecha = fecha;
             formData.hora_inicio = horaInicio;
             formData.hora_fin = horaFin;
             formData.dia_semana = diaSemana;
 
-            console.log('[Paso3] Horario seleccionado:', diaSemana, fecha, horaInicio, '-', horaFin);
+            console.log('[Paso3] Programación seleccionada:', id_programacion, diaSemana, fecha, horaInicio, '-', horaFin);
             document.getElementById('btn-step3-next').disabled = false;
         }
 
