@@ -550,41 +550,8 @@ document.addEventListener('keydown', event => {
     }
 });
 
-// ========== BÚSQUEDA DE EMPLEADOS ==========
-
-const searchEmpleadoInput = document.getElementById('search-empleado');
-const clearSearchEmpleado = document.getElementById('clear-search-empleado');
-const empleadoRows = document.querySelectorAll('.admin-table tbody tr');
-
-searchEmpleadoInput?.addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase().trim();
-
-    // Mostrar/ocultar botón de limpiar
-    if (searchTerm) {
-        clearSearchEmpleado?.classList.remove('hidden');
-    } else {
-        clearSearchEmpleado?.classList.add('hidden');
-    }
-
-    // Filtrar filas de la tabla
-    empleadoRows.forEach(row => {
-        if (row.querySelector('td[colspan]')) return; // Skip empty state row
-
-        const text = row.textContent.toLowerCase();
-        if (text.includes(searchTerm)) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-});
-
-// Limpiar búsqueda de empleados
-clearSearchEmpleado?.addEventListener('click', function() {
-    searchEmpleadoInput.value = '';
-    searchEmpleadoInput.dispatchEvent(new Event('input'));
-    searchEmpleadoInput.focus();
-});
+// ========== BÚSQUEDA DE EMPLEADOS (DESHABILITADO - Ahora se usa paginación dinámica) ==========
+// El código de búsqueda antiguo ha sido reemplazado por la paginación dinámica con API
 
 // ========== ELIMINAR EMPLEADO ==========
 
@@ -595,24 +562,299 @@ function eliminarEmpleado(idEmpleado, nombreCompleto) {
     if (!confirm(`¿Está seguro de eliminar al empleado ${nombreCompleto}?\n\nEsta acción desactivará la cuenta del empleado.`)) {
         return;
     }
+    
+    // Redirigir al endpoint que maneja la eliminación con tab=empleados
+    window.location.href = `/cuentas/eliminar-empleado/${idEmpleado}?tab=empleados`;
+}
 
-    fetch(`/cuentas/eliminar-empleado/${idEmpleado}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message || 'Empleado eliminado correctamente');
-            window.location.reload();
-        } else {
-            alert('Error: ' + (data.message || 'No se pudo eliminar el empleado'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al procesar la solicitud');
+// ========== PAGINACIÓN DINÁMICA SOLO CON NÚMEROS ========
+// Variables globales
+let paginaActual = 1;
+const registrosPorPagina = 20;
+let empleadosGlobal = []; // Guardar los empleados cargados
+
+function poblarTabla(empleados) {
+    const tbody = document.getElementById('tabla-empleados-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    empleadosGlobal = empleados; // Guardamos todos los empleados para paginar
+    if (!empleados || empleados.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="6" class="px-6 py-4 text-center text-gray-500">No se encontraron empleados</td>';
+        tbody.appendChild(tr);
+        actualizarPaginacion(0);
+        return;
+    }
+
+    // Calcular índices para la página actual
+    const totalRegistros = empleados.length;
+    const inicio = (paginaActual - 1) * registrosPorPagina;
+    const fin = Math.min(inicio + registrosPorPagina, totalRegistros);
+    const empleadosPagina = empleados.slice(inicio, fin);
+
+    empleadosPagina.forEach(empleado => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors';
+
+        tr.innerHTML = `
+            <td class="px-6 py-4 font-semibold text-slate-700">#${empleado.id_empleado}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                        <i class="fa-solid fa-user text-cyan-600"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-900">${empleado.nombres} ${empleado.apellidos}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">
+                <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
+                ${empleado.correo}
+            </td>
+            <td class="px-6 py-4">
+                <span class="admin-badge info inline-flex items-center">
+                    <i class="fa-solid fa-user-tag mr-1.5"></i>
+                    ${empleado.rol || 'Sin rol'}
+                </span>
+            </td>
+            <td class="px-6 py-4">
+                <span class="admin-badge success inline-flex items-center">
+                    <i class="fa-solid fa-circle-check mr-1.5"></i>
+                    Activo
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+                <div class="flex items-center justify-center gap-2">
+                    <a href="/cuentas/editar-empleado/${empleado.id_empleado}" 
+                       class="btn btn-outline text-cyan-600 hover:text-white hover:bg-cyan-500" 
+                       title="Editar">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                    <button onclick="eliminarEmpleado(${empleado.id_empleado}, '${empleado.nombres} ${empleado.apellidos}')" 
+                            class="btn btn-outline text-red-600 hover:text-white hover:bg-red-500" 
+                            title="Eliminar">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
+
+    // Actualizar paginación visual
+    actualizarPaginacion(totalRegistros);
+}
+
+function actualizarPaginacion(totalRegistros) {
+    const paginacionContainer = document.getElementById('paginacionNumeros');
+    const inicioRango = document.getElementById('inicio-rango');
+    const finRango = document.getElementById('fin-rango');
+    const totalRegistrosSpan = document.getElementById('total-registros');
+
+    const totalPaginas = Math.ceil(totalRegistros / registrosPorPagina);
+    paginacionContainer.innerHTML = '';
+
+    // Mostrar rango y total
+    const inicio = totalRegistros === 0 ? 0 : (paginaActual - 1) * registrosPorPagina + 1;
+    const fin = Math.min(paginaActual * registrosPorPagina, totalRegistros);
+    inicioRango.textContent = inicio;
+    finRango.textContent = fin;
+    totalRegistrosSpan.textContent = totalRegistros;
+
+    if (totalPaginas <= 1) return; // No mostrar si solo hay 1 página
+
+    // Limitar cantidad de botones visibles (ej. máx 6)
+    const maxVisible = 6;
+    let inicioPagina = Math.max(1, paginaActual - 2);
+    let finPagina = Math.min(totalPaginas, inicioPagina + maxVisible - 1);
+
+    if (finPagina - inicioPagina < maxVisible - 1) {
+        inicioPagina = Math.max(1, finPagina - maxVisible + 1);
+    }
+
+    // Crear botones de página
+    for (let i = inicioPagina; i <= finPagina; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
+            i === paginaActual
+                ? 'bg-cyan-600 text-white border-cyan-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+        }`;
+        btn.addEventListener('click', () => cambiarPagina(i));
+        paginacionContainer.appendChild(btn);
+    }
+
+    // Agregar "..." si hay más páginas
+    if (finPagina < totalPaginas) {
+        const span = document.createElement('span');
+        span.className = 'px-2 text-gray-500';
+        span.textContent = '...';
+        paginacionContainer.appendChild(span);
+
+        const ultimoBtn = document.createElement('button');
+        ultimoBtn.textContent = totalPaginas;
+        ultimoBtn.className =
+            'px-3 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-100';
+        ultimoBtn.addEventListener('click', () => cambiarPagina(totalPaginas));
+        paginacionContainer.appendChild(ultimoBtn);
+    }
+}
+
+function cambiarPagina(numeroPagina) {
+    paginaActual = numeroPagina;
+    poblarTabla(empleadosGlobal);
+}
+
+// ========== INICIALIZACIÓN ===========
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar empleados y pacientes al inicializar la página
+    cargarEmpleados();
+    cargarPacientes();
+});
+
+async function cargarEmpleados() {
+    try {
+        const response = await fetch('/cuentas/api/empleados');
+        const empleados = await response.json();
+        poblarTabla(empleados);
+    } catch (error) {
+        console.error('Error al cargar empleados:', error);
+    }
+}
+
+// ========== PAGINACIÓN PARA PACIENTES ==========
+let paginaActualPacientes = 1;
+const registrosPorPaginaPacientes = 20;
+let pacientesGlobal = []; // Guardar los pacientes cargados
+
+function poblarTablaPacientes(pacientes) {
+    const tbody = document.getElementById('tabla-pacientes-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    pacientesGlobal = pacientes; // Guardamos todos los pacientes para paginar
+    if (!pacientes || pacientes.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="6" class="px-6 py-4 text-center text-gray-500">No se encontraron pacientes</td>';
+        tbody.appendChild(tr);
+        actualizarPaginacionPacientes(0);
+        return;
+    }
+
+    // Calcular índices para la página actual
+    const totalRegistros = pacientes.length;
+    const inicio = (paginaActualPacientes - 1) * registrosPorPaginaPacientes;
+    const fin = Math.min(inicio + registrosPorPaginaPacientes, totalRegistros);
+    const pacientesPagina = pacientes.slice(inicio, fin);
+
+    pacientesPagina.forEach(paciente => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition-colors';
+
+        tr.innerHTML = `
+            <td class="px-6 py-4 font-semibold text-slate-700">#${paciente.id_paciente}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <i class="fa-solid fa-user-injured text-blue-600"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-900">${paciente.nombres} ${paciente.apellidos}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">
+                <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
+                ${paciente.correo || 'N/A'}
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">
+                <i class="fa-solid fa-id-card text-slate-400 mr-2"></i>
+                ${paciente.documento_identidad || 'N/A'}
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">
+                <i class="fa-solid fa-phone text-slate-400 mr-2"></i>
+                ${paciente.telefono || 'N/A'}
+            </td>
+            <td class="px-6 py-4">
+                <span class="admin-badge success inline-flex items-center">
+                    <i class="fa-solid fa-circle-check mr-1.5"></i>
+                    Activo
+                </span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Actualizar paginación visual
+    actualizarPaginacionPacientes(totalRegistros);
+}
+
+function actualizarPaginacionPacientes(totalRegistros) {
+    const paginacionContainer = document.getElementById('paginacionNumeros-pacientes');
+    const inicioRango = document.getElementById('inicio-rango-pacientes');
+    const finRango = document.getElementById('fin-rango-pacientes');
+    const totalRegistrosSpan = document.getElementById('total-registros-pacientes');
+
+    const totalPaginas = Math.ceil(totalRegistros / registrosPorPaginaPacientes);
+    paginacionContainer.innerHTML = '';
+
+    // Mostrar rango y total
+    const inicio = totalRegistros === 0 ? 0 : (paginaActualPacientes - 1) * registrosPorPaginaPacientes + 1;
+    const fin = Math.min(paginaActualPacientes * registrosPorPaginaPacientes, totalRegistros);
+    inicioRango.textContent = inicio;
+    finRango.textContent = fin;
+    totalRegistrosSpan.textContent = totalRegistros;
+
+    if (totalPaginas <= 1) return; // No mostrar si solo hay 1 página
+
+    // Limitar cantidad de botones visibles (ej. máx 6)
+    const maxVisible = 6;
+    let inicioPagina = Math.max(1, paginaActualPacientes - 2);
+    let finPagina = Math.min(totalPaginas, inicioPagina + maxVisible - 1);
+
+    if (finPagina - inicioPagina < maxVisible - 1) {
+        inicioPagina = Math.max(1, finPagina - maxVisible + 1);
+    }
+
+    // Crear botones de página
+    for (let i = inicioPagina; i <= finPagina; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        btn.className = `px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
+            i === paginaActualPacientes
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+        }`;
+        btn.addEventListener('click', () => cambiarPaginaPacientes(i));
+        paginacionContainer.appendChild(btn);
+    }
+
+    // Agregar "..." si hay más páginas
+    if (finPagina < totalPaginas) {
+        const span = document.createElement('span');
+        span.className = 'px-2 text-gray-500';
+        span.textContent = '...';
+        paginacionContainer.appendChild(span);
+
+        const ultimoBtn = document.createElement('button');
+        ultimoBtn.textContent = totalPaginas;
+        ultimoBtn.className =
+            'px-3 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-100';
+        ultimoBtn.addEventListener('click', () => cambiarPaginaPacientes(totalPaginas));
+        paginacionContainer.appendChild(ultimoBtn);
+    }
+}
+
+function cambiarPaginaPacientes(numeroPagina) {
+    paginaActualPacientes = numeroPagina;
+    poblarTablaPacientes(pacientesGlobal);
+}
+
+async function cargarPacientes() {
+    try {
+        const response = await fetch('/cuentas/api/pacientes');
+        const pacientes = await response.json();
+        poblarTablaPacientes(pacientes);
+    } catch (error) {
+        console.error('Error al cargar pacientes:', error);
+    }
 }

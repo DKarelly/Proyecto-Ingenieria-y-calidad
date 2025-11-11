@@ -208,7 +208,8 @@ def api_recientes():
                     'hora_envio': hora_str,
                     'fecha_creacion': fecha_creacion,
                     'leida': bool(r.get('leida', False)),
-                    'estado_reserva': r.get('estado_reserva')  # Incluir estado para colorear
+                    'estado_reserva': r.get('estado_reserva'),  # Incluir estado para colorear
+                    'id_reserva': r.get('id_reserva')  # Incluir id_reserva para redirección
                 })
 
             # Additionally return a total count (total available notifications up to today)

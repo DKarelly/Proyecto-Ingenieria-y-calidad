@@ -254,29 +254,55 @@ async function cargarEmpleados() {
     try {
         const response = await fetch('/seguridad/api/empleados');
         if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
+            console.warn(`HTTP ${response.status} al cargar empleados, pero continuando...`);
+            // No lanzar error, solo advertencia
         }
-        const data = await response.json();
+        
+        let data = [];
+        try {
+            data = await response.json();
+        } catch (e) {
+            console.warn('Error al parsear JSON de empleados:', e);
+            data = [];
+        }
 
         // Validar que los datos sean un array
         if (!Array.isArray(data)) {
-            console.error('Los datos de empleados no son un array:', data);
-            throw new Error('Formato de datos de empleados inválido');
+            console.warn('Los datos de empleados no son un array:', typeof data);
+            // Si es un objeto con propiedad array, intentar extraerlo
+            if (data && typeof data === 'object') {
+                if (data.empleados && Array.isArray(data.empleados)) {
+                    data = data.empleados;
+                } else if (data.data && Array.isArray(data.data)) {
+                    data = data.data;
+                } else {
+                    data = [];
+                }
+            } else {
+                data = [];
+            }
         }
 
-        // Filtrar empleados válidos
-        empleadosData = data.filter(emp => emp && emp.id_empleado);
+        // Filtrar empleados válidos y agregar nombre_completo
+        empleadosData = data.filter(emp => emp && emp.id_empleado).map(emp => {
+            // Asegurar que tenga nombre_completo
+            if (!emp.nombre_completo && (emp.nombres || emp.apellidos)) {
+                emp.nombre_completo = `${emp.nombres || ''} ${emp.apellidos || ''}`.trim();
+            }
+            return emp;
+        });
 
         if (empleadosData.length !== data.length) {
-            console.warn(`Se filtraron ${data.length - empleadosData.length} empleados inválidos`);
+            console.info(`Se filtraron ${data.length - empleadosData.length} empleados inválidos`);
         }
 
-        if (!empleadosData || empleadosData.length === 0) {
-            mostrarNotificacion('No hay empleados disponibles para asignar', 'warning');
+        console.log(`✓ ${empleadosData.length} empleados cargados correctamente`);
+        
+        if (empleadosData.length === 0) {
+            console.warn('No hay empleados disponibles');
         }
     } catch (error) {
         console.error('Error al cargar empleados:', error);
-        mostrarNotificacion('Error al cargar los empleados. Por favor, intente nuevamente.', 'error');
         empleadosData = [];
     }
 }
@@ -311,8 +337,17 @@ function mostrarEmpleados(empleadosFiltrados = null) {
             return;
         }
 
-        // Asegurarse de que nombre_completo existe
-        const nombreCompleto = empleado.nombre_completo || `Empleado #${empleado.id_empleado}`;
+        // CORRECCIÓN: Construir nombre_completo de forma segura
+        let nombreCompleto = '';
+        if (empleado.nombre_completo) {
+            nombreCompleto = empleado.nombre_completo;
+        } else if (empleado.nombres || empleado.apellidos) {
+            const nombres = empleado.nombres || '';
+            const apellidos = empleado.apellidos || '';
+            nombreCompleto = `${nombres} ${apellidos}`.trim();
+        } else {
+            nombreCompleto = `Empleado #${empleado.id_empleado}`;
+        }
 
         const empleadoDiv = document.createElement('div');
         empleadoDiv.className = 'empleado-item px-4 py-3 hover:bg-cyan-50 cursor-pointer transition-colors border-b border-gray-200 last:border-b-0';
@@ -453,8 +488,17 @@ function seleccionarEmpleado(empleado) {
     
     empleadoSeleccionado = empleado;
 
-    // Obtener el nombre completo del empleado
-    const nombreCompleto = empleado.nombre_completo || `Empleado #${empleado.id_empleado}`;
+    // CORRECCIÓN: Construir nombre_completo de forma segura
+    let nombreCompleto = '';
+    if (empleado.nombre_completo) {
+        nombreCompleto = empleado.nombre_completo;
+    } else if (empleado.nombres || empleado.apellidos) {
+        const nombres = empleado.nombres || '';
+        const apellidos = empleado.apellidos || '';
+        nombreCompleto = `${nombres} ${apellidos}`.trim();
+    } else {
+        nombreCompleto = `Empleado #${empleado.id_empleado}`;
+    }
 
     // Mostrar empleado seleccionado
     const empleadoSeleccionadoNombre = document.getElementById('empleadoSeleccionadoNombre');
@@ -491,8 +535,18 @@ async function confirmarAsignacion() {
         return;
     }
 
-    // Obtener nombre completo del empleado
-    const nombreEmpleado = empleadoSeleccionado.nombre_completo || `Empleado #${empleadoSeleccionado.id_empleado}`;
+    // CORRECCIÓN: Construir nombre completo de forma segura
+    let nombreEmpleado = '';
+    if (empleadoSeleccionado.nombre_completo) {
+        nombreEmpleado = empleadoSeleccionado.nombre_completo;
+    } else if (empleadoSeleccionado.nombres || empleadoSeleccionado.apellidos) {
+        const nombres = empleadoSeleccionado.nombres || '';
+        const apellidos = empleadoSeleccionado.apellidos || '';
+        nombreEmpleado = `${nombres} ${apellidos}`.trim();
+    } else {
+        nombreEmpleado = `Empleado #${empleadoSeleccionado.id_empleado}`;
+    }
+    
     const incidenciaId = incidenciaSeleccionada.id_incidencia;
     const incidenciaPrioridad = incidenciaSeleccionada.prioridad || 'Media';
 

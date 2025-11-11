@@ -30,13 +30,18 @@ class Paciente:
                 return {'success': True, 'id_paciente': cursor.lastrowid}
         except Exception as e:
             conexion.rollback()
+            # Detectar error de duplicación de DNI
+            error_msg = str(e)
+            if '1062' in error_msg and 'documento_identidad' in error_msg:
+                return {'error': f'El documento de identidad {documento_identidad} ya está registrado en el sistema'}
             return {'error': str(e)}
         finally:
             conexion.close()
 
     @staticmethod
+    @staticmethod
     def obtener_todos():
-        """Obtiene todos los pacientes (activos e inactivos)"""
+        """Obtiene todos los pacientes activos"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -51,6 +56,7 @@ class Paciente:
                     LEFT JOIN DISTRITO d ON p.id_distrito = d.id_distrito
                     LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
                     LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
+                    WHERE u.estado = 'activo'
                     ORDER BY p.apellidos, p.nombres
                 """
                 cursor.execute(sql)

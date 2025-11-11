@@ -14,88 +14,64 @@ medico_bp = Blueprint('medico', __name__, url_prefix='/medico')
 # Funciones auxiliares para obtener datos
 def obtener_estadisticas_medico(id_empleado):
     """
-    Obtiene las estadísticas del médico desde la base de datos
-    Navega a través de CITA -> RESERVA -> PROGRAMACION -> HORARIO -> EMPLEADO
+    Obtiene las estadísticas del médico con una sola consulta optimizada
     """
     conexion = None
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # Citas de hoy
+        # OPTIMIZACIÓN: Una sola consulta con SUBQUERYs en SELECT para todas las estadísticas
         cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            WHERE h.id_empleado = %s
-            AND c.fecha_cita = CURDATE()
-        """, (id_empleado,))
-        citas_hoy = cursor.fetchone()['total']
+            SELECT 
+                (SELECT COUNT(*) 
+                 FROM CITA c
+                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                 INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                 WHERE h.id_empleado = %s AND c.fecha_cita = CURDATE()) as citas_hoy,
+                
+                (SELECT COUNT(*) 
+                 FROM CITA c
+                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                 INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                 WHERE h.id_empleado = %s AND c.fecha_cita = CURDATE() AND c.estado = 'Pendiente') as citas_pendientes,
+                
+                (SELECT COUNT(*) 
+                 FROM CITA c
+                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                 INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                 WHERE h.id_empleado = %s AND c.fecha_cita = CURDATE() AND c.estado = 'Completada') as citas_completadas,
+                
+                (SELECT COUNT(DISTINCT r.id_paciente)
+                 FROM CITA c
+                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                 INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                 WHERE h.id_empleado = %s AND YEARWEEK(c.fecha_cita, 1) = YEARWEEK(CURDATE(), 1)) as pacientes_semana,
+                
+                (SELECT COUNT(*) 
+                 FROM CITA c
+                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                 INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                 WHERE h.id_empleado = %s AND c.estado = 'Pendiente') as diagnosticos_pendientes
+        """, (id_empleado, id_empleado, id_empleado, id_empleado, id_empleado))
         
-        # Citas pendientes hoy
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            WHERE h.id_empleado = %s
-            AND c.fecha_cita = CURDATE()
-            AND c.estado = 'Pendiente'
-        """, (id_empleado,))
-        citas_pendientes = cursor.fetchone()['total']
-        
-        # Citas completadas hoy
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            WHERE h.id_empleado = %s
-            AND c.fecha_cita = CURDATE()
-            AND c.estado = 'Completada'
-        """, (id_empleado,))
-        citas_completadas = cursor.fetchone()['total']
-        
-        # Pacientes atendidos esta semana
-        cursor.execute("""
-            SELECT COUNT(DISTINCT r.id_paciente) as total
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            WHERE h.id_empleado = %s
-            AND YEARWEEK(c.fecha_cita, 1) = YEARWEEK(CURDATE(), 1)
-        """, (id_empleado,))
-        pacientes_semana = cursor.fetchone()['total']
-        
-        # Diagnósticos pendientes (citas sin diagnóstico)
-        cursor.execute("""
-            SELECT COUNT(*) as total
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            WHERE h.id_empleado = %s
-            AND c.estado = 'Pendiente'
-        """, (id_empleado,))
-        diagnosticos_pendientes = cursor.fetchone()['total']
+        result = cursor.fetchone()
         
         return {
-            'citas_hoy': citas_hoy,
-            'citas_pendientes': citas_pendientes,
-            'citas_completadas': citas_completadas,
-            'pacientes_semana': pacientes_semana,
-            'diagnosticos_pendientes': diagnosticos_pendientes
+            'citas_hoy': result['citas_hoy'],
+            'citas_pendientes': result['citas_pendientes'],
+            'citas_completadas': result['citas_completadas'],
+            'pacientes_semana': result['pacientes_semana'],
+            'diagnosticos_pendientes': result['diagnosticos_pendientes']
         }
         
     except Exception as e:
         print(f"Error al obtener estadísticas: {e}")
-        import traceback
-        traceback.print_exc()
         return {
             'citas_hoy': 0,
             'citas_pendientes': 0,
@@ -110,29 +86,28 @@ def obtener_estadisticas_medico(id_empleado):
 
 def obtener_citas_hoy(id_empleado):
     """
-    Obtiene las citas del día actual del médico
+    Obtiene las citas del día actual del médico (OPTIMIZADO)
     """
     conexion = None
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # Obtener citas de hoy con información del paciente
+        # OPTIMIZACIÓN: Usar STRAIGHT_JOIN para forzar orden óptimo de JOINs
         cursor.execute("""
-            SELECT 
+            SELECT STRAIGHT_JOIN
                 c.id_cita,
                 c.estado,
-                c.fecha_cita,
                 c.hora_inicio,
                 c.hora_fin,
                 p.nombres,
                 p.apellidos,
                 s.nombre as tipo_servicio
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            FROM HORARIO h
+            INNER JOIN PROGRAMACION prog ON h.id_horario = prog.id_horario
+            INNER JOIN RESERVA r ON prog.id_programacion = r.id_programacion
+            INNER JOIN CITA c ON r.id_reserva = c.id_reserva
             INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
             LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
             WHERE h.id_empleado = %s
             AND c.fecha_cita = CURDATE()
@@ -187,7 +162,7 @@ def obtener_citas_hoy(id_empleado):
 
 def obtener_horarios_medico(id_empleado):
     """
-    Obtiene los horarios del médico desde la tabla HORARIO organizados por día de la semana
+    Obtiene los horarios del médico (OPTIMIZADO - índice en id_empleado, activo, fecha)
     """
     from datetime import datetime, timedelta
     
@@ -201,11 +176,9 @@ def obtener_horarios_medico(id_empleado):
         inicio_semana = hoy - timedelta(days=hoy.weekday())
         fin_semana = inicio_semana + timedelta(days=6)
         
-        print(f"DEBUG - ID Empleado: {id_empleado}")
-        print(f"DEBUG - Semana actual: {inicio_semana.date()} a {fin_semana.date()}")
-        
+        # OPTIMIZACIÓN: Query más simple, filtrado directo por índice
         cursor.execute("""
-            SELECT fecha, hora_inicio, hora_fin, activo
+            SELECT fecha, hora_inicio, hora_fin
             FROM HORARIO
             WHERE id_empleado = %s 
             AND activo = 1
@@ -214,10 +187,8 @@ def obtener_horarios_medico(id_empleado):
         """, (id_empleado, inicio_semana.date(), fin_semana.date()))
         
         horarios = cursor.fetchall()
-        print(f"DEBUG - Horarios encontrados: {len(horarios)}")
-        print(f"DEBUG - Datos horarios: {horarios[:3] if horarios else 'Ninguno'}")
         
-        # Organizar horarios por día de la semana
+        # OPTIMIZACIÓN: Organizar horarios por día de la semana
         horarios_por_dia = {}
         for horario in horarios:
             # Obtener valores del diccionario
@@ -256,14 +227,25 @@ def obtener_horarios_medico(id_empleado):
                 'hora_fin': hora_fin
             })
         
-        print(f"DEBUG - Horarios organizados: {horarios_por_dia}")
-        return horarios_por_dia
+        # OPTIMIZACIÓN: Pre-calcular horas min/max aquí en lugar del template
+        hora_min = 23
+        hora_max = 0
+        for dia_data in horarios_por_dia.values():
+            for bloque in dia_data['bloques']:
+                if bloque['hora_inicio'].hour < hora_min:
+                    hora_min = bloque['hora_inicio'].hour
+                if bloque['hora_fin'].hour > hora_max:
+                    hora_max = bloque['hora_fin'].hour
+        
+        return {
+            'horarios': horarios_por_dia,
+            'hora_min': hora_min if horarios_por_dia else 8,
+            'hora_max': hora_max if horarios_por_dia else 18
+        }
         
     except Exception as e:
         print(f"Error al obtener horarios: {e}")
-        import traceback
-        traceback.print_exc()
-        return {}
+        return {'horarios': {}, 'hora_min': 8, 'hora_max': 18}
     finally:
         if conexion:
             conexion.close()
@@ -271,7 +253,7 @@ def obtener_horarios_medico(id_empleado):
 
 def obtener_citas_semana(id_empleado):
     """
-    Obtiene las citas/reservas del médico para la semana actual
+    Obtiene las citas del médico para la semana actual (OPTIMIZADO)
     """
     conexion = None
     try:
@@ -283,8 +265,9 @@ def obtener_citas_semana(id_empleado):
         inicio_semana = hoy - timedelta(days=hoy.weekday())
         fin_semana = inicio_semana + timedelta(days=6)
         
+        # OPTIMIZACIÓN: Iniciar desde HORARIO (tabla más pequeña filtrada por id_empleado)
         cursor.execute("""
-            SELECT 
+            SELECT STRAIGHT_JOIN
                 c.id_cita,
                 c.fecha_cita,
                 c.hora_inicio,
@@ -293,11 +276,11 @@ def obtener_citas_semana(id_empleado):
                 p.nombres,
                 p.apellidos,
                 s.nombre as tipo_servicio
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            FROM HORARIO h
+            INNER JOIN PROGRAMACION prog ON h.id_horario = prog.id_horario
+            INNER JOIN RESERVA r ON prog.id_programacion = r.id_programacion
+            INNER JOIN CITA c ON r.id_reserva = c.id_reserva
             INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
             LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
             WHERE h.id_empleado = %s
             AND c.fecha_cita BETWEEN %s AND %s
@@ -307,7 +290,7 @@ def obtener_citas_semana(id_empleado):
         
         citas = cursor.fetchall()
         
-        # Organizar citas por día y hora - CADA CITA SE COLOCA EN TODAS LAS HORAS QUE OCUPA
+        # OPTIMIZACIÓN: Pre-calcular y organizar citas con información completa
         citas_calendario = {}
         for cita in citas:
             fecha = cita['fecha_cita']
@@ -325,43 +308,34 @@ def obtener_citas_semana(id_empleado):
             else:
                 hora_fin = cita['hora_fin']
             
-            # Calcular duración en horas (redondeado hacia arriba)
-            hora_inicio_num = hora_inicio.hour + hora_inicio.minute / 60
-            hora_fin_num = hora_fin.hour + hora_fin.minute / 60
-            duracion_horas = hora_fin_num - hora_inicio_num
+            # OPTIMIZACIÓN: Pre-calcular toda la info de la cita aquí
+            duracion_horas = (hora_fin.hour - hora_inicio.hour) + (hora_fin.minute - hora_inicio.minute) / 60
+            altura_px = int(duracion_horas * 80) - 8  # Pre-calcular altura en píxeles
             
-            # Agregar la cita a TODAS las horas que ocupa
-            hora_actual = hora_inicio.hour
-            hora_final = hora_fin.hour
+            # Solo agregar en la hora de inicio (más eficiente)
+            clave = f"{dia_semana}_{hora_inicio.hour}"
             
-            # Si la cita termina a las XX:00 exactas, no incluir esa hora
-            if hora_fin.minute == 0:
-                hora_final = hora_fin.hour - 1
+            if clave not in citas_calendario:
+                citas_calendario[clave] = []
             
-            while hora_actual <= hora_final:
-                clave = f"{dia_semana}_{hora_actual}"
-                
-                if clave not in citas_calendario:
-                    citas_calendario[clave] = []
-                
-                # Solo agregar una vez por hora (evitar duplicados)
-                cita_info = {
-                    'id': cita['id_cita'],
-                    'paciente': f"{cita['nombres']} {cita['apellidos']}",
-                    'hora_inicio': hora_inicio,
-                    'hora_fin': hora_fin,
-                    'duracion_horas': duracion_horas,
-                    'tipo': cita['tipo_servicio'] if cita['tipo_servicio'] else 'Consulta',
-                    'estado': cita['estado'],
-                    'es_hora_inicio': (hora_actual == hora_inicio.hour)  # Marcar si es la primera hora
-                }
-                
-                # Verificar si esta cita ya está en esta hora (evitar duplicados)
-                ya_existe = any(c['id'] == cita_info['id'] for c in citas_calendario[clave])
-                if not ya_existe:
-                    citas_calendario[clave].append(cita_info)
-                
-                hora_actual += 1
+            # Color según estado (pre-calculado)
+            if cita['estado'] == 'Pendiente':
+                color = '#f59e0b'
+            elif cita['estado'] == 'Confirmada':
+                color = '#3b82f6'
+            else:
+                color = '#10b981'
+            
+            citas_calendario[clave].append({
+                'id': cita['id_cita'],
+                'paciente': f"{cita['nombres']} {cita['apellidos']}",
+                'hora_inicio_str': hora_inicio.strftime('%H:%M'),
+                'hora_fin_str': hora_fin.strftime('%H:%M'),
+                'tipo': cita['tipo_servicio'] if cita['tipo_servicio'] else 'Consulta',
+                'estado': cita['estado'],
+                'altura': altura_px,
+                'color': color
+            })
         
         return citas_calendario
         
@@ -377,31 +351,32 @@ def obtener_citas_semana(id_empleado):
 
 def obtener_mis_pacientes(id_empleado):
     """
-    Obtiene la lista de pacientes únicos que han tenido citas con este médico
+    Obtiene pacientes únicos del médico (OPTIMIZADO)
     """
     conexion = None
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
+        # OPTIMIZACIÓN: Empezar desde HORARIO filtrado, usar STRAIGHT_JOIN
         cursor.execute("""
-            SELECT DISTINCT
+            SELECT STRAIGHT_JOIN
                 p.id_paciente,
                 p.nombres,
                 p.apellidos,
                 p.documento_identidad,
                 p.fecha_nacimiento,
                 MAX(c.fecha_cita) as ultima_cita,
-                COUNT(c.id_cita) as total_citas
-            FROM PACIENTE p
-            INNER JOIN RESERVA r ON p.id_paciente = r.id_paciente
+                COUNT(DISTINCT c.id_cita) as total_citas
+            FROM HORARIO h
+            INNER JOIN PROGRAMACION prog ON h.id_horario = prog.id_horario
+            INNER JOIN RESERVA r ON prog.id_programacion = r.id_programacion
             INNER JOIN CITA c ON r.id_reserva = c.id_reserva
-            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
             WHERE h.id_empleado = %s
             GROUP BY p.id_paciente, p.nombres, p.apellidos, 
                      p.documento_identidad, p.fecha_nacimiento
-            ORDER BY MAX(c.fecha_cita) DESC
+            ORDER BY ultima_cita DESC
         """, (id_empleado,))
         
         pacientes = cursor.fetchall()
@@ -444,40 +419,37 @@ def obtener_mis_pacientes(id_empleado):
 
 def obtener_citas_pendientes_diagnostico(id_empleado):
     """
-    Obtiene las citas pendientes que necesitan diagnóstico
+    Obtiene citas pendientes de diagnóstico (OPTIMIZADO)
     """
     conexion = None
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        print(f"DEBUG - Buscando citas pendientes para empleado: {id_empleado}")
-        
+        # OPTIMIZACIÓN: STRAIGHT_JOIN desde HORARIO, índice compuesto en (id_empleado, estado)
         cursor.execute("""
-            SELECT 
+            SELECT STRAIGHT_JOIN
                 c.id_cita,
                 c.fecha_cita,
                 c.hora_inicio,
-                c.hora_fin,
-                c.estado,
                 p.id_paciente,
                 p.nombres,
                 p.apellidos,
                 p.documento_identidad,
                 s.nombre as tipo_servicio
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            FROM HORARIO h
+            INNER JOIN PROGRAMACION prog ON h.id_horario = prog.id_horario
+            INNER JOIN RESERVA r ON prog.id_programacion = r.id_programacion
+            INNER JOIN CITA c ON r.id_reserva = c.id_reserva
             INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
             LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
             WHERE h.id_empleado = %s
             AND c.estado = 'Pendiente'
             ORDER BY c.fecha_cita DESC, c.hora_inicio DESC
+            LIMIT 50
         """, (id_empleado,))
         
         citas = cursor.fetchall()
-        print(f"DEBUG - Citas pendientes encontradas: {len(citas)}")
         
         citas_formateadas = []
         for cita in citas:
@@ -512,7 +484,6 @@ def obtener_citas_pendientes_diagnostico(id_empleado):
                 'tipo': cita['tipo_servicio'] if cita['tipo_servicio'] else 'Consulta General'
             })
         
-        print(f"DEBUG - Citas formateadas: {len(citas_formateadas)}")
         return citas_formateadas
         
     except Exception as e:
@@ -588,13 +559,12 @@ def medico_required(f):
 @medico_required
 def panel():
     """
-    Ruta principal del panel médico
-    Muestra el dashboard o el subsistema solicitado
+    Ruta principal del panel médico (OPTIMIZADO - carga solo datos necesarios)
     """
     subsistema = request.args.get('subsistema', None)
     id_empleado = session.get('id_empleado')
 
-    # Obtener información del médico desde la sesión
+    # Información del médico desde la sesión (sin query)
     usuario = {
         'id': session.get('usuario_id'),
         'nombre': session.get('nombre_usuario'),
@@ -603,25 +573,51 @@ def panel():
         'id_empleado': id_empleado
     }
 
-    # Obtener estadísticas del médico
-    stats = obtener_estadisticas_medico(id_empleado)
-    
-    # Obtener citas de hoy
-    citas_hoy = obtener_citas_hoy(id_empleado)
-    
-    # Datos adicionales según el subsistema
-    horarios_medico = []
-    citas_semana = {}
-    mis_pacientes = []
-    citas_pendientes = []
-    
+    # OPTIMIZACIÓN: Cargar solo los datos necesarios según el subsistema
     if subsistema == 'agenda':
+        # Solo agenda: estadísticas + citas hoy + horarios + citas semana
+        stats = obtener_estadisticas_medico(id_empleado)
+        citas_hoy = obtener_citas_hoy(id_empleado)
         horarios_medico = obtener_horarios_medico(id_empleado)
         citas_semana = obtener_citas_semana(id_empleado)
+        mis_pacientes = []
+        citas_pendientes = []
+        
     elif subsistema == 'pacientes':
+        # Solo pacientes: estadísticas + mis pacientes
+        stats = obtener_estadisticas_medico(id_empleado)
+        citas_hoy = []
+        horarios_medico = []
+        citas_semana = {}
         mis_pacientes = obtener_mis_pacientes(id_empleado)
+        citas_pendientes = []
+        
     elif subsistema == 'diagnosticos':
+        # Solo diagnósticos: estadísticas + citas pendientes
+        stats = obtener_estadisticas_medico(id_empleado)
+        citas_hoy = []
+        horarios_medico = []
+        citas_semana = {}
+        mis_pacientes = []
         citas_pendientes = obtener_citas_pendientes_diagnostico(id_empleado)
+        
+    elif subsistema == 'notificaciones':
+        # Solo notificaciones: estadísticas básicas
+        stats = obtener_estadisticas_medico(id_empleado)
+        citas_hoy = []
+        horarios_medico = []
+        citas_semana = {}
+        mis_pacientes = []
+        citas_pendientes = []
+        
+    else:
+        # Dashboard: estadísticas + citas hoy solamente
+        stats = obtener_estadisticas_medico(id_empleado)
+        citas_hoy = obtener_citas_hoy(id_empleado)
+        horarios_medico = []
+        citas_semana = {}
+        mis_pacientes = []
+        citas_pendientes = []
 
     return render_template(
         'panel_medico.html',

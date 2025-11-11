@@ -327,97 +327,6 @@
     </div>
     </div>
 
-    <!-- Modal de Confirmación -->
-    <div id="confirmation-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden items-center justify-center p-4" style="animation: fadeIn 0.3s ease-out;">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative" style="animation: slideUp 0.3s ease-out;">
-            <div class="flex flex-col items-center text-center">
-                <div id="confirm-icon-container" class="mb-4">
-                    <!-- El icono se cambiará dinámicamente -->
-                </div>
-                <h3 id="confirm-title" class="text-2xl font-bold text-gray-800 mb-3"></h3>
-                <p id="confirm-message" class="text-gray-600 mb-6"></p>
-                
-                <div class="flex gap-3 w-full">
-                    <button type="button" id="confirm-cancel" class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
-                        <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
-                        Cancelar
-                    </button>
-                    <button type="button" id="confirm-accept" class="flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center">
-                        <span class="material-symbols-outlined text-sm mr-2" id="confirm-accept-icon">check_circle</span>
-                        <span id="confirm-accept-text">Aceptar</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <style>
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-            from { 
-                opacity: 0;
-                transform: translateY(30px) scale(0.95);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-    </style>
-
-    <!-- Modal Viejo de Confirmación (mantener para compatibilidad) -->
-
-    <div id="confirm-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl p-8 relative max-h-[90vh] overflow-y-auto">
-            <button id="close-confirm-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600" aria-label="Cerrar">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
-            <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Confirmar creación de cuenta</h2>
-            <p class="text-gray-600 mb-4">Revisa los datos antes de confirmar. Podrás editar luego desde Gestión de Pacientes.</p>
-
-            <div class="space-y-3 text-sm">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div><span class="font-semibold text-gray-700">Nombres:</span> <span id="conf_nombres" class="text-gray-800"></span></div>
-                    <div><span class="font-semibold text-gray-700">Apellidos:</span> <span id="conf_apellidos" class="text-gray-800"></span></div>
-                    <div><span class="font-semibold text-gray-700">DNI:</span> <span id="conf_dni" class="text-gray-800"></span></div>
-                    <div><span class="font-semibold text-gray-700">Sexo:</span> <span id="conf_sexo" class="text-gray-800"></span></div>
-                    <div><span class="font-semibold text-gray-700">Teléfono:</span> <span id="conf_telefono" class="text-gray-800"></span></div>
-                    <div><span class="font-semibold text-gray-700">Fecha Nac.:</span> <span id="conf_fnac" class="text-gray-800"></span></div>
-                    <div class="md:col-span-2"><span class="font-semibold text-gray-700">Correo:</span> <span id="conf_email" class="text-gray-800"></span></div>
-                    <div class="md:col-span-2"><span class="font-semibold text-gray-700">Ubicación:</span> <span id="conf_ubicacion" class="text-gray-800"></span></div>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-200">
-                <button type="button" id="cancel-confirm" class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-colors">Cancelar</button>
-                <button type="button" id="accept-confirm" class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 font-semibold transition-colors inline-flex items-center">
-                    <i class="fa-solid fa-check mr-2"></i>
-                    Confirmar y crear
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Footer -->
     {% include 'footer.html' %}
 
@@ -516,54 +425,17 @@
             this.value = this.value.replace(/[^0-9]/g, '');
         });
 
-        // Validación y confirmación del formulario
+        // Validación y confirmación del formulario con modal unificado
         (function(){
             const form = document.getElementById('formRegistroPaciente');
-            const modal = document.getElementById('confirm-modal');
-            const btnClose = document.getElementById('close-confirm-modal');
-            const btnCancel = document.getElementById('cancel-confirm');
-            const btnAccept = document.getElementById('accept-confirm');
             let readyToSubmit = false;
 
-            function openModal() {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-            }
-            function closeModal() {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-
-            function fillSummary() {
-                const nombres = document.getElementById('nombres').value.trim();
-                const apellidos = document.getElementById('apellidos').value.trim();
-                const dni = document.getElementById('documento-identidad').value.trim();
-                const sexo = document.getElementById('sexo');
-                const sexoText = sexo.options[sexo.selectedIndex]?.text || '';
-                const telefono = document.getElementById('telefono').value.trim();
-                const fnac = document.getElementById('fecha-nacimiento').value;
-                const email = document.getElementById('email').value.trim();
-                const depSel = document.getElementById('departamento');
-                const provSel = document.getElementById('provincia');
-                const distSel = document.getElementById('distrito');
-                const depText = depSel.options[depSel.selectedIndex]?.text || '';
-                const provText = provSel.options[provSel.selectedIndex]?.text || '';
-                const distText = distSel.options[distSel.selectedIndex]?.text || '';
-
-                document.getElementById('conf_nombres').textContent = nombres;
-                document.getElementById('conf_apellidos').textContent = apellidos;
-                document.getElementById('conf_dni').textContent = dni;
-                document.getElementById('conf_sexo').textContent = sexoText;
-                document.getElementById('conf_telefono').textContent = telefono;
-                document.getElementById('conf_fnac').textContent = fnac;
-                document.getElementById('conf_email').textContent = emailToUnicode(email);
-                document.getElementById('conf_ubicacion').textContent = `${depText} > ${provText} > ${distText}`;
-            }
-
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
                 if (readyToSubmit) {
                     return; // permitir submit real
                 }
+
+                e.preventDefault();
 
                 const dni = document.getElementById('documento-identidad').value;
                 const telefono = document.getElementById('telefono').value;
@@ -572,34 +444,64 @@
                 const sexo = document.getElementById('sexo').value;
                 const distrito = document.getElementById('distrito').value;
                 const terms = document.getElementById('terms').checked;
+                const nombres = document.getElementById('nombres').value.trim();
+                const apellidos = document.getElementById('apellidos').value.trim();
 
                 // Validaciones básicas existentes
-                if (!/^\d{8}$/.test(dni)) { e.preventDefault(); showNotification('El DNI debe tener exactamente 8 dígitos', 'error'); document.getElementById('documento-identidad').focus(); return; }
-                if (!sexo) { e.preventDefault(); showNotification('Debe seleccionar el sexo', 'error'); document.getElementById('sexo').focus(); return; }
-                if (!/^\d{9}$/.test(telefono)) { e.preventDefault(); showNotification('El teléfono debe tener exactamente 9 dígitos', 'error'); document.getElementById('telefono').focus(); return; }
-                if (!distrito) { e.preventDefault(); showNotification('Debe seleccionar un distrito', 'error'); document.getElementById('distrito').focus(); return; }
-                if (password.length < 6) { e.preventDefault(); showNotification('La contraseña debe tener al menos 6 caracteres', 'error'); document.getElementById('password').focus(); return; }
-                if (password !== confirmPassword) { e.preventDefault(); showNotification('Las contraseñas no coinciden', 'error'); document.getElementById('confirm-password').focus(); return; }
-                if (!terms) { e.preventDefault(); showNotification('Debe aceptar los términos y condiciones', 'warning'); document.getElementById('terms').focus(); return; }
+                if (!/^\d{8}$/.test(dni)) { 
+                    showNotification('El DNI debe tener exactamente 8 dígitos', 'error'); 
+                    document.getElementById('documento-identidad').focus(); 
+                    return; 
+                }
+                if (!sexo) { 
+                    showNotification('Debe seleccionar el sexo', 'error'); 
+                    document.getElementById('sexo').focus(); 
+                    return; 
+                }
+                if (!/^\d{9}$/.test(telefono)) { 
+                    showNotification('El teléfono debe tener exactamente 9 dígitos', 'error'); 
+                    document.getElementById('telefono').focus(); 
+                    return; 
+                }
+                if (!distrito) { 
+                    showNotification('Debe seleccionar un distrito', 'error'); 
+                    document.getElementById('distrito').focus(); 
+                    return; 
+                }
+                if (password.length < 6) { 
+                    showNotification('La contraseña debe tener al menos 6 caracteres', 'error'); 
+                    document.getElementById('password').focus(); 
+                    return; 
+                }
+                if (password !== confirmPassword) { 
+                    showNotification('Las contraseñas no coinciden', 'error'); 
+                    document.getElementById('confirm-password').focus(); 
+                    return; 
+                }
+                if (!terms) { 
+                    showNotification('Debe aceptar los términos y condiciones', 'warning'); 
+                    document.getElementById('terms').focus(); 
+                    return; 
+                }
 
-                // Abrir modal de confirmación
-                e.preventDefault();
-                fillSummary();
-                openModal();
-            });
+                // Mostrar modal de confirmación usando el nuevo sistema
+                const confirmado = await mostrarConfirmacion({
+                    titulo: '¿Crear Cuenta de Paciente?',
+                    mensaje: `¿Estás seguro de registrar al paciente ${nombres} ${apellidos}? Se creará una cuenta de acceso con el email proporcionado.`,
+                    tipo: 'success',
+                    textoAceptar: 'Crear Paciente',
+                    textoIconoAceptar: 'person_add'
+                });
 
-            btnAccept.addEventListener('click', function(){
-                // Mostrar indicador y enviar
-                const btnSubmit = document.getElementById('btnSubmitRegistro');
-                btnSubmit.disabled = true;
-                btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Registrando...';
-                readyToSubmit = true;
-                closeModal();
-                form.submit();
+                if (confirmado) {
+                    // Mostrar indicador y enviar
+                    const btnSubmit = document.getElementById('btnSubmitRegistro');
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerHTML = '<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Registrando...';
+                    readyToSubmit = true;
+                    form.submit();
+                }
             });
-            btnCancel.addEventListener('click', closeModal);
-            btnClose.addEventListener('click', closeModal);
-            modal.addEventListener('click', function(ev){ if (ev.target === modal) closeModal(); });
         })();
 
         // Cascading select logic for Departamento -> Provincia -> Distrito
@@ -855,56 +757,9 @@
             const [local, domain] = parts;
             return `${local}@${idnDomainToUnicode(domain)}`;
         }
-
-        // Actualiza el email en el resumen si se detecta punycode
-        document.getElementById('email')?.addEventListener('input', function(){
-            const unicodeEmail = emailToUnicode(this.value.trim());
-            const confEmail = document.getElementById('conf_email');
-            if (confEmail && document.getElementById('confirm-modal') && !document.getElementById('confirm-modal').classList.contains('hidden')) {
-                confEmail.textContent = unicodeEmail;
-            }
-        });
     </script>
 
     <!-- Script de confirmación modal -->
     <script src="{{ url_for('static', filename='js/confirmation-modal.js') }}"></script>
-    <script>
-        // Interceptar el envío del formulario para mostrar confirmación
-        const formRegistro = document.getElementById('formRegistroPaciente');
-        let confirmedSubmit = false;
-        
-        if (formRegistro) {
-            formRegistro.addEventListener('submit', async function(e) {
-                if (confirmedSubmit) {
-                    return; // Permitir envío real
-                }
-                
-                e.preventDefault();
-                
-                // Obtener datos del formulario
-                const nombres = document.getElementById('nombres').value.trim();
-                const apellidos = document.getElementById('apellidos').value.trim();
-                
-                // Mostrar confirmación
-                const confirmado = await mostrarConfirmacion({
-                    titulo: '¿Crear Cuenta de Paciente?',
-                    mensaje: `¿Estás seguro de registrar al paciente ${nombres} ${apellidos}? Se creará una cuenta de acceso con el email proporcionado.`,
-                    tipo: 'success',
-                    textoAceptar: 'Crear Paciente',
-                    textoIconoAceptar: 'person_add'
-                });
-                
-                if (confirmado) {
-                    confirmedSubmit = true;
-                    const btnSubmit = document.getElementById('btnSubmitRegistro');
-                    if (btnSubmit) {
-                        btnSubmit.disabled = true;
-                        btnSubmit.innerHTML = '<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Registrando...';
-                    }
-                    this.submit();
-                }
-            });
-        }
-    </script>
 </body>
 </html>

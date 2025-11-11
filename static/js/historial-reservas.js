@@ -1,10 +1,22 @@
 // historial-reservas.js - Gestión del historial de reservas del paciente con pestañas
 
+console.log('🔄 Historial de reservas cargado - Versión 2.0');
+
 let reservasData = [];
 let tipoActivo = 1; // Por defecto: CITAS
+let reservaDestacada = null; // ID de la reserva a destacar
 
 // Cargar reservas al iniciar
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('📋 Inicializando historial de reservas...');
+    // Obtener parámetro de reserva de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const reservaId = urlParams.get('reserva');
+    if (reservaId) {
+        reservaDestacada = parseInt(reservaId);
+        console.log('🎯 Reserva destacada:', reservaDestacada);
+    }
+    
     cargarReservas();
 
     // Event listeners para filtros
@@ -50,6 +62,26 @@ async function cargarReservas() {
         }
 
         reservasData = data.reservas || [];
+        
+        // Si hay una reserva destacada, cambiar a su pestaña automáticamente
+        if (reservaDestacada) {
+            const reserva = reservasData.find(r => r.id_reserva === reservaDestacada);
+            if (reserva) {
+                // Determinar el tipo según la reserva
+                let tipoReserva = reserva.tipo || 1;
+                tipoActivo = tipoReserva;
+                
+                // Actualizar visualmente la pestaña activa
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('border-cyan-500', 'text-cyan-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                    if (parseInt(btn.dataset.tipo) === tipoReserva) {
+                        btn.classList.remove('border-transparent', 'text-gray-500');
+                        btn.classList.add('border-cyan-500', 'text-cyan-600');
+                    }
+                });
+            }
+        }
         
         // Ordenar por fecha programación (más reciente primero)
         reservasData.sort((a, b) => {
@@ -97,6 +129,21 @@ function mostrarReservas(reservas) {
         // PESTAÑA DE EXÁMENES
         container.innerHTML = reservas.map(reserva => generarTarjetaExamen(reserva)).join('');
     }
+    
+    // Si hay una reserva destacada, hacer scroll hacia ella
+    if (reservaDestacada) {
+        setTimeout(() => {
+            const elementoDestacado = document.getElementById(`reserva-${reservaDestacada}`);
+            if (elementoDestacado) {
+                elementoDestacado.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Añadir animación de pulso
+                elementoDestacado.classList.add('animate-pulse');
+                setTimeout(() => {
+                    elementoDestacado.classList.remove('animate-pulse');
+                }, 2000);
+            }
+        }, 300);
+    }
 }
 
 // Generar tarjeta para CITAS
@@ -115,9 +162,13 @@ function generarTarjetaCita(reserva) {
     
     const tieneExamenesOOperaciones = (reserva.examenes && reserva.examenes.length > 0) || (reserva.operaciones && reserva.operaciones.length > 0);
     const esCitaCompletada = reserva.estado_reserva === 'Completada';
+    
+    // Verificar si esta es la reserva destacada
+    const esDestacada = reservaDestacada && reserva.id_reserva === reservaDestacada;
+    const estilosDestacado = esDestacada ? 'ring-4 ring-cyan-400 shadow-2xl' : '';
 
     let html = `
-        <div class="${bgColorClass} border-2 ${borderColorClass} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div id="reserva-${reserva.id_reserva}" class="${bgColorClass} border-2 ${borderColorClass} ${estilosDestacado} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
             <div class="p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
@@ -216,22 +267,61 @@ function generarTarjetaCita(reserva) {
 
     // Botones de acción (solo si NO es completada y NO tiene cancelación)
     if (!esCitaCompletada && estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada') {
+        // Calcular días hasta la cita
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const fechaCita = new Date(fechaStr + 'T00:00:00');
+        const diasDiferencia = Math.ceil((fechaCita - hoy) / (1000 * 60 * 60 * 24));
+        const puedeModificar = diasDiferencia >= 2; // Debe ser al menos 2 días antes
+        
+        console.log(`📅 Reserva #${reserva.id_reserva}: Fecha=${fechaStr}, Días diferencia=${diasDiferencia}, Puede modificar=${puedeModificar}`);
+        
         html += `
-                <div class="mt-4 pt-4 border-t border-gray-200 flex gap-3">
-                    <button onclick="abrirModalReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', ${reserva.id_servicio}, '${reserva.fecha_programacion}')" 
-                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
-                        </svg>
-                        Reprogramar
-                    </button>
-                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')"
-                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                        Cancelar
-                    </button>
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex flex-col gap-3">
+        `;
+        
+        // Mensaje de advertencia si faltan menos de 2 días
+        if (!puedeModificar) {
+            html += `
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                    <path d="M12 9v4"/><path d="M12 17h.01"/>
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-semibold text-amber-800">Cita próxima</p>
+                                    <p class="text-xs text-amber-700">Las solicitudes de reprogramación o cancelación deben realizarse con al menos 2 días de anticipación.</p>
+                                </div>
+                            </div>
+                        </div>
+            `;
+        }
+        
+        html += `
+                        <div class="grid md:grid-cols-2 gap-3">
+                            <button ${!puedeModificar ? 'disabled' : ''} 
+                                    onclick="${puedeModificar ? `solicitarReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')` : 'return false;'}" 
+                                    class="group relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'} text-white font-semibold py-3.5 px-5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg ${puedeModificar ? 'hover:shadow-xl hover:scale-[1.02]' : ''}">
+                                <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -translate-x-full ${puedeModificar ? 'group-hover:translate-x-full' : ''} transition-transform duration-700"></div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                                </svg>
+                                <span class="relative z-10">Solicitar Reprogramación</span>
+                            </button>
+                            
+                            <button ${!puedeModificar ? 'disabled' : ''} 
+                                    onclick="${puedeModificar ? `solicitarCancelacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')` : 'return false;'}" 
+                                    class="group relative overflow-hidden bg-gradient-to-r from-red-500 to-red-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-red-600 hover:to-red-700'} text-white font-semibold py-3.5 px-5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg ${puedeModificar ? 'hover:shadow-xl hover:scale-[1.02]' : ''}">
+                                <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -translate-x-full ${puedeModificar ? 'group-hover:translate-x-full' : ''} transition-transform duration-700"></div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10">
+                                    <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
+                                </svg>
+                                <span class="relative z-10">Solicitar Cancelación</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
         `;
     }
@@ -333,9 +423,13 @@ function generarTarjetaOperacion(reserva) {
 
     const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
     const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
+    
+    // Verificar si esta es la reserva destacada
+    const esDestacada = reservaDestacada && reserva.id_reserva === reservaDestacada;
+    const estilosDestacado = esDestacada ? 'ring-4 ring-cyan-400 shadow-2xl' : '';
 
     return `
-        <div class="${bgColorClass} border-2 ${borderColorClass} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div id="reserva-${reserva.id_reserva}" class="${bgColorClass} border-2 ${borderColorClass} ${estilosDestacado} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
             <div class="p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
@@ -424,9 +518,13 @@ function generarTarjetaExamen(reserva) {
 
     const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
     const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
+    
+    // Verificar si esta es la reserva destacada
+    const esDestacada = reservaDestacada && reserva.id_reserva === reservaDestacada;
+    const estilosDestacado = esDestacada ? 'ring-4 ring-cyan-400 shadow-2xl' : '';
 
     return `
-        <div class="${bgColorClass} border-2 ${borderColorClass} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+        <div id="reserva-${reserva.id_reserva}" class="${bgColorClass} border-2 ${borderColorClass} ${estilosDestacado} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
             <div class="p-6">
                 <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center gap-3">
@@ -946,6 +1044,7 @@ function seleccionarHora(hora) {
 async function confirmarReprogramacion() {
     const nuevaFecha = document.getElementById('nuevaFecha').value;
     
+    
     if (!nuevaFecha || !horaSeleccionada) {
         alert('Por favor, selecciona una fecha y una hora');
         return;
@@ -987,3 +1086,331 @@ async function confirmarReprogramacion() {
         btnConfirmar.textContent = 'Confirmar Reprogramación';
     }
 }
+
+// ========== NUEVAS FUNCIONES PARA SOLICITUDES ==========
+
+// Función para solicitar reprogramación
+async function solicitarReprogramacion(idReserva, nombreServicio, fechaActual) {
+    console.log('🔄 Solicitando reprogramación para reserva:', idReserva);
+    const modalHTML = `
+        <div id="modalSolicitudReprogramacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl transform animate-slideIn">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-t-2xl">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <span class="text-3xl">🔄</span>
+                            Solicitar Reprogramación
+                        </h2>
+                        <button onclick="cerrarModalSolicitudReprogramacion()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
+                        <div class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0 mt-0.5">
+                                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-semibold text-blue-900 mb-1">Proceso de Solicitud</p>
+                                <p class="text-xs text-blue-800">
+                                    Tu solicitud será revisada por el personal administrativo. Recibirás una notificación con la respuesta en las próximas 24-48 horas.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            Detalles de tu Reserva
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <p class="text-gray-600"><span class="font-semibold">Servicio:</span> ${nombreServicio}</p>
+                            <p class="text-gray-600"><span class="font-semibold">Fecha actual:</span> ${new Date(fechaActual + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block font-semibold text-gray-700 mb-2" for="motivoReprogramacion">
+                            Motivo de la reprogramación <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="motivoReprogramacion" 
+                            rows="4" 
+                            class="w-full border-2 border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                            placeholder="Explica por qué necesitas reprogramar tu cita (mínimo 20 caracteres)..."
+                            maxlength="500"
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                            <span id="contadorReprog">0/20 caracteres mínimos</span>
+                            <span><span id="contadorCaracteresReprog">0</span>/500</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="p-6 bg-gray-50 rounded-b-2xl border-t border-gray-200 flex gap-3">
+                    <button onclick="cerrarModalSolicitudReprogramacion()" 
+                            class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="confirmarSolicitudReprogramacion(${idReserva})" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl">
+                        Enviar Solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Contador de caracteres
+    document.getElementById('motivoReprogramacion').addEventListener('input', function() {
+        const contador = document.getElementById('contadorCaracteresReprog');
+        const contadorMin = document.getElementById('contadorReprog');
+        const longitud = this.value.length;
+        contador.textContent = longitud;
+        
+        if (longitud < 20) {
+            contadorMin.textContent = `${longitud}/20 caracteres mínimos`;
+            contadorMin.classList.add('text-red-500');
+            contadorMin.classList.remove('text-green-600');
+        } else {
+            contadorMin.textContent = '✓ Mínimo alcanzado';
+            contadorMin.classList.remove('text-red-500');
+            contadorMin.classList.add('text-green-600');
+        }
+    });
+}
+
+function cerrarModalSolicitudReprogramacion() {
+    const modal = document.getElementById('modalSolicitudReprogramacion');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function confirmarSolicitudReprogramacion(idReserva) {
+    const motivo = document.getElementById('motivoReprogramacion').value.trim();
+    
+    if (motivo.length < 20) {
+        alert('❌ El motivo debe tener al menos 20 caracteres.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/reservas/api/solicitar-reprogramacion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id_reserva: idReserva,
+                motivo: motivo
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cerrarModalSolicitudReprogramacion();
+            mostrarNotificacionExito('✅ Solicitud Enviada', 'Tu solicitud de reprogramación ha sido enviada. Recibirás una respuesta pronto.');
+            cargarReservas();
+        } else {
+            alert('❌ Error: ' + (data.error || 'No se pudo enviar la solicitud'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al enviar la solicitud. Intenta nuevamente.');
+    }
+}
+
+// Función para solicitar cancelación
+async function solicitarCancelacion(idReserva, nombreServicio, fechaActual) {
+    console.log('❌ Solicitando cancelación para reserva:', idReserva);
+    const modalHTML = `
+        <div id="modalSolicitudCancelacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl transform animate-slideIn">
+                <div class="bg-gradient-to-r from-red-500 to-red-600 p-6 rounded-t-2xl">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <span class="text-3xl">⚠️</span>
+                            Solicitar Cancelación
+                        </h2>
+                        <button onclick="cerrarModalSolicitudCancelacion()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
+                        <div class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 flex-shrink-0 mt-0.5">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                <path d="M12 9v4"/><path d="M12 17h.01"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-semibold text-amber-900 mb-1">¿Consideraste reprogramar?</p>
+                                <p class="text-xs text-amber-800">
+                                    Antes de cancelar, recuerda que puedes reprogramar tu cita para otra fecha. Es más rápido y mantienes tu reserva.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            Detalles de tu Reserva
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <p class="text-gray-600"><span class="font-semibold">Servicio:</span> ${nombreServicio}</p>
+                            <p class="text-gray-600"><span class="font-semibold">Fecha:</span> ${new Date(fechaActual + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block font-semibold text-gray-700 mb-2" for="motivoCancelacion">
+                            Motivo de la cancelación <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="motivoCancelacion" 
+                            rows="4" 
+                            class="w-full border-2 border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all resize-none"
+                            placeholder="Explica por qué necesitas cancelar tu cita (mínimo 20 caracteres)..."
+                            maxlength="500"
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                            <span id="contadorCancel">0/20 caracteres mínimos</span>
+                            <span><span id="contadorCaracteresCancel">0</span>/500</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="p-6 bg-gray-50 rounded-b-2xl border-t border-gray-200 flex gap-3">
+                    <button onclick="cerrarModalSolicitudCancelacion()" 
+                            class="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all">
+                        Volver
+                    </button>
+                    <button onclick="confirmarSolicitudCancelacion(${idReserva})" 
+                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl">
+                        Enviar Solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Contador de caracteres
+    document.getElementById('motivoCancelacion').addEventListener('input', function() {
+        const contador = document.getElementById('contadorCaracteresCancel');
+        const contadorMin = document.getElementById('contadorCancel');
+        const longitud = this.value.length;
+        contador.textContent = longitud;
+        
+        if (longitud < 20) {
+            contadorMin.textContent = `${longitud}/20 caracteres mínimos`;
+            contadorMin.classList.add('text-red-500');
+            contadorMin.classList.remove('text-green-600');
+        } else {
+            contadorMin.textContent = '✓ Mínimo alcanzado';
+            contadorMin.classList.remove('text-red-500');
+            contadorMin.classList.add('text-green-600');
+        }
+    });
+}
+
+function cerrarModalSolicitudCancelacion() {
+    const modal = document.getElementById('modalSolicitudCancelacion');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function confirmarSolicitudCancelacion(idReserva) {
+    const motivo = document.getElementById('motivoCancelacion').value.trim();
+    
+    if (motivo.length < 20) {
+        alert('❌ El motivo debe tener al menos 20 caracteres.');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/reservas/api/solicitar-cancelacion', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                id_reserva: idReserva,
+                motivo: motivo
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cerrarModalSolicitudCancelacion();
+            mostrarNotificacionExito('✅ Solicitud Enviada', 'Tu solicitud de cancelación ha sido enviada. Recibirás una respuesta pronto.');
+            cargarReservas();
+        } else {
+            alert('❌ Error: ' + (data.error || 'No se pudo enviar la solicitud'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al enviar la solicitud. Intenta nuevamente.');
+    }
+}
+
+// Función auxiliar para mostrar notificaciones de éxito
+function mostrarNotificacionExito(titulo, mensaje) {
+    const notifHTML = `
+        <div id="notificacionExito" class="fixed top-4 right-4 bg-white rounded-xl shadow-2xl p-6 max-w-md z-[9999] animate-slideIn border-l-4 border-green-500">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-green-600">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-gray-900 mb-1">${titulo}</h3>
+                    <p class="text-sm text-gray-600">${mensaje}</p>
+                </div>
+                <button onclick="document.getElementById('notificacionExito').remove()" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', notifHTML);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        const notif = document.getElementById('notificacionExito');
+        if (notif) {
+            notif.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => notif.remove(), 300);
+        }
+    }, 5000);
+}
+

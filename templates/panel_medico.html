@@ -126,6 +126,15 @@
                     <span class="material-symbols-outlined text-xl {% if subsistema == 'diagnosticos' %}filled{% endif %}">clinical_notes</span>
                     <span class="font-semibold">Diagnósticos</span>
                 </a>
+
+                <!-- Notificaciones -->
+                <a href="/medico/panel?subsistema=notificaciones" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'notificaciones' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
+                    <span class="material-symbols-outlined text-xl {% if subsistema == 'notificaciones' %}filled{% endif %}">notifications</span>
+                    <span class="font-semibold">Notificaciones</span>
+                    {% if subsistema != 'notificaciones' %}
+                    <span class="ml-auto w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+                    {% endif %}
+                </a>
             </nav>
         </aside>
 
@@ -286,92 +295,66 @@
 
                     <!-- Calendario semanal -->
                     <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
-                        {% if horarios_medico %}
-                        {# Calcular horas mínimas y máximas de todos los horarios #}
-                        {% set ns = namespace(hora_min=23, hora_max=0) %}
-                        {% for day, data in horarios_medico.items() %}
-                            {% for bloque in data.bloques %}
-                                {% set hora_inicio = bloque.hora_inicio.hour %}
-                                {% set hora_fin = bloque.hora_fin.hour %}
-                                {% if hora_inicio < ns.hora_min %}
-                                    {% set ns.hora_min = hora_inicio %}
-                                {% endif %}
-                                {% if hora_fin > ns.hora_max %}
-                                    {% set ns.hora_max = hora_fin %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
+                        {% if horarios_medico and horarios_medico.horarios %}
+                        {# OPTIMIZACIÓN: Horas pre-calculadas en backend #}
+                        {% set hora_min = horarios_medico.hora_min %}
+                        {% set hora_max = horarios_medico.hora_max %}
+                        {% set horarios = horarios_medico.horarios %}
                         
                         <table class="min-w-full border-collapse">
                             <thead>
                                 <tr>
                                     <th class="w-20 p-3 bg-gray-50 border border-gray-200 text-center text-sm font-medium text-gray-600 sticky left-0 z-20">Hora</th>
                                     {% for day in range(7) %}
+                                    {% set dia_nombres = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] %}
                                     <th class="p-3 bg-gray-50 border border-gray-200 text-center text-sm font-medium text-gray-600 min-w-[150px]">
-                                        {% if day == 0 %}Lun
-                                        {% elif day == 1 %}Mar
-                                        {% elif day == 2 %}Mié
-                                        {% elif day == 3 %}Jue
-                                        {% elif day == 4 %}Vie
-                                        {% elif day == 5 %}Sáb
-                                        {% elif day == 6 %}Dom
-                                        {% endif %}
-                                        {% if day in horarios_medico %}
-                                        <br><span class="text-xs font-normal">{{ horarios_medico[day].fecha.strftime('%d/%m') }}</span>
+                                        {{ dia_nombres[day] }}
+                                        {% if day in horarios %}
+                                        <br><span class="text-xs font-normal">{{ horarios[day].fecha.strftime('%d/%m') }}</span>
                                         {% endif %}
                                     </th>
                                     {% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Mostrar solo las horas donde el médico trabaja -->
-                                {% for hour in range(ns.hora_min, ns.hora_max + 1) %}
+                                {# OPTIMIZACIÓN: Bucle simplificado sin nested loops #}
+                                {% for hour in range(hora_min, hora_max + 1) %}
                                 <tr>
                                     <td class="w-20 p-2 bg-gray-50 border border-gray-200 text-sm text-gray-600 font-medium sticky left-0 z-10 text-center">
                                         {{ '%02d:00'|format(hour) }}
                                     </td>
                                     {% for day in range(7) %}
-                                    {% set tiene_horario = namespace(value=false) %}
-                                    {% if day in horarios_medico %}
-                                        {% for bloque in horarios_medico[day].bloques %}
-                                            {% if hour >= bloque.hora_inicio.hour and hour < bloque.hora_fin.hour %}
-                                                {% set tiene_horario.value = true %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% endif %}
+                                    {# OPTIMIZACIÓN: Verificación rápida sin bucles anidados #}
+                                    {% set tiene_horario = day in horarios and horarios[day].bloques %}
                                     
-                                    {% if tiene_horario.value %}
+                                    {% if tiene_horario %}
                                     <td class="p-0 border border-gray-200 h-20 align-top relative hover:bg-blue-50 cursor-pointer transition-colors calendar-cell"
                                         data-day="{{ day }}" data-hour="{{ hour }}">
-                                        <!-- Desglose de 15 minutos (oculto por defecto) -->
+                                        <!-- Desglose de 15 minutos -->
                                         <div class="time-breakdown hidden w-full bg-white border-2 border-blue-400 shadow-xl rounded flex flex-col my-1">
-                                            {% for minute in [0, 15, 30, 45] %}
-                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 last:border-b-0 font-semibold flex items-center justify-center transition-colors"
-                                                 data-minute="{{ minute }}"
-                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, {{ minute }})">
-                                                {{ '%02d:%02d'|format(hour, minute) }}
-                                            </div>
-                                            {% endfor %}
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 0)">{{ '%02d:00'|format(hour) }}</div>
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 15)">{{ '%02d:15'|format(hour) }}</div>
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 30)">{{ '%02d:30'|format(hour) }}</div>
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 45)">{{ '%02d:45'|format(hour) }}</div>
                                         </div>
-                                        <!-- Mostrar citas programadas -->
+                                        {# OPTIMIZACIÓN: Citas pre-calculadas con estilos en backend #}
                                         {% set clave_cita = day|string + '_' + hour|string %}
                                         {% if citas_semana and clave_cita in citas_semana %}
                                             {% for cita in citas_semana[clave_cita] %}
-                                            {% if cita.es_hora_inicio %}
-                                            {# Solo mostrar la cita en la primera hora, pero que se extienda visualmente #}
-                                            {% set altura_cita = (cita.duracion_horas * 80)|int %}
                                             <div class="absolute left-1 right-1 rounded px-2 py-1 text-white overflow-hidden shadow-md z-10"
-                                                 style="top: 4px; height: {{ altura_cita - 8 }}px; {% if cita.estado == 'Pendiente' %}background-color: #f59e0b;{% elif cita.estado == 'Confirmada' %}background-color: #3b82f6;{% else %}background-color: #10b981;{% endif %}">
+                                                 style="top: 4px; height: {{ cita.altura }}px; background-color: {{ cita.color }};">
                                                 <div class="text-xs font-bold line-clamp-1">{{ cita.paciente }}</div>
                                                 <div class="text-xs opacity-90 line-clamp-1">{{ cita.tipo }}</div>
-                                                <div class="text-xs font-medium mt-1">{{ cita.hora_inicio.strftime('%H:%M') }} - {{ cita.hora_fin.strftime('%H:%M') }}</div>
+                                                <div class="text-xs font-medium mt-1">{{ cita.hora_inicio_str }} - {{ cita.hora_fin_str }}</div>
                                             </div>
-                                            {% endif %}
                                             {% endfor %}
                                         {% endif %}
                                     </td>
                                     {% else %}
-                                    <!-- Celda sin horario (médico no trabaja) -->
                                     <td class="p-0 border border-gray-200 h-20 bg-gray-100 relative">
                                         <div class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">
                                             <span class="material-symbols-outlined text-lg opacity-30">block</span>
@@ -638,20 +621,182 @@
                 <!-- Subsistema: Notificaciones -->
                 <div class="mb-6">
                     <h2 class="text-3xl font-bold text-gray-800 mb-2">Notificaciones</h2>
-                    <p class="text-gray-600">Centro de notificaciones y alertas</p>
+                    <p class="text-gray-600">Mantente al día con todas tus alertas y recordatorios</p>
                 </div>
 
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div class="space-y-4">
-                        <div class="p-4 bg-cyan-50 border border-cyan-200 rounded-xl flex items-start gap-4">
-                            <span class="material-symbols-outlined text-cyan-600">notifications</span>
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800">Nueva cita asignada</h4>
-                                <p class="text-sm text-gray-600 mt-1">Paciente: Juan Pérez - 10:00 AM</p>
-                                <p class="text-xs text-gray-400 mt-1">Hace 5 minutos</p>
+                <!-- Filtros de notificaciones -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="filtrarNotificaciones('todas')" class="filtro-notificacion active px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Todas <span class="ml-2 px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs">5</span>
+                        </button>
+                        <button onclick="filtrarNotificaciones('citas')" class="filtro-notificacion px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Citas <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">2</span>
+                        </button>
+                        <button onclick="filtrarNotificaciones('resultados')" class="filtro-notificacion px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Resultados <span class="ml-2 px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-xs">1</span>
+                        </button>
+                        <button onclick="filtrarNotificaciones('recordatorios')" class="filtro-notificacion px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Recordatorios <span class="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs">2</span>
+                        </button>
+                        <button onclick="marcarTodasLeidas()" class="ml-auto px-4 py-2 text-cyan-600 hover:text-cyan-700 text-sm font-semibold flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">done_all</span>
+                            Marcar todas como leídas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lista de notificaciones -->
+                <div class="space-y-4">
+                    <!-- Notificación 1: Nueva cita -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all notificacion-item" data-tipo="citas" data-leida="false">
+                        <div class="flex items-start gap-4 p-6">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-md">
+                                    <span class="material-symbols-outlined text-white text-2xl">event</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between mb-2">
+                                    <h4 class="font-bold text-gray-800 text-lg">Nueva cita asignada</h4>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
+                                        <span class="text-xs text-gray-500">Hace 5 minutos</span>
+                                    </div>
+                                </div>
+                                <p class="text-gray-600 mb-3">
+                                    <span class="font-semibold">Paciente:</span> Juan Pérez García<br>
+                                    <span class="font-semibold">Hora:</span> Hoy a las 10:00 AM<br>
+                                    <span class="font-semibold">Tipo:</span> Consulta General
+                                </p>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-lg hover:from-cyan-600 hover:to-teal-600 transition-all text-sm font-semibold shadow-sm">
+                                        Ver cita
+                                    </button>
+                                    <button onclick="marcarLeida(this)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
+                                        Marcar como leída
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Notificación 2: Resultado de laboratorio -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all notificacion-item" data-tipo="resultados" data-leida="false">
+                        <div class="flex items-start gap-4 p-6">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-md">
+                                    <span class="material-symbols-outlined text-white text-2xl">biotech</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between mb-2">
+                                    <h4 class="font-bold text-gray-800 text-lg">Resultado de laboratorio disponible</h4>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
+                                        <span class="text-xs text-gray-500">Hace 1 hora</span>
+                                    </div>
+                                </div>
+                                <p class="text-gray-600 mb-3">
+                                    <span class="font-semibold">Paciente:</span> María García López<br>
+                                    <span class="font-semibold">Examen:</span> Análisis de sangre completo<br>
+                                    <span class="font-semibold">Estado:</span> <span class="text-green-600 font-semibold">Resultados normales</span>
+                                </p>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg hover:from-teal-600 hover:to-emerald-600 transition-all text-sm font-semibold shadow-sm">
+                                        Ver resultados
+                                    </button>
+                                    <button onclick="marcarLeida(this)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
+                                        Marcar como leída
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notificación 3: Recordatorio de cita -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all notificacion-item" data-tipo="recordatorios" data-leida="false">
+                        <div class="flex items-start gap-4 p-6">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center shadow-md">
+                                    <span class="material-symbols-outlined text-white text-2xl">alarm</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between mb-2">
+                                    <h4 class="font-bold text-gray-800 text-lg">Recordatorio de cita próxima</h4>
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                        <span class="text-xs text-gray-500">Hace 2 horas</span>
+                                    </div>
+                                </div>
+                                <p class="text-gray-600 mb-3">
+                                    <span class="font-semibold">Paciente:</span> Carlos López Vega<br>
+                                    <span class="font-semibold">Hora:</span> Mañana a las 9:00 AM<br>
+                                    <span class="font-semibold">Tipo:</span> Control de seguimiento
+                                </p>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all text-sm font-semibold shadow-sm">
+                                        Ver agenda
+                                    </button>
+                                    <button onclick="marcarLeida(this)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
+                                        Marcar como leída
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notificación 4: Cita confirmada (leída) -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden opacity-60 notificacion-item" data-tipo="citas" data-leida="true">
+                        <div class="flex items-start gap-4 p-6">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                                    <span class="material-symbols-outlined text-white text-2xl">check_circle</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between mb-2">
+                                    <h4 class="font-semibold text-gray-700 text-lg">Cita confirmada por paciente</h4>
+                                    <span class="text-xs text-gray-500">Hace 3 horas</span>
+                                </div>
+                                <p class="text-gray-600 mb-3">
+                                    <span class="font-semibold">Paciente:</span> Ana Sofía Martínez<br>
+                                    <span class="font-semibold">Hora:</span> 15 de Noviembre a las 2:00 PM
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notificación 5: Recordatorio medicación (leída) -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden opacity-60 notificacion-item" data-tipo="recordatorios" data-leida="true">
+                        <div class="flex items-start gap-4 p-6">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
+                                    <span class="material-symbols-outlined text-white text-2xl">medication</span>
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between mb-2">
+                                    <h4 class="font-semibold text-gray-700 text-lg">Recordatorio de receta médica</h4>
+                                    <span class="text-xs text-gray-500">Hace 1 día</span>
+                                </div>
+                                <p class="text-gray-600 mb-3">
+                                    <span class="font-semibold">Paciente:</span> Luis Miguel Rodríguez<br>
+                                    <span class="font-semibold">Acción:</span> Renovar receta de medicación crónica
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensaje vacío (oculto por defecto) -->
+                <div id="no-notificaciones" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                        <span class="material-symbols-outlined text-gray-400 text-4xl">notifications_off</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">No hay notificaciones</h3>
+                    <p class="text-gray-600">No tienes notificaciones en esta categoría</p>
                 </div>
                 {% endif %}
             </main>
@@ -922,6 +1067,108 @@
             console.log(`Ver detalles de la cita ${citaId}`);
             alert(`Vista de detalles de la cita ${citaId}.\nAquí podrás ver:\n- Información del paciente\n- Tipo de consulta\n- Diagnóstico (si existe)\n- Estado de la cita\n\nPróximamente disponible.`);
         }
+
+        // Funciones para notificaciones
+        function filtrarNotificaciones(tipo) {
+            const notificaciones = document.querySelectorAll('.notificacion-item');
+            const noNotificaciones = document.getElementById('no-notificaciones');
+            const botones = document.querySelectorAll('.filtro-notificacion');
+            let visibles = 0;
+
+            // Actualizar botones activos
+            botones.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(tipo)) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Filtrar notificaciones
+            notificaciones.forEach(notif => {
+                if (tipo === 'todas') {
+                    notif.style.display = '';
+                    visibles++;
+                } else if (notif.dataset.tipo === tipo) {
+                    notif.style.display = '';
+                    visibles++;
+                } else {
+                    notif.style.display = 'none';
+                }
+            });
+
+            // Mostrar mensaje si no hay notificaciones
+            if (visibles === 0) {
+                noNotificaciones.classList.remove('hidden');
+            } else {
+                noNotificaciones.classList.add('hidden');
+            }
+        }
+
+        function marcarLeida(button) {
+            const notificacion = button.closest('.notificacion-item');
+            notificacion.dataset.leida = 'true';
+            notificacion.classList.add('opacity-60');
+            
+            // Ocultar indicador de nueva
+            const indicador = notificacion.querySelector('.w-2.h-2');
+            if (indicador) {
+                indicador.style.display = 'none';
+            }
+
+            // Ocultar botón de marcar como leída
+            button.style.display = 'none';
+
+            // Actualizar contador (simulado)
+            actualizarContadores();
+        }
+
+        function marcarTodasLeidas() {
+            const notificaciones = document.querySelectorAll('.notificacion-item[data-leida="false"]');
+            notificaciones.forEach(notif => {
+                notif.dataset.leida = 'true';
+                notif.classList.add('opacity-60');
+                
+                const indicador = notif.querySelector('.w-2.h-2');
+                if (indicador) {
+                    indicador.style.display = 'none';
+                }
+
+                const boton = notif.querySelector('button[onclick*="marcarLeida"]');
+                if (boton) {
+                    boton.style.display = 'none';
+                }
+            });
+
+            actualizarContadores();
+            alert('Todas las notificaciones han sido marcadas como leídas');
+        }
+
+        function actualizarContadores() {
+            // Esta función actualizaría los contadores en tiempo real
+            // Por ahora solo simula la actualización
+            console.log('Contadores actualizados');
+        }
+
+        // Agregar estilos para los botones de filtro
+        document.addEventListener('DOMContentLoaded', function() {
+            const style = document.createElement('style');
+            style.textContent = `
+                .filtro-notificacion {
+                    background-color: #f3f4f6;
+                    color: #6b7280;
+                }
+                .filtro-notificacion:hover {
+                    background-color: #e5e7eb;
+                    color: #374151;
+                }
+                .filtro-notificacion.active {
+                    background: linear-gradient(to right, #06b6d4, #14b8a6);
+                    color: white;
+                    box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.3);
+                }
+            `;
+            document.head.appendChild(style);
+        });
     </script>
 </body>
 </html>
