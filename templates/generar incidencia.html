@@ -1,98 +1,466 @@
 <!DOCTYPE html>
-<html class="light" lang="es"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Generar Incidencia</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "primary": "#80DEEA",
-              "background-light": "#F7FAFC",
-              "background-dark": "#1A202C",
-              "text-light": "#2D3748",
-              "text-dark": "#E2E8F0",
-              "border-light": "#E2E8F0",
-              "border-dark": "#4A5568",
-            },
-            fontFamily: {
-              "display": ["Manrope", "sans-serif"]
-            },
-            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-          },
-        },
-      }
-    </script>
-<style>
-      .form-input {
-        appearance: none;
-        -webkit-appearance: none;
-        background-repeat: no-repeat;
-        background-position: right 1rem center;
-        background-size: 1.5em 1.5em;
-        padding-right: 3rem;
-      }
-      select.form-input {
-          background-image: url("data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill=%27rgb(97,117,137)%27 viewBox=%270 0 256 256%27%3e%3cpath d=%27M181.66,170.34a8,8,0,0,1,0,11.32l-48,48a8,8,0,0,1-11.32,0l-48-48a8,8,0,0,1,11.32-11.32L128,212.69l42.34-42.35A8,8,0,0,1,181.66,170.34Zm-96-84.68L128,43.31l42.34,42.35a8,8,0,0,0,11.32-11.32l-48-48a8,8,0,0,0-11.32,0l-48,48A8,8,0,0,0,85.66,85.66Z%27%3e%3c/path%3e%3c/svg%3e");
-      }
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Incidencia - Clínica Unión</title>
+
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-text-light dark:text-text-dark">
-<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
-<div class="layout-container flex h-full grow flex-col">
-<div class="px-4 md:px-10 lg:px-20 flex flex-1 justify-center py-10">
-<div class="layout-content-container flex flex-col max-w-4xl flex-1 bg-white dark:bg-background-dark rounded-xl shadow-lg p-6 md:p-8">
-<div class="flex flex-wrap justify-between gap-3 pb-6 border-b border-border-light dark:border-border-dark">
-<p class="text-text-light dark:text-text-dark text-3xl font-bold tracking-tight">Generar Incidencia</p>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mt-6">
-<div class="flex flex-col">
-<label class="flex flex-col min-w-40 flex-1">
-<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Fecha de Reporte</p>
-<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-[#f0f2f4] dark:bg-gray-700 h-14 p-4 text-base font-normal leading-normal" readonly="" value="24/05/2024 10:30 AM"/>
-</label>
-</div>
-<div class="flex flex-col">
-<label class="flex flex-col min-w-40 flex-1">
-<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Paciente</p>
-<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-[#f0f2f4] dark:bg-gray-700 h-14 p-4 text-base font-normal leading-normal" readonly="" value="Carlos Sánchez (Automático)"/>
-</label>
-</div>
-<div class="md:col-span-2">
-<label class="flex flex-col min-w-40 flex-1">
-<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Descripción<span class="text-red-500">*</span></p>
-<textarea class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-white dark:bg-background-dark min-h-36 placeholder:text-gray-400 p-4 text-base font-normal leading-normal" placeholder="Ingrese una descripción detallada de la incidencia" required></textarea>
-</label>
-</div>
-<div class="md:col-span-2">
-<label class="flex flex-col min-w-40 flex-1">
-<p class="text-text-light dark:text-text-dark text-base font-medium leading-normal pb-2">Categoría<span class="text-red-500">*</span></p>
-<select class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-light dark:text-text-dark focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-border-light dark:border-border-dark bg-white dark:bg-background-dark h-14 p-4 text-base font-normal leading-normal" required>
-<option value="">Seleccione una categoría</option>
-<option value="hardware">Hardware</option>
-<option value="software">Software</option>
-<option value="red">Red</option>
-<option value="otro">Otro</option>
-</select>
-</label>
-</div>
-</div>
-<div class="flex justify-end mt-8 pt-6 border-t border-border-light dark:border-border-dark">
-<button class="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary text-text-light text-base font-semibold leading-normal shadow-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200">
-<span class="material-symbols-outlined">add_circle</span>
+<body class="bg-gray-50">
+
+    {% include 'header.html' %}
+
+    <div class="container mx-auto px-4 pt-24 pb-12">
+
+        <!-- Header Section -->
+        <div class="max-w-4xl mx-auto mb-8">
+            <a href="/seguridad/consultar-incidencia" class="inline-flex items-center text-cyan-600 hover:text-cyan-700 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+                    <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+                </svg>
+                Volver a incidencias
+            </a>
+
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800">Generar Incidencia</h1>
+                        <p class="text-gray-600">Registra y asigna incidencias del sistema</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="max-w-4xl mx-auto">
+            <form id="incidenciaForm" class="bg-white rounded-2xl shadow-lg p-8">
+
+                <!-- Información -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0 mt-1">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                        </svg>
+                        <div class="flex-1">
+                            <h3 class="font-bold text-blue-800 mb-1">Instrucciones</h3>
+                            <ul class="text-sm text-blue-700 list-disc list-inside space-y-1">
+                                <li>Busca al paciente que reporta la incidencia</li>
+                                <li>Asigna un empleado responsable (opcional)</li>
+                                <li>Describe detalladamente el problema</li>
+                                <li>Selecciona categoría y prioridad</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Buscar Paciente -->
+                    <div class="relative">
+                        <label for="buscarPaciente" class="block text-gray-700 font-semibold mb-2">
+                            Buscar Paciente
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="buscarPaciente"
+                            placeholder="Escribe nombre o apellido..."
+                            oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
+                        >
+                        <input type="hidden" id="idPaciente">
+                        <div id="sugerenciasPaciente" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1" id="pacienteSeleccionado"></p>
+                    </div>
+
+                    <!-- Buscar Empleado Responsable -->
+                    <div class="relative">
+                        <label for="buscarEmpleado" class="block text-gray-700 font-semibold mb-2">
+                            Asignar Responsable
+                            <span class="text-gray-400 text-sm font-normal">(Opcional)</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="buscarEmpleado"
+                            placeholder="Escribe nombre del empleado..."
+                            oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
+                        >
+                        <input type="hidden" id="idEmpleado">
+                        <div id="sugerenciasEmpleado" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto hidden">
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1" id="empleadoSeleccionado"></p>
+                    </div>
+                </div>
+
+                <!-- Categoría -->
+                <div class="mb-6">
+                    <label for="categoria" class="block text-gray-700 font-semibold mb-2">
+                        Categoría
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                        id="categoria"
+                        name="categoria"
+                        required
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
+                    >
+                        <option value="">Seleccionar categoría</option>
+                        <option value="Infraestructura">Infraestructura</option>
+                        <option value="Equipamiento Médico">Equipamiento Médico</option>
+                        <option value="Insumos">Insumos</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Software">Software</option>
+                        <option value="Atención al Paciente">Atención al Paciente</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+
+                <!-- Descripción -->
+                <div class="mb-6">
+                    <label for="descripcion" class="block text-gray-700 font-semibold mb-2">
+                        Descripción Detallada
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        id="descripcion"
+                        name="descripcion"
+                        required
+                        rows="6"
+                        maxlength="1000"
+                        placeholder="Describe detalladamente el problema o situación. Incluye fechas, lugares, y cualquier información relevante."
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none"
+                    ></textarea>
+                    <div class="flex justify-between items-center mt-1">
+                        <p class="text-sm text-gray-500">Mínimo 10 caracteres, máximo 1000</p>
+                        <p class="text-sm text-gray-400" id="charCount">0 / 1000</p>
+                    </div>
+                </div>
+
+                <!-- Prioridad -->
+                <div class="mb-8">
+                    <label class="block text-gray-700 font-semibold mb-3">
+                        Nivel de Prioridad
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <!-- Baja -->
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="prioridad" value="Baja" class="peer sr-only" required>
+                            <div class="border-2 border-gray-300 rounded-lg p-4 peer-checked:border-green-500 peer-checked:bg-green-50 hover:bg-gray-50 transition-all duration-200">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center peer-checked:bg-green-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600">
+                                            <polyline points="18 15 12 9 6 15"/>
+                                        </svg>
+                                    </div>
+                                    <span class="font-semibold text-gray-800">Baja</span>
+                                </div>
+                                <p class="text-sm text-gray-600">Situación que no requiere atención inmediata</p>
+                            </div>
+                        </label>
+
+                        <!-- Media -->
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="prioridad" value="Media" class="peer sr-only">
+                            <div class="border-2 border-gray-300 rounded-lg p-4 peer-checked:border-yellow-500 peer-checked:bg-yellow-50 hover:bg-gray-50 transition-all duration-200">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center peer-checked:bg-yellow-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-yellow-600">
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                        </svg>
+                                    </div>
+                                    <span class="font-semibold text-gray-800">Media</span>
+                                </div>
+                                <p class="text-sm text-gray-600">Situación que necesita atención en breve</p>
+                            </div>
+                        </label>
+
+                        <!-- Alta -->
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="prioridad" value="Alta" class="peer sr-only">
+                            <div class="border-2 border-gray-300 rounded-lg p-4 peer-checked:border-red-500 peer-checked:bg-red-50 hover:bg-gray-50 transition-all duration-200">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center peer-checked:bg-red-200">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-600">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
+                                    </div>
+                                    <span class="font-semibold text-gray-800">Alta</span>
+                                </div>
+                                <p class="text-sm text-gray-600">Situación urgente que requiere atención inmediata</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-end">
+                    <a href="/seguridad/consultar-incidencia" class="bg-gray-200 text-gray-700 font-semibold py-3 px-8 rounded-lg hover:bg-gray-300 transition-all duration-300 text-center">
+                        Cancelar
+                    </a>
+                    <button
+                        type="submit"
+                        id="btnEnviar"
+                        class="bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-lg hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2">
+                            <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+                        </svg>
                         Crear Incidencia
                     </button>
-</div>
-</div>
-</div>
-</div>
-</div>
+                </div>
 
-</body></html>
+            </form>
+        </div>
+
+        <!-- Modal de Éxito -->
+        <div id="modalExito" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 transform scale-95 transition-transform">
+                <div class="text-center">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Incidencia Creada!</h3>
+                    <p class="text-gray-600 mb-2">La incidencia ha sido registrada exitosamente.</p>
+                    <p class="text-sm text-gray-500 mb-6">El equipo será notificado para su atención.</p>
+                    <div class="flex gap-3">
+                        <a href="/seguridad/consultar-incidencia" class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-all duration-300 text-center">
+                            Ver Incidencias
+                        </a>
+                        <button onclick="location.reload()" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            Nueva Incidencia
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Contador de caracteres
+        const descripcion = document.getElementById('descripcion');
+        const charCount = document.getElementById('charCount');
+
+        descripcion.addEventListener('input', function() {
+            charCount.textContent = `${this.value.length} / 1000`;
+        });
+
+        // ========== BÚSQUEDA DINÁMICA DE PACIENTES ==========
+        let timeoutPaciente;
+        document.getElementById('buscarPaciente').addEventListener('input', function() {
+            clearTimeout(timeoutPaciente);
+            const termino = this.value.trim();
+
+            if (termino.length < 2) {
+                document.getElementById('sugerenciasPaciente').classList.add('hidden');
+                document.getElementById('idPaciente').value = '';
+                document.getElementById('pacienteSeleccionado').textContent = '';
+                return;
+            }
+
+            timeoutPaciente = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/seguridad/api/incidencias/buscar-pacientes?termino=${encodeURIComponent(termino)}`);
+                    if (response.ok) {
+                        const pacientes = await response.json();
+                        mostrarSugerenciasPaciente(pacientes);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }, 300);
+        });
+
+        function mostrarSugerenciasPaciente(pacientes) {
+            const contenedor = document.getElementById('sugerenciasPaciente');
+            contenedor.innerHTML = '';
+
+            if (pacientes.length === 0) {
+                contenedor.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">No se encontraron pacientes</div>';
+                contenedor.classList.remove('hidden');
+                return;
+            }
+
+            pacientes.forEach(paciente => {
+                const div = document.createElement('div');
+                div.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer border-b border-gray-100 last:border-0';
+                div.innerHTML = `
+                    <div class="font-semibold text-gray-800">${paciente.nombre_completo}</div>
+                    <div class="text-sm text-gray-500">DNI: ${paciente.dni || 'N/A'}</div>
+                `;
+                div.onclick = function() {
+                    document.getElementById('buscarPaciente').value = paciente.nombre_completo;
+                    document.getElementById('idPaciente').value = paciente.id_paciente;
+                    document.getElementById('pacienteSeleccionado').innerHTML = `
+                        <span class="text-green-600">✓ Paciente seleccionado: <strong>${paciente.nombre_completo}</strong></span>
+                    `;
+                    contenedor.classList.add('hidden');
+                };
+                contenedor.appendChild(div);
+            });
+
+            contenedor.classList.remove('hidden');
+        }
+
+        // ========== BÚSQUEDA DINÁMICA DE EMPLEADOS ==========
+        let timeoutEmpleado;
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            clearTimeout(timeoutEmpleado);
+            const termino = this.value.trim();
+
+            if (termino.length < 2) {
+                document.getElementById('sugerenciasEmpleado').classList.add('hidden');
+                document.getElementById('idEmpleado').value = '';
+                document.getElementById('empleadoSeleccionado').textContent = '';
+                return;
+            }
+
+            timeoutEmpleado = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/seguridad/api/incidencias/buscar-empleados?termino=${encodeURIComponent(termino)}`);
+                    if (response.ok) {
+                        const empleados = await response.json();
+                        mostrarSugerenciasEmpleado(empleados);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }, 300);
+        });
+
+        function mostrarSugerenciasEmpleado(empleados) {
+            const contenedor = document.getElementById('sugerenciasEmpleado');
+            contenedor.innerHTML = '';
+
+            if (empleados.length === 0) {
+                contenedor.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">No se encontraron empleados</div>';
+                contenedor.classList.remove('hidden');
+                return;
+            }
+
+            empleados.forEach(empleado => {
+                const div = document.createElement('div');
+                div.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer border-b border-gray-100 last:border-0';
+                div.innerHTML = `
+                    <div class="font-semibold text-gray-800">${empleado.nombre_completo}</div>
+                    <div class="text-sm text-gray-500">${empleado.cargo || 'Empleado'}</div>
+                `;
+                div.onclick = function() {
+                    document.getElementById('buscarEmpleado').value = empleado.nombre_completo;
+                    document.getElementById('idEmpleado').value = empleado.id_empleado;
+                    document.getElementById('empleadoSeleccionado').innerHTML = `
+                        <span class="text-green-600">✓ Responsable: <strong>${empleado.nombre_completo}</strong></span>
+                    `;
+                    contenedor.classList.add('hidden');
+                };
+                contenedor.appendChild(div);
+            });
+
+            contenedor.classList.remove('hidden');
+        }
+
+        // Ocultar sugerencias al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#buscarPaciente') && !e.target.closest('#sugerenciasPaciente')) {
+                document.getElementById('sugerenciasPaciente').classList.add('hidden');
+            }
+            if (!e.target.closest('#buscarEmpleado') && !e.target.closest('#sugerenciasEmpleado')) {
+                document.getElementById('sugerenciasEmpleado').classList.add('hidden');
+            }
+        });
+
+        // ========== MANEJO DEL FORMULARIO ==========
+        document.getElementById('incidenciaForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const idPaciente = document.getElementById('idPaciente').value;
+            const idEmpleado = document.getElementById('idEmpleado').value || null;
+            const descripcionText = document.getElementById('descripcion').value.trim();
+            const categoria = document.getElementById('categoria').value;
+            const prioridadRadio = document.querySelector('input[name="prioridad"]:checked');
+            const btnEnviar = document.getElementById('btnEnviar');
+
+            // Validaciones
+            if (!idPaciente) {
+                alert('Debes seleccionar un paciente de la lista de sugerencias');
+                return;
+            }
+
+            if (descripcionText.length < 10) {
+                alert('La descripción debe tener al menos 10 caracteres');
+                return;
+            }
+
+            if (!categoria) {
+                alert('Debes seleccionar una categoría');
+                return;
+            }
+
+            if (!prioridadRadio) {
+                alert('Debes seleccionar un nivel de prioridad');
+                return;
+            }
+
+            // Deshabilitar botón y mostrar loading
+            btnEnviar.disabled = true;
+            btnEnviar.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Creando incidencia...';
+
+            try {
+                const response = await fetch('/seguridad/api/incidencias/crear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_paciente: idPaciente,
+                        id_empleado: idEmpleado,
+                        descripcion: descripcionText,
+                        categoria: categoria,
+                        prioridad: prioridadRadio.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Mostrar modal de éxito
+                    document.getElementById('modalExito').classList.remove('hidden');
+                    document.getElementById('modalExito').querySelector('.transform').classList.add('scale-100');
+                    document.getElementById('modalExito').querySelector('.transform').classList.remove('scale-95');
+                } else {
+                    alert(data.message || 'Error al crear la incidencia. Por favor, intenta nuevamente.');
+                    btnEnviar.disabled = false;
+                    btnEnviar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Crear Incidencia';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar la solicitud. Por favor, intenta nuevamente.');
+                btnEnviar.disabled = false;
+                btnEnviar.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Crear Incidencia';
+            }
+        });
+    </script>
+
+</body>
+</html>
