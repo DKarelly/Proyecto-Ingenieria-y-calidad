@@ -233,6 +233,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             cargarSolicitudes();
+            cargarEstadisticas();
         });
 
         async function cargarSolicitudes() {
@@ -248,12 +249,27 @@
 
                 solicitudes = data.solicitudes || [];
                 mostrarSolicitudes();
-                actualizarEstadisticas();
+                cargarEstadisticas(); // Actualizar estadísticas después de cargar solicitudes
             } catch (err) {
                 console.error('Error:', err);
                 mostrarNotificacion('Error al cargar solicitudes', 'error');
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('sin-resultados').classList.remove('hidden');
+            }
+        }
+
+        async function cargarEstadisticas() {
+            try {
+                const resp = await fetch('/reservas/api/estadisticas-reprogramacion');
+                const data = await resp.json();
+
+                if (resp.ok) {
+                    document.getElementById('total-pendientes').textContent = data.pendientes || 0;
+                    document.getElementById('total-aprobadas').textContent = data.aprobadas_hoy || 0;
+                    document.getElementById('total-rechazadas').textContent = data.rechazadas_hoy || 0;
+                }
+            } catch (err) {
+                console.error('Error al cargar estadísticas:', err);
             }
         }
 
@@ -331,10 +347,6 @@
 
                 tbody.appendChild(tr);
             });
-        }
-
-        function actualizarEstadisticas() {
-            document.getElementById('total-pendientes').textContent = solicitudes.length;
         }
 
         function abrirModalAprobar(idSolicitud) {

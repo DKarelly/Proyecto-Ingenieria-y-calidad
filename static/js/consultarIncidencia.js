@@ -70,7 +70,8 @@ async function cargarIncidencias() {
         const response = await fetch('/seguridad/api/incidencias');
         if (response.ok) {
             incidenciasData = await response.json();
-            mostrarIncidencias(incidenciasData);
+            actualizarContadoresPrioridad();
+            aplicarFiltrosDinamicos(); // Aplicar filtro de prioridad inicial
         } else {
             console.error('Error al cargar incidencias');
         }
@@ -232,7 +233,20 @@ function mostrarEditarIncidencia(id) {
         document.getElementById('editEstado').value = incidencia.estado || 'Abierta';
         document.getElementById('editPrioridad').value = incidencia.prioridad || 'Media';
         document.getElementById('editCategoria').value = incidencia.categoria || 'Otro';
-        document.getElementById('editResponsable').value = incidencia.empleado;
+        
+        // Cargar empleado si existe
+        if (incidencia.empleado && incidencia.empleado !== 'Sin asignar') {
+            document.getElementById('editResponsable').value = incidencia.empleado;
+            document.getElementById('editResponsableId').value = incidencia.id_empleado || '';
+            document.getElementById('editResponsableSeleccionado').innerHTML = `
+                <span class="text-green-600">✓ Responsable: <strong>${incidencia.empleado}</strong></span>
+            `;
+        } else {
+            document.getElementById('editResponsable').value = '';
+            document.getElementById('editResponsableId').value = '';
+            document.getElementById('editResponsableSeleccionado').textContent = '';
+        }
+        
         document.getElementById('editObservaciones').value = incidencia.observaciones || '';
         document.getElementById('modalEditar').classList.add('show');
     }
@@ -307,6 +321,7 @@ function mostrarSugerenciasPaciente(pacientes) {
         div.onclick = function() {
             document.getElementById('filtroPaciente').value = paciente.nombre_completo;
             contenedor.classList.add('hidden');
+            aplicarFiltrosDinamicos(); // Aplicar filtro al seleccionar
         };
         contenedor.appendChild(div);
     });
@@ -362,6 +377,7 @@ function mostrarSugerenciasEmpleado(empleados) {
         div.onclick = function() {
             document.getElementById('filtroEmpleado').value = empleado.nombre_completo;
             contenedor.classList.add('hidden');
+            aplicarFiltrosDinamicos(); // Aplicar filtro al seleccionar
         };
         contenedor.appendChild(div);
     });
@@ -393,12 +409,15 @@ if (formEditar) {
         btnGuardar.innerHTML = '<span class="btn-loader"></span> Guardando...';
 
         const idIncidencia = document.getElementById('editId').value;
+        const idEmpleado = document.getElementById('editResponsableId').value;
+        
         const datos = {
             id_incidencia: idIncidencia,
             descripcion: document.getElementById('editDescripcion').value,
             estado: document.getElementById('editEstado').value,
             prioridad: document.getElementById('editPrioridad').value,
             categoria: document.getElementById('editCategoria').value,
+            id_empleado: idEmpleado || null, // Incluir ID del empleado
             observaciones: document.getElementById('editObservaciones').value
         };
 
@@ -521,8 +540,8 @@ function contarFiltrosActivos() {
         fecha_registro: document.getElementById('filtroFechaRegistro').value,
         fecha_resolucion: document.getElementById('filtroFechaResolucion').value,
         estado: document.getElementById('filtroEstado').value,
-        categoria: document.getElementById('filtroCategoria').value,
-        prioridad: document.getElementById('filtroPrioridad').value
+        categoria: document.getElementById('filtroCategoria').value
+        // prioridad: controlada por pestañas, no incluir en conteo de filtros
     };
 
     Object.values(filtros).forEach(valor => {
@@ -559,7 +578,7 @@ async function aplicarFiltrosDinamicos() {
             fecha_resolucion: document.getElementById('filtroFechaResolucion').value,
             estado: document.getElementById('filtroEstado').value,
             categoria: document.getElementById('filtroCategoria').value,
-            prioridad: document.getElementById('filtroPrioridad').value
+            prioridad: prioridadActiva // Usar la prioridad de la pestaña activa
         };
 
         // Actualizar badge de filtros
@@ -578,6 +597,7 @@ async function aplicarFiltrosDinamicos() {
             if (response.ok) {
                 const incidenciasFiltradas = await response.json();
                 mostrarIncidencias(incidenciasFiltradas);
+                // NO actualizar incidenciasData aquí, mantener los datos originales para contadores
             } else {
                 console.error('Error en la búsqueda');
                 showToast('Error al aplicar filtros', 'error');
@@ -586,21 +606,19 @@ async function aplicarFiltrosDinamicos() {
             console.error('Error:', error);
             showToast('Error de conexión al filtrar', 'error');
         }
-    }, 300); // Esperar 300ms después de que el usuario deje de escribir
+    }, 500); // Esperar 500ms después de que el usuario deje de escribir
 }
 
 // Agregar eventos dinámicos a todos los filtros
-document.getElementById('filtroPaciente').addEventListener('change', aplicarFiltrosDinamicos);
-document.getElementById('filtroEmpleado').addEventListener('change', aplicarFiltrosDinamicos);
+// Para inputs de texto: usar 'input' para filtrar mientras escribes
+document.getElementById('filtroPaciente').addEventListener('input', aplicarFiltrosDinamicos);
+document.getElementById('filtroEmpleado').addEventListener('input', aplicarFiltrosDinamicos);
+
+// Para selects y fechas: usar 'change' ya que se dispara inmediatamente al cambiar
 document.getElementById('filtroFechaRegistro').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroFechaResolucion').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroEstado').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroCategoria').addEventListener('change', aplicarFiltrosDinamicos);
-document.getElementById('filtroPrioridad').addEventListener('change', aplicarFiltrosDinamicos);
-
-// También aplicar filtros al escribir en los campos de texto
-document.getElementById('filtroPaciente').addEventListener('input', aplicarFiltrosDinamicos);
-document.getElementById('filtroEmpleado').addEventListener('input', aplicarFiltrosDinamicos);
 
 // Botón limpiar filtros
 const btnLimpiar = document.getElementById('btnLimpiar');
@@ -612,10 +630,10 @@ if (btnLimpiar) {
         document.getElementById('filtroFechaResolucion').value = '';
         document.getElementById('filtroEstado').value = '';
         document.getElementById('filtroCategoria').value = '';
-        document.getElementById('filtroPrioridad').value = '';
         document.getElementById('sugerenciasPaciente').classList.add('hidden');
         document.getElementById('sugerenciasEmpleado').classList.add('hidden');
-        cargarIncidencias(); // Recargar todas las incidencias
+        actualizarBadgeFiltros(); // Actualizar badge
+        aplicarFiltrosDinamicos(); // Aplicar filtros de nuevo (con prioridad activa)
     }
 }
 
@@ -628,4 +646,118 @@ document.getElementById('formFiltros').addEventListener('submit', function(e) {
 // Inicializar la página
 document.addEventListener('DOMContentLoaded', function() {
     cargarIncidencias();
+    inicializarPestanasPrioridad();
+});
+
+// ========== PESTAÑAS DE PRIORIDAD ==========
+let prioridadActiva = 'Baja';
+
+function inicializarPestanasPrioridad() {
+    const tabs = document.querySelectorAll('.priority-tab');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            // Remover active de todos
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            // Agregar active al clickeado
+            this.classList.add('active');
+            
+            // Actualizar prioridad activa
+            prioridadActiva = this.getAttribute('data-priority');
+            
+            // Aplicar filtros con nueva prioridad
+            aplicarFiltrosDinamicos();
+        });
+    });
+    
+    // Actualizar contadores al cargar
+    actualizarContadoresPrioridad();
+}
+
+function actualizarContadoresPrioridad() {
+    const contadores = {
+        'Baja': 0,
+        'Media': 0,
+        'Alta': 0
+    };
+    
+    incidenciasData.forEach(incidencia => {
+        if (contadores.hasOwnProperty(incidencia.prioridad)) {
+            contadores[incidencia.prioridad]++;
+        }
+    });
+    
+    // Actualizar badges
+    document.querySelectorAll('.priority-tab').forEach(tab => {
+        const prioridad = tab.getAttribute('data-priority');
+        const badge = tab.querySelector('.badge-count');
+        if (badge) {
+            badge.textContent = contadores[prioridad] || 0;
+        }
+    });
+}
+
+// ========== BÚSQUEDA DINÁMICA EMPLEADOS EN MODAL EDITAR ==========
+let timeoutEditEmpleado;
+document.getElementById('editResponsable').addEventListener('input', function() {
+    clearTimeout(timeoutEditEmpleado);
+    const termino = this.value.trim();
+
+    if (termino.length < 2) {
+        document.getElementById('sugerenciasEditEmpleado').classList.add('hidden');
+        document.getElementById('editResponsableId').value = '';
+        document.getElementById('editResponsableSeleccionado').textContent = '';
+        return;
+    }
+
+    timeoutEditEmpleado = setTimeout(async () => {
+        try {
+            const response = await fetch(`/seguridad/api/incidencias/buscar-empleados?termino=${encodeURIComponent(termino)}`);
+            if (response.ok) {
+                const empleados = await response.json();
+                mostrarSugerenciasEditEmpleado(empleados);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }, 300);
+});
+
+function mostrarSugerenciasEditEmpleado(empleados) {
+    const contenedor = document.getElementById('sugerenciasEditEmpleado');
+    contenedor.innerHTML = '';
+
+    if (empleados.length === 0) {
+        contenedor.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">No se encontraron empleados</div>';
+        contenedor.classList.remove('hidden');
+        return;
+    }
+
+    empleados.forEach(empleado => {
+        const div = document.createElement('div');
+        div.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer border-b border-gray-100 last:border-0';
+        div.innerHTML = `
+            <div class="font-semibold text-gray-800">${empleado.nombre_completo}</div>
+            <div class="text-sm text-gray-500">${empleado.cargo || 'Empleado'}</div>
+        `;
+        div.onclick = function() {
+            document.getElementById('editResponsable').value = empleado.nombre_completo;
+            document.getElementById('editResponsableId').value = empleado.id_empleado;
+            document.getElementById('editResponsableSeleccionado').innerHTML = `
+                <span class="text-green-600">✓ Responsable: <strong>${empleado.nombre_completo}</strong></span>
+            `;
+            contenedor.classList.add('hidden');
+        };
+        contenedor.appendChild(div);
+    });
+
+    contenedor.classList.remove('hidden');
+}
+
+// Ocultar sugerencias al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#editResponsable') && !e.target.closest('#sugerenciasEditEmpleado')) {
+        document.getElementById('sugerenciasEditEmpleado').classList.add('hidden');
+    }
 });
