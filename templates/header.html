@@ -351,7 +351,14 @@
                 const notifItem = e.target.closest('.notif-item');
                 if (notifItem) {
                     const idNotif = notifItem.getAttribute('data-id');
+                    const idReserva = notifItem.getAttribute('data-id-reserva');
                     const leida = notifItem.getAttribute('data-leida') === 'true';
+                    
+                    // Si tiene id_reserva, redirigir al historial con esa reserva
+                    if (idReserva && idReserva !== 'null' && idReserva !== 'None') {
+                        window.location.href = `/reservas/paciente/historial?reserva=${idReserva}`;
+                        return;
+                    }
                     
                     // Si no está leída, marcarla como leída
                     if (!leida && idNotif && !idNotif.startsWith('demo-')) {
@@ -471,6 +478,7 @@
                         <div class="notif-item ${notif.leida ? 'opacity-70' : ''} cursor-pointer transition-all duration-200 hover:scale-[1.01]" 
                              data-id="${notif.id_notificacion}" 
                              data-leida="${notif.leida}"
+                             data-id-reserva="${notif.id_reserva || ''}"
                              style="border-left: 4px solid ${estilos.borderColor};">
                             <div class="px-4 py-3 hover:bg-gray-50">
                                 <div class="flex items-start gap-3">

@@ -84,12 +84,13 @@
             </div>
         </div>
         <!-- Modal de Registro de Empleado -->
-        <div id="register-employee-modal" class="fixed inset-0 bg-black/60 z-[70] hidden flex flex-col items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative max-h-[90vh] overflow-y-auto">
-                <button id="close-register-employee-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                    <i class="fa-solid fa-times text-xl"></i>
-                </button>
-                <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Registrar Nuevo Empleado</h2>
+        <div id="register-employee-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden">
+            <div class="fixed inset-0 flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative max-h-[90vh] overflow-y-auto">
+                    <button id="close-register-employee-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                        <i class="fa-solid fa-times text-xl"></i>
+                    </button>
+                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Registrar Nuevo Empleado</h2>
                 <form method="POST" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -238,6 +239,7 @@
                 </form>
             </div>
         </div>
+        </div>
 
         <!-- Search Section -->
         <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-200">
@@ -285,68 +287,68 @@
                             </th>
                         </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
-                    {% if empleados %}
-                        {% for empleado in empleados %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-6 py-4 font-semibold text-slate-700">#{{ empleado.id_empleado }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
-                                        <i class="fa-solid fa-user text-cyan-600"></i>
-                                    </div>
-                                    <span class="text-sm font-semibold text-slate-900">{{ empleado.nombres }} {{ empleado.apellidos }}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-slate-600">
-                                <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
-                                {{ empleado.correo }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="admin-badge info inline-flex items-center">
-                                    <i class="fa-solid fa-user-tag mr-1.5"></i>
-                                    {{ empleado.rol if empleado.rol else 'Sin rol' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="admin-badge success inline-flex items-center">
-                                    <i class="fa-solid fa-circle-check mr-1.5"></i>
-                                    Activo
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <a href="/cuentas/editar-empleado/{{ empleado.id_empleado }}" 
-                                       class="btn btn-outline text-cyan-600 hover:text-white hover:bg-cyan-500" 
-                                       title="Editar">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </a>
-                                    <button onclick="eliminarEmpleado({{ empleado.id_empleado }}, '{{ empleado.nombres }} {{ empleado.apellidos }}')" 
-                                            class="btn btn-outline text-red-600 hover:text-white hover:bg-red-500" 
-                                            title="Eliminar">
-                                        <i class="fa-solid fa-trash-can"></i>
-                                    </button>
-                                </div>
-                            </td>
+                <tbody id="tabla-empleados-body" class="divide-y divide-gray-200">
+                    <!-- Los empleados se cargarán dinámicamente con JavaScript -->
+                </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+                <!-- Texto de registros -->
+                <div class="text-sm text-gray-600 text-center md:text-left">
+                    Mostrando <span id="inicio-rango" class="font-medium">0</span>-
+                    <span id="fin-rango" class="font-medium">0</span> de
+                    <span id="total-registros" class="font-medium">0</span> registros
+                </div>
+
+                <!-- Controles de paginación -->
+                <nav id="paginacionNumeros" class="flex items-center space-x-2" aria-label="Pagination"></nav>
+            </div>
+        </div>
+
+        <!-- Tabla de Pacientes -->
+        <div class="overflow-x-auto admin-card shadow-md mt-12">
+            <h2 class="text-xl font-bold text-gray-800 px-6 py-4 border-b border-gray-200">Gestión de Pacientes</h2>
+            <table class="admin-table w-full">
+                <thead>
+                    <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                ID
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Nombre Completo
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Email
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Documento
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Teléfono
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Estado
+                            </th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center justify-center text-gray-500">
-                                    <i class="fa-solid fa-users text-4xl mb-3 text-gray-300"></i>
-                                    <p class="text-lg font-medium">No se encontraron empleados</p>
-                                    {% if termino_busqueda %}
-                                    <p class="text-sm mt-2">No hay resultados para "{{ termino_busqueda }}"</p>
-                                    {% else %}
-                                    <p class="text-sm mt-2">Comienza registrando un nuevo empleado</p>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                    {% endif %}
+                </thead>
+                <tbody id="tabla-pacientes-body" class="divide-y divide-gray-200">
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Paginación Pacientes -->
+            <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+                <!-- Texto de registros -->
+                <div class="text-sm text-gray-600 text-center md:text-left">
+                    Mostrando <span id="inicio-rango-pacientes" class="font-medium">0</span>-
+                    <span id="fin-rango-pacientes" class="font-medium">0</span> de
+                    <span id="total-registros-pacientes" class="font-medium">0</span> pacientes
+                </div>
+
+                <!-- Controles de paginación -->
+                <nav id="paginacionNumeros-pacientes" class="flex items-center space-x-2" aria-label="Pagination"></nav>
             </div>
         </div>
     </div>
@@ -356,8 +358,8 @@
     <!-- Script de confirmación modal -->
     <script src="{{ url_for('static', filename='js/confirmation-modal.js') }}"></script>
     
-    <!-- Script de gestión de cuentas internas -->
-    <script src="{{ url_for('static', filename='js/gestionarCuentasInternas.js') }}"></script>
+    <!-- Script de paginación limpia (sin conflictos) -->
+    <script src="{{ url_for('static', filename='js/paginacion-limpia.js') }}?v=clean2024"></script>
 </body>
 </html>
 

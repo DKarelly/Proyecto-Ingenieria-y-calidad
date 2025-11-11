@@ -39,6 +39,50 @@
             background-color: #fee2e2;
             color: #991b1b;
         }
+        
+        /* Animaciones para modales */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        .animate-slideIn {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .animate-slideOut {
+            animation: slideOut 0.3s ease-out;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -157,7 +201,7 @@
     {% include 'footer.html' %}
 
     <!-- Script externo para gestión del historial -->
-    <script src="{{ url_for('static', filename='js/historial-reservas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/historial-reservas.js') }}?v=3.0.0"></script>
 
 </body>
 </html>
