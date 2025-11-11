@@ -153,6 +153,16 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Controles de Paginación -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-gray-600">
+                    <span>Mostrando <span id="inicio-rango-tabla-pacientes-datos">1</span> - <span id="fin-rango-tabla-pacientes-datos">20</span> de <span id="total-registros-tabla-pacientes-datos">0</span> pacientes</span>
+                </div>
+                <nav id="paginacion-tabla-pacientes-datos" class="flex items-center gap-2 flex-wrap justify-center">
+                    <!-- Los botones de paginación se generarán aquí -->
+                </nav>
+            </div>
         </div>
     </div>
 
@@ -222,31 +232,13 @@
         });
 
         // Función para eliminar paciente
-        async function eliminarPaciente(idPaciente) {
+        function eliminarPaciente(idPaciente) {
             if (!confirm('¿Está seguro de que desea eliminar este paciente? Esta acción desactivará su cuenta.')) {
                 return;
             }
-
-            try {
-                const response = await fetch(`/cuentas/eliminar-paciente/${idPaciente}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert('Paciente eliminado exitosamente');
-                    window.location.reload();
-                } else {
-                    alert('Error: ' + (data.error || 'No se pudo eliminar el paciente'));
-                }
-            } catch (error) {
-                console.error('Error al eliminar:', error);
-                alert('Error al eliminar el paciente');
-            }
+            
+            // Redirigir al endpoint que maneja la eliminación con tab=pacientes
+            window.location.href = `/cuentas/eliminar-paciente/${idPaciente}?tab=pacientes`;
         }
 
         // Delegated event handler for eliminar buttons (uses data-id attribute)
@@ -362,5 +354,14 @@
             });
         }
     </script>
+
+    <!-- Script de confirmación modal -->
+    <script src="{{ url_for('static', filename='js/confirmation-modal.js') }}"></script>
+
+    <!-- Script de paginación reutilizable -->
+    <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+
+    <!-- Script de paginación para datos de pacientes -->
+    <script src="{{ url_for('static', filename='js/paginacionDatosPacientes.js') }}"></script>
 </body>
 </html>

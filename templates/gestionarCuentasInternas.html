@@ -84,7 +84,7 @@
             </div>
         </div>
         <!-- Modal de Registro de Empleado -->
-        <div id="register-employee-modal" class="fixed inset-0 bg-black/60 z-[70] hidden items-center justify-center p-4">
+        <div id="register-employee-modal" class="fixed inset-0 bg-black/60 z-[70] hidden flex flex-col items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative max-h-[90vh] overflow-y-auto">
                 <button id="close-register-employee-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                     <i class="fa-solid fa-times text-xl"></i>
@@ -353,6 +353,9 @@
 
     {% include 'footer.html' %}
 
+    <!-- Script de confirmación modal -->
+    <script src="{{ url_for('static', filename='js/confirmation-modal.js') }}"></script>
+    
     <!-- Script de gestión de cuentas internas -->
     <script src="{{ url_for('static', filename='js/gestionarCuentasInternas.js') }}"></script>
 </body>

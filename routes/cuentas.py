@@ -872,23 +872,27 @@ def editar_empleado(id_empleado):
                          provincias=provincias,
                          distritos=distritos)
 
-@cuentas_bp.route('/eliminar-empleado/<int:id_empleado>', methods=['POST'])
+@cuentas_bp.route('/eliminar-empleado/<int:id_empleado>', methods=['GET', 'POST'])
 def eliminar_empleado(id_empleado):
     """Eliminar (desactivar) un empleado"""
     # Verificar sesión
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+        flash('No autorizado', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
     
     try:
         resultado = Empleado.eliminar(id_empleado)
         
         if 'error' in resultado:
-            return jsonify({'success': False, 'message': resultado['error']}), 400
+            flash(f'Error: {resultado["error"]}', 'error')
+            return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
         
-        return jsonify({'success': True, 'message': 'Empleado eliminado correctamente'})
+        flash('Empleado eliminado correctamente', 'success')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
         
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
 
 @cuentas_bp.route('/gestionar-roles-permisos')
 def gestionar_roles_permisos():
@@ -1149,20 +1153,27 @@ def editar_paciente(id_paciente):
     
     return render_template('editarPaciente.html', paciente=paciente)
 
-@cuentas_bp.route('/eliminar-paciente/<int:id_paciente>', methods=['POST'])
+@cuentas_bp.route('/eliminar-paciente/<int:id_paciente>', methods=['GET', 'POST'])
 def eliminar_paciente(id_paciente):
     """Eliminar (desactivar) Paciente"""
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 403
+        flash('No autorizado', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
     
     from models.paciente import Paciente
     
-    resultado = Paciente.eliminar(id_paciente)
-    
-    if 'error' in resultado:
-        return jsonify({'error': resultado['error']}), 500
-    
-    return jsonify({'success': True, 'message': 'Paciente eliminado exitosamente'})
+    try:
+        resultado = Paciente.eliminar(id_paciente)
+        
+        if 'error' in resultado:
+            flash(f'Error: {resultado["error"]}', 'error')
+            return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
+        
+        flash('Paciente eliminado exitosamente', 'success')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
 
 @cuentas_bp.route('/recuperar-contrasena')
 def recuperar_contrasena():

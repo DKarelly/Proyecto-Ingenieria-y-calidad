@@ -462,6 +462,16 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Controles de Paginación Empleados -->
+                <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-600">
+                        <span>Mostrando <span id="inicio-rango-tabla-empleados">1</span> - <span id="fin-rango-tabla-empleados">20</span> de <span id="total-registros-tabla-empleados">0</span> empleados</span>
+                    </div>
+                    <nav id="paginacion-tabla-empleados" class="flex items-center gap-2 flex-wrap justify-center">
+                        <!-- Los botones de paginación se generarán aquí -->
+                    </nav>
+                </div>
             </div>
 
             <!-- TAB CONTENT: PACIENTES -->
@@ -565,6 +575,16 @@
                             {% endif %}
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Controles de Paginación Pacientes -->
+                <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-600">
+                        <span>Mostrando <span id="inicio-rango-tabla-pacientes">1</span> - <span id="fin-rango-tabla-pacientes">20</span> de <span id="total-registros-tabla-pacientes">0</span> pacientes</span>
+                    </div>
+                    <nav id="paginacion-tabla-pacientes" class="flex items-center gap-2 flex-wrap justify-center">
+                        <!-- Los botones de paginación se generarán aquí -->
+                    </nav>
                 </div>
             </div>
         </div>
@@ -1734,6 +1754,12 @@
             }
         });
     </script>
+
+    <!-- Script de paginación reutilizable -->
+    <script src="{{ url_for('static', filename='js/pagination.js') }}" defer></script>
+
+    <!-- Script de paginación para cuentas internas -->
+    <script src="{{ url_for('static', filename='js/paginacionCuentasInternas.js') }}" defer></script>
 
     <!-- Script de gestión de cuentas internas (carga diferida para mejor rendimiento) -->
     <script src="{{ url_for('static', filename='js/gestionarCuentasInternas.js') }}" defer></script>

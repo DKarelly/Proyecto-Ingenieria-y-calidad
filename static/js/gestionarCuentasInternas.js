@@ -595,24 +595,7 @@ function eliminarEmpleado(idEmpleado, nombreCompleto) {
     if (!confirm(`¿Está seguro de eliminar al empleado ${nombreCompleto}?\n\nEsta acción desactivará la cuenta del empleado.`)) {
         return;
     }
-
-    fetch(`/cuentas/eliminar-empleado/${idEmpleado}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message || 'Empleado eliminado correctamente');
-            window.location.reload();
-        } else {
-            alert('Error: ' + (data.message || 'No se pudo eliminar el empleado'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error al procesar la solicitud');
-    });
+    
+    // Redirigir al endpoint que maneja la eliminación con tab=empleados
+    window.location.href = `/cuentas/eliminar-empleado/${idEmpleado}?tab=empleados`;
 }
