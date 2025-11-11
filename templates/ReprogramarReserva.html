@@ -1,4 +1,4 @@
-n<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -134,7 +134,7 @@ n<!DOCTYPE html>
                 </div>
                 <div>
                     <h2 class="text-lg font-semibold text-gray-800">Seleccionar Reserva a Reprogramar</h2>
-                    <p class="text-sm text-gray-500">Elige la reserva que deseas modificar (mostrar solo pendientes)</p>
+                    <p class="text-sm text-gray-500">Elige la reserva que deseas modificar</p>
                 </div>
             </div>
 
@@ -175,7 +175,7 @@ n<!DOCTYPE html>
             try {
                 const resp = await fetch(`/reservas/api/paciente-por-dni?dni=${encodeURIComponent(dni)}`);
                 const data = await resp.json();
-
+Array para almacenar todos los servicios
                 if (!data.paciente) {
                     citasList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fas fa-user-slash text-4xl mb-3"></i><p>Paciente no encontrado</p></div>';
                     pacienteInfo.classList.add('hidden');
