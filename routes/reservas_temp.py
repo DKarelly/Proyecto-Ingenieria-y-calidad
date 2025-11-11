@@ -51,17 +51,19 @@ def api_horarios_disponibles_reprogramacion():
                     h.id_horario,
                     h.hora_inicio,
                     h.hora_fin,
-                    h.disponibilidad
+                    COALESCE(p2.estado, 'Disponible') as estado_programacion
                 FROM HORARIO h
-                INNER JOIN PROGRAMACION p ON h.id_horario = p.id_horario
+                LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario AND p.id_servicio = %s
+                LEFT JOIN PROGRAMACION p2 ON h.id_horario = p2.id_horario 
+                    AND p2.fecha = h.fecha 
+                    AND p2.hora_inicio = h.hora_inicio
                 WHERE h.fecha = %s
-                AND p.id_servicio = %s
-                AND h.estado = 'Activo'
-                AND h.disponibilidad = 'Disponible'
+                AND h.activo = 1
+                AND COALESCE(p2.estado, 'Disponible') = 'Disponible'
                 AND NOT (h.hora_inicio = %s AND h.hora_fin = %s)
                 ORDER BY h.hora_inicio ASC
             """
-            cursor.execute(sql_horarios, (fecha, id_servicio, hora_actual_inicio, hora_actual_fin))
+            cursor.execute(sql_horarios, (id_servicio, fecha, hora_actual_inicio, hora_actual_fin))
             horarios = cursor.fetchall()
 
             horarios_disponibles = []
@@ -143,15 +145,20 @@ def api_reprogramar_reserva():
             tipo_reserva = reserva['tipo']
 
             sql_horario = """
-                SELECT id_horario FROM HORARIO 
-                WHERE fecha = %s 
-                AND hora_inicio <= %s 
-                AND hora_fin >= %s
-                AND estado = 'Activo'
-                AND disponibilidad = 'Disponible'
+                SELECT h.id_horario 
+                FROM HORARIO h
+                LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                    AND p.fecha = h.fecha 
+                    AND p.hora_inicio <= %s 
+                    AND p.hora_fin >= %s
+                WHERE h.fecha = %s 
+                AND h.hora_inicio <= %s 
+                AND h.hora_fin >= %s
+                AND h.activo = 1
+                AND (p.estado IS NULL OR p.estado = 'Disponible')
                 LIMIT 1
             """
-            cursor.execute(sql_horario, (nueva_fecha, nueva_hora, nueva_hora))
+            cursor.execute(sql_horario, (nueva_hora, nueva_hora, nueva_fecha, nueva_hora, nueva_hora))
             horario_nuevo = cursor.fetchone()
             
             if not horario_nuevo:
@@ -166,7 +173,7 @@ def api_reprogramar_reserva():
 
             sql_nueva_prog = """
                 INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_servicio, id_horario)
-                VALUES (%s, %s, %s, 'Activo', %s, %s)
+                VALUES (%s, %s, %s, 'Ocupado', %s, %s)
             """
             cursor.execute(sql_nueva_prog, (nueva_fecha, nueva_hora, hora_fin, id_servicio, id_horario_nuevo))
             id_programacion_nueva = cursor.lastrowid
@@ -175,9 +182,7 @@ def api_reprogramar_reserva():
                 UPDATE RESERVA 
                 SET id_programacion = %s,
                     estado = 'Confirmada',
-                    estado_cancelacion = 'Ninguna',
-                    motivo_cancelacion = NULL,
-                    fecha_solicitud_cancelacion = NULL
+                    motivo_cancelacion = NULL
                 WHERE id_reserva = %s
             """
             cursor.execute(sql_actualizar, (id_programacion_nueva, id_reserva))
@@ -257,8 +262,9 @@ def api_solicitar_cancelacion():
 
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
+            # Verificar que la reserva existe y pertenece al paciente
             sql_verificar = """
-                SELECT id_reserva, estado, estado_cancelacion 
+                SELECT id_reserva, estado 
                 FROM RESERVA 
                 WHERE id_reserva = %s AND id_paciente = %s
             """
@@ -268,25 +274,35 @@ def api_solicitar_cancelacion():
             if not reserva:
                 return jsonify({'error': 'Reserva no encontrada'}), 404
             
-            if reserva['estado_cancelacion'] in ['Solicitada', 'Cancelada']:
-                return jsonify({'error': 'Esta reserva ya tiene una solicitud de cancelaciÃ³n activa'}), 400
-
-            from datetime import datetime
-            fecha_solicitud = datetime.now()
-
-            sql_actualizar = """
-                UPDATE RESERVA 
-                SET estado_cancelacion = 'Solicitada',
-                    motivo_cancelacion = %s,
-                    fecha_solicitud_cancelacion = %s
-                WHERE id_reserva = %s
+            if reserva['estado'] == 'Cancelada':
+                return jsonify({'error': 'Esta reserva ya está cancelada'}), 400
+            
+            if reserva['estado'] == 'Completada':
+                return jsonify({'error': 'No se puede cancelar una reserva completada'}), 400
+            
+            # Verificar si ya existe una solicitud pendiente
+            sql_verificar_solicitud = """
+                SELECT COUNT(*) as count 
+                FROM SOLICITUD 
+                WHERE id_reserva = %s AND estado = 'Pendiente'
             """
-            cursor.execute(sql_actualizar, (motivo, fecha_solicitud, id_reserva))
+            cursor.execute(sql_verificar_solicitud, (id_reserva,))
+            result = cursor.fetchone()
+            
+            if result and result['count'] > 0:
+                return jsonify({'error': 'Ya existe una solicitud de cancelación pendiente para esta reserva'}), 400
+
+            # Crear solicitud en la tabla SOLICITUD
+            sql_insertar_solicitud = """
+                INSERT INTO SOLICITUD (id_reserva, estado, motivo, fecha_solicitud)
+                VALUES (%s, 'Pendiente', %s, NOW())
+            """
+            cursor.execute(sql_insertar_solicitud, (id_reserva, motivo))
             conexion.commit()
 
             return jsonify({
                 'success': True,
-                'message': 'Solicitud de cancelaciÃ³n enviada. Un trabajador la revisarÃ¡ pronto.'
+                'message': 'Solicitud de cancelación enviada. Un trabajador la revisará pronto.'
             }), 200
 
     except Exception as e:

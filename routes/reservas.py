@@ -9,17 +9,32 @@ from models.programacion import Programacion
 from bd import obtener_conexion
 from datetime import date, datetime, timedelta, time
 from models.notificacion import Notificacion
+import time as time_module
 
 reservas_bp = Blueprint('reservas', __name__)
 
+# Variable global para controlar la frecuencia de actualización
+_ultima_actualizacion_horarios = None
+_intervalo_actualizacion = 300  # 5 minutos en segundos
+
 def actualizar_horarios_vencidos():
     """
-    Actualiza automáticamente el estado de los horarios a 'Completado' 
-    cuando la fecha del horario ya ha pasado (fecha < fecha actual).
+    Actualiza automáticamente el estado de las programaciones a 'Ocupado' o 'Bloqueado'
+    cuando la fecha ya ha pasado.
     
-    Esta función se ejecuta automáticamente antes de consultar horarios
-    para mantener los estados actualizados.
+    Esta función se ejecuta automáticamente antes de consultar horarios,
+    pero solo si han pasado al menos 5 minutos desde la última actualización.
+    
+    Nota: La tabla HORARIO ahora usa 'activo' (bool) en lugar de 'estado'.
     """
+    global _ultima_actualizacion_horarios
+    
+    # Verificar si necesitamos actualizar (evitar llamadas frecuentes)
+    tiempo_actual = time_module.time()
+    if _ultima_actualizacion_horarios is not None:
+        if (tiempo_actual - _ultima_actualizacion_horarios) < _intervalo_actualizacion:
+            return 0  # No actualizar todavía
+    
     conn = None
     cursor = None
     
@@ -27,35 +42,54 @@ def actualizar_horarios_vencidos():
         conn = obtener_conexion()
         cursor = conn.cursor()
         
+        # Establecer un timeout corto para evitar bloqueos largos
+        cursor.execute("SET SESSION innodb_lock_wait_timeout = 2")
+        
         fecha_actual = date.today()
         
-        # Actualizar horarios cuya fecha ya pasó y no están en estado Completado
+        # Actualizar programaciones cuya fecha ya pasó y siguen como Disponible
         query = """
-            UPDATE HORARIO 
-            SET estado = 'Completado'
+            UPDATE PROGRAMACION 
+            SET estado = 'Ocupado'
             WHERE fecha < %s 
-            AND estado != 'Completado'
+            AND estado = 'Disponible'
         """
         
         cursor.execute(query, (fecha_actual,))
         registros_actualizados = cursor.rowcount
         conn.commit()
         
+        # Actualizar el timestamp de última actualización
+        _ultima_actualizacion_horarios = tiempo_actual
+        
         if registros_actualizados > 0:
-            print(f"✓ Se actualizaron {registros_actualizados} horarios a estado 'Completado'")
+            print(f"✓ Se actualizaron {registros_actualizados} programaciones vencidas")
         
         return registros_actualizados
         
     except Exception as e:
-        print(f"Error al actualizar horarios vencidos: {str(e)}")
+        # Silenciar errores de timeout para no interrumpir las consultas
+        if "Lock wait timeout" in str(e):
+            print(f"⚠ Timeout al actualizar horarios vencidos (se omitirá por ahora)")
+        else:
+            print(f"Error al actualizar horarios vencidos: {str(e)}")
         if conn:
-            conn.rollback()
+            try:
+                conn.rollback()
+            except:
+                pass
         return 0
     finally:
         if cursor:
-            cursor.close()
+            try:
+                cursor.close()
+            except:
+                pass
         if conn:
-            conn.close()
+            try:
+                conn.close()
+            except:
+                pass
 
 @reservas_bp.route('/')
 def panel():
@@ -174,16 +208,19 @@ def api_horarios_semana(id_empleado):
                     h.fecha,
                     TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
                     TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
-                    h.estado,
-                    h.disponibilidad,
+                    h.activo,
+                    COALESCE(p.estado, 'Disponible') as estado_programacion,
                     CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
                     esp.nombre as especialidad
                 FROM HORARIO h
                 INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                 LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                    AND p.fecha = h.fecha 
+                    AND p.hora_inicio = h.hora_inicio
                 WHERE h.id_empleado = %s
                   AND h.fecha BETWEEN %s AND %s
-                  AND h.estado = 'Activo'
+                  AND h.activo = 1
                 ORDER BY h.fecha, h.hora_inicio
             """
             cursor.execute(sql, (id_empleado, inicio_semana, fin_semana))
@@ -200,9 +237,9 @@ def api_horarios_semana(id_empleado):
                     dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
                     horario['dia_semana'] = dias_semana[fecha_obj.weekday()]
                 
-                # Marcar si es disponible (verificar campo disponibilidad o estado)
-                disponibilidad = horario.get('disponibilidad', '')
-                horario['disponible'] = disponibilidad == 'Disponible'
+                # Marcar si es disponible (verificar estado de programación)
+                estado_prog = horario.get('estado_programacion', 'Disponible')
+                horario['disponible'] = estado_prog == 'Disponible'
             
             return jsonify({
                 'horarios': horarios,
@@ -330,7 +367,7 @@ def api_buscar_horarios_disponibles():
         conn = obtener_conexion()
         cursor = conn.cursor()
         
-        # Query base
+        # Query base: buscar horarios activos y su estado de programación
         query = """
             SELECT 
                 h.id_horario,
@@ -338,15 +375,18 @@ def api_buscar_horarios_disponibles():
                 h.fecha,
                 TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
                 TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
-                h.disponibilidad,
-                h.estado,
+                COALESCE(p.estado, 'Disponible') as estado_programacion,
+                h.activo,
                 CONCAT(e.nombres, ' ', e.apellidos) as profesional,
                 es.nombre as especialidad
             FROM HORARIO h
             INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
             LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
-            WHERE (h.disponibilidad) = 'Disponible'
-                AND (h.estado) = 'Activo'
+            LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                AND p.fecha = h.fecha 
+                AND p.hora_inicio = h.hora_inicio
+            WHERE h.activo = 1
+                AND COALESCE(p.estado, 'Disponible') = 'Disponible'
         """
         
         params = []
@@ -401,7 +441,7 @@ def api_buscar_horarios_disponibles_completo():
     
     Parámetros GET (todos opcionales):
     - id_empleado: int
-    - disponibilidad: string (Disponible, Ocupado, Completado)
+    - disponibilidad: string (Disponible, Ocupado, Bloqueado)
     - fecha_desde: YYYY-MM-DD
     - fecha_hasta: YYYY-MM-DD
     - rol: string
@@ -422,57 +462,116 @@ def api_buscar_horarios_disponibles_completo():
         conn = obtener_conexion()
         cursor = conn.cursor()
         
-        # Query base - NO filtrar por disponibilidad ni estado en WHERE inicial
-        query = """
-            SELECT 
-                h.id_horario,
-                h.id_empleado,
-                h.fecha,
-                TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
-                TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
-                h.disponibilidad,
-                h.estado,
-                CONCAT(e.nombres, ' ', e.apellidos) as profesional,
-                COALESCE(es.nombre, '-') as especialidad,
-                r.nombre as rol
-            FROM HORARIO h
-            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-            LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
-            LEFT JOIN ROL r ON e.id_rol = r.id_rol
-            WHERE 1=1
-        """
-        
+        # Construir query según el filtro de disponibilidad
         params = []
         
-        # Filtro por empleado
-        if id_empleado:
-            query += " AND h.id_empleado = %s"
-            params.append(int(id_empleado))
-        
-        # Filtro por disponibilidad
-        if disponibilidad:
-            query += " AND LOWER(h.disponibilidad) = LOWER(%s)"
+        # Para Ocupado y Bloqueado: buscar directamente en PROGRAMACION
+        # ya que estas programaciones pueden no coincidir exactamente con un HORARIO
+        if disponibilidad in ['Ocupado', 'Bloqueado']:
+            query = """
+                SELECT 
+                    p.id_horario,
+                    COALESCE(h.id_empleado, 0) as id_empleado,
+                    p.fecha,
+                    TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                    TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                    p.estado as disponibilidad,
+                    COALESCE(h.activo, 1) as activo,
+                    CONCAT(COALESCE(e.nombres, 'N/A'), ' ', COALESCE(e.apellidos, '')) as profesional,
+                    COALESCE(es.nombre, '-') as especialidad,
+                    COALESCE(r.nombre, '-') as rol,
+                    p.id_programacion
+                FROM PROGRAMACION p
+                LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
+                LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                WHERE p.estado = %s
+            """
             params.append(disponibilidad)
+            
+            # Filtros adicionales
+            if id_empleado:
+                query += " AND h.id_empleado = %s"
+                params.append(int(id_empleado))
+            
+            if fecha_desde:
+                query += " AND p.fecha >= %s"
+                params.append(fecha_desde)
+            
+            if fecha_hasta:
+                query += " AND p.fecha <= %s"
+                params.append(fecha_hasta)
+            
+            if rol:
+                query += " AND r.nombre = %s"
+                params.append(rol)
+            
+            query += " ORDER BY p.id_programacion ASC"
         
-        # Filtro por rango de fechas
-        if fecha_desde:
-            query += " AND h.fecha >= %s"
-            params.append(fecha_desde)
+        else:
+            # Para Disponible o sin filtro: buscar desde HORARIO
+            query = """
+                SELECT 
+                    h.id_horario,
+                    h.id_empleado,
+                    h.fecha,
+                    TIME_FORMAT(h.hora_inicio, '%%H:%%i') as hora_inicio,
+                    TIME_FORMAT(h.hora_fin, '%%H:%%i') as hora_fin,
+                    COALESCE(p.estado, 'Disponible') as disponibilidad,
+                    h.activo,
+                    CONCAT(e.nombres, ' ', e.apellidos) as profesional,
+                    COALESCE(es.nombre, '-') as especialidad,
+                    r.nombre as rol,
+                    p.id_programacion
+                FROM HORARIO h
+                INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
+                LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                    AND p.fecha = h.fecha 
+                    AND p.hora_inicio = h.hora_inicio
+                WHERE h.activo = 1
+            """
+            
+            # Filtros adicionales
+            if id_empleado:
+                query += " AND h.id_empleado = %s"
+                params.append(int(id_empleado))
+            
+            if disponibilidad == 'Disponible':
+                query += " AND COALESCE(p.estado, 'Disponible') = 'Disponible'"
+            
+            if fecha_desde:
+                query += " AND h.fecha >= %s"
+                params.append(fecha_desde)
+            
+            if fecha_hasta:
+                query += " AND h.fecha <= %s"
+                params.append(fecha_hasta)
+            
+            if rol:
+                query += " AND r.nombre = %s"
+                params.append(rol)
+            
+            query += " ORDER BY h.id_horario ASC"
         
-        if fecha_hasta:
-            query += " AND h.fecha <= %s"
-            params.append(fecha_hasta)
-        
-        # Filtro por rol del empleado
-        if rol:
-            query += " AND r.nombre = %s"
-            params.append(rol)
-        
-        # Ordenar por ID de horario
-        query += " ORDER BY h.id_horario ASC"
+        print(f"\n[DEBUG api_buscar_horarios_disponibles_completo]")
+        print(f"  Filtro disponibilidad: '{disponibilidad}'")
+        print(f"  Estrategia: {'Buscar en PROGRAMACION directamente' if disponibilidad in ['Ocupado', 'Bloqueado'] else 'Buscar en HORARIO con LEFT JOIN'}")
+        print(f"  Parámetros: {params}")
+        print(f"\n[DEBUG] Query completa:")
+        print(query)
+        print()
         
         cursor.execute(query, params)
         horarios = cursor.fetchall()
+        
+        print(f"  Registros encontrados: {len(horarios)}")
+        if horarios and len(horarios) > 0:
+            print(f"  Primeros 3 registros:")
+            for h in horarios[:3]:
+                print(f"    - id_horario={h.get('id_horario')}, disponibilidad={h.get('disponibilidad')}, fecha={h.get('fecha')}")
         
         # Convertir fechas a string
         for h in horarios:
@@ -491,6 +590,101 @@ def api_buscar_horarios_disponibles_completo():
             cursor.close()
         if conn:
             conn.close()
+
+
+@reservas_bp.route('/api/reservas-por-programacion')
+def api_reservas_por_programacion():
+    """Obtiene las reservas asociadas a una programación específica.
+    
+    Parámetros GET:
+    - id_horario: int (requerido)
+    - fecha: YYYY-MM-DD (requerido)
+    - hora_inicio: HH:MM (requerido)
+    """
+    id_horario = request.args.get('id_horario')
+    fecha = request.args.get('fecha')
+    hora_inicio = request.args.get('hora_inicio')
+    
+    if not id_horario or not fecha or not hora_inicio:
+        return jsonify({'error': 'Parámetros id_horario, fecha y hora_inicio son requeridos'}), 400
+    
+    conn = None
+    cursor = None
+    
+    try:
+        conn = obtener_conexion()
+        cursor = conn.cursor()
+        
+        # Buscar la programación primero
+        query_programacion = """
+            SELECT 
+                p.id_programacion,
+                p.id_horario,
+                p.fecha,
+                TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                p.estado,
+                p.cupo_disponible,
+                CONCAT(e.nombres, ' ', e.apellidos) as profesional,
+                COALESCE(es.nombre, '-') as especialidad
+            FROM PROGRAMACION p
+            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+            LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
+            WHERE p.id_horario = %s 
+                AND p.fecha = %s 
+                AND TIME_FORMAT(p.hora_inicio, '%%H:%%i') = %s
+        """
+        
+        cursor.execute(query_programacion, (id_horario, fecha, hora_inicio))
+        programacion = cursor.fetchone()
+        
+        if not programacion:
+            return jsonify({'error': 'Programación no encontrada', 'reservas': []}), 404
+        
+        # Convertir fecha a string
+        if programacion.get('fecha'):
+            programacion['fecha'] = programacion['fecha'].strftime('%Y-%m-%d')
+        
+        # Buscar reservas asociadas a esta programación
+        query_reservas = """
+            SELECT 
+                r.id_reserva,
+                r.id_paciente,
+                CONCAT(pac.nombres, ' ', pac.apellidos) as paciente,
+                pac.documento,
+                r.estado as estado_reserva,
+                DATE_FORMAT(r.fecha_registro, '%%Y-%%m-%%d %%H:%%i:%%s') as fecha_registro,
+                r.motivo_consulta,
+                r.observaciones,
+                s.nombre as servicio
+            FROM RESERVA r
+            INNER JOIN PACIENTE pac ON r.id_paciente = pac.id_paciente
+            LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
+            WHERE r.id_programacion = %s
+            ORDER BY r.fecha_registro DESC
+        """
+        
+        cursor.execute(query_reservas, (programacion['id_programacion'],))
+        reservas = cursor.fetchall()
+        
+        return jsonify({
+            'programacion': programacion,
+            'reservas': reservas,
+            'total_reservas': len(reservas)
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener reservas de programación: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'reservas': []}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 
 @reservas_bp.route('/consultar-servicio-tipo')
 def consultar_servicio_tipo():
@@ -654,7 +848,7 @@ def api_reprogramar_reserva_old():
         # Crear notificación para el paciente sobre la reprogramación
         try:
             id_paciente = reserva.get('id_paciente')
-            estado_actual = reserva.get('estado', 'Pendiente')
+            estado_actual = reserva.get('estado', 'Confirmada')
             
             # Notificación inmediata de reprogramación
             try:
@@ -727,16 +921,16 @@ def api_crear_reserva():
         
         id_reserva = res.get('id_reserva')
         
-        # Obtener el estado de la reserva recién creada (normalmente será 'Pendiente')
+        # Obtener el estado de la reserva recién creada (normalmente será 'Confirmada')
         conexion_notif = obtener_conexion()
         try:
             with conexion_notif.cursor() as cursor:
                 cursor.execute("SELECT estado FROM RESERVA WHERE id_reserva = %s", (id_reserva,))
                 reserva_data = cursor.fetchone()
-                estado_reserva = reserva_data.get('estado', 'Pendiente') if reserva_data else 'Pendiente'
+                estado_reserva = reserva_data.get('estado', 'Confirmada') if reserva_data else 'Confirmada'
         except Exception as e:
             print(f"Error obteniendo estado de reserva: {e}")
-            estado_reserva = 'Pendiente'
+            estado_reserva = 'Confirmada'
         finally:
             try:
                 conexion_notif.close()
@@ -932,7 +1126,7 @@ def api_reservas_activas():
                     INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
                     INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
                     INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-                    WHERE r.estado != 'cancelada'
+                    WHERE r.estado != 'Cancelada' or r.estado != 'Completada'
                     AND p.documento_identidad = %s
                     ORDER BY prog.fecha DESC, prog.hora_inicio DESC
                 """
@@ -956,7 +1150,7 @@ def api_reservas_activas():
                     INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
                     INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
                     INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-                    WHERE r.estado != 'cancelada'
+                    WHERE r.estado != 'Cancelada' or r.estado != 'Completada'
                     ORDER BY prog.fecha DESC, prog.hora_inicio DESC
                 """
                 cursor.execute(sql)
@@ -1029,10 +1223,10 @@ def api_cancelar_reserva():
         if not reserva:
             return jsonify({'error': 'Reserva no encontrada'}), 404
 
-        if reserva.get('estado') == 'cancelada':
+        if reserva.get('estado') == 'Cancelada':
             return jsonify({'error': 'La reserva ya está cancelada'}), 400
 
-        if reserva.get('estado') == 'completada':
+        if reserva.get('estado') == 'Completada':
             return jsonify({'error': 'No se puede cancelar una reserva completada'}), 400
 
         # Cancelar la reserva
@@ -1147,14 +1341,16 @@ def api_horarios_disponibles_examen():
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             # Buscar horarios disponibles en esa fecha (de cualquier empleado)
-            # Para exámenes, usamos horarios de empleados de laboratorio/imagenología
-            # O cualquier horario disponible
+            # Para exámenes, usamos horarios activos sin programación ocupada
             sql = """
-                SELECT DISTINCT h.hora_inicio, h.hora_fin
+                SELECT DISTINCT h.hora_inicio, h.hora_fin, h.id_horario
                 FROM HORARIO h
+                LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                    AND p.fecha = h.fecha 
+                    AND p.hora_inicio = h.hora_inicio
                 WHERE h.fecha = %s
-                AND h.estado = 'Activo'
-                AND h.disponibilidad = 'Disponible'
+                AND h.activo = 1
+                AND (p.estado IS NULL OR p.estado = 'Disponible')
                 ORDER BY h.hora_inicio
             """
             cursor.execute(sql, (fecha_str,))
@@ -1517,13 +1713,25 @@ def paciente_crear_reserva():
 
         id_paciente = paciente.get('id_paciente')
 
-        # Verificar que el horario existe y está disponible
+        # Verificar que el horario existe y está activo
         horario = Horario.obtener_por_id(int(id_horario))
         if not horario:
             return jsonify({'error': 'Horario no encontrado'}), 404
 
-        if horario.get('disponibilidad') != 'Disponible':
-            return jsonify({'error': 'El horario seleccionado ya no está disponible'}), 400
+        # Verificar si ya hay una programación ocupada para este horario
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar si el horario ya tiene una programación ocupada
+            sql_check = """
+                SELECT COUNT(*) as count 
+                FROM PROGRAMACION 
+                WHERE id_horario = %s 
+                AND estado = 'Ocupado'
+            """
+            cursor.execute(sql_check, (int(id_horario),))
+            result = cursor.fetchone()
+            if result and result.get('count', 0) > 0:
+                return jsonify({'error': 'El horario seleccionado ya no está disponible'}), 400
 
         # Obtener datos del horario
         fecha = horario.get('fecha')
@@ -1540,14 +1748,14 @@ def paciente_crear_reserva():
                     INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_servicio, id_horario)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """
-                cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'Disponible', id_servicio, id_horario))
+                cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'Ocupado', id_servicio, id_horario))
             else:
                 # Reserva de CITA - sin servicio
                 sql_prog = """
                     INSERT INTO PROGRAMACION (fecha, hora_inicio, hora_fin, estado, id_horario)
                     VALUES (%s, %s, %s, %s, %s)
                 """
-                cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'Disponible', id_horario))
+                cursor.execute(sql_prog, (fecha, hora_inicio, hora_fin, 'Ocupado', id_horario))
             
             conexion.commit()
             id_programacion = cursor.lastrowid
@@ -1561,16 +1769,9 @@ def paciente_crear_reserva():
                 INSERT INTO RESERVA (fecha_registro, hora_registro, tipo, estado, id_paciente, id_programacion)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
-            cursor.execute(sql_reserva, (fecha_actual, hora_actual, 1, 'Pendiente', id_paciente, id_programacion))
+            cursor.execute(sql_reserva, (fecha_actual, hora_actual, 1, 'Confirmada', id_paciente, id_programacion))
             conexion.commit()
             id_reserva = cursor.lastrowid
-
-            # Actualizar disponibilidad del horario
-            sql_update_horario = """
-                UPDATE HORARIO SET disponibilidad = 'Ocupado' WHERE id_horario = %s
-            """
-            cursor.execute(sql_update_horario, (id_horario,))
-            conexion.commit()
 
         tipo_reserva = 'servicio' if id_servicio else 'cita'
 
@@ -1582,8 +1783,8 @@ def paciente_crear_reserva():
             print(f"Error creando notificación de confirmación: {e}")
         
         try:
-            # 2. Notificación del estado actual de la reserva (Pendiente)
-            Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, 'Pendiente')
+            # 2. Notificación del estado actual de la reserva (Confirmada)
+            Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, 'Confirmada')
         except Exception as e:
             print(f"Error creando notificación de estado: {e}")
 
@@ -1659,9 +1860,7 @@ def api_paciente_mis_reservas():
                        r.hora_registro,
                        r.tipo,
                        r.estado as estado_reserva,
-                       r.estado_cancelacion,
                        r.motivo_cancelacion,
-                       r.fecha_solicitud_cancelacion,
                        p.id_servicio,
                        p.fecha as fecha_programacion,
                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
@@ -2064,7 +2263,7 @@ def api_crear_examen():
     id_servicio = data.get('id_servicio')
     fecha_examen = data.get('fecha_examen')
     hora_examen = data.get('hora_examen')
-    estado = data.get('estado', 'Pendiente')
+    estado = data.get('estado', 'Confirmada')
     observacion = data.get('observacion', '')
 
     # Validaciones
@@ -2089,17 +2288,22 @@ def api_crear_examen():
 
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
-            # 1. Buscar o crear un horario disponible para esa fecha y hora
+            # 1. Buscar un horario activo para esa fecha y hora sin programación ocupada
             sql_horario = """
-                SELECT id_horario FROM HORARIO 
-                WHERE fecha = %s 
-                AND hora_inicio <= %s 
-                AND hora_fin >= %s
-                AND estado = 'Activo'
-                AND disponibilidad = 'Disponible'
+                SELECT h.id_horario 
+                FROM HORARIO h
+                LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                    AND p.fecha = h.fecha 
+                    AND p.hora_inicio <= %s 
+                    AND p.hora_fin >= %s
+                WHERE h.fecha = %s 
+                AND h.hora_inicio <= %s 
+                AND h.hora_fin >= %s
+                AND h.activo = 1
+                AND (p.estado IS NULL OR p.estado = 'Disponible')
                 LIMIT 1
             """
-            cursor.execute(sql_horario, (fecha_examen, hora_examen, hora_examen))
+            cursor.execute(sql_horario, (hora_examen, hora_examen, fecha_examen, hora_examen, hora_examen))
             horario = cursor.fetchone()
             
             if not horario:
@@ -2369,13 +2573,15 @@ def api_horarios_disponibles_reprogramacion():
                         h.id_horario,
                         h.hora_inicio,
                         h.hora_fin,
-                        h.disponibilidad
+                        COALESCE(p.estado, 'Disponible') as estado_programacion
                     FROM HORARIO h
-                    LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario
+                    LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario 
+                        AND p.fecha = h.fecha 
+                        AND p.hora_inicio = h.hora_inicio
                     WHERE h.fecha = %s
                     AND (p.id_servicio = %s OR p.id_servicio IS NULL)
-                    AND h.estado = 'Activo'
-                    AND h.disponibilidad = 'Disponible'
+                    AND h.activo = 1
+                    AND COALESCE(p.estado, 'Disponible') = 'Disponible'
                     AND NOT (h.hora_inicio = %s AND h.hora_fin = %s)
                     ORDER BY h.hora_inicio ASC
                 """
@@ -2387,11 +2593,14 @@ def api_horarios_disponibles_reprogramacion():
                         h.id_horario,
                         h.hora_inicio,
                         h.hora_fin,
-                        h.disponibilidad
+                        COALESCE(p.estado, 'Disponible') as estado_programacion
                     FROM HORARIO h
+                    LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario 
+                        AND p.fecha = h.fecha 
+                        AND p.hora_inicio = h.hora_inicio
                     WHERE h.fecha = %s
-                    AND h.estado = 'Activo'
-                    AND h.disponibilidad = 'Disponible'
+                    AND h.activo = 1
+                    AND COALESCE(p.estado, 'Disponible') = 'Disponible'
                     AND NOT (h.hora_inicio = %s AND h.hora_fin = %s)
                     ORDER BY h.hora_inicio ASC
                 """
@@ -2517,15 +2726,20 @@ def api_reprogramar_reserva():
                 print(f"[API reprogramar] Usando id_servicio de la reserva actual: {id_servicio}")
 
             sql_horario = """
-                SELECT id_horario FROM HORARIO 
-                WHERE fecha = %s 
-                AND hora_inicio <= %s 
-                AND hora_fin >= %s
-                AND estado = 'Activo'
-                AND disponibilidad = 'Disponible'
+                SELECT h.id_horario 
+                FROM HORARIO h
+                LEFT JOIN PROGRAMACION p ON p.id_horario = h.id_horario 
+                    AND p.fecha = h.fecha 
+                    AND p.hora_inicio <= %s 
+                    AND p.hora_fin >= %s
+                WHERE h.fecha = %s 
+                AND h.hora_inicio <= %s 
+                AND h.hora_fin >= %s
+                AND h.activo = 1
+                AND (p.estado IS NULL OR p.estado = 'Disponible')
                 LIMIT 1
             """
-            cursor.execute(sql_horario, (nueva_fecha, nueva_hora, nueva_hora))
+            cursor.execute(sql_horario, (nueva_hora, nueva_hora, nueva_fecha, nueva_hora, nueva_hora))
             horario_nuevo = cursor.fetchone()
             
             if not horario_nuevo:
@@ -2549,9 +2763,7 @@ def api_reprogramar_reserva():
                 UPDATE RESERVA 
                 SET id_programacion = %s,
                     estado = 'Confirmada',
-                    estado_cancelacion = 'Ninguna',
-                    motivo_cancelacion = NULL,
-                    fecha_solicitud_cancelacion = NULL
+                    motivo_cancelacion = NULL
                 WHERE id_reserva = %s
             """
             cursor.execute(sql_actualizar, (id_programacion_nueva, id_reserva))
@@ -2633,8 +2845,9 @@ def api_solicitar_cancelacion():
 
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
+            # Verificar que la reserva existe y pertenece al paciente
             sql_verificar = """
-                SELECT id_reserva, estado, estado_cancelacion 
+                SELECT id_reserva, estado 
                 FROM RESERVA 
                 WHERE id_reserva = %s AND id_paciente = %s
             """
@@ -2644,20 +2857,30 @@ def api_solicitar_cancelacion():
             if not reserva:
                 return jsonify({'error': 'Reserva no encontrada'}), 404
             
-            if reserva['estado_cancelacion'] in ['Solicitada', 'Cancelada']:
-                return jsonify({'error': 'Esta reserva ya tiene una solicitud de cancelación activa'}), 400
-
-            from datetime import datetime
-            fecha_solicitud = datetime.now()
-
-            sql_actualizar = """
-                UPDATE RESERVA 
-                SET estado_cancelacion = 'Solicitada',
-                    motivo_cancelacion = %s,
-                    fecha_solicitud_cancelacion = %s
-                WHERE id_reserva = %s
+            if reserva['estado'] == 'Cancelada':
+                return jsonify({'error': 'Esta reserva ya está cancelada'}), 400
+            
+            if reserva['estado'] == 'Completada':
+                return jsonify({'error': 'No se puede cancelar una reserva completada'}), 400
+            
+            # Verificar si ya existe una solicitud pendiente en la tabla SOLICITUD
+            sql_verificar_solicitud = """
+                SELECT COUNT(*) as count 
+                FROM SOLICITUD 
+                WHERE id_reserva = %s AND estado = 'Pendiente'
             """
-            cursor.execute(sql_actualizar, (motivo, fecha_solicitud, id_reserva))
+            cursor.execute(sql_verificar_solicitud, (id_reserva,))
+            result = cursor.fetchone()
+            
+            if result and result['count'] > 0:
+                return jsonify({'error': 'Ya existe una solicitud de cancelación pendiente para esta reserva'}), 400
+
+            # Crear solicitud en la tabla SOLICITUD
+            sql_insertar_solicitud = """
+                INSERT INTO SOLICITUD (id_reserva, estado, motivo, fecha_solicitud)
+                VALUES (%s, 'Pendiente', %s, NOW())
+            """
+            cursor.execute(sql_insertar_solicitud, (id_reserva, motivo))
             conexion.commit()
 
             return jsonify({
@@ -2699,35 +2922,39 @@ def api_trabajador_solicitudes_cancelacion():
         with conexion.cursor() as cursor:
             sql = """
                 SELECT 
-                    r.id_reserva,
+                    s.id_solicitud,
+                    s.id_reserva,
+                    s.estado as estado_solicitud,
+                    s.motivo,
+                    s.respuesta,
+                    s.fecha_solicitud,
+                    s.fecha_respuesta,
                     r.fecha_registro,
                     r.estado as estado_reserva,
                     r.tipo,
-                    r.estado_cancelacion,
-                    r.motivo_cancelacion,
-                    r.fecha_solicitud_cancelacion,
                     p.fecha as fecha_programacion,
                     TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
                     TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
-                    COALESCE(s.nombre, 'Consulta Médica') as servicio,
+                    COALESCE(serv.nombre, 'Consulta Médica') as servicio,
                     esp.nombre as especialidad,
                     pac.nombres as paciente_nombres,
                     pac.apellidos as paciente_apellidos,
-                    pac.dni as paciente_dni
-                FROM RESERVA r
+                    pac.documento_identidad as paciente_dni
+                FROM SOLICITUD s
+                INNER JOIN RESERVA r ON s.id_reserva = r.id_reserva
                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-                LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                LEFT JOIN SERVICIO serv ON p.id_servicio = serv.id_servicio
                 INNER JOIN PACIENTE pac ON r.id_paciente = pac.id_paciente
-                LEFT JOIN EMPLEADO e ON p.id_servicio IS NOT NULL
+                LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                 LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                WHERE r.estado_cancelacion IN ('Solicitada', 'Cancelada', 'Rechazada')
                 ORDER BY 
-                    CASE r.estado_cancelacion
-                        WHEN 'Solicitada' THEN 1
-                        WHEN 'Cancelada' THEN 2
+                    CASE s.estado
+                        WHEN 'Pendiente' THEN 1
+                        WHEN 'Aprobada' THEN 2
                         WHEN 'Rechazada' THEN 3
                     END,
-                    r.fecha_solicitud_cancelacion DESC
+                    s.fecha_solicitud DESC
             """
             cursor.execute(sql)
             solicitudes = cursor.fetchall()
@@ -2736,8 +2963,10 @@ def api_trabajador_solicitudes_cancelacion():
             for solicitud in solicitudes:
                 if solicitud.get('fecha_programacion') and hasattr(solicitud['fecha_programacion'], 'strftime'):
                     solicitud['fecha_programacion'] = solicitud['fecha_programacion'].strftime('%Y-%m-%d')
-                if solicitud.get('fecha_solicitud_cancelacion') and hasattr(solicitud['fecha_solicitud_cancelacion'], 'strftime'):
-                    solicitud['fecha_solicitud_cancelacion'] = solicitud['fecha_solicitud_cancelacion'].strftime('%Y-%m-%d %H:%M:%S')
+                if solicitud.get('fecha_solicitud') and hasattr(solicitud['fecha_solicitud'], 'strftime'):
+                    solicitud['fecha_solicitud'] = solicitud['fecha_solicitud'].strftime('%Y-%m-%d %H:%M:%S')
+                if solicitud.get('fecha_respuesta') and hasattr(solicitud['fecha_respuesta'], 'strftime'):
+                    solicitud['fecha_respuesta'] = solicitud['fecha_respuesta'].strftime('%Y-%m-%d %H:%M:%S')
 
             return jsonify({
                 'success': True,
@@ -2764,18 +2993,19 @@ def api_trabajador_procesar_cancelacion():
         return jsonify({'error': 'No autenticado'}), 401
 
     tipo_usuario = session.get('tipo_usuario')
-    if tipo_usuario not in ['trabajador', 'administrador']:
+    if tipo_usuario not in ['trabajador', 'administrador', 'empleado']:
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     data = request.get_json() or {}
-    id_reserva = data.get('id_reserva')
-    estado_cancelacion = data.get('estado_cancelacion')  # 'Cancelada' o 'Rechazada'
+    id_solicitud = data.get('id_solicitud')
+    accion = data.get('accion')  # 'Aprobada' o 'Rechazada'
+    respuesta = data.get('respuesta', '')
 
-    if not id_reserva:
-        return jsonify({'error': 'ID de reserva es requerido'}), 400
+    if not id_solicitud:
+        return jsonify({'error': 'ID de solicitud es requerido'}), 400
 
-    if estado_cancelacion not in ['Cancelada', 'Rechazada']:
-        return jsonify({'error': 'Estado de cancelación inválido'}), 400
+    if accion not in ['Aprobada', 'Rechazada']:
+        return jsonify({'error': 'Acción inválida. Use "Aprobada" o "Rechazada"'}), 400
 
     conexion = None
     try:
@@ -2783,41 +3013,45 @@ def api_trabajador_procesar_cancelacion():
         with conexion.cursor() as cursor:
             # Verificar que la solicitud existe y está pendiente
             sql_verificar = """
-                SELECT id_reserva, estado_cancelacion 
-                FROM RESERVA 
-                WHERE id_reserva = %s
+                SELECT s.id_solicitud, s.id_reserva, s.estado, r.estado as estado_reserva
+                FROM SOLICITUD s
+                INNER JOIN RESERVA r ON s.id_reserva = r.id_reserva
+                WHERE s.id_solicitud = %s
             """
-            cursor.execute(sql_verificar, (id_reserva,))
-            reserva = cursor.fetchone()
+            cursor.execute(sql_verificar, (id_solicitud,))
+            solicitud = cursor.fetchone()
             
-            if not reserva:
-                return jsonify({'error': 'Reserva no encontrada'}), 404
+            if not solicitud:
+                return jsonify({'error': 'Solicitud no encontrada'}), 404
             
-            if reserva['estado_cancelacion'] != 'Solicitada':
+            if solicitud['estado'] != 'Pendiente':
                 return jsonify({'error': 'Esta solicitud ya fue procesada'}), 400
 
-            # Actualizar el estado
-            if estado_cancelacion == 'Cancelada':
-                # Aprobar: cambiar estado de reserva y estado de cancelación
-                sql_actualizar = """
+            id_reserva = solicitud['id_reserva']
+
+            # Actualizar la solicitud
+            sql_actualizar_solicitud = """
+                UPDATE SOLICITUD 
+                SET estado = %s,
+                    respuesta = %s,
+                    fecha_respuesta = NOW()
+                WHERE id_solicitud = %s
+            """
+            cursor.execute(sql_actualizar_solicitud, (accion, respuesta, id_solicitud))
+
+            # Si se aprueba, cancelar la reserva
+            if accion == 'Aprobada':
+                sql_cancelar_reserva = """
                     UPDATE RESERVA 
-                    SET estado_cancelacion = 'Cancelada',
-                        estado = 'Cancelada'
+                    SET estado = 'Cancelada',
+                        fecha_cancelada = NOW()
                     WHERE id_reserva = %s
                 """
+                cursor.execute(sql_cancelar_reserva, (id_reserva,))
                 mensaje = 'Solicitud aprobada. La reserva ha sido cancelada.'
             else:
-                # Rechazar: solo cambiar estado_cancelacion a 'Rechazada' y limpiar motivo
-                sql_actualizar = """
-                    UPDATE RESERVA 
-                    SET estado_cancelacion = 'Ninguna',
-                        motivo_cancelacion = NULL,
-                        fecha_solicitud_cancelacion = NULL
-                    WHERE id_reserva = %s
-                """
                 mensaje = 'Solicitud rechazada. La reserva sigue activa.'
 
-            cursor.execute(sql_actualizar, (id_reserva,))
             conexion.commit()
 
             return jsonify({
