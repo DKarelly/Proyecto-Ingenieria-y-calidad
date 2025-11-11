@@ -3945,7 +3945,7 @@ def api_solicitar_reprogramacion_paciente():
             cursor.execute("""
                 SELECT COUNT(*) as total
                 FROM SOLICITUD
-                WHERE id_reserva = %s AND estado = 'Pendiente' AND tipo = 'Reprogramacion'
+                WHERE id_reserva = %s AND estado = 'Pendiente'
             """, (id_reserva,))
             pendientes = cursor.fetchone()
             
@@ -3954,8 +3954,8 @@ def api_solicitar_reprogramacion_paciente():
             
             # Crear la solicitud
             cursor.execute("""
-                INSERT INTO SOLICITUD (id_reserva, tipo, motivo, estado, fecha_solicitud)
-                VALUES (%s, 'Reprogramacion', %s, 'Pendiente', NOW())
+                INSERT INTO SOLICITUD (id_reserva, motivo, estado, fecha_solicitud)
+                VALUES (%s, %s, 'Pendiente', NOW())
             """, (id_reserva, motivo))
             conexion.commit()
             id_solicitud = cursor.lastrowid
@@ -4050,7 +4050,7 @@ def api_solicitar_cancelacion_paciente():
             cursor.execute("""
                 SELECT COUNT(*) as total
                 FROM SOLICITUD
-                WHERE id_reserva = %s AND estado = 'Pendiente' AND tipo = 'Cancelacion'
+                WHERE id_reserva = %s AND estado = 'Pendiente'
             """, (id_reserva,))
             pendientes = cursor.fetchone()
             
@@ -4059,8 +4059,8 @@ def api_solicitar_cancelacion_paciente():
             
             # Crear la solicitud
             cursor.execute("""
-                INSERT INTO SOLICITUD (id_reserva, tipo, motivo, estado, fecha_solicitud)
-                VALUES (%s, 'Cancelacion', %s, 'Pendiente', NOW())
+                INSERT INTO SOLICITUD (id_reserva, motivo, estado, fecha_solicitud)
+                VALUES (%s, %s, 'Pendiente', NOW())
             """, (id_reserva, motivo))
             conexion.commit()
             id_solicitud = cursor.lastrowid
