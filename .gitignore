@@ -54,3 +54,10 @@ desktop.ini
 *.db
 *.sqlite
 *.sqlite3
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Tailwind CSS - archivo de entrada (no el compilado)
+# static/css/output.css debería estar en el repo para producción
