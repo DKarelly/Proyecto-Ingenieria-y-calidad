@@ -295,92 +295,66 @@
 
                     <!-- Calendario semanal -->
                     <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
-                        {% if horarios_medico %}
-                        {# Calcular horas mínimas y máximas de todos los horarios #}
-                        {% set ns = namespace(hora_min=23, hora_max=0) %}
-                        {% for day, data in horarios_medico.items() %}
-                            {% for bloque in data.bloques %}
-                                {% set hora_inicio = bloque.hora_inicio.hour %}
-                                {% set hora_fin = bloque.hora_fin.hour %}
-                                {% if hora_inicio < ns.hora_min %}
-                                    {% set ns.hora_min = hora_inicio %}
-                                {% endif %}
-                                {% if hora_fin > ns.hora_max %}
-                                    {% set ns.hora_max = hora_fin %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endfor %}
+                        {% if horarios_medico and horarios_medico.horarios %}
+                        {# OPTIMIZACIÓN: Horas pre-calculadas en backend #}
+                        {% set hora_min = horarios_medico.hora_min %}
+                        {% set hora_max = horarios_medico.hora_max %}
+                        {% set horarios = horarios_medico.horarios %}
                         
                         <table class="min-w-full border-collapse">
                             <thead>
                                 <tr>
                                     <th class="w-20 p-3 bg-gray-50 border border-gray-200 text-center text-sm font-medium text-gray-600 sticky left-0 z-20">Hora</th>
                                     {% for day in range(7) %}
+                                    {% set dia_nombres = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] %}
                                     <th class="p-3 bg-gray-50 border border-gray-200 text-center text-sm font-medium text-gray-600 min-w-[150px]">
-                                        {% if day == 0 %}Lun
-                                        {% elif day == 1 %}Mar
-                                        {% elif day == 2 %}Mié
-                                        {% elif day == 3 %}Jue
-                                        {% elif day == 4 %}Vie
-                                        {% elif day == 5 %}Sáb
-                                        {% elif day == 6 %}Dom
-                                        {% endif %}
-                                        {% if day in horarios_medico %}
-                                        <br><span class="text-xs font-normal">{{ horarios_medico[day].fecha.strftime('%d/%m') }}</span>
+                                        {{ dia_nombres[day] }}
+                                        {% if day in horarios %}
+                                        <br><span class="text-xs font-normal">{{ horarios[day].fecha.strftime('%d/%m') }}</span>
                                         {% endif %}
                                     </th>
                                     {% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
-                                <!-- Mostrar solo las horas donde el médico trabaja -->
-                                {% for hour in range(ns.hora_min, ns.hora_max + 1) %}
+                                {# OPTIMIZACIÓN: Bucle simplificado sin nested loops #}
+                                {% for hour in range(hora_min, hora_max + 1) %}
                                 <tr>
                                     <td class="w-20 p-2 bg-gray-50 border border-gray-200 text-sm text-gray-600 font-medium sticky left-0 z-10 text-center">
                                         {{ '%02d:00'|format(hour) }}
                                     </td>
                                     {% for day in range(7) %}
-                                    {% set tiene_horario = namespace(value=false) %}
-                                    {% if day in horarios_medico %}
-                                        {% for bloque in horarios_medico[day].bloques %}
-                                            {% if hour >= bloque.hora_inicio.hour and hour < bloque.hora_fin.hour %}
-                                                {% set tiene_horario.value = true %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% endif %}
+                                    {# OPTIMIZACIÓN: Verificación rápida sin bucles anidados #}
+                                    {% set tiene_horario = day in horarios and horarios[day].bloques %}
                                     
-                                    {% if tiene_horario.value %}
+                                    {% if tiene_horario %}
                                     <td class="p-0 border border-gray-200 h-20 align-top relative hover:bg-blue-50 cursor-pointer transition-colors calendar-cell"
                                         data-day="{{ day }}" data-hour="{{ hour }}">
-                                        <!-- Desglose de 15 minutos (oculto por defecto) -->
+                                        <!-- Desglose de 15 minutos -->
                                         <div class="time-breakdown hidden w-full bg-white border-2 border-blue-400 shadow-xl rounded flex flex-col my-1">
-                                            {% for minute in [0, 15, 30, 45] %}
-                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 last:border-b-0 font-semibold flex items-center justify-center transition-colors"
-                                                 data-minute="{{ minute }}"
-                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, {{ minute }})">
-                                                {{ '%02d:%02d'|format(hour, minute) }}
-                                            </div>
-                                            {% endfor %}
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 0)">{{ '%02d:00'|format(hour) }}</div>
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 15)">{{ '%02d:15'|format(hour) }}</div>
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 30)">{{ '%02d:30'|format(hour) }}</div>
+                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer font-semibold flex items-center justify-center transition-colors"
+                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 45)">{{ '%02d:45'|format(hour) }}</div>
                                         </div>
-                                        <!-- Mostrar citas programadas -->
+                                        {# OPTIMIZACIÓN: Citas pre-calculadas con estilos en backend #}
                                         {% set clave_cita = day|string + '_' + hour|string %}
                                         {% if citas_semana and clave_cita in citas_semana %}
                                             {% for cita in citas_semana[clave_cita] %}
-                                            {% if cita.es_hora_inicio %}
-                                            {# Solo mostrar la cita en la primera hora, pero que se extienda visualmente #}
-                                            {% set altura_cita = (cita.duracion_horas * 80)|int %}
                                             <div class="absolute left-1 right-1 rounded px-2 py-1 text-white overflow-hidden shadow-md z-10"
-                                                 style="top: 4px; height: {{ altura_cita - 8 }}px; {% if cita.estado == 'Pendiente' %}background-color: #f59e0b;{% elif cita.estado == 'Confirmada' %}background-color: #3b82f6;{% else %}background-color: #10b981;{% endif %}">
+                                                 style="top: 4px; height: {{ cita.altura }}px; background-color: {{ cita.color }};">
                                                 <div class="text-xs font-bold line-clamp-1">{{ cita.paciente }}</div>
                                                 <div class="text-xs opacity-90 line-clamp-1">{{ cita.tipo }}</div>
-                                                <div class="text-xs font-medium mt-1">{{ cita.hora_inicio.strftime('%H:%M') }} - {{ cita.hora_fin.strftime('%H:%M') }}</div>
+                                                <div class="text-xs font-medium mt-1">{{ cita.hora_inicio_str }} - {{ cita.hora_fin_str }}</div>
                                             </div>
-                                            {% endif %}
                                             {% endfor %}
                                         {% endif %}
                                     </td>
                                     {% else %}
-                                    <!-- Celda sin horario (médico no trabaja) -->
                                     <td class="p-0 border border-gray-200 h-20 bg-gray-100 relative">
                                         <div class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">
                                             <span class="material-symbols-outlined text-lg opacity-30">block</span>
