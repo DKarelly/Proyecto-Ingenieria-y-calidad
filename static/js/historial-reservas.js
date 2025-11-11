@@ -225,12 +225,12 @@ function generarTarjetaCita(reserva) {
                         </svg>
                         Reprogramar
                     </button>
-                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')" 
+                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')"
                             class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                         </svg>
-                        Solicitar Cancelación
+                        Cancelar
                     </button>
                 </div>
         `;
@@ -397,12 +397,12 @@ function generarTarjetaOperacion(reserva) {
                         </svg>
                         Reprogramar
                     </button>
-                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')" 
+                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')"
                             class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                         </svg>
-                        Solicitar Cancelación
+                        Cancelar
                     </button>
                 </div>
                 ` : ''}
@@ -488,12 +488,12 @@ function generarTarjetaExamen(reserva) {
                         </svg>
                         Reprogramar
                     </button>
-                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')" 
+                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')"
                             class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
                         </svg>
-                        Solicitar Cancelación
+                        Cancelar
                     </button>
                 </div>
                 ` : ''}
@@ -693,9 +693,9 @@ function abrirModalCancelacion(idReserva, nombreServicio) {
                             class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-all">
                         Volver
                     </button>
-                    <button onclick="confirmarCancelacion()" 
+                    <button onclick="confirmarCancelacion()"
                             class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-red-600 hover:to-red-700 transition-all">
-                        Confirmar Cancelación
+                        Cancelar
                     </button>
                 </div>
             </div>
