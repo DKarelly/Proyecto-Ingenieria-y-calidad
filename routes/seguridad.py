@@ -433,6 +433,75 @@ def api_crear_incidencia():
             'message': f'Error al crear incidencia: {str(e)}'
         }), 500
 
+@seguridad_bp.route('/api/incidencias/<int:id_incidencia>', methods=['PUT'])
+def api_actualizar_incidencia(id_incidencia):
+    """API para actualizar una incidencia completa"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    try:
+        data = request.get_json()
+        print(f'[API ACTUALIZAR INCIDENCIA] ID: {id_incidencia}, Datos: {data}')
+        
+        # Actualizar incidencia
+        resultado = Incidencia.actualizar(
+            id_incidencia=id_incidencia,
+            descripcion=data.get('descripcion'),
+            categoria=data.get('categoria'),
+            prioridad=data.get('prioridad'),
+            id_empleado=data.get('id_empleado'),
+            estado=data.get('estado'),
+            observaciones=data.get('observaciones')
+        )
+        
+        if resultado.get('success'):
+            return jsonify(resultado), 200
+        else:
+            return jsonify(resultado), 400
+            
+    except Exception as e:
+        print(f'[API ACTUALIZAR INCIDENCIA] Error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error al actualizar incidencia: {str(e)}'
+        }), 500
+
+@seguridad_bp.route('/api/incidencias/<int:id_incidencia>/resolver', methods=['POST'])
+def api_resolver_incidencia(id_incidencia):
+    """API para resolver una incidencia (marcar como resuelta)"""
+    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    try:
+        data = request.get_json()
+        print(f'[API RESOLVER INCIDENCIA] ID: {id_incidencia}, Datos: {data}')
+        
+        # Aceptar tanto 'comentario' como 'observaciones'
+        observaciones = data.get('observaciones') or data.get('comentario', 'Incidencia resuelta')
+        
+        # Resolver la incidencia (actualizar estado a 'Resuelta' y agregar fecha de resolución)
+        resultado = Incidencia.actualizar(
+            id_incidencia=id_incidencia,
+            estado='Resuelta',
+            observaciones=observaciones
+        )
+        
+        if resultado.get('success'):
+            return jsonify(resultado), 200
+        else:
+            return jsonify(resultado), 400
+            
+    except Exception as e:
+        print(f'[API RESOLVER INCIDENCIA] Error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'Error al resolver incidencia: {str(e)}'
+        }), 500
+
 # =======================================
 # API: CREAR REPORTE DE AUDITORÍA
 # =======================================

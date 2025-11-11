@@ -139,27 +139,31 @@ class Incidencia:
     def buscar_pacientes(termino):
         """Busca pacientes para autocompletado"""
         try:
+            import pymysql.cursors
             conexion = obtener_conexion()
-            cursor = conexion.cursor()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
 
             query = """
-                SELECT id_paciente, nombres, apellidos
+                SELECT 
+                    id_paciente,
+                    CONCAT(nombres, ' ', apellidos) as nombre_completo,
+                    documento_identidad as dni
                 FROM PACIENTE
                 WHERE LOWER(CONCAT(nombres, ' ', apellidos)) LIKE LOWER(%s)
+                   OR documento_identidad LIKE %s
+                ORDER BY nombres, apellidos
                 LIMIT 10
             """
 
-            cursor.execute(query, (f"%{termino}%",))
+            cursor.execute(query, (f"%{termino}%", f"%{termino}%"))
             pacientes = cursor.fetchall()
-
-            # Formatear para autocompletado
-            for p in pacientes:
-                p['nombre_completo'] = f"{p['nombres']} {p['apellidos']}"
 
             return pacientes
 
         except Exception as e:
             print(f"Error buscando pacientes: {e}")
+            import traceback
+            traceback.print_exc()
             return []
         finally:
             if 'conexion' in locals():
@@ -199,27 +203,32 @@ class Incidencia:
     def buscar_empleados(termino):
         """Busca empleados para autocompletado"""
         try:
+            import pymysql.cursors
             conexion = obtener_conexion()
-            cursor = conexion.cursor()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
 
             query = """
-                SELECT id_empleado, nombres, apellidos
-                FROM EMPLEADO
-                WHERE LOWER(CONCAT(nombres, ' ', apellidos)) LIKE LOWER(%s)
+                SELECT 
+                    e.id_empleado,
+                    CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
+                    COALESCE(r.nombre, 'Empleado') as cargo
+                FROM EMPLEADO e
+                LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                WHERE LOWER(CONCAT(e.nombres, ' ', e.apellidos)) LIKE LOWER(%s)
+                   OR LOWER(r.nombre) LIKE LOWER(%s)
+                ORDER BY e.nombres, e.apellidos
                 LIMIT 10
             """
 
-            cursor.execute(query, (f"%{termino}%",))
+            cursor.execute(query, (f"%{termino}%", f"%{termino}%"))
             empleados = cursor.fetchall()
-
-            # Formatear para autocompletado
-            for e in empleados:
-                e['nombre_completo'] = f"{e['nombres']} {e['apellidos']}"
 
             return empleados
 
         except Exception as e:
             print(f"Error buscando empleados: {e}")
+            import traceback
+            traceback.print_exc()
             return []
         finally:
             if 'conexion' in locals():
@@ -270,6 +279,113 @@ class Incidencia:
             return {
                 'success': False,
                 'message': f'Error al crear incidencia: {str(e)}'
+            }
+        finally:
+            if 'conexion' in locals():
+                conexion.close()
+
+    @staticmethod
+    def actualizar(id_incidencia, descripcion=None, categoria=None, prioridad=None, id_empleado=None, estado=None, observaciones=None):
+        """Actualiza una incidencia existente"""
+        try:
+            conexion = obtener_conexion()
+            cursor = conexion.cursor()
+
+            # Actualizar tabla INCIDENCIA
+            if descripcion is not None or categoria is not None or prioridad is not None:
+                updates_incidencia = []
+                params_incidencia = []
+                
+                if descripcion is not None:
+                    updates_incidencia.append("descripcion = %s")
+                    params_incidencia.append(descripcion)
+                
+                if categoria is not None:
+                    updates_incidencia.append("categoria = %s")
+                    params_incidencia.append(categoria)
+                
+                if prioridad is not None:
+                    updates_incidencia.append("prioridad = %s")
+                    params_incidencia.append(prioridad)
+                
+                if updates_incidencia:
+                    params_incidencia.append(id_incidencia)
+                    query_incidencia = f"""
+                        UPDATE INCIDENCIA 
+                        SET {', '.join(updates_incidencia)}
+                        WHERE id_incidencia = %s
+                    """
+                    cursor.execute(query_incidencia, params_incidencia)
+
+            # Actualizar tabla ASIGNAR_EMPLEADO_INCIDENCIA
+            if id_empleado is not None or estado is not None or observaciones is not None:
+                # Verificar si existe registro en historial
+                query_check = """
+                    SELECT id_historial FROM ASIGNAR_EMPLEADO_INCIDENCIA
+                    WHERE id_incidencia = %s
+                """
+                cursor.execute(query_check, (id_incidencia,))
+                historial = cursor.fetchone()
+
+                if historial:
+                    # Actualizar existente
+                    updates_historial = []
+                    params_historial = []
+                    
+                    if id_empleado is not None:
+                        updates_historial.append("id_empleado = %s")
+                        params_historial.append(id_empleado)
+                    
+                    if estado is not None:
+                        updates_historial.append("estado_historial = %s")
+                        params_historial.append(estado)
+                        
+                        # Si se marca como resuelta, agregar fecha de resolución
+                        if estado.lower() in ['resuelta', 'cerrada']:
+                            updates_historial.append("fecha_resolucion = NOW()")
+                    
+                    if observaciones is not None:
+                        updates_historial.append("observaciones = %s")
+                        params_historial.append(observaciones)
+                    
+                    if updates_historial:
+                        params_historial.append(id_incidencia)
+                        query_historial = f"""
+                            UPDATE ASIGNAR_EMPLEADO_INCIDENCIA 
+                            SET {', '.join(updates_historial)}
+                            WHERE id_incidencia = %s
+                        """
+                        cursor.execute(query_historial, params_historial)
+                else:
+                    # Crear nuevo registro en historial
+                    query_insert = """
+                        INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA 
+                        (id_incidencia, id_empleado, estado_historial, observaciones)
+                        VALUES (%s, %s, %s, %s)
+                    """
+                    cursor.execute(query_insert, (
+                        id_incidencia,
+                        id_empleado,
+                        estado or 'En proceso',
+                        observaciones
+                    ))
+
+            conexion.commit()
+
+            return {
+                'success': True,
+                'message': 'Incidencia actualizada exitosamente'
+            }
+
+        except Exception as e:
+            print(f"Error actualizando incidencia: {e}")
+            import traceback
+            traceback.print_exc()
+            if 'conexion' in locals():
+                conexion.rollback()
+            return {
+                'success': False,
+                'message': f'Error al actualizar incidencia: {str(e)}'
             }
         finally:
             if 'conexion' in locals():
@@ -550,29 +666,6 @@ class Incidencia:
             return False
         finally:
             if conexion:
-                conexion.close()
-
-    @staticmethod
-    def crear(id_paciente, descripcion, categoria, prioridad):
-        """Crea una nueva incidencia"""
-        try:
-            conexion = obtener_conexion()
-            cursor = conexion.cursor()
-
-            query = """
-                INSERT INTO INCIDENCIA (descripcion, fecha_registro, id_paciente, categoria, prioridad)
-                VALUES (%s, CURDATE(), %s, %s, %s)
-            """
-            cursor.execute(query, (descripcion, id_paciente, categoria, prioridad))
-            conexion.commit()
-
-            return cursor.lastrowid
-
-        except Exception as e:
-            print(f"Error creando incidencia: {e}")
-            return None
-        finally:
-            if 'conexion' in locals():
                 conexion.close()
 
     @staticmethod
