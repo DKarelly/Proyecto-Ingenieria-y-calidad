@@ -70,7 +70,14 @@ class Empleado:
                     ORDER BY e.apellidos, e.nombres
                 """
                 cursor.execute(sql)
-                return cursor.fetchall()
+                resultado = cursor.fetchall()
+                # Asegurar que siempre retorna una lista
+                return resultado if resultado else []
+        except Exception as e:
+            print(f"Error en obtener_todos: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
         finally:
             conexion.close()
 

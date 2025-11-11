@@ -205,9 +205,24 @@ def api_obtener_empleados():
     try:
         from models.empleado import Empleado
         empleados = Empleado.obtener_todos()
-        return jsonify(empleados if empleados else [])
+        
+        # Validar que empleados sea una lista
+        if not isinstance(empleados, list):
+            print(f"Advertencia: obtener_todos() retornó {type(empleados)} en lugar de lista")
+            return jsonify([])
+        
+        # Agregar nombre_completo a cada empleado
+        for empleado in empleados:
+            if isinstance(empleado, dict):
+                nombres = empleado.get('nombres', '')
+                apellidos = empleado.get('apellidos', '')
+                empleado['nombre_completo'] = f"{nombres} {apellidos}".strip()
+        
+        return jsonify(empleados)
     except Exception as e:
         print(f"Error al obtener empleados: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 @seguridad_bp.route('/api/incidencias/<int:id_incidencia>/asignar', methods=['POST'])
