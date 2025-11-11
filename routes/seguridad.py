@@ -121,7 +121,9 @@ def api_buscar_incidencias():
         'empleado': data.get('empleado', ''),
         'fecha_registro': data.get('fecha_registro', ''),
         'fecha_resolucion': data.get('fecha_resolucion', ''),
-        'estado': data.get('estado', '')
+        'estado': data.get('estado', ''),
+        'categoria': data.get('categoria', ''),
+        'prioridad': data.get('prioridad', '')
     }
 
     incidencias = Incidencia.buscar(filtros)

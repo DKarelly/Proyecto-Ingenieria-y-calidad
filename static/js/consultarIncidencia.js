@@ -307,6 +307,7 @@ function mostrarSugerenciasPaciente(pacientes) {
         div.onclick = function() {
             document.getElementById('filtroPaciente').value = paciente.nombre_completo;
             contenedor.classList.add('hidden');
+            aplicarFiltrosDinamicos(); // Aplicar filtro al seleccionar
         };
         contenedor.appendChild(div);
     });
@@ -362,6 +363,7 @@ function mostrarSugerenciasEmpleado(empleados) {
         div.onclick = function() {
             document.getElementById('filtroEmpleado').value = empleado.nombre_completo;
             contenedor.classList.add('hidden');
+            aplicarFiltrosDinamicos(); // Aplicar filtro al seleccionar
         };
         contenedor.appendChild(div);
     });
@@ -577,6 +579,7 @@ async function aplicarFiltrosDinamicos() {
 
             if (response.ok) {
                 const incidenciasFiltradas = await response.json();
+                incidenciasData = incidenciasFiltradas; // Actualizar datos globales
                 mostrarIncidencias(incidenciasFiltradas);
             } else {
                 console.error('Error en la búsqueda');
@@ -586,21 +589,20 @@ async function aplicarFiltrosDinamicos() {
             console.error('Error:', error);
             showToast('Error de conexión al filtrar', 'error');
         }
-    }, 300); // Esperar 300ms después de que el usuario deje de escribir
+    }, 500); // Esperar 500ms después de que el usuario deje de escribir
 }
 
 // Agregar eventos dinámicos a todos los filtros
-document.getElementById('filtroPaciente').addEventListener('change', aplicarFiltrosDinamicos);
-document.getElementById('filtroEmpleado').addEventListener('change', aplicarFiltrosDinamicos);
+// Para inputs de texto: usar 'input' para filtrar mientras escribes
+document.getElementById('filtroPaciente').addEventListener('input', aplicarFiltrosDinamicos);
+document.getElementById('filtroEmpleado').addEventListener('input', aplicarFiltrosDinamicos);
+
+// Para selects y fechas: usar 'change' ya que se dispara inmediatamente al cambiar
 document.getElementById('filtroFechaRegistro').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroFechaResolucion').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroEstado').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroCategoria').addEventListener('change', aplicarFiltrosDinamicos);
 document.getElementById('filtroPrioridad').addEventListener('change', aplicarFiltrosDinamicos);
-
-// También aplicar filtros al escribir en los campos de texto
-document.getElementById('filtroPaciente').addEventListener('input', aplicarFiltrosDinamicos);
-document.getElementById('filtroEmpleado').addEventListener('input', aplicarFiltrosDinamicos);
 
 // Botón limpiar filtros
 const btnLimpiar = document.getElementById('btnLimpiar');
@@ -615,6 +617,7 @@ if (btnLimpiar) {
         document.getElementById('filtroPrioridad').value = '';
         document.getElementById('sugerenciasPaciente').classList.add('hidden');
         document.getElementById('sugerenciasEmpleado').classList.add('hidden');
+        actualizarBadgeFiltros(); // Actualizar badge
         cargarIncidencias(); // Recargar todas las incidencias
     }
 }

@@ -369,13 +369,13 @@
 
                 <!-- Botones -->
                 <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex-1 text-sm text-gray-600 italic">
+                        <i class="fas fa-info-circle text-cyan-500"></i>
+                        Los filtros se aplican automáticamente mientras escribes o seleccionas
+                    </div>
                     <button type="button" id="btnLimpiar" class="flex items-center gap-2 px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition-all">
                         <i class="fas fa-broom"></i>
-                        Limpiar
-                    </button>
-                    <button type="submit" id="btnBuscar" class="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold rounded-lg transition-all shadow-md hover:shadow-lg">
-                        <i class="fas fa-search"></i>
-                        Buscar
+                        Limpiar Filtros
                     </button>
                 </div>
             </form>
@@ -673,7 +673,7 @@
         </div>
     </div>
 
-    <script src="/static/js/consultarIncidencia.js"></script>
+    <script src="/static/js/consultarIncidencia.js?v={{ range(1, 10000) | random }}"></script>
 
     {% include 'footer.html' %}
 </body>
