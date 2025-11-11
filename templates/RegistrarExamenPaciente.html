@@ -71,12 +71,17 @@
                     <div class="flex-1 h-1 bg-gray-300 mx-2" id="line1"></div>
                     <div class="flex-1 flex flex-col items-center">
                         <div id="step2-indicator" class="step-indicator step-inactive w-12 h-12 rounded-full flex items-center justify-center font-bold mb-2">2</div>
-                        <span id="step2-text" class="text-sm font-medium text-gray-400">Fecha y Hora</span>
+                        <span id="step2-text" class="text-sm font-medium text-gray-400">Médico</span>
                     </div>
                     <div class="flex-1 h-1 bg-gray-300 mx-2" id="line2"></div>
                     <div class="flex-1 flex flex-col items-center">
                         <div id="step3-indicator" class="step-indicator step-inactive w-12 h-12 rounded-full flex items-center justify-center font-bold mb-2">3</div>
-                        <span id="step3-text" class="text-sm font-medium text-gray-400">Confirmar</span>
+                        <span id="step3-text" class="text-sm font-medium text-gray-400">Fecha y Hora</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-300 mx-2" id="line3"></div>
+                    <div class="flex-1 flex flex-col items-center">
+                        <div id="step4-indicator" class="step-indicator step-inactive w-12 h-12 rounded-full flex items-center justify-center font-bold mb-2">4</div>
+                        <span id="step4-text" class="text-sm font-medium text-gray-400">Confirmar</span>
                     </div>
                 </div>
             </div>
@@ -86,9 +91,17 @@
         <div class="max-w-4xl mx-auto">
             <form id="examenForm" class="bg-white rounded-2xl shadow-lg p-8">
 
-                <!-- Step 1: Seleccionar Tipo de Examen -->
+                <!-- Step 1: Seleccionar Especialidad y Servicio -->
                 <div id="step1" class="step-content">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 1: Selecciona tu Examen</h2>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 1: Selecciona el Tipo de Examen</h2>
+
+                    <!-- Filtro por Especialidad -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-3">Filtrar por Especialidad</label>
+                        <select id="filtroEspecialidad" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <option value="">Todas las especialidades</option>
+                        </select>
+                    </div>
 
                     <div class="mb-6">
                         <label class="block text-gray-700 font-semibold mb-3">¿Qué examen necesitas?</label>
@@ -102,8 +115,8 @@
                             <p class="text-gray-600 mt-2">Cargando servicios de examen...</p>
                         </div>
 
-                        <!-- Grid de servicios (se llenará dinámicamente) -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden" id="serviciosContainer"></div>
+                        <!-- Grid de servicios (se llenará dinámicamente con paginación) -->
+                        <div class="hidden" id="serviciosContainer"></div>
 
                         <!-- Mensaje de error -->
                         <div id="errorServicios" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
@@ -126,56 +139,53 @@
                     </div>
                 </div>
 
-                <!-- Step 2: Seleccionar Fecha y Hora -->
+                <!-- Step 2: Seleccionar Médico -->
                 <div id="step2" class="step-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 2: Selecciona Fecha y Hora</h2>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 2: Selecciona el Médico</h2>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label for="fechaExamen" class="block text-sm font-semibold text-gray-700 mb-2">
-                                Fecha del Examen <span class="text-red-500">*</span>
-                            </label>
-                            <input type="date" id="fechaExamen" required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                        </div>
-
-                        <div>
-                            <label for="horaExamen" class="block text-sm font-semibold text-gray-700 mb-2">
-                                Hora del Examen <span class="text-red-500">*</span>
-                            </label>
-                            <select id="horaExamen" required disabled
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
-                                <option value="">Primero selecciona una fecha</option>
-                            </select>
-                            
-                            <!-- Loading horarios -->
-                            <div id="loadingHorarios" class="hidden mt-2 text-sm text-gray-600">
-                                <svg class="animate-spin inline-block w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Buscando horarios disponibles...
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            <div>
+                                <p class="font-semibold text-gray-800" id="servicioSeleccionado">-</p>
+                                <p class="text-sm text-gray-600">Servicio seleccionado</p>
                             </div>
                         </div>
                     </div>
 
-                    <div class="mb-6">
-                        <label for="observaciones" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Observaciones (Opcional)
-                        </label>
-                        <textarea id="observaciones" rows="4" 
-                                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                                  placeholder="Información adicional relevante para el examen..."></textarea>
+                    <!-- Loading médicos -->
+                    <div id="loadingMedicos" class="text-center py-8">
+                        <svg class="animate-spin inline-block w-8 h-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-gray-600 mt-2">Cargando médicos disponibles...</p>
                     </div>
 
-                    <div class="p-4 bg-amber-50 rounded-lg border border-amber-200 mb-6">
+                    <!-- Grid de médicos (se llenará dinámicamente con paginación) -->
+                    <div class="hidden" id="medicosContainer"></div>
+
+                    <!-- Mensaje de error -->
+                    <div id="errorMedicos" class="hidden bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p class="text-red-800 text-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                            No se pudieron cargar los médicos. Por favor, intenta de nuevo.
+                        </p>
+                    </div>
+
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-200 mb-6">
                         <div class="flex items-start gap-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" class="flex-shrink-0 mt-0.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" class="flex-shrink-0 mt-0.5">
                                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12.01" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/>
                             </svg>
-                            <div class="text-sm text-amber-800">
-                                <p class="font-semibold mb-1">Nota importante:</p>
-                                <p>Solo se muestran fechas y horarios disponibles. La clínica confirmará tu reserva.</p>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-semibold mb-1">Selecciona al médico de tu preferencia:</p>
+                                <p>Los horarios disponibles se mostrarán según el médico seleccionado.</p>
                             </div>
                         </div>
                     </div>
@@ -196,9 +206,75 @@
                     </div>
                 </div>
 
-                <!-- Step 3: Confirmar -->
+                <!-- Step 3: Seleccionar Horario Disponible -->
                 <div id="step3" class="step-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 3: Confirmar Examen</h2>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 3: Selecciona Horario Disponible</h2>
+
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold text-gray-800" id="servicioSeleccionado2">-</p>
+                                    <p class="text-sm text-gray-600">Servicio seleccionado</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold text-gray-800" id="medicoSeleccionado">-</p>
+                                    <p class="text-sm text-gray-600">Médico seleccionado</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading horarios -->
+                    <div id="horariosLoading" class="text-center py-8">
+                        <svg class="animate-spin inline-block w-8 h-8 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-gray-600 mt-2">Cargando horarios disponibles...</p>
+                    </div>
+
+                    <!-- Semana actual -->
+                    <div id="horariosSemanales" class="space-y-4 hidden"></div>
+
+                    <!-- No horarios -->
+                    <div id="noHorarios" class="hidden text-center py-8">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" class="mx-auto mb-4">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <p class="text-gray-600 font-semibold">No hay horarios disponibles</p>
+                        <p class="text-gray-500 text-sm mt-2">Intenta con otro servicio o contacta con la clínica</p>
+                    </div>
+
+                    <div class="flex justify-between gap-4 mt-8">
+                        <button type="button" id="btnStep3Back" class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2">
+                                <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+                            </svg>
+                            Atrás
+                        </button>
+                        <button type="button" id="btnStep3Next" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-red-700 transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            Continuar
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline ml-2">
+                                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Confirmar -->
+                <div id="step4" class="step-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 4: Confirmar Examen</h2>
 
                     <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-6 mb-6 border border-orange-200">
                         <h3 class="text-lg font-bold text-gray-800 mb-4">Resumen del Examen</h3>
@@ -212,6 +288,17 @@
                                 <div>
                                     <p class="text-sm text-gray-600">Tipo de Examen</p>
                                     <p class="font-semibold text-gray-800" id="resumenTipo">-</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" class="flex-shrink-0 mt-1">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <div>
+                                    <p class="text-sm text-gray-600">Médico</p>
+                                    <p class="font-semibold text-gray-800" id="resumenMedico">-</p>
                                 </div>
                             </div>
 
@@ -236,16 +323,6 @@
                                     <p class="font-semibold text-gray-800" id="resumenHora">-</p>
                                 </div>
                             </div>
-
-                            <div id="resumenObservacionesDiv" class="flex items-start gap-3 hidden">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2" class="flex-shrink-0 mt-1">
-                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                </svg>
-                                <div>
-                                    <p class="text-sm text-gray-600">Observaciones</p>
-                                    <p class="font-semibold text-gray-800" id="resumenObservaciones">-</p>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -267,7 +344,7 @@
                     </div>
 
                     <div class="flex justify-between gap-4 mt-8">
-                        <button type="button" id="btnStep3Back" class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300">
+                        <button type="button" id="btnStep4Back" class="px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2">
                                 <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
                             </svg>
@@ -290,7 +367,7 @@
     {% include 'footer.html' %}
 
     <!-- Script externo para registro de exámenes -->
-    <script src="{{ url_for('static', filename='js/registrar-examen.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/registrar-examen.js') }}?v={{ range(1, 10000) | random }}"></script>
 
 </body>
 </html>

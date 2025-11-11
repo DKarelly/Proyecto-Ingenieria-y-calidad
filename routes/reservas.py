@@ -1987,7 +1987,9 @@ def api_servicios_examen():
                 LEFT JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
                 WHERE s.id_tipo_servicio = 4 
                 AND s.estado = 'Activo'
-                ORDER BY s.nombre
+                ORDER BY 
+                    CASE WHEN s.id_especialidad IS NULL THEN 0 ELSE 1 END,
+                    s.nombre
             """
             cursor.execute(sql)
             servicios = cursor.fetchall()
@@ -2012,6 +2014,37 @@ def api_servicios_examen():
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Error al obtener servicios de examen'}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@reservas_bp.route('/api/especialidades-publicas')
+def api_especialidades_publicas():
+    """Retorna todas las especialidades activas (endpoint público para pacientes)"""
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT id_especialidad, nombre, descripcion
+                FROM ESPECIALIDAD 
+                WHERE estado = 'activo'
+                ORDER BY nombre
+            """
+            cursor.execute(sql)
+            especialidades = cursor.fetchall()
+            
+            return jsonify({
+                'success': True,
+                'especialidades': especialidades
+            })
+            
+    except Exception as e:
+        print(f"[API especialidades-publicas] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Error al obtener especialidades'}), 500
     finally:
         if conexion:
             conexion.close()
@@ -2305,40 +2338,77 @@ def api_medicos_por_especialidad(id_especialidad):
 @reservas_bp.route('/api/medicos-por-servicio/<int:id_servicio>')
 def api_medicos_por_servicio(id_servicio):
     """Retorna médicos disponibles para un servicio específico"""
+    conexion = None
     try:
-        # Obtener servicio para saber la especialidad
+        print(f"[API medicos-por-servicio] Buscando médicos para servicio ID: {id_servicio}")
+        
+        # Obtener servicio para verificar si existe
         servicio = Servicio.obtener_por_id(id_servicio)
         if not servicio:
+            print(f"[API medicos-por-servicio] ERROR: Servicio {id_servicio} no encontrado")
             return jsonify({'error': 'Servicio no encontrado'}), 404
 
         id_especialidad = servicio.get('id_especialidad')
-        if not id_especialidad:
-            return jsonify({'error': 'Servicio sin especialidad asignada'}), 400
-
-        # Obtener médicos de esa especialidad
+        print(f"[API medicos-por-servicio] Especialidad del servicio: {id_especialidad}")
+        
+        # Obtener médicos
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
-            sql = """
-                SELECT e.id_empleado, e.nombres, e.apellidos, esp.nombre as especialidad
-                FROM EMPLEADO e
-                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                WHERE e.id_especialidad = %s
-                AND e.estado = 'Activo'
-                AND e.id_rol IN (2, 3)
-                ORDER BY e.apellidos, e.nombres
-            """
-            cursor.execute(sql, (id_especialidad,))
+            # Si tiene especialidad, filtrar solo médicos de esa especialidad
+            if id_especialidad:
+                sql = """
+                    SELECT e.id_empleado, 
+                           CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
+                           esp.nombre as especialidad
+                    FROM EMPLEADO e
+                    INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    WHERE e.id_especialidad = %s
+                    AND e.estado = 'Activo'
+                    AND e.id_rol IN (2, 3)
+                    ORDER BY e.apellidos, e.nombres
+                """
+                cursor.execute(sql, (id_especialidad,))
+            else:
+                # Sin especialidad: mostrar solo médicos generales (sin especialidad asignada)
+                sql = """
+                    SELECT e.id_empleado, 
+                           CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
+                           'Médico General' as especialidad
+                    FROM EMPLEADO e
+                    WHERE e.id_especialidad IS NULL
+                    AND e.estado = 'Activo'
+                    AND e.id_rol IN (2, 3)
+                    ORDER BY e.apellidos, e.nombres
+                """
+                cursor.execute(sql)
+            
             medicos = cursor.fetchall()
+            
+            print(f"[API medicos-por-servicio] Médicos encontrados: {len(medicos)}")
+            for medico in medicos:
+                print(f"  - ID: {medico['id_empleado']}, Nombre: {medico.get('nombre_completo', 'N/A')}")
 
-            return jsonify({'medicos': medicos})
+            return jsonify({
+                'success': True,
+                'medicos': medicos,
+                'total': len(medicos)
+            })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"[API medicos-por-servicio] EXCEPCIÓN: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'medicos': []
+        }), 500
     finally:
-        try:
-            conexion.close()
-        except:
-            pass
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
 
 
 @reservas_bp.route('/api/medico/<int:id_medico>')
@@ -2460,6 +2530,53 @@ def paciente_crear_reserva():
             cursor.execute(sql_reserva, (fecha_actual, hora_actual, 1, 'Confirmada', id_paciente, id_programacion))
             conexion.commit()
             id_reserva = cursor.lastrowid
+
+            # Obtener el tipo de servicio para determinar si es CITA, EXAMEN u OPERACION
+            id_servicio_prog = programacion.get('id_servicio')
+            tipo_servicio_nombre = None
+            
+            if id_servicio_prog:
+                cursor.execute("""
+                    SELECT ts.nombre 
+                    FROM SERVICIO s
+                    INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
+                    WHERE s.id_servicio = %s
+                """, (id_servicio_prog,))
+                tipo_data = cursor.fetchone()
+                tipo_servicio_nombre = tipo_data.get('nombre', '').lower() if tipo_data else ''
+
+            # Crear registro específico según el tipo de servicio
+            fecha_prog = programacion['fecha']
+            hora_inicio_prog = programacion['hora_inicio']
+            hora_fin_prog = programacion['hora_fin']
+
+            if tipo_servicio_nombre and ('consulta' in tipo_servicio_nombre or 'cita' in tipo_servicio_nombre):
+                # Crear CITA
+                cursor.execute("""
+                    INSERT INTO CITA (fecha_cita, hora_inicio, hora_fin, estado, id_reserva)
+                    VALUES (%s, %s, %s, 'Pendiente', %s)
+                """, (fecha_prog, hora_inicio_prog, hora_fin_prog, id_reserva))
+                print(f"✓ CITA creada para reserva {id_reserva}")
+                
+            elif tipo_servicio_nombre and ('examen' in tipo_servicio_nombre or 'diagnóstico' in tipo_servicio_nombre or 'diagnostico' in tipo_servicio_nombre):
+                # Crear EXAMEN con todos los campos requeridos
+                cursor.execute("""
+                    INSERT INTO EXAMEN (fecha_examen, hora_inicio, hora_fin, estado, id_reserva)
+                    VALUES (%s, %s, %s, 'Pendiente', %s)
+                """, (fecha_prog, hora_inicio_prog, hora_fin_prog, id_reserva))
+                print(f"✓ EXAMEN creado para reserva {id_reserva}")
+                
+            elif tipo_servicio_nombre and ('quirúrgico' in tipo_servicio_nombre or 'quirurgico' in tipo_servicio_nombre or 'operación' in tipo_servicio_nombre or 'operacion' in tipo_servicio_nombre):
+                # Crear OPERACION
+                cursor.execute("""
+                    INSERT INTO OPERACION (fecha_operacion, hora_inicio, hora_fin, id_reserva)
+                    VALUES (%s, %s, %s, %s)
+                """, (fecha_prog, hora_inicio_prog, hora_fin_prog, id_reserva))
+                print(f"✓ OPERACION creada para reserva {id_reserva}")
+            else:
+                print(f"⚠ No se creó registro específico. Tipo: '{tipo_servicio_nombre}'")
+            
+            conexion.commit()
 
         tipo_reserva = 'servicio' if id_servicio else 'cita'
 
