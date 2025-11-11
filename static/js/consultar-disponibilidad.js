@@ -250,21 +250,14 @@ function mostrarHorariosTabla(horarios) {
         const esDisponible = horario.disponibilidad && horario.disponibilidad.toLowerCase() === 'disponible';
         tr.className = esDisponible ? 'row-disponible' : 'row-no-disponible';
         
-        // Badge de disponibilidad
-        let badgeDisponibilidad = '';
+        // Badge de estado (usar disponibilidad como estado)
+        let badgeEstado = '';
         if (horario.disponibilidad) {
             const color = horario.disponibilidad.toLowerCase() === 'disponible' ? 'bg-green-100 text-green-800' :
                          horario.disponibilidad.toLowerCase() === 'ocupado' ? 'bg-yellow-100 text-yellow-800' :
+                         horario.disponibilidad.toLowerCase() === 'bloqueado' ? 'bg-red-100 text-red-800' :
                          'bg-gray-100 text-gray-800';
-            badgeDisponibilidad = `<span class="px-2 py-1 text-xs font-semibold rounded ${color}">${horario.disponibilidad}</span>`;
-        }
-        
-        // Badge de estado
-        let badgeEstado = '';
-        if (horario.estado) {
-            const colorEstado = horario.estado.toLowerCase() === 'activo' ? 'bg-blue-100 text-blue-800' :
-                               'bg-gray-100 text-gray-800';
-            badgeEstado = `<span class="px-2 py-1 text-xs font-semibold rounded ${colorEstado}">${horario.estado}</span>`;
+            badgeEstado = `<span class="px-2 py-1 text-xs font-semibold rounded ${color}">${horario.disponibilidad}</span>`;
         }
         
         tr.innerHTML = `
@@ -287,9 +280,6 @@ function mostrarHorariosTabla(horarios) {
                 ${horario.hora_fin}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                ${badgeDisponibilidad}
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">
                 ${badgeEstado}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -309,7 +299,7 @@ function mostrarHorariosTabla(horarios) {
 }
 
 // Ver detalle del horario
-function verDetalle(idHorario) {
+async function verDetalle(idHorario) {
     const horario = todosLosHorarios.find(h => h.id_horario === idHorario);
     
     if (!horario) {
@@ -318,82 +308,180 @@ function verDetalle(idHorario) {
     }
     
     const modalContenido = document.getElementById('modal-contenido');
+    
+    // Mostrar loading inicial
     modalContenido.innerHTML = `
-        <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">ID Horario</p>
-                    <p class="text-lg font-semibold text-gray-800">${horario.id_horario}</p>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">ID Empleado</p>
-                    <p class="text-lg font-semibold text-gray-800">${horario.id_empleado}</p>
-                </div>
-            </div>
-            
-            <div>
-                <p class="text-xs font-bold text-gray-500 uppercase">Empleado</p>
-                <p class="text-lg font-semibold text-gray-800">${horario.profesional || '-'}</p>
-            </div>
-            
-            <div>
-                <p class="text-xs font-bold text-gray-500 uppercase">Especialidad</p>
-                <p class="text-lg text-gray-800">${horario.especialidad || '-'}</p>
-            </div>
-            
-            <div class="grid grid-cols-3 gap-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">Fecha</p>
-                    <p class="text-lg font-semibold text-gray-800">
-                        <i class="fas fa-calendar mr-2 text-cyan-600"></i>
-                        ${horario.fecha}
-                    </p>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">Hora Inicio</p>
-                    <p class="text-lg font-semibold text-gray-800">
-                        <i class="fas fa-clock mr-2 text-green-600"></i>
-                        ${horario.hora_inicio}
-                    </p>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">Hora Fin</p>
-                    <p class="text-lg font-semibold text-gray-800">
-                        <i class="fas fa-clock mr-2 text-red-600"></i>
-                        ${horario.hora_fin}
-                    </p>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">Disponibilidad</p>
-                    <p class="text-lg">
-                        <span class="px-3 py-2 rounded font-semibold ${
-                            horario.disponibilidad && horario.disponibilidad.toLowerCase() === 'disponible' ? 'bg-green-100 text-green-800' :
-                            horario.disponibilidad && horario.disponibilidad.toLowerCase() === 'ocupado' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                        }">
-                            ${horario.disponibilidad || '-'}
-                        </span>
-                    </p>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-gray-500 uppercase">Estado</p>
-                    <p class="text-lg">
-                        <span class="px-3 py-2 rounded font-semibold ${
-                            horario.estado && horario.estado.toLowerCase() === 'activo' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                        }">
-                            ${horario.estado || '-'}
-                        </span>
-                    </p>
-                </div>
-            </div>
+        <div class="flex justify-center items-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500"></div>
+            <span class="ml-3 text-gray-600">Cargando información...</span>
         </div>
     `;
     
     document.getElementById('modal-detalle').classList.remove('hidden');
+    
+    // Cargar reservas asociadas a esta programación
+    try {
+        const url = `/reservas/api/reservas-por-programacion?id_horario=${horario.id_horario}&fecha=${horario.fecha}&hora_inicio=${horario.hora_inicio}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // Construir HTML con la información
+        let reservasHTML = '';
+        if (data.reservas && data.reservas.length > 0) {
+            reservasHTML = `
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="text-md font-bold text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-clipboard-list mr-2 text-cyan-600"></i>
+                        Reservas Asignadas (${data.total_reservas})
+                    </h4>
+                    <div class="space-y-3 max-h-60 overflow-y-auto">
+                        ${data.reservas.map(reserva => `
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p class="font-semibold text-gray-800">
+                                            <i class="fas fa-user text-cyan-600 mr-1"></i>
+                                            ${reserva.paciente}
+                                        </p>
+                                        <p class="text-sm text-gray-600">DNI: ${reserva.documento}</p>
+                                    </div>
+                                    <span class="px-3 py-1 rounded text-xs font-semibold ${
+                                        reserva.estado_reserva === 'Confirmada' ? 'bg-green-100 text-green-800' :
+                                        reserva.estado_reserva === 'Completada' ? 'bg-blue-100 text-blue-800' :
+                                        reserva.estado_reserva === 'Cancelada' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-800'
+                                    }">
+                                        ${reserva.estado_reserva}
+                                    </span>
+                                </div>
+                                ${reserva.servicio ? `
+                                    <p class="text-sm text-gray-600">
+                                        <i class="fas fa-stethoscope mr-1"></i>
+                                        Servicio: ${reserva.servicio}
+                                    </p>
+                                ` : ''}
+                                ${reserva.motivo_consulta ? `
+                                    <p class="text-sm text-gray-600 mt-1">
+                                        <i class="fas fa-comment-medical mr-1"></i>
+                                        Motivo: ${reserva.motivo_consulta}
+                                    </p>
+                                ` : ''}
+                                <p class="text-xs text-gray-500 mt-2">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Registrada: ${reserva.fecha_registro}
+                                </p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            reservasHTML = `
+                <div class="mt-6 border-t pt-4">
+                    <h4 class="text-md font-bold text-gray-700 mb-3 flex items-center">
+                        <i class="fas fa-clipboard-list mr-2 text-cyan-600"></i>
+                        Reservas Asignadas
+                    </h4>
+                    <div class="bg-gray-50 rounded-lg p-6 text-center">
+                        <i class="fas fa-calendar-times text-gray-300 text-3xl mb-2"></i>
+                        <p class="text-gray-600">No hay reservas asignadas a esta programación</p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        modalContenido.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+                    <h3 class="text-lg font-bold text-cyan-800 mb-3">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Información del Horario
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">ID Horario</p>
+                            <p class="text-lg font-semibold text-gray-800">${horario.id_horario}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">ID Empleado</p>
+                            <p class="text-lg font-semibold text-gray-800">${horario.id_empleado}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <p class="text-xs font-bold text-gray-500 uppercase">Empleado</p>
+                        <p class="text-lg font-semibold text-gray-800">${horario.profesional || '-'}</p>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <p class="text-xs font-bold text-gray-500 uppercase">Especialidad</p>
+                        <p class="text-lg text-gray-800">${horario.especialidad || '-'}</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4 mt-4">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">Fecha</p>
+                            <p class="text-lg font-semibold text-gray-800">
+                                <i class="fas fa-calendar mr-2 text-cyan-600"></i>
+                                ${horario.fecha}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">Hora Inicio</p>
+                            <p class="text-lg font-semibold text-gray-800">
+                                <i class="fas fa-clock mr-2 text-green-600"></i>
+                                ${horario.hora_inicio}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">Hora Fin</p>
+                            <p class="text-lg font-semibold text-gray-800">
+                                <i class="fas fa-clock mr-2 text-red-600"></i>
+                                ${horario.hora_fin}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">Estado Programación</p>
+                            <p class="text-lg">
+                                <span class="px-3 py-2 rounded font-semibold ${
+                                    horario.disponibilidad && horario.disponibilidad.toLowerCase() === 'disponible' ? 'bg-green-100 text-green-800' :
+                                    horario.disponibilidad && horario.disponibilidad.toLowerCase() === 'ocupado' ? 'bg-yellow-100 text-yellow-800' :
+                                    horario.disponibilidad && horario.disponibilidad.toLowerCase() === 'bloqueado' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                }">
+                                    ${horario.disponibilidad || 'Disponible'}
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-gray-500 uppercase">Estado Horario</p>
+                            <p class="text-lg">
+                                <span class="px-3 py-2 rounded font-semibold ${
+                                    horario.activo == 1 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                }">
+                                    ${horario.activo == 1 ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                ${reservasHTML}
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error al cargar reservas:', error);
+        modalContenido.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-3"></i>
+                <p class="text-red-600">Error al cargar las reservas</p>
+            </div>
+        `;
+    }
 }
 
 // Cerrar modal

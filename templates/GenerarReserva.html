@@ -83,6 +83,8 @@
                             type="text"
                             maxlength="8"
                             placeholder="Ingrese 8 dígitos"
+                            pattern="[0-9]*"
+                            inputmode="numeric"
                             class="flex-1 px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 rounded-lg transition-all"
                         />
                         <button
@@ -152,20 +154,22 @@
                 </div>
 
                 <!-- Médico -->
-                <div>
-                    <label for="select-medic" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
+                <div class="relative">
+                    <label for="input-medic" class="block text-xs font-bold text-gray-600 tracking-wider mb-2">
                         <i class="fas fa-user-doctor mr-1"></i>
                         MÉDICO (OPCIONAL)
                     </label>
-                    <select
-                        id="select-medic"
+                    <input
+                        id="input-medic"
+                        type="text"
+                        placeholder="Buscar médico..."
+                        autocomplete="off"
                         class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
-                    >
-                        <option value="">Cualquier médico disponible</option>
-                        {% for m in medicos %}
-                        <option value="{{ m.id_empleado }}" data-especialidad="{{ m.id_especialidad }}">{{ m.nombres }} {{ m.apellidos }}{% if m.especialidad %} — {{ m.especialidad }}{% endif %}</option>
-                        {% endfor %}
-                    </select>
+                    />
+                    <div id="medicos-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <!-- Opciones de médicos se generarán dinámicamente -->
+                    </div>
+                    <input type="hidden" id="select-medic" value="" />
                 </div>
 
                 <!-- Botón Buscar -->
@@ -258,6 +262,64 @@
 
     </div>
 
+    <!-- Modal de Confirmación de Reserva -->
+    <div id="modal-confirmacion" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full animate-fade-in">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-t-xl">
+                <div class="flex items-center justify-center mb-2">
+                    <div class="bg-white bg-opacity-20 rounded-full p-3">
+                        <i class="fas fa-check-circle text-4xl"></i>
+                    </div>
+                </div>
+                <h2 class="text-2xl font-bold text-center">¡Reserva Creada Exitosamente!</h2>
+            </div>
+            
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <h3 class="font-semibold text-gray-800 mb-2 flex items-center">
+                            <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
+                            Detalles de la Reserva
+                        </h3>
+                        <div class="text-sm space-y-2">
+                            <p><strong>ID Reserva:</strong> <span id="modal-id-reserva" class="text-blue-600 font-mono">#---</span></p>
+                            <p><strong>Paciente:</strong> <span id="modal-paciente">---</span></p>
+                            <p><strong>DNI:</strong> <span id="modal-dni">---</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                        <h3 class="font-semibold text-gray-800 mb-2 flex items-center">
+                            <i class="fas fa-stethoscope text-green-600 mr-2"></i>
+                            Servicio Programado
+                        </h3>
+                        <div class="text-sm space-y-2">
+                            <p><strong>Tipo:</strong> <span id="modal-tipo-servicio">---</span></p>
+                            <p><strong>Servicio:</strong> <span id="modal-servicio">---</span></p>
+                            <p><strong>Fecha:</strong> <span id="modal-fecha">---</span></p>
+                            <p><strong>Horario:</strong> <span id="modal-horario">---</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex gap-3">
+                    <button
+                        id="btn-ver-reservas"
+                        class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all shadow-md hover:shadow-lg">
+                        <i class="fas fa-list mr-2"></i>
+                        Ver Mis Reservas
+                    </button>
+                    <button
+                        id="btn-nueva-reserva"
+                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg inline-flex items-center justify-center transition-all">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nueva Reserva
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- AlpineJS para interactividad del dropdown -->
     <script src="//unpkg.com/alpinejs" defer></script>
 
@@ -268,10 +330,11 @@
         let horarioData = null;
         let todosLosServicios = []; // Array para almacenar todos los servicios
         let todosMedicos = []; // Array para almacenar todos los médicos
+        let medicoSeleccionadoId = null; // ID del médico seleccionado
 
         // Elementos del DOM (se inicializarán cuando el DOM esté listo)
         let dniInput, btnBuscarPaciente, pacienteInfo;
-        let tipoServicioSelect, servicioSelect, medicoSelect, btnBuscarHorarios;
+        let tipoServicioSelect, servicioSelect, medicoInput, medicoSelect, medicoDropdown, btnBuscarHorarios;
         let horariosPlaceholder, horariosLoading, horariosVacio, horariosContainer;
         let btnCrearReserva, btnLimpiarTodo;
         let serviciosCount, medicosCount, resumenReserva;
@@ -285,7 +348,9 @@
 
             tipoServicioSelect = document.getElementById('select-tipo-servicio');
             servicioSelect = document.getElementById('select-service');
+            medicoInput = document.getElementById('input-medic');
             medicoSelect = document.getElementById('select-medic');
+            medicoDropdown = document.getElementById('medicos-dropdown');
             btnBuscarHorarios = document.getElementById('btn-buscar-horarios');
 
             horariosPlaceholder = document.getElementById('horarios-placeholder');
@@ -302,10 +367,21 @@
 
             // Guardar todos los servicios y médicos originales
             todosLosServicios = Array.from(servicioSelect.options).slice(1); // Excluir la primera opción
-            todosMedicos = Array.from(medicoSelect.options).slice(1); // Excluir la primera opción
+            
+            // Cargar médicos desde el backend
+            todosMedicos = [
+                {% for m in medicos %}
+                {
+                    id: "{{ m.id_empleado }}",
+                    nombre: "{{ m.nombres }} {{ m.apellidos }}",
+                    especialidad: "{{ m.especialidad if m.especialidad else '' }}",
+                    id_especialidad: "{{ m.id_especialidad if m.id_especialidad else '' }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
 
             // Verificar que todos los elementos existan
-            if (!dniInput || !btnBuscarPaciente || !servicioSelect || !medicoSelect) {
+            if (!dniInput || !btnBuscarPaciente || !servicioSelect || !medicoInput) {
                 console.error('[GenerarReserva] ERROR: Algunos elementos del DOM no se encontraron');
                 return;
             }
@@ -326,7 +402,121 @@
             dniInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') buscarPaciente();
             });
+
+            // Solo permitir números en DNI
+            dniInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            });
+
+            // Buscador dinámico de médicos
+            medicoInput.addEventListener('input', (e) => {
+                const termino = e.target.value.toLowerCase().trim();
+                filtrarYMostrarMedicos(termino);
+            });
+
+            medicoInput.addEventListener('focus', () => {
+                const termino = medicoInput.value.toLowerCase().trim();
+                filtrarYMostrarMedicos(termino);
+            });
+
+            // Cerrar dropdown al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!medicoInput.contains(e.target) && !medicoDropdown.contains(e.target)) {
+                    medicoDropdown.classList.add('hidden');
+                }
+            });
         }); // Fin de DOMContentLoaded
+
+        // Función para filtrar y mostrar médicos en el dropdown
+        function filtrarYMostrarMedicos(termino) {
+            // Obtener especialidad del servicio seleccionado si existe
+            let especialidadServicio = null;
+            if (servicioSelect.value) {
+                const opcionServicio = servicioSelect.options[servicioSelect.selectedIndex];
+                especialidadServicio = opcionServicio.dataset.especialidad;
+            }
+
+            // Filtrar médicos
+            let medicosFiltrados = todosMedicos;
+
+            // Filtrar por especialidad si el servicio la tiene
+            if (especialidadServicio) {
+                medicosFiltrados = medicosFiltrados.filter(m => m.id_especialidad === especialidadServicio);
+            }
+
+            // Filtrar por término de búsqueda
+            if (termino) {
+                medicosFiltrados = medicosFiltrados.filter(m => 
+                    m.nombre.toLowerCase().includes(termino) || 
+                    (m.especialidad && m.especialidad.toLowerCase().includes(termino))
+                );
+            }
+
+            // Actualizar contador
+            medicosCount.textContent = medicosFiltrados.length;
+
+            // Mostrar dropdown si hay resultados o término de búsqueda
+            if (medicosFiltrados.length === 0 && termino) {
+                medicoDropdown.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">No se encontraron médicos</div>';
+                medicoDropdown.classList.remove('hidden');
+            } else if (medicosFiltrados.length > 0) {
+                medicoDropdown.innerHTML = '';
+                
+                // Opción "Cualquier médico"
+                const opcionTodos = document.createElement('div');
+                opcionTodos.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer border-b border-gray-200 text-sm text-gray-700';
+                opcionTodos.innerHTML = '<i class="fas fa-users mr-2 text-gray-400"></i>Cualquier médico disponible';
+                opcionTodos.onclick = () => seleccionarMedico(null, 'Cualquier médico disponible');
+                medicoDropdown.appendChild(opcionTodos);
+
+                // Opciones de médicos
+                medicosFiltrados.forEach(medico => {
+                    const opcion = document.createElement('div');
+                    opcion.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer text-sm';
+                    opcion.innerHTML = `
+                        <div class="font-medium text-gray-800">${medico.nombre}</div>
+                        ${medico.especialidad ? `<div class="text-xs text-gray-500">${medico.especialidad}</div>` : ''}
+                    `;
+                    opcion.onclick = () => seleccionarMedico(medico.id, medico.nombre);
+                    medicoDropdown.appendChild(opcion);
+                });
+
+                medicoDropdown.classList.remove('hidden');
+            } else if (!termino) {
+                // Mostrar todos al hacer focus sin búsqueda
+                medicoDropdown.innerHTML = '';
+                
+                const opcionTodos = document.createElement('div');
+                opcionTodos.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer border-b border-gray-200 text-sm text-gray-700';
+                opcionTodos.innerHTML = '<i class="fas fa-users mr-2 text-gray-400"></i>Cualquier médico disponible';
+                opcionTodos.onclick = () => seleccionarMedico(null, 'Cualquier médico disponible');
+                medicoDropdown.appendChild(opcionTodos);
+
+                medicosFiltrados.forEach(medico => {
+                    const opcion = document.createElement('div');
+                    opcion.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer text-sm';
+                    opcion.innerHTML = `
+                        <div class="font-medium text-gray-800">${medico.nombre}</div>
+                        ${medico.especialidad ? `<div class="text-xs text-gray-500">${medico.especialidad}</div>` : ''}
+                    `;
+                    opcion.onclick = () => seleccionarMedico(medico.id, medico.nombre);
+                    medicoDropdown.appendChild(opcion);
+                });
+
+                medicoDropdown.classList.remove('hidden');
+            } else {
+                medicoDropdown.classList.add('hidden');
+            }
+        }
+
+        // Función para seleccionar médico
+        function seleccionarMedico(id, nombre) {
+            medicoSeleccionadoId = id;
+            medicoInput.value = nombre;
+            medicoSelect.value = id || '';
+            medicoDropdown.classList.add('hidden');
+            console.log('[GenerarReserva] Médico seleccionado:', id, nombre);
+        }
 
         // Función para filtrar servicios según el tipo seleccionado
         function filtrarServicios() {
@@ -364,7 +554,10 @@
             const servicioSeleccionado = servicioSelect.value;
             
             if (!servicioSeleccionado) {
-                resetearMedicos();
+                medicoInput.value = '';
+                medicoSelect.value = '';
+                medicoSeleccionadoId = null;
+                medicosCount.textContent = todosMedicos.length;
                 return;
             }
             
@@ -372,36 +565,19 @@
             const opcionServicio = servicioSelect.options[servicioSelect.selectedIndex];
             const especialidadServicio = opcionServicio.dataset.especialidad;
             
-            // Limpiar el select de médicos
-            medicoSelect.innerHTML = '<option value="">Cualquier médico disponible</option>';
+            // Limpiar selección de médico
+            medicoInput.value = '';
+            medicoSelect.value = '';
+            medicoSeleccionadoId = null;
             
             // Si el servicio no tiene especialidad, mostrar todos los médicos
             if (!especialidadServicio) {
-                todosMedicos.forEach(option => {
-                    medicoSelect.appendChild(option.cloneNode(true));
-                });
                 medicosCount.textContent = todosMedicos.length;
             } else {
-                // Filtrar médicos por especialidad
-                const medicosFiltrados = todosMedicos.filter(option => {
-                    return option.dataset.especialidad === especialidadServicio;
-                });
-                
-                medicosFiltrados.forEach(option => {
-                    medicoSelect.appendChild(option.cloneNode(true));
-                });
-                
+                // Contar médicos por especialidad
+                const medicosFiltrados = todosMedicos.filter(m => m.id_especialidad === especialidadServicio);
                 medicosCount.textContent = medicosFiltrados.length;
             }
-        }
-
-        // Función para resetear médicos (mostrar todos)
-        function resetearMedicos() {
-            medicoSelect.innerHTML = '<option value="">Cualquier médico disponible</option>';
-            todosMedicos.forEach(option => {
-                medicoSelect.appendChild(option.cloneNode(true));
-            });
-            medicosCount.textContent = todosMedicos.length;
         }
 
         // Función para buscar paciente
@@ -472,6 +648,12 @@
 
             console.log('[GenerarReserva] Buscando horarios para servicio:', id_servicio, 'médico:', id_empleado || 'todos');
 
+            // Resetear selección de horario
+            horarioSeleccionado = null;
+            horarioData = null;
+            resumenReserva.classList.add('hidden');
+            actualizarBotonCrear();
+
             // Mostrar loading
             horariosPlaceholder.classList.add('hidden');
             horariosVacio.classList.add('hidden');
@@ -479,14 +661,12 @@
             horariosLoading.classList.remove('hidden');
 
             try {
-                let url;
+                // SIEMPRE usar el endpoint que devuelve PROGRAMACION correctamente
+                let url = `/reservas/api/buscar-horarios-disponibles?id_servicio=${id_servicio}`;
                 
+                // Si hay médico seleccionado, agregar filtro
                 if (id_empleado) {
-                    // Buscar horarios de un médico específico usando la API de horarios semanales
-                    url = `/reservas/api/horarios-semana/${id_empleado}`;
-                } else {
-                    // Buscar horarios disponibles por servicio
-                    url = `/reservas/api/buscar-horarios-disponibles?id_servicio=${id_servicio}`;
+                    url += `&id_empleado=${id_empleado}`;
                 }
 
                 console.log('[GenerarReserva] Consultando:', url);
@@ -549,32 +729,38 @@
                     const horariosGrid = diaCard.querySelector('[data-fecha]');
 
                     horariosDelDia.forEach(h => {
+                        const esDisponible = h.estado_programacion === 'Disponible';
+                        
+                        console.log('>>> Horario:', h.hora_inicio, 'Estado:', h.estado_programacion, 'Disponible:', esDisponible);
+                        
                         const horarioBtn = document.createElement('button');
                         horarioBtn.type = 'button';
                         
-                        const esDisponible = (h.disponibilidad === 'Disponible' || h.disponible === true) && 
-                                           (h.estado === 'Activo' || !h.estado);
-                        
+                        // Estilos según disponibilidad
                         if (esDisponible) {
-                            horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-3 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all horario-card';
-                            horarioBtn.dataset.id = h.id_horario;
-                            horarioBtn.onclick = () => seleccionarHorario(horarioBtn, h);
+                            horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-3 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all horario-card cursor-pointer';
                         } else {
-                            horarioBtn.className = 'border-2 border-gray-200 bg-gray-100 rounded-lg p-3 text-sm text-gray-400 cursor-not-allowed';
+                            horarioBtn.className = 'border-2 border-gray-300 bg-gray-100 rounded-lg p-3 text-sm cursor-not-allowed opacity-60';
                             horarioBtn.disabled = true;
                         }
-
-                        const profesional = h.profesional || h.medico_nombre || 
-                                          (h.empleado_nombre ? h.empleado_nombre : '') ||
-                                          'Profesional disponible';
+                        
+                        const profesional = h.profesional || h.medico_nombre || 'Profesional disponible';
 
                         horarioBtn.innerHTML = `
-                            <div class="font-semibold text-gray-800">${h.hora_inicio} - ${h.hora_fin}</div>
-                            ${profesional !== 'Profesional disponible' ? `<div class="text-xs text-gray-600 mt-1">${profesional}</div>` : ''}
+                            <div class="font-semibold ${esDisponible ? 'text-gray-800' : 'text-gray-500'}">${h.hora_inicio} - ${h.hora_fin}</div>
+                            ${profesional !== 'Profesional disponible' ? `<div class="text-xs ${esDisponible ? 'text-gray-600' : 'text-gray-400'} mt-1">${profesional}</div>` : ''}
                             <div class="text-xs mt-1 ${esDisponible ? 'text-green-600' : 'text-red-500'}">
-                                ${esDisponible ? '✓ Disponible' : '✗ Ocupado'}
+                                <i class="fas ${esDisponible ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>${esDisponible ? 'Disponible' : 'Ocupado'}
                             </div>
                         `;
+                        
+                        // Solo asignar click si está disponible
+                        if (esDisponible) {
+                            horarioBtn.addEventListener('click', function() {
+                                console.log('>>> CLICK en horario disponible');
+                                seleccionarHorario(horarioBtn, h);
+                            });
+                        }
 
                         horariosGrid.appendChild(horarioBtn);
                     });
@@ -582,8 +768,15 @@
                     horariosContainer.appendChild(diaCard);
                 });
 
-                console.log('[GenerarReserva] ✓ Horarios renderizados correctamente');
-                mostrarNotificacion(`Se encontraron ${horarios.length} horarios disponibles`, 'success');
+                // Contar disponibles vs ocupados
+                const disponibles = horarios.filter(h => h.estado_programacion === 'Disponible').length;
+                const ocupados = horarios.length - disponibles;
+                const mensajeSemana = data.inicio_semana && data.fin_semana 
+                    ? ` (Semana: ${data.inicio_semana} al ${data.fin_semana})` 
+                    : '';
+
+                console.log('[GenerarReserva] ✓ Horarios renderizados:', disponibles, 'disponibles,', ocupados, 'ocupados');
+                mostrarNotificacion(`${disponibles} disponibles, ${ocupados} ocupados${mensajeSemana}`, 'success');
 
             } catch (err) {
                 console.error('[GenerarReserva] Error:', err);
@@ -593,21 +786,34 @@
             }
         }
 
-        // Función para seleccionar horario
+        // Función ULTRA SIMPLE para seleccionar horario
         function seleccionarHorario(elemento, data) {
-            // Remover selección anterior
+            console.log('CLICK - Data recibida:', data);
+            
+            // Validación simple
+            if (!data.id_programacion) {
+                console.error('FALTA id_programacion en:', data);
+                alert('Error: No se puede seleccionar este horario (falta id_programacion)');
+                return;
+            }
+            
+            // Limpiar selección anterior
             document.querySelectorAll('.horario-card').forEach(card => {
-                card.classList.remove('border-green-500', 'bg-green-50', 'ring-2', 'ring-cyan-300');
-                card.classList.add('border-gray-300');
+                card.style.border = '2px solid #D1D5DB';
+                card.style.backgroundColor = 'white';
             });
 
-            // Marcar seleccionado
-            elemento.classList.remove('border-gray-300');
-            elemento.classList.add('border-green-500', 'bg-green-50', 'ring-2', 'ring-cyan-300');
+            // Marcar este
+            elemento.style.border = '4px solid #10B981';
+            elemento.style.backgroundColor = '#D1FAE5';
 
-            horarioSeleccionado = data.id_horario;
+            // Guardar
+            horarioSeleccionado = data.id_programacion;
             horarioData = data;
+            
+            console.log('✓ Seleccionado id_programacion:', horarioSeleccionado);
 
+            // Actualizar UI
             actualizarResumen();
             actualizarBotonCrear();
         }
@@ -636,10 +842,31 @@
 
         // Actualizar botón crear
         function actualizarBotonCrear() {
-            if (pacienteSeleccionado && horarioSeleccionado && servicioSelect.value) {
+            const tieneServicio = servicioSelect.value;
+            const tienePaciente = pacienteSeleccionado !== null;
+            const tieneHorario = horarioSeleccionado !== null;
+            
+            console.log('Actualizar botón:', {
+                tieneServicio,
+                tienePaciente, 
+                tieneHorario,
+                servicioValue: servicioSelect.value,
+                paciente: pacienteSeleccionado,
+                horario: horarioSeleccionado
+            });
+            
+            if (tienePaciente && tieneHorario && tieneServicio) {
                 btnCrearReserva.disabled = false;
+                btnCrearReserva.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnCrearReserva.classList.add('hover:bg-green-700');
+                // Asegurar que el HTML esté correcto
+                if (btnCrearReserva.innerHTML.includes('Creando')) {
+                    btnCrearReserva.innerHTML = '<i class="fas fa-check-circle mr-2 text-xl"></i><span class="text-lg">Crear Reserva</span>';
+                }
             } else {
                 btnCrearReserva.disabled = true;
+                btnCrearReserva.classList.add('opacity-50', 'cursor-not-allowed');
+                btnCrearReserva.classList.remove('hover:bg-green-700');
             }
         }
 
@@ -666,7 +893,7 @@
 
             const payload = {
                 id_paciente: pacienteSeleccionado.id_paciente,
-                id_horario: horarioSeleccionado,
+                id_programacion: horarioSeleccionado,
                 id_servicio: id_servicio
             };
 
@@ -683,11 +910,8 @@
                     throw new Error(data.error || 'No se pudo crear la reserva');
                 }
 
-                mostrarNotificacion(`Reserva creada exitosamente (ID: ${data.id_reserva})`, 'success');
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                // Mostrar modal de confirmación
+                mostrarModalConfirmacion(data.id_reserva);
 
             } catch (err) {
                 btnCrearReserva.disabled = false;
@@ -696,12 +920,58 @@
             }
         }
 
+        // Mostrar modal de confirmación
+        function mostrarModalConfirmacion(idReserva) {
+            const modal = document.getElementById('modal-confirmacion');
+            
+            // Obtener datos para el modal
+            const servicioText = servicioSelect.options[servicioSelect.selectedIndex]?.text || '-';
+            const tipoText = tipoServicioSelect.options[tipoServicioSelect.selectedIndex]?.text || 'Servicio';
+            
+            // Llenar información del modal
+            document.getElementById('modal-id-reserva').textContent = `#${idReserva}`;
+            document.getElementById('modal-paciente').textContent = `${pacienteSeleccionado.nombres} ${pacienteSeleccionado.apellidos}`;
+            document.getElementById('modal-dni').textContent = pacienteSeleccionado.documento_identidad;
+            document.getElementById('modal-tipo-servicio').textContent = tipoText !== 'Todos los tipos' ? tipoText : 'Servicio General';
+            document.getElementById('modal-servicio').textContent = servicioText;
+            
+            const fecha = horarioData?.fecha || '';
+            const fechaObj = fecha ? new Date(fecha + 'T00:00:00') : null;
+            const fechaFormateada = fechaObj ? fechaObj.toLocaleDateString('es-ES', { 
+                weekday: 'long',
+                day: '2-digit', 
+                month: 'long', 
+                year: 'numeric' 
+            }) : '-';
+            
+            const horaInicio = horarioData?.hora_inicio?.substring(0, 5) || '';
+            const horaFin = horarioData?.hora_fin?.substring(0, 5) || '';
+            
+            document.getElementById('modal-fecha').textContent = fechaFormateada;
+            document.getElementById('modal-horario').textContent = `${horaInicio} - ${horaFin}`;
+            
+            // Mostrar modal
+            modal.classList.remove('hidden');
+            
+            // Event listeners para botones del modal
+            document.getElementById('btn-ver-reservas').onclick = () => {
+                window.location.href = '/reservas/listar-reservas';
+            };
+            
+            document.getElementById('btn-nueva-reserva').onclick = () => {
+                modal.classList.add('hidden');
+                window.location.reload();
+            };
+        }
+
         // Limpiar todo
         function limpiarTodo() {
             dniInput.value = '';
             tipoServicioSelect.value = '';
             servicioSelect.value = '';
+            medicoInput.value = '';
             medicoSelect.value = '';
+            medicoSeleccionadoId = null;
 
             pacienteInfo.innerHTML = '<p class="text-sm text-gray-500 text-center"><i class="fas fa-user-circle text-3xl text-gray-400 mb-2 block"></i>Busque un paciente por DNI</p>';
 
@@ -711,13 +981,14 @@
             horariosVacio.classList.add('hidden');
             horariosLoading.classList.add('hidden');
             resumenReserva.classList.add('hidden');
+            medicoDropdown.classList.add('hidden');
 
             pacienteSeleccionado = null;
             horarioSeleccionado = null;
             horarioData = null;
 
             // Resetear contadores
-            resetearMedicos();
+            medicosCount.textContent = todosMedicos.length;
             filtrarServicios();
 
             actualizarBotonCrear();
@@ -769,6 +1040,36 @@
 
         .animate-fade-in {
             animation: fade-in 0.3s ease-out;
+        }
+
+        /* Transición suave para horario seleccionado */
+        .horario-card {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .horario-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .scale-105 {
+            transform: scale(1.05) !important;
+        }
+
+        .selected-check {
+            animation: checkBounce 0.3s ease;
+        }
+
+        @keyframes checkBounce {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
         }
     </style>
 
