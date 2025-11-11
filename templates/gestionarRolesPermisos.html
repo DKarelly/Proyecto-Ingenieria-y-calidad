@@ -381,6 +381,16 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Controles de Paginación -->
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-sm text-gray-600">
+                    <span>Mostrando <span id="inicio-rango-tabla-roles">1</span> - <span id="fin-rango-tabla-roles">20</span> de <span id="total-registros-tabla-roles">0</span> roles</span>
+                </div>
+                <nav id="paginacion-tabla-roles" class="flex items-center gap-2 flex-wrap justify-center">
+                    <!-- Los botones de paginación se generarán aquí -->
+                </nav>
+            </div>
         </div>
     </div>
 
@@ -1035,5 +1045,11 @@
             await cargarRoles();
         });
     </script>
+
+    <!-- Script de paginación reutilizable -->
+    <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
+
+    <!-- Script de paginación para gestión de roles -->
+    <script src="{{ url_for('static', filename='js/paginacionRoles.js') }}"></script>
 </body>
 </html>

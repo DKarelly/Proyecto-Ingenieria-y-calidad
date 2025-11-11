@@ -391,76 +391,20 @@
                                 <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% if empleados %}
-                                {% for empleado in empleados %}
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <span class="font-semibold text-gray-700">#{{ empleado.id_empleado }}</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white font-bold">
-                                                {{ empleado.nombres[0] }}{{ empleado.apellidos[0] }}
-                                            </div>
-                                            <div>
-                                                <p class="font-semibold text-gray-900">{{ empleado.nombres }} {{ empleado.apellidos }}</p>
-                                                <p class="text-xs text-gray-500">{{ empleado.documento_identidad }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <span class="material-symbols-outlined text-sm text-gray-400">mail</span>
-                                            <span class="text-sm">{{ empleado.correo }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="badge badge-info">
-                                            <span class="material-symbols-outlined text-xs mr-1">badge</span>
-                                            {{ empleado.rol or 'Sin rol' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="badge badge-success">
-                                            <span class="material-symbols-outlined text-xs mr-1">check_circle</span>
-                                            Activo
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <button onclick="verPerfilEmpleado({{ empleado.id_empleado }}, '{{ empleado.nombres }}', '{{ empleado.apellidos }}', '{{ empleado.documento_identidad }}', '{{ empleado.correo }}', '{{ empleado.telefono }}', '{{ empleado.rol or "Sin rol" }}', '{{ empleado.especialidad or "" }}')" 
-                                               class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition-all"
-                                               title="Ver Perfil">
-                                                <span class="material-symbols-outlined text-sm">person</span>
-                                            </button>
-                                            <a href="/cuentas/editar-empleado/{{ empleado.id_empleado }}" 
-                                               class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all"
-                                               title="Editar">
-                                                <span class="material-symbols-outlined text-sm">edit</span>
-                                            </a>
-                                            <button onclick="eliminarEmpleado({{ empleado.id_empleado }}, '{{ empleado.nombres }} {{ empleado.apellidos }}')" 
-                                                    class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all"
-                                                    title="Eliminar">
-                                                <span class="material-symbols-outlined text-sm">delete</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="6" class="px-6 py-16 text-center">
-                                        <div class="flex flex-col items-center justify-center text-gray-500">
-                                            <span class="material-symbols-outlined text-6xl mb-4 text-gray-300">groups_off</span>
-                                            <p class="text-lg font-semibold mb-2">No hay empleados registrados</p>
-                                            <p class="text-sm">Comienza registrando un nuevo empleado</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
+                        <tbody id="tabla-empleados-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Los empleados se cargarán dinámicamente con JavaScript -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Controles de Paginación Empleados -->
+                <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-600">
+                        <span>Mostrando <span id="inicio-rango">1</span> - <span id="fin-rango">20</span> de <span id="total-registros">0</span> empleados</span>
+                    </div>
+                    <nav id="paginacionNumeros" class="flex items-center gap-2 flex-wrap justify-center">
+                        <!-- Los botones de paginación se generarán aquí -->
+                    </nav>
                 </div>
             </div>
 
@@ -495,76 +439,20 @@
                                 <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% if pacientes %}
-                                {% for paciente in pacientes %}
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <span class="font-semibold text-gray-700">#{{ paciente.id_paciente }}</span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
-                                                {{ paciente.nombres[0] }}{{ paciente.apellidos[0] }}
-                                            </div>
-                                            <div>
-                                                <p class="font-semibold text-gray-900">{{ paciente.nombres }} {{ paciente.apellidos }}</p>
-                                                <p class="text-xs text-gray-500">{{ paciente.documento_identidad }}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <span class="material-symbols-outlined text-sm text-gray-400">mail</span>
-                                            <span class="text-sm">{{ paciente.correo }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <span class="material-symbols-outlined text-sm text-gray-400">phone</span>
-                                            <span class="text-sm">{{ paciente.telefono }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <span class="badge badge-success">
-                                            <span class="material-symbols-outlined text-xs mr-1">check_circle</span>
-                                            {{ paciente.estado or 'Activo' }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center justify-center gap-2">
-                                            <button onclick="verPerfilPaciente({{ paciente.id_paciente }}, '{{ paciente.nombres }}', '{{ paciente.apellidos }}', '{{ paciente.documento_identidad }}', '{{ paciente.correo }}', '{{ paciente.telefono }}', '{{ paciente.fecha_nacimiento }}', '{{ paciente.estado or "Activo" }}')" 
-                                               class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition-all"
-                                               title="Ver Perfil">
-                                                <span class="material-symbols-outlined text-sm">person</span>
-                                            </button>
-                                            <a href="/cuentas/editar-paciente/{{ paciente.id_paciente }}" 
-                                               class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all"
-                                               title="Editar">
-                                                <span class="material-symbols-outlined text-sm">edit</span>
-                                            </a>
-                                            <button onclick="eliminarPaciente({{ paciente.id_paciente }}, '{{ paciente.nombres }} {{ paciente.apellidos }}')" 
-                                                    class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all"
-                                                    title="Eliminar">
-                                                <span class="material-symbols-outlined text-sm">delete</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="6" class="px-6 py-16 text-center">
-                                        <div class="flex flex-col items-center justify-center text-gray-500">
-                                            <span class="material-symbols-outlined text-6xl mb-4 text-gray-300">person_off</span>
-                                            <p class="text-lg font-semibold mb-2">No hay pacientes registrados</p>
-                                            <p class="text-sm">Comienza registrando un nuevo paciente</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endif %}
+                        <tbody id="tabla-pacientes-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Contenido generado por JavaScript -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Controles de Paginación Pacientes -->
+                <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-gray-600">
+                        <span>Mostrando <span id="inicio-rango-pacientes">1</span> - <span id="fin-rango-pacientes">20</span> de <span id="total-registros-pacientes">0</span> pacientes</span>
+                    </div>
+                    <nav id="paginacionNumeros-pacientes" class="flex items-center gap-2 flex-wrap justify-center">
+                        <!-- Los botones de paginación se generarán aquí -->
+                    </nav>
                 </div>
             </div>
         </div>
@@ -728,6 +616,7 @@
                     <div>
                         <label for="emp-nombres" class="block text-sm font-semibold text-gray-700 mb-2">
                             Nombres <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-nombres-count">0</span>/60</span>
                         </label>
                         <input 
                             type="text" 
@@ -744,6 +633,7 @@
                     <div>
                         <label for="emp-apellidos" class="block text-sm font-semibold text-gray-700 mb-2">
                             Apellidos <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-apellidos-count">0</span>/60</span>
                         </label>
                         <input 
                             type="text" 
@@ -760,6 +650,7 @@
                     <div>
                         <label for="emp-documento" class="block text-sm font-semibold text-gray-700 mb-2">
                             Documento de Identidad <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-documento-count">0</span>/8</span>
                         </label>
                         <input 
                             type="text" 
@@ -767,8 +658,8 @@
                             name="documento" 
                             required
                             minlength="8" 
-                            maxlength="12"
-                            pattern="[0-9]+"
+                            maxlength="8"
+                            pattern="[0-9]{8}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
                             placeholder="Ej: 12345678"
                         >
@@ -793,15 +684,16 @@
                     <div>
                         <label for="emp-telefono" class="block text-sm font-semibold text-gray-700 mb-2">
                             Teléfono <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-telefono-count">0</span>/9</span>
                         </label>
                         <input 
                             type="tel" 
                             id="emp-telefono" 
                             name="telefono" 
                             required
-                            minlength="6" 
-                            maxlength="15"
-                            pattern="[0-9]+"
+                            minlength="9" 
+                            maxlength="9"
+                            pattern="[0-9]{9}"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
                             placeholder="Ej: 987654321"
                         >
@@ -832,6 +724,7 @@
                 <div>
                     <label for="emp-email" class="block text-sm font-semibold text-gray-700 mb-2">
                         Correo Electrónico <span class="text-red-500">*</span>
+                        <span class="text-xs text-gray-500 float-right"><span id="emp-email-count">0</span>/120</span>
                     </label>
                     <input 
                         type="email" 
@@ -1218,7 +1111,7 @@
                     // Cargar especialidades si no están cargadas
                     if (especialidadSelect.options.length <= 1) {
                         try {
-                            const response = await fetch('/api/catalogos/especialidades');
+                            const response = await fetch('/cuentas/api/especialidades');
                             const especialidades = await response.json();
                             
                             especialidadSelect.innerHTML = '<option value="">Seleccione una especialidad</option>';
@@ -1244,12 +1137,353 @@
         const passwordInput = document.getElementById('emp-password');
         const confirmPasswordInput = document.getElementById('emp-confirm-password');
 
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const value = this.value;
+                const parent = this.parentElement;
+                
+                // Eliminar mensaje previo
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                if (value.length > 0 && value.length < 8) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'La contraseña debe tener al menos 8 caracteres';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
         if (confirmPasswordInput) {
             confirmPasswordInput.addEventListener('input', function() {
-                if (this.value !== passwordInput.value) {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                if (this.value !== passwordInput.value && this.value.length > 0) {
                     this.setCustomValidity('Las contraseñas no coinciden');
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Las contraseñas no coinciden';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
                 } else {
                     this.setCustomValidity('');
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        // Validación de documento (solo números, exactamente 8 dígitos)
+        const documentoInput = document.getElementById('emp-documento');
+        if (documentoInput) {
+            documentoInput.addEventListener('input', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                // Solo permitir números
+                if (!/^\d*$/.test(this.value)) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Solo se permiten números';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                    this.value = this.value.replace(/\D/g, '');
+                } else if (this.value.length > 0 && this.value.length < 8) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-orange-500 mt-1';
+                    msg.textContent = `${this.value.length}/8 dígitos - Debe tener exactamente 8 dígitos`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-orange-500');
+                    this.classList.remove('border-red-500');
+                } else if (this.value.length === 8) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-green-500 mt-1';
+                    msg.textContent = '✓ Documento válido';
+                    parent.appendChild(msg);
+                    this.classList.remove('border-red-500', 'border-orange-500');
+                    this.classList.add('border-green-500');
+                } else {
+                    this.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                }
+            });
+        }
+
+        // Validación de teléfono (solo números, exactamente 9 dígitos)
+        const telefonoInput = document.getElementById('emp-telefono');
+        if (telefonoInput) {
+            telefonoInput.addEventListener('input', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                // Solo permitir números
+                if (!/^\d*$/.test(this.value)) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Solo se permiten números';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                    this.value = this.value.replace(/\D/g, '');
+                } else if (this.value.length > 0 && this.value.length < 9) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-orange-500 mt-1';
+                    msg.textContent = `${this.value.length}/9 dígitos - Debe tener exactamente 9 dígitos`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-orange-500');
+                    this.classList.remove('border-red-500');
+                } else if (this.value.length === 9) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-green-500 mt-1';
+                    msg.textContent = '✓ Teléfono válido';
+                    parent.appendChild(msg);
+                    this.classList.remove('border-red-500', 'border-orange-500');
+                    this.classList.add('border-green-500');
+                } else {
+                    this.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                }
+            });
+        }
+
+        // Validación de email en tiempo real
+        const emailInput = document.getElementById('emp-email');
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (this.value && !emailRegex.test(this.value)) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Formato de correo inválido';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        // Validación de edad
+        const nacimientoInput = document.getElementById('emp-nacimiento');
+        if (nacimientoInput) {
+            nacimientoInput.addEventListener('change', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                const fechaNac = new Date(this.value);
+                const hoy = new Date();
+                const edad = Math.floor((hoy - fechaNac) / (365.25 * 24 * 60 * 60 * 1000));
+                
+                if (edad < 18) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = `Edad: ${edad} años. Debe ser mayor de 18 años.`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        // ============================================
+        // CONTADORES DE CARACTERES
+        // ============================================
+        function agregarContador(inputId, counterId) {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            
+            if (input && counter) {
+                // Actualizar contador inicial
+                counter.textContent = input.value.length;
+                
+                // Actualizar en cada input
+                input.addEventListener('input', function() {
+                    counter.textContent = this.value.length;
+                    
+                    // Cambiar color si se acerca al límite
+                    const maxLength = parseInt(this.getAttribute('maxlength'));
+                    const percentage = (this.value.length / maxLength) * 100;
+                    
+                    if (percentage >= 90) {
+                        counter.parentElement.classList.remove('text-gray-500');
+                        counter.parentElement.classList.add('text-red-500', 'font-semibold');
+                    } else if (percentage >= 70) {
+                        counter.parentElement.classList.remove('text-gray-500', 'text-red-500');
+                        counter.parentElement.classList.add('text-orange-500', 'font-semibold');
+                    } else {
+                        counter.parentElement.classList.remove('text-red-500', 'text-orange-500', 'font-semibold');
+                        counter.parentElement.classList.add('text-gray-500');
+                    }
+                });
+            }
+        }
+
+        // Aplicar contadores a los campos
+        agregarContador('emp-nombres', 'emp-nombres-count');
+        agregarContador('emp-apellidos', 'emp-apellidos-count');
+        agregarContador('emp-documento', 'emp-documento-count');
+        agregarContador('emp-telefono', 'emp-telefono-count');
+        agregarContador('emp-email', 'emp-email-count');
+
+        // ============================================
+        // MANEJO DEL FORMULARIO DE REGISTRO DE EMPLEADO
+        // ============================================
+        const formRegistroEmpleado = document.getElementById('form-registro-empleado');
+        if (formRegistroEmpleado) {
+            formRegistroEmpleado.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                console.log('📝 Iniciando registro de empleado...');
+                
+                // Validaciones adicionales
+                const password = document.getElementById('emp-password').value;
+                const confirmPassword = document.getElementById('emp-confirm-password').value;
+                
+                if (password !== confirmPassword) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'Las contraseñas no coinciden. Por favor, verifique.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                if (password.length < 8) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'La contraseña debe tener al menos 8 caracteres.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar documento de identidad (solo números)
+                const documento = document.getElementById('emp-documento').value;
+                if (!/^\d{8}$/.test(documento)) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'El documento de identidad debe contener exactamente 8 dígitos.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar teléfono (solo números)
+                const telefono = document.getElementById('emp-telefono').value;
+                if (!/^\d{9}$/.test(telefono)) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'El teléfono debe contener exactamente 9 dígitos.',
+                        mensaje: 'El teléfono debe contener solo números.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar edad mínima (18 años)
+                const fechaNacimiento = new Date(document.getElementById('emp-nacimiento').value);
+                const hoy = new Date();
+                const edad = Math.floor((hoy - fechaNacimiento) / (365.25 * 24 * 60 * 60 * 1000));
+                
+                if (edad < 18) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'El empleado debe ser mayor de 18 años.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Preparar datos del formulario
+                const formData = new FormData(this);
+                const data = {
+                    accion: 'crear_empleado',
+                    nombres: formData.get('nombres'),
+                    apellidos: formData.get('apellidos'),
+                    documento_identidad: formData.get('documento'),
+                    sexo: formData.get('sexo'),
+                    telefono: formData.get('telefono'),
+                    fecha_nacimiento: formData.get('fecha_nacimiento'),
+                    correo: formData.get('email'),
+                    password: formData.get('password'),
+                    id_rol: formData.get('rol'),
+                    id_especialidad: formData.get('especialidad') || null
+                };
+                
+                console.log('📤 Datos a enviar:', data);
+                
+                // Deshabilitar botón de envío
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Registrando...';
+                
+                try {
+                    const response = await fetch('/cuentas/gestionar-cuentas-internas', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    console.log('📥 Respuesta del servidor:', result);
+                    
+                    if (result.success) {
+                        await mostrarConfirmacion({
+                            titulo: '¡Éxito!',
+                            mensaje: result.message || 'Empleado registrado correctamente.',
+                            tipo: 'success',
+                            textoAceptar: 'Aceptar'
+                        });
+                        
+                        // Cerrar modal y resetear formulario
+                        cerrarModalRegistroEmpleado();
+                        this.reset();
+                        
+                        // Recargar lista de empleados
+                        cargarEmpleados();
+                    } else {
+                        await mostrarConfirmacion({
+                            titulo: 'Error al Registrar',
+                            mensaje: result.error || 'No se pudo registrar el empleado. Intente nuevamente.',
+                            tipo: 'danger',
+                            textoAceptar: 'Entendido'
+                        });
+                    }
+                    
+                    // Restaurar botón
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    
+                } catch (error) {
+                    console.error('❌ Error en el registro:', error);
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Conexión',
+                        mensaje: 'No se pudo conectar con el servidor. Verifique su conexión.',
+                        tipo: 'danger',
+                        textoAceptar: 'Entendido'
+                    });
+                    
+                    // Restaurar botón
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
                 }
             });
         }
@@ -1735,7 +1969,10 @@
         });
     </script>
 
-    <!-- Script de gestión de cuentas internas (carga diferida para mejor rendimiento) -->
-    <script src="{{ url_for('static', filename='js/gestionarCuentasInternas.js') }}" defer></script>
+    <!-- Script de paginación reutilizable -->
+    <script src="{{ url_for('static', filename='js/pagination.js') }}" defer></script>
+
+    <!-- SCRIPT ÚNICO - GESTIÓN COMPLETA DE CUENTAS INTERNAS -->
+    <script src="{{ url_for('static', filename='js/cuentas-internas-completo.js') }}?v=final2024"></script>
 </body>
 </html>

@@ -3698,6 +3698,7 @@ def api_trabajador_procesar_cancelacion():
     if not id_solicitud:
         return jsonify({'error': 'ID de solicitud es requerido'}), 400
 
+
     if accion not in ['Aprobada', 'Rechazada']:
         return jsonify({'error': 'Acción inválida. Use "Aprobada" o "Rechazada"'}), 400
 
@@ -3766,3 +3767,216 @@ def api_trabajador_procesar_cancelacion():
                 conexion.close()
             except:
                 pass
+
+
+# ========== ENDPOINTS PARA PACIENTES: SOLICITUDES DE REPROGRAMACIÓN Y CANCELACIÓN ==========
+
+@reservas_bp.route('/api/solicitar-reprogramacion', methods=['POST'])
+def api_solicitar_reprogramacion_paciente():
+    """API para que los pacientes soliciten reprogramación de una reserva"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+    
+    data = request.get_json()
+    id_reserva = data.get('id_reserva')
+    motivo = data.get('motivo', '').strip()
+    
+    if not id_reserva:
+        return jsonify({'error': 'Falta id_reserva'}), 400
+    
+    if len(motivo) < 20:
+        return jsonify({'error': 'El motivo debe tener al menos 20 caracteres'}), 400
+    
+    conexion = None
+    try:
+        # Obtener id_paciente del usuario actual
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        id_paciente = paciente.get('id_paciente')
+        
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar que la reserva pertenece al paciente y está activa
+            cursor.execute("""
+                SELECT r.*, p.fecha as fecha_programacion
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                WHERE r.id_reserva = %s AND r.id_paciente = %s
+            """, (id_reserva, id_paciente))
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada o no te pertenece'}), 404
+            
+            if reserva['estado'] != 'Confirmada':
+                return jsonify({'error': f'No puedes solicitar reprogramación de una reserva con estado {reserva["estado"]}'}), 400
+            
+            # Validar que la reserva es al menos 2 días en el futuro
+            fecha_reserva = reserva['fecha_programacion']
+            hoy = date.today()
+            dias_diferencia = (fecha_reserva - hoy).days
+            
+            if dias_diferencia < 2:
+                return jsonify({'error': 'Las solicitudes de reprogramación deben realizarse con al menos 2 días de anticipación'}), 400
+            
+            # Verificar si ya existe una solicitud pendiente
+            cursor.execute("""
+                SELECT COUNT(*) as total
+                FROM SOLICITUD
+                WHERE id_reserva = %s AND estado = 'Pendiente' AND tipo = 'Reprogramacion'
+            """, (id_reserva,))
+            pendientes = cursor.fetchone()
+            
+            if pendientes and pendientes['total'] > 0:
+                return jsonify({'error': 'Ya existe una solicitud de reprogramación pendiente para esta reserva'}), 400
+            
+            # Crear la solicitud
+            cursor.execute("""
+                INSERT INTO SOLICITUD (id_reserva, tipo, motivo, estado, fecha_solicitud)
+                VALUES (%s, 'Reprogramacion', %s, 'Pendiente', NOW())
+            """, (id_reserva, motivo))
+            conexion.commit()
+            id_solicitud = cursor.lastrowid
+            
+            # Crear notificación para el paciente
+            try:
+                Notificacion.crear(
+                    'Solicitud de Reprogramación Enviada',
+                    f'Tu solicitud de reprogramación para la reserva #{id_reserva} ha sido enviada. Recibirás una respuesta en las próximas 24-48 horas.',
+                    'confirmacion',
+                    id_paciente,
+                    id_reserva
+                )
+            except Exception as e:
+                print(f"Error creando notificación: {e}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Solicitud de reprogramación enviada exitosamente',
+                'id_solicitud': id_solicitud
+            }), 201
+            
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"[API solicitar-reprogramacion] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al enviar solicitud: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+@reservas_bp.route('/api/solicitar-cancelacion', methods=['POST'])
+def api_solicitar_cancelacion_paciente():
+    """API para que los pacientes soliciten cancelación de una reserva"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+    
+    data = request.get_json()
+    id_reserva = data.get('id_reserva')
+    motivo = data.get('motivo', '').strip()
+    
+    if not id_reserva:
+        return jsonify({'error': 'Falta id_reserva'}), 400
+    
+    if len(motivo) < 20:
+        return jsonify({'error': 'El motivo debe tener al menos 20 caracteres'}), 400
+    
+    conexion = None
+    try:
+        # Obtener id_paciente del usuario actual
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        id_paciente = paciente.get('id_paciente')
+        
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar que la reserva pertenece al paciente y está activa
+            cursor.execute("""
+                SELECT r.*, p.fecha as fecha_programacion
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                WHERE r.id_reserva = %s AND r.id_paciente = %s
+            """, (id_reserva, id_paciente))
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada o no te pertenece'}), 404
+            
+            if reserva['estado'] != 'Confirmada':
+                return jsonify({'error': f'No puedes solicitar cancelación de una reserva con estado {reserva["estado"]}'}), 400
+            
+            # Validar que la reserva es al menos 2 días en el futuro
+            fecha_reserva = reserva['fecha_programacion']
+            hoy = date.today()
+            dias_diferencia = (fecha_reserva - hoy).days
+            
+            if dias_diferencia < 2:
+                return jsonify({'error': 'Las solicitudes de cancelación deben realizarse con al menos 2 días de anticipación'}), 400
+            
+            # Verificar si ya existe una solicitud pendiente
+            cursor.execute("""
+                SELECT COUNT(*) as total
+                FROM SOLICITUD
+                WHERE id_reserva = %s AND estado = 'Pendiente' AND tipo = 'Cancelacion'
+            """, (id_reserva,))
+            pendientes = cursor.fetchone()
+            
+            if pendientes and pendientes['total'] > 0:
+                return jsonify({'error': 'Ya existe una solicitud de cancelación pendiente para esta reserva'}), 400
+            
+            # Crear la solicitud
+            cursor.execute("""
+                INSERT INTO SOLICITUD (id_reserva, tipo, motivo, estado, fecha_solicitud)
+                VALUES (%s, 'Cancelacion', %s, 'Pendiente', NOW())
+            """, (id_reserva, motivo))
+            conexion.commit()
+            id_solicitud = cursor.lastrowid
+            
+            # Crear notificación para el paciente
+            try:
+                Notificacion.crear(
+                    'Solicitud de Cancelación Enviada',
+                    f'Tu solicitud de cancelación para la reserva #{id_reserva} ha sido enviada. Recibirás una respuesta en las próximas 24-48 horas.',
+                    'cancelacion',
+                    id_paciente,
+                    id_reserva
+                )
+            except Exception as e:
+                print(f"Error creando notificación: {e}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Solicitud de cancelación enviada exitosamente',
+                'id_solicitud': id_solicitud
+            }), 201
+            
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"[API solicitar-cancelacion] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al enviar solicitud: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+

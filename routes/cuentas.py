@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash
 from models.empleado import Empleado
 from models.usuario import Usuario
+from models.paciente import Paciente
 
 cuentas_bp = Blueprint('cuentas', __name__)
 
@@ -516,81 +517,106 @@ def gestionar_cuentas_internas():
 
     # Si es POST, crear nuevo empleado
     if request.method == 'POST':
+        # Función auxiliar para manejar errores
+        def handle_error(error_msg):
+            if request.is_json:
+                return jsonify({'success': False, 'error': error_msg}), 400
+            flash(error_msg, 'error')
+            return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+        
         try:
             print('[DEBUG] ========== INICIO REGISTRO EMPLEADO ==========')
-            # Obtener datos del formulario
-            nombres = request.form.get('nombres', '').strip()
-            apellidos = request.form.get('apellidos', '').strip()
-            documento = request.form.get('documento', '').strip()
-            telefono = request.form.get('telefono', '').strip()
-            email = request.form.get('email', '').strip()
-            password = request.form.get('password', '')
-            confirm_password = request.form.get('confirm-password', '')
-            id_rol = request.form.get('rol')
-            sexo = request.form.get('sexo', '')
-            fecha_nacimiento = request.form.get('nacimiento', '').strip()
             
-            print(f'[DEBUG] Datos formulario recibidos: nombres={nombres}, apellidos={apellidos}, doc={documento}, email={email}, rol={id_rol}')
+            # Detectar si es JSON o FormData
+            if request.is_json:
+                data = request.get_json()
+                accion = data.get('accion')
+                
+                # Si es petición AJAX para crear empleado
+                if accion == 'crear_empleado':
+                    print('[DEBUG] Procesando petición JSON para crear empleado')
+                    nombres = data.get('nombres', '').strip()
+                    apellidos = data.get('apellidos', '').strip()
+                    documento = data.get('documento_identidad', '').strip()
+                    telefono = data.get('telefono', '').strip()
+                    email = data.get('correo', '').strip()
+                    password = data.get('password', '')
+                    id_rol = data.get('id_rol')
+                    id_especialidad = data.get('id_especialidad')
+                    sexo = data.get('sexo', '')
+                    fecha_nacimiento = data.get('fecha_nacimiento', '').strip()
+                    confirm_password = password  # En JSON ya se validó en frontend
+                else:
+                    return jsonify({'success': False, 'error': 'Acción no reconocida'}), 400
+            else:
+                # FormData tradicional
+                print('[DEBUG] Procesando FormData tradicional')
+                nombres = request.form.get('nombres', '').strip()
+                apellidos = request.form.get('apellidos', '').strip()
+                documento = request.form.get('documento', '').strip()
+                telefono = request.form.get('telefono', '').strip()
+                email = request.form.get('email', '').strip()
+                password = request.form.get('password', '')
+                confirm_password = request.form.get('confirm-password', '')
+                id_rol = request.form.get('rol')
+                id_especialidad = request.form.get('especialidad')
+                sexo = request.form.get('sexo', '')
+                fecha_nacimiento = request.form.get('nacimiento', '').strip()
+            
+            print(f'[DEBUG] Datos recibidos: nombres={nombres}, apellidos={apellidos}, doc={documento}, email={email}, rol={id_rol}')
 
             # ===== VALIDACIONES BACKEND =====
 
             # Validar campos requeridos
-            if not all([nombres, apellidos, documento, sexo, telefono, fecha_nacimiento, email, password, confirm_password, id_rol]):
+            if not all([nombres, apellidos, documento, sexo, telefono, fecha_nacimiento, email, password, id_rol]):
                 print('[DEBUG] ERROR: Falta algún campo requerido')
-                flash('Todos los campos son obligatorios', 'error')
+                error_msg = 'Todos los campos son obligatorios'
+                if request.is_json:
+                    return jsonify({'success': False, 'error': error_msg}), 400
+                flash(error_msg, 'error')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
             # Validar longitud de nombres
             if len(nombres) < 2 or len(nombres) > 60:
                 print(f'[DEBUG] ERROR: Nombres inválidos (longitud: {len(nombres)})')
-                flash('El nombre debe tener entre 2 y 60 caracteres', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('El nombre debe tener entre 2 y 60 caracteres')
 
             # Validar longitud de apellidos
             if len(apellidos) < 2 or len(apellidos) > 60:
-                flash('Los apellidos deben tener entre 2 y 60 caracteres', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('Los apellidos deben tener entre 2 y 60 caracteres')
 
-            # Validar documento (solo números, 8-12 dígitos)
-            if not documento.isdigit() or len(documento) < 8 or len(documento) > 12:
-                flash('El documento debe contener solo números y tener entre 8 y 12 dígitos', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+            # Validar documento (solo números, exactamente 8 dígitos)
+            if not documento.isdigit() or len(documento) != 8:
+                return handle_error('El documento debe contener exactamente 8 dígitos')
 
             # Validar sexo
             if sexo not in ['Masculino', 'Femenino']:
-                flash('Debe seleccionar un sexo válido', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('Debe seleccionar un sexo válido')
 
-            # Validar teléfono (solo números, 6-15 dígitos)
-            if not telefono.isdigit() or len(telefono) < 6 or len(telefono) > 15:
-                flash('El teléfono debe contener solo números y tener entre 6 y 15 dígitos', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+            # Validar teléfono (solo números, exactamente 9 dígitos)
+            if not telefono.isdigit() or len(telefono) != 9:
+                return handle_error('El teléfono debe contener exactamente 9 dígitos')
 
             # Validar email
             import re
             email_regex = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
             if not re.match(email_regex, email) or len(email) > 120:
-                flash('El formato del correo electrónico no es válido', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('El formato del correo electrónico no es válido')
 
-            # Validar contraseñas
-            if password != confirm_password:
-                flash('Las contraseñas no coinciden', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+            # Validar contraseñas (solo si es FormData, en JSON ya se validó)
+            if not request.is_json and password != confirm_password:
+                return handle_error('Las contraseñas no coinciden')
 
             if len(password) < 8 or len(password) > 64:
-                flash('La contraseña debe tener entre 8 y 64 caracteres', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('La contraseña debe tener entre 8 y 64 caracteres')
 
             # Validar que la contraseña tenga letras y números
             if not re.search(r'[A-Za-z]', password) or not re.search(r'\d', password):
-                flash('La contraseña debe incluir al menos una letra y un número', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('La contraseña debe incluir al menos una letra y un número')
 
             # Validar que la contraseña tenga al menos una mayúscula
             if not re.search(r'[A-Z]', password):
-                flash('La contraseña debe incluir al menos una letra mayúscula', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('La contraseña debe incluir al menos una letra mayúscula')
 
             # Validar fecha de nacimiento (mayor de 18 años)
             from datetime import datetime, timedelta
@@ -598,26 +624,22 @@ def gestionar_cuentas_internas():
                 fecha_nac = datetime.strptime(fecha_nacimiento, '%Y-%m-%d')
                 edad_minima = datetime.now() - timedelta(days=18*365.25)
                 if fecha_nac > edad_minima:
-                    flash('El empleado debe ser mayor de 18 años', 'error')
-                    return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                    return handle_error('El empleado debe ser mayor de 18 años')
             except ValueError:
-                flash('Fecha de nacimiento no válida', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('Fecha de nacimiento no válida')
 
             # Verificar si el correo ya existe
             from models.usuario import Usuario
             usuario_existente = Usuario.obtener_por_correo(email)
             if usuario_existente:
                 print(f'[DEBUG] ERROR: Correo ya existe: {email}')
-                flash('El correo electrónico ya está registrado', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('El correo electrónico ya está registrado')
 
             # Verificar si el documento ya existe
             empleado_existente = Empleado.obtener_por_documento(documento)
             if empleado_existente:
                 print(f'[DEBUG] ERROR: Documento ya existe: {documento}')
-                flash('El documento de identidad ya está registrado', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error('El documento de identidad ya está registrado')
 
             print('[DEBUG] Validaciones pasadas, creando usuario...')
             # Crear usuario usando el método correcto
@@ -631,8 +653,7 @@ def gestionar_cuentas_internas():
             
             if 'error' in resultado_usuario:
                 print(f'[DEBUG] ERROR al crear usuario: {resultado_usuario["error"]}')
-                flash(f'Error al crear usuario: {resultado_usuario["error"]}', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                return handle_error(f'Error al crear usuario: {resultado_usuario["error"]}')
 
             id_usuario = resultado_usuario['id_usuario']
             print(f'[DEBUG] Usuario creado con ID: {id_usuario}')
@@ -686,19 +707,37 @@ def gestionar_cuentas_internas():
                 # Si falla, eliminar el usuario creado
                 print(f'[DEBUG] ERROR al crear empleado: {resultado_empleado["error"]}, eliminando usuario {id_usuario}')
                 Usuario.eliminar(id_usuario)
-                flash(f'Error al crear empleado: {resultado_empleado["error"]}', 'error')
-                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+                error_msg = f'Error al crear empleado: {resultado_empleado["error"]}'
+                
+                if request.is_json:
+                    return jsonify({'success': False, 'error': error_msg}), 400
+                else:
+                    flash(error_msg, 'error')
+                    return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
             print(f'[DEBUG] ========== Empleado creado exitosamente con ID: {resultado_empleado.get("id_empleado")} ==========')
-            flash('Empleado registrado exitosamente', 'success')
-            return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+            
+            if request.is_json:
+                return jsonify({
+                    'success': True, 
+                    'message': 'Empleado registrado exitosamente',
+                    'id_empleado': resultado_empleado.get("id_empleado")
+                }), 200
+            else:
+                flash('Empleado registrado exitosamente', 'success')
+                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
 
         except Exception as e:
             print(f'[DEBUG] ========== EXCEPCIÓN EN REGISTRO: {str(e)} ==========')
             import traceback
             traceback.print_exc()
-            flash(f'Error al procesar la solicitud: {str(e)}', 'error')
-            return redirect(url_for('cuentas.gestionar_cuentas_internas'))
+            error_msg = f'Error al procesar la solicitud: {str(e)}'
+            
+            if request.is_json:
+                return jsonify({'success': False, 'error': error_msg}), 500
+            else:
+                flash(error_msg, 'error')
+                return redirect(url_for('cuentas.gestionar_cuentas_internas'))
     
     # GET - Listar o buscar empleados y pacientes
     termino_busqueda = request.args.get('q', '').strip()
@@ -732,6 +771,73 @@ def gestionar_cuentas_internas():
                          roles=roles,
                          termino_busqueda=termino_busqueda,
                          tab_activo=tab_activo)
+
+@cuentas_bp.route('/api/empleados', methods=['GET'])
+def api_obtener_empleados():
+    """API para obtener empleados en formato JSON para paginación dinámica"""
+    # Verificar si hay sesión activa
+    if 'usuario_id' not in session:
+        return jsonify([]), 401
+
+    # Verificar que sea empleado
+    if session.get('tipo_usuario') != 'empleado':
+        return jsonify([]), 401
+    
+    try:
+        empleados = Empleado.obtener_todos()
+        
+        # Convertir a lista de diccionarios para JSON
+        empleados_json = []
+        for emp in empleados:
+            empleados_json.append({
+                'id_empleado': emp.get('id_empleado'),
+                'nombres': emp.get('nombres'),
+                'apellidos': emp.get('apellidos'),
+                'documento_identidad': emp.get('documento_identidad'),
+                'correo': emp.get('correo'),
+                'telefono': emp.get('telefono'),
+                'rol': emp.get('rol'),
+                'estado': emp.get('estado', 'activo')
+            })
+        
+        return jsonify(empleados_json)
+    except Exception as e:
+        print(f"Error al obtener empleados: {e}")
+        return jsonify([]), 500
+
+
+@cuentas_bp.route('/api/pacientes', methods=['GET'])
+def api_obtener_pacientes():
+    """API para obtener pacientes en formato JSON para paginación dinámica"""
+    # Verificar si hay sesión activa
+    if 'usuario_id' not in session:
+        return jsonify([]), 401
+
+    # Verificar que sea empleado (solo empleados pueden ver pacientes)
+    if session.get('tipo_usuario') != 'empleado':
+        return jsonify([]), 401
+    
+    try:
+        pacientes = Paciente.obtener_todos()
+        
+        # Convertir a lista de diccionarios para JSON
+        pacientes_json = []
+        for pac in pacientes:
+            pacientes_json.append({
+                'id_paciente': pac.get('id_paciente'),
+                'nombres': pac.get('nombres'),
+                'apellidos': pac.get('apellidos'),
+                'documento_identidad': pac.get('documento_identidad'),
+                'correo': pac.get('correo'),
+                'telefono': pac.get('telefono'),
+                'estado': pac.get('estado', 'activo')
+            })
+        
+        return jsonify(pacientes_json)
+    except Exception as e:
+        print(f"Error al obtener pacientes: {e}")
+        return jsonify([]), 500
+
 
 @cuentas_bp.route('/editar-empleado/<int:id_empleado>', methods=['GET', 'POST'])
 def editar_empleado(id_empleado):
@@ -872,23 +978,27 @@ def editar_empleado(id_empleado):
                          provincias=provincias,
                          distritos=distritos)
 
-@cuentas_bp.route('/eliminar-empleado/<int:id_empleado>', methods=['POST'])
+@cuentas_bp.route('/eliminar-empleado/<int:id_empleado>', methods=['GET', 'POST'])
 def eliminar_empleado(id_empleado):
     """Eliminar (desactivar) un empleado"""
     # Verificar sesión
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+        flash('No autorizado', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
     
     try:
         resultado = Empleado.eliminar(id_empleado)
         
         if 'error' in resultado:
-            return jsonify({'success': False, 'message': resultado['error']}), 400
+            flash(f'Error: {resultado["error"]}', 'error')
+            return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
         
-        return jsonify({'success': True, 'message': 'Empleado eliminado correctamente'})
+        flash('Empleado eliminado correctamente', 'success')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
         
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='empleados'))
 
 @cuentas_bp.route('/gestionar-roles-permisos')
 def gestionar_roles_permisos():
@@ -1149,20 +1259,27 @@ def editar_paciente(id_paciente):
     
     return render_template('editarPaciente.html', paciente=paciente)
 
-@cuentas_bp.route('/eliminar-paciente/<int:id_paciente>', methods=['POST'])
+@cuentas_bp.route('/eliminar-paciente/<int:id_paciente>', methods=['GET', 'POST'])
 def eliminar_paciente(id_paciente):
     """Eliminar (desactivar) Paciente"""
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 403
+        flash('No autorizado', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
     
     from models.paciente import Paciente
     
-    resultado = Paciente.eliminar(id_paciente)
-    
-    if 'error' in resultado:
-        return jsonify({'error': resultado['error']}), 500
-    
-    return jsonify({'success': True, 'message': 'Paciente eliminado exitosamente'})
+    try:
+        resultado = Paciente.eliminar(id_paciente)
+        
+        if 'error' in resultado:
+            flash(f'Error: {resultado["error"]}', 'error')
+            return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
+        
+        flash('Paciente eliminado exitosamente', 'success')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
+    except Exception as e:
+        flash(f'Error: {str(e)}', 'error')
+        return redirect(url_for('cuentas.gestionar_cuentas_internas', tab='pacientes'))
 
 @cuentas_bp.route('/recuperar-contrasena')
 def recuperar_contrasena():
