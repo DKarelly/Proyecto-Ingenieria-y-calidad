@@ -36,7 +36,7 @@ class Reserva:
                 # NOTA: La tabla RESERVA solo tiene: id_reserva, fecha_registro, hora_registro, tipo, estado, motivo_cancelacion, id_paciente, id_programacion
                 sql = """INSERT INTO RESERVA (fecha_registro, hora_registro, tipo, estado, id_paciente, id_programacion) 
                          VALUES (%s, %s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (ahora.date(), ahora.time(), tipo, 'Pendiente', id_paciente, id_programacion))
+                cursor.execute(sql, (ahora.date(), ahora.time(), tipo, 'Confirmada', id_paciente, id_programacion))
                 conexion.commit()
                 return {'success': True, 'id_reserva': cursor.lastrowid}
         except Exception as e:
@@ -239,17 +239,17 @@ class Reserva:
     @staticmethod
     def cancelar(id_reserva, motivo):
         """Cancela una reserva"""
-        return Reserva.actualizar_estado(id_reserva, 'cancelada', motivo)
+        return Reserva.actualizar_estado(id_reserva, 'Cancelada', motivo)
 
     @staticmethod
     def confirmar(id_reserva):
         """Confirma una reserva"""
-        return Reserva.actualizar_estado(id_reserva, 'confirmada')
+        return Reserva.actualizar_estado(id_reserva, 'Confirmada')
 
     @staticmethod
     def completar(id_reserva):
         """Marca una reserva como completada"""
-        return Reserva.actualizar_estado(id_reserva, 'completada')
+        return Reserva.actualizar_estado(id_reserva, 'Completada')
 
     @staticmethod
     def obtener_por_estado(estado):

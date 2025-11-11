@@ -71,22 +71,36 @@
 
         <!-- Sección de Búsqueda y Filtros -->
         <div class="admin-card shadow-sm p-6 mb-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Buscar por DNI o Nombre -->
                 <div>
-                    <label for="search-dni" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <i class="fas fa-id-card mr-1"></i>Buscar por DNI
+                    <label for="search-paciente" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user mr-1"></i>Buscar Paciente
                     </label>
                     <div class="relative">
                         <input
                             type="text"
-                            id="search-dni"
-                            placeholder="Ej: 12345678"
-                            maxlength="8"
+                            id="search-paciente"
+                            placeholder="DNI o Nombre del paciente"
                             class="w-full pl-4 pr-10 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all"
                         >
                         <i class="fas fa-search absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400"></i>
                     </div>
                 </div>
+
+                <!-- Buscar Médico -->
+                <div class="relative">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user-doctor mr-1"></i>MÉDICO
+                    </label>
+                    <input type="text" id="medico-input" placeholder="Buscar médico..." autocomplete="off" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 bg-white">
+                    <div id="medico-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <!-- Opciones dinámicas -->
+                    </div>
+                    <input type="hidden" id="medico-select" value="" />
+                </div>
+
+                <!-- Filtrar por Estado -->
                 <div>
                     <label for="filtro-estado" class="block text-sm font-semibold text-gray-700 mb-2">
                         <i class="fas fa-filter mr-1"></i>Filtrar por Estado
@@ -95,21 +109,17 @@
                         id="filtro-estado"
                         class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all">
                         <option value="">Todos los estados</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="confirmada">Confirmada</option>
-                        <option value="completada">Completada</option>
+                        <option value="Confirmada">Confirmada</option>
+                        <option value="Pendiente">Pendiente</option>
                     </select>
                 </div>
-                <div class="flex items-end gap-2">
-                    <button
-                        id="btn-buscar"
-                        class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg">
-                        <i class="fas fa-search mr-2"></i>Buscar
-                    </button>
+
+                <!-- Botón Limpiar -->
+                <div class="flex items-end">
                     <button
                         id="btn-limpiar"
-                        class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg">
-                        <i class="fas fa-eraser mr-2"></i>Limpiar
+                        class="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors shadow-md hover:shadow-lg">
+                        <i class="fas fa-eraser mr-2"></i>Limpiar Filtros
                     </button>
                 </div>
             </div>
@@ -207,24 +217,152 @@
         let reservasData = [];
         let reservaActual = null;
         let reservasFiltradas = [];
+        let todosMedicos = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cargar médicos desde Jinja2
+            todosMedicos = [
+                {% for m in medicos %}
+                {
+                    id: "{{ m.id_empleado }}",
+                    nombre: "{{ m.nombres }} {{ m.apellidos }}",
+                    especialidad: "{{ m.especialidad if m.especialidad else '' }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            // Event listeners para médico search
+            const medicoInput = document.getElementById('medico-input');
+            const medicoDropdown = document.getElementById('medico-dropdown');
+            const searchPaciente = document.getElementById('search-paciente');
+            const filtroEstado = document.getElementById('filtro-estado');
+
+            // Búsqueda automática al escribir en paciente (con debounce)
+            let searchTimeout;
+            searchPaciente.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    buscarReservas();
+                }, 500); // Espera 500ms después de dejar de escribir
+            });
+
+            // Búsqueda automática al cambiar filtro de estado
+            filtroEstado.addEventListener('change', aplicarFiltros);
+
+            medicoInput.addEventListener('input', (e) => {
+                const termino = e.target.value.toLowerCase().trim();
+                filtrarYMostrarMedicos(termino);
+            });
+
+            medicoInput.addEventListener('focus', () => {
+                const termino = medicoInput.value.toLowerCase().trim();
+                filtrarYMostrarMedicos(termino);
+            });
+
+            // Cerrar dropdown al hacer clic fuera
+            document.addEventListener('click', (e) => {
+                if (!medicoInput.contains(e.target) && !medicoDropdown.contains(e.target)) {
+                    medicoDropdown.classList.add('hidden');
+                }
+            });
+
+            // Cargar todas las reservas al inicio
+            cargarReservas();
+
+            // Botón limpiar
+            document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
+        });
+
+        function filtrarYMostrarMedicos(termino) {
+            const medicoDropdown = document.getElementById('medico-dropdown');
+            let medicosFiltrados = todosMedicos;
+
+            if (termino) {
+                medicosFiltrados = medicosFiltrados.filter(m => 
+                    m.nombre.toLowerCase().includes(termino) || 
+                    (m.especialidad && m.especialidad.toLowerCase().includes(termino))
+                );
+            }
+
+            if (medicosFiltrados.length === 0 && termino) {
+                medicoDropdown.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500 text-center">No se encontraron médicos</div>';
+                medicoDropdown.classList.remove('hidden');
+            } else if (medicosFiltrados.length > 0 || !termino) {
+                medicoDropdown.innerHTML = '';
+                
+                // Opción "Todos los médicos"
+                const opcionTodos = document.createElement('div');
+                opcionTodos.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer border-b border-gray-200 text-sm text-gray-700';
+                opcionTodos.innerHTML = '<i class="fas fa-users mr-2 text-gray-400"></i>Todos los médicos';
+                opcionTodos.onclick = () => seleccionarMedico(null, '');
+                medicoDropdown.appendChild(opcionTodos);
+
+                // Opciones de médicos
+                (termino ? medicosFiltrados : medicosFiltrados.slice(0, 10)).forEach(medico => {
+                    const opcion = document.createElement('div');
+                    opcion.className = 'px-4 py-3 hover:bg-cyan-50 cursor-pointer text-sm';
+                    opcion.innerHTML = `
+                        <div class="font-medium text-gray-800">${medico.nombre}</div>
+                        ${medico.especialidad ? `<div class="text-xs text-gray-500">${medico.especialidad}</div>` : ''}
+                    `;
+                    opcion.onclick = () => seleccionarMedico(medico.id, medico.nombre);
+                    medicoDropdown.appendChild(opcion);
+                });
+
+                medicoDropdown.classList.remove('hidden');
+            } else {
+                medicoDropdown.classList.add('hidden');
+            }
+        }
+
+        function seleccionarMedico(id, nombre) {
+            document.getElementById('medico-input').value = nombre;
+            document.getElementById('medico-select').value = id || '';
+            document.getElementById('medico-dropdown').classList.add('hidden');
+            // Buscar automáticamente al seleccionar médico
+            buscarReservas();
+        }
+
+        async function buscarReservas() {
+            const searchPaciente = document.getElementById('search-paciente').value.trim();
+            const medicoId = document.getElementById('medico-select').value;
+
+            const params = new URLSearchParams();
+
+            // Determinar si es DNI o nombre
+            if (searchPaciente) {
+                if (/^\d{8}$/.test(searchPaciente)) {
+                    params.append('dni', searchPaciente);
+                } else {
+                    params.append('nombre', searchPaciente);
+                }
+            }
+
+            if (medicoId) {
+                params.append('id_empleado', medicoId);
+            }
+
+            await cargarReservas(params.toString());
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('search-paciente').value = '';
+            document.getElementById('medico-input').value = '';
+            document.getElementById('medico-select').value = '';
+            document.getElementById('filtro-estado').value = '';
+            document.getElementById('medico-dropdown').classList.add('hidden');
+            cargarReservas();
+        }
 
         // Función para formatear fecha y hora
         function formatearFechaHora(fecha, horaInicio, horaFin) {
+            if (!fecha) return 'Fecha no disponible';
+            
             const f = new Date(fecha + 'T00:00:00');
-            const opciones = { year: 'numeric', month: '2-digit', day: '2-digit' };
-            const fechaFormateada = f.toLocaleDateString('es-PE', opciones);
-
-            // Convertir hora de formato 24h a 12h
-            const formatearHora = (hora) => {
-                if (!hora) return '';
-                const [h, m] = hora.split(':');
-                const hNum = parseInt(h);
-                const periodo = hNum >= 12 ? 'PM' : 'AM';
-                const h12 = hNum % 12 || 12;
-                return `${h12}:${m} ${periodo}`;
-            };
-
-            return `${fechaFormateada} ${formatearHora(horaInicio)} - ${formatearHora(horaFin)}`;
+            const opciones = { weekday: 'short', year: 'numeric', month: 'short', day: '2-digit' };
+            const fechaFormateada = f.toLocaleDateString('es-ES', opciones);
+            
+            return `${fechaFormateada} ${horaInicio || ''} - ${horaFin || ''}`;
         }
 
         // Función para obtener badge de estado
@@ -320,14 +458,12 @@
         }
 
         // Función para cargar reservas
-        async function cargarReservas(dni = null) {
+        async function cargarReservas(queryParams = '') {
             const tbody = document.getElementById('tbody-reservas');
             tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando reservas...</td></tr>';
 
             try {
-                const url = dni
-                    ? `/reservas/api/reservas-activas?dni=${encodeURIComponent(dni)}`
-                    : '/reservas/api/reservas-activas';
+                const url = `/reservas/api/reservas-activas${queryParams ? '?' + queryParams : ''}`;
 
                 const response = await fetch(url);
                 const data = await response.json();
