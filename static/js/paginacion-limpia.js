@@ -247,9 +247,130 @@ function eliminarEmpleado(idEmpleado, nombreCompleto) {
     window.location.href = `/cuentas/eliminar-empleado/${idEmpleado}?tab=empleados`;
 }
 
+function toggleEmployeePassword() {
+    const passwordInput = document.getElementById('employee-password');
+    const toggleIcon = document.getElementById('employee-password-toggle-icon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+function toggleEmployeeConfirmPassword() {
+    const passwordInput = document.getElementById('employee-confirm-password');
+    const toggleIcon = document.getElementById('employee-confirm-password-toggle-icon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.classList.remove('fa-eye');
+        toggleIcon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.classList.remove('fa-eye-slash');
+        toggleIcon.classList.add('fa-eye');
+    }
+}
+
+// ========== MANEJO DE MODAL ==========
+function abrirModalEmpleado() {
+    const modal = document.getElementById('register-employee-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+    }
+}
+
+function cerrarModalEmpleado() {
+    const modal = document.getElementById('register-employee-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restaurar scroll del body
+    }
+}
+
+// ========== BÚSQUEDA DE EMPLEADOS ==========
+function buscarEmpleados() {
+    const searchInput = document.getElementById('search-empleado');
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    if (searchTerm === '') {
+        poblarTablaEmpleados(empleadosGlobal);
+        return;
+    }
+    
+    const empleadosFiltrados = empleadosGlobal.filter(empleado => {
+        const nombreCompleto = `${empleado.nombres} ${empleado.apellidos}`.toLowerCase();
+        const email = (empleado.correo || '').toLowerCase();
+        const rol = (empleado.rol || '').toLowerCase();
+        
+        return nombreCompleto.includes(searchTerm) || 
+               email.includes(searchTerm) || 
+               rol.includes(searchTerm);
+    });
+    
+    paginaActual = 1; // Reset a primera página
+    poblarTablaEmpleados(empleadosFiltrados);
+}
+
 // ========== INICIALIZACIÓN ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM cargado, inicializando paginación...');
     cargarEmpleados();
     cargarPacientes();
+    
+    // Event listener para abrir modal
+    const btnNuevoEmpleado = document.getElementById('new-employee-button');
+    if (btnNuevoEmpleado) {
+        btnNuevoEmpleado.addEventListener('click', abrirModalEmpleado);
+    }
+    
+    // Event listener para cerrar modal
+    const btnCerrarModal = document.getElementById('close-register-employee-modal');
+    if (btnCerrarModal) {
+        btnCerrarModal.addEventListener('click', cerrarModalEmpleado);
+    }
+    
+    // Cerrar modal al hacer clic fuera de él
+    const modal = document.getElementById('register-employee-modal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                cerrarModalEmpleado();
+            }
+        });
+    }
+    
+    // Event listener para búsqueda
+    const searchInput = document.getElementById('search-empleado');
+    if (searchInput) {
+        searchInput.addEventListener('input', buscarEmpleados);
+    }
+    
+    // Event listener para limpiar búsqueda
+    const clearSearchBtn = document.getElementById('clear-search-empleado');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+            buscarEmpleados();
+        });
+    }
+    
+    // Mostrar/ocultar botón de limpiar búsqueda
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const clearBtn = document.getElementById('clear-search-empleado');
+            if (this.value.trim() !== '') {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        });
+    }
 });

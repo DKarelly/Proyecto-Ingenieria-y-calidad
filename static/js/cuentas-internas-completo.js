@@ -397,9 +397,38 @@ function eliminarEmpleado(idEmpleado, nombreCompleto) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM cargado - Inicializando sistema de gestión de cuentas internas...');
 
-    // Cargar datos
-    cargarEmpleados();
-    cargarPacientes();
+    // Leer datos desde las variables globales en el HTML
+    console.log('📊 Leyendo datos de empleados y pacientes...');
+    
+    if (typeof datosEmpleados !== 'undefined' && datosEmpleados) {
+        console.log(`✅ Empleados encontrados: ${datosEmpleados.length} registros`);
+        poblarTablaEmpleados(datosEmpleados);
+    } else {
+        console.log('🔄 Intentando cargar desde data-container...');
+        const dataContainer = document.getElementById('data-container');
+        if (dataContainer) {
+            try {
+                const empleadosData = JSON.parse(dataContainer.getAttribute('data-empleados') || '[]');
+                const pacientesData = JSON.parse(dataContainer.getAttribute('data-pacientes') || '[]');
+                console.log(`✅ Datos parseados - Empleados: ${empleadosData.length}, Pacientes: ${pacientesData.length}`);
+                poblarTablaEmpleados(empleadosData);
+                poblarTablaPacientes(pacientesData);
+            } catch (error) {
+                console.error('❌ Error al parsear datos del data-container:', error);
+                cargarEmpleados();
+                cargarPacientes();
+            }
+        } else {
+            console.log('⚠️ No se encontró data-container, usando API...');
+            cargarEmpleados();
+            cargarPacientes();
+        }
+    }
+    
+    if (typeof datosPacientes !== 'undefined' && datosPacientes) {
+        console.log(`✅ Pacientes encontrados: ${datosPacientes.length} registros`);
+        poblarTablaPacientes(datosPacientes);
+    }
 
     console.log('✅ Sistema inicializado correctamente');
 });

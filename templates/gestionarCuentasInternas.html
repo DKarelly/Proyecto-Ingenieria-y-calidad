@@ -1,365 +1,2051 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Cuentas Internas - Clínica Unión</title>
+    <title>Gestión de Usuarios - Clínica Unión</title>
+
+    <!-- Preconnect para mejorar velocidad de carga de recursos externos -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+
+    <!-- Tailwind CSS compilado -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Carga de CSS con prioridad optimizada -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
+
+    <link rel="preload"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    </noscript>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         }
 
-        /* Estilos para mensajes de error */
-        .error-text {
-            color: #ef4444;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
+        /* Optimización: Reducir repaints y reflows */
+        .tab-button {
+            position: relative;
+            transition: all 0.3s ease;
+            will-change: color;
+        }
+
+        .tab-button.active {
+            color: #0891b2;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0891b2, #06b6d4);
+            border-radius: 3px 3px 0 0;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+            contain: layout style paint;
+            /* Optimización de renderizado */
+        }
+
+        .tab-content.active {
             display: block;
         }
 
-        .has-error input,
-        .has-error select {
-            border-color: #ef4444 !important;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .has-error input:focus,
-        .has-error select:focus {
+        /* Optimización: GPU acceleration para hover */
+        .card-hover {
+            transition: all 0.3s ease;
+            will-change: transform;
+            transform: translateZ(0);
+            /* Force GPU acceleration */
+        }
+
+        .card-hover:hover {
+            transform: translateY(-5px) translateZ(0);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-info {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Estilos del modal - CENTRADO PERFECTO Y FORZADO */
+        .modal-overlay {
+            display: none !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            z-index: 9999 !important;
+            animation: fadeIn 0.2s ease-in;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            overflow-y: auto !important;
+            padding: 2rem 1rem !important;
+        }
+
+        .modal-overlay.active {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-direction: column !important;
+        }
+
+        .modal-content {
+            background: white !important;
+            contain: layout style paint;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+            margin: auto !important;
+            position: relative;
+        }
+
+        /* Asegurar que los hijos directos del modal-overlay también estén centrados */
+        .modal-overlay > * {
+            margin: auto !important;
+        }
+
+        .modal-overlay > .bg-white {
+            margin: auto !important;
+        }
+
+        /* Bloquear scroll del body cuando modal está abierto */
+        body.modal-open {
+            overflow: hidden !important;
+            padding-right: 0px; /* Compensar la barra de scroll */
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info-row {
+            display: flex;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #6b7280;
+            min-width: 140px;
+        }
+
+        .info-value {
+            color: #1f2937;
+            flex: 1;
+        }
+
+        /* Estilos para validación en tiempo real */
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-field {
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            transform: translateY(-2px);
+        }
+
+        .input-field.valid {
+            border-color: #10b981 !important;
+            background-color: #f0fdf4;
+        }
+
+        .input-field.invalid {
             border-color: #ef4444 !important;
-            --tw-ring-color: rgba(239, 68, 68, 0.2) !important;
+            background-color: #fef2f2;
+        }
+
+        .validation-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .validation-message {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .validation-message.success {
+            color: #10b981;
+        }
+
+        .validation-message.error {
+            color: #ef4444;
+        }
+
+        .password-strength {
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .strength-weak {
+            width: 33%;
+            background: #ef4444;
+        }
+
+        .strength-medium {
+            width: 66%;
+            background: #f59e0b;
+        }
+
+        .strength-strong {
+            width: 100%;
+            background: #10b981;
+        }
+
+        /* Animación de carga en botones */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spinner 0.6s linear infinite;
+        }
+
+        @keyframes spinner {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Tooltip mejorado */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1f2937 transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Estilos para botones de acción en tabla */
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
-<body class="text-gray-700">
+
+<body class="min-h-screen" style="content-visibility:auto; contain-intrinsic-size:auto 1000px;">
+    <!-- Script de debug para verificar bloqueo de scroll -->
+    <script>
+        console.log('🔧 Sistema de bloqueo de scroll inicializado');
+        // Observer para detectar cambios en la clase modal-open
+        const bodyObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    if (document.body.classList.contains('modal-open')) {
+                        console.log('🔒 SCROLL BLOQUEADO - body tiene clase modal-open');
+                        console.log('📊 Overflow del body:', window.getComputedStyle(document.body).overflow);
+                    } else {
+                        console.log('🔓 SCROLL DESBLOQUEADO - clase modal-open removida');
+                    }
+                }
+            });
+        });
+        bodyObserver.observe(document.body, { attributes: true });
+    </script>
+    
     {% include 'header_admin.html' %}
 
-    <div class="max-w-7xl mx-auto p-6 md:p-10">
+    <div class="max-w-7xl mx-auto p-6 md:p-10" style="content-visibility:auto;">
         <!-- Botón de regreso -->
         <div class="mb-6">
-            <a href="/cuentas" class="inline-flex items-center text-cyan-600 hover:text-cyan-800 font-medium transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Volver a Cuentas
+            <a href="/admin/panel?subsistema=cuentas"
+                class="inline-flex items-center gap-2 text-cyan-700 hover:text-cyan-900 font-medium transition-colors bg-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Volver al Dashboard
             </a>
         </div>
-        
-        <!-- Header con título y botón -->
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-8 admin-toolbar">
-            <h1 class="text-3xl font-bold text-gray-800">Gestión de Cuentas Internas</h1>
-            <button id="new-employee-button" class="btn btn-primary">
-                <i class="fa-solid fa-plus mr-2"></i>
-                Registrar Nuevo Empleado
-            </button>
-        </div>
 
-        <!-- Panel de resumen -->
-        <div class="grid gap-4 md:grid-cols-3 mb-8">
-            <div class="admin-card">
-                <p class="text-sm text-slate-500">Cuentas activas</p>
-                <p class="text-2xl font-semibold text-slate-900">{{ empleados|length if empleados else 0 }}</p>
-                <span class="admin-badge success mt-3 inline-flex items-center">
-                    <i class="fa-solid fa-users mr-1.5"></i>
-                    Total empleados
-                </span>
-            </div>
-            <div class="admin-card">
-                <p class="text-sm text-slate-500">Roles Activos</p>
-                <p class="text-2xl font-semibold text-slate-900">{{ roles|length if roles else 0 }}</p>
-                <span class="admin-badge info mt-3 inline-flex items-center">
-                    <i class="fa-solid fa-user-shield mr-1.5"></i>
-                    Roles disponibles
-                </span>
-            </div>
-            <div class="admin-card">
-                <p class="text-sm text-slate-500">Última actualización</p>
-                <p class="text-2xl font-semibold text-slate-900">Hoy</p>
-                <span class="admin-badge warn mt-3 inline-flex items-center">
-                    <i class="fa-solid fa-clock mr-1.5"></i>
-                    Sistema actualizado
-                </span>
-            </div>
-        </div>
-        <!-- Modal de Registro de Empleado -->
-        <div id="register-employee-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden">
-            <div class="fixed inset-0 flex items-center justify-center p-4">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl p-8 relative max-h-[90vh] overflow-y-auto">
-                    <button id="close-register-employee-modal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                        <i class="fa-solid fa-times text-xl"></i>
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Usuarios</h1>
+                    <p class="text-gray-600">Administra empleados y pacientes desde un solo lugar</p>
+                </div>
+                <div class="flex gap-3">
+                    <button id="new-employee-button"
+                        class="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-6 py-3 rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all shadow-lg hover:shadow-xl font-semibold">
+                        <span class="material-symbols-outlined">person_add</span>
+                        Nuevo Empleado
                     </button>
-                    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Registrar Nuevo Empleado</h2>
-                <form method="POST" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="employee-nombres" class="block text-sm font-semibold text-gray-700 mb-2">Nombres</label>
-                            <input type="text" id="employee-nombres" name="nombres" minlength="2" maxlength="60" pattern="^[\\p{L}\\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="John" required>
-                            <p class="error-text hidden" data-error-for="employee-nombres"></p>
-                        </div>
-                        <div>
-                            <label for="employee-apellidos" class="block text-sm font-semibold text-gray-700 mb-2">Apellidos</label>
-                            <input type="text" id="employee-apellidos" name="apellidos" minlength="2" maxlength="60" pattern="^[\\p{L}\\s]+$" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="Doe" required>
-                            <p class="error-text hidden" data-error-for="employee-apellidos"></p>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="employee-documento" class="block text-sm font-semibold text-gray-700 mb-2">Documento de Identidad</label>
-                        <input type="text" id="employee-documento" name="documento" minlength="8" maxlength="12" pattern="^[0-9]+$" inputmode="numeric" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="12345678" required>
-                        <p class="error-text hidden" data-error-for="employee-documento"></p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Sexo</label>
-                        <div class="flex items-center space-x-8">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="radio" id="employee-sexo-m" name="sexo" value="Masculino" class="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300" required>
-                                <span class="ml-2 text-gray-700">Masculino</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="radio" id="employee-sexo-f" name="sexo" value="Femenino" class="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300" required>
-                                <span class="ml-2 text-gray-700">Femenino</span>
-                            </label>
-                        </div>
-                        <p class="error-text hidden" data-error-for="employee-sexo"></p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="employee-telefono" class="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
-                            <input type="tel" id="employee-telefono" name="telefono" minlength="6" maxlength="15" pattern="^[0-9]+$" inputmode="tel" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="987654321" required>
-                            <p class="error-text hidden" data-error-for="employee-telefono"></p>
-                        </div>
-                        <div>
-                            <label for="employee-nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">Fecha de Nacimiento</label>
-                            <input type="date" id="employee-nacimiento" name="nacimiento" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" required>
-                            <p class="error-text hidden" data-error-for="employee-nacimiento"></p>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="employee-email" class="block text-sm font-semibold text-gray-700 mb-2">Correo Electrónico</label>
-                        <input type="email" id="employee-email" name="email" maxlength="120" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="tu@email.com" required>
-                        <p class="error-text hidden" data-error-for="employee-email"></p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="employee-departamento" class="block text-sm font-semibold text-gray-700 mb-2">Departamento</label>
-                            <div class="relative">
-                                <select
-                                    class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all appearance-none cursor-pointer"
-                                    id="employee-departamento"
-                                    name="departamento"
-                                    required
-                                >
-                                    <option value="">Seleccione un departamento...</option>
-                                </select>
-                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                            </div>
-                            <p class="error-text hidden" data-error-for="employee-departamento"></p>
-                        </div>
-                        <div>
-                            <label for="employee-provincia" class="block text-sm font-semibold text-gray-700 mb-2">Provincia</label>
-                            <div class="relative">
-                                <select
-                                    class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    id="employee-provincia"
-                                    name="provincia"
-                                    required
-                                    disabled
-                                >
-                                    <option value="">Seleccione un departamento primero...</option>
-                                </select>
-                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                            </div>
-                            <p class="error-text hidden" data-error-for="employee-provincia"></p>
-                        </div>
-                        <div>
-                            <label for="employee-distrito" class="block text-sm font-semibold text-gray-700 mb-2">Distrito</label>
-                            <div class="relative">
-                                <select
-                                    class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all appearance-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-                                    id="employee-distrito"
-                                    name="distrito"
-                                    required
-                                    disabled
-                                >
-                                    <option value="">Seleccione una provincia primero...</option>
-                                </select>
-                                <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                            </div>
-                            <p class="error-text hidden" data-error-for="employee-distrito"></p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="employee-password" class="block text-sm font-semibold text-gray-700 mb-2">Contraseña</label>
-                            <div class="relative">
-                                <input type="password" id="employee-password" name="password" minlength="8" maxlength="64" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="********" required>
-                                <button type="button" onclick="toggleEmployeePassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" title="Mostrar/Ocultar contraseña">
-                                    <i class="fa-solid fa-eye" id="employee-password-toggle-icon"></i>
-                                </button>
-                            </div>
-                            <p class="error-text hidden" data-error-for="employee-password"></p>
-                        </div>
-                        <div>
-                            <label for="employee-confirm-password" class="block text-sm font-semibold text-gray-700 mb-2">Confirmar Contraseña</label>
-                            <div class="relative">
-                                <input type="password" id="employee-confirm-password" name="confirm-password" minlength="8" maxlength="64" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 placeholder-gray-400 bg-white rounded-lg transition-all" placeholder="********" required>
-                                <button type="button" onclick="toggleEmployeeConfirmPassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" title="Mostrar/Ocultar contraseña">
-                                    <i class="fa-solid fa-eye" id="employee-confirm-password-toggle-icon"></i>
-                                </button>
-                            </div>
-                            <p class="error-text hidden" data-error-for="employee-confirm-password"></p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="employee-rol" class="block text-sm font-semibold text-gray-700 mb-2">Rol</label>
-                            <select id="employee-rol" name="rol" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all" required>
-                                 <option value="">Seleccione un rol</option>
-                                 {% for rol in roles %}
-                                 <option value="{{ rol.id_rol }}">{{ rol.nombre }}</option>
-                                 {% endfor %}
-                             </select>
-                            <p class="error-text hidden" data-error-for="employee-rol"></p>
-                        </div>
-                        <div id="employee-especialidad-container" class="hidden">
-                            <label for="employee-especialidad" class="block text-sm font-semibold text-gray-700 mb-2">Especialidad</label>
-                            <select id="employee-especialidad" name="especialidad" class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all">
-                                <option value="">Seleccione una especialidad</option>
-                            </select>
-                            <p class="error-text hidden" data-error-for="employee-especialidad"></p>
-                        </div>
-                    </div>
-                    <div class="pt-4">
-                        <button type="submit" class="btn btn-primary w-full justify-center">
-                            <i class="fa-solid fa-user-plus mr-2"></i>
-                            Registrar Empleado
-                        </button>
-                    </div>
-                </form>
+                    <button id="new-patient-button"
+                        class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl font-semibold">
+                        <span class="material-symbols-outlined">patient_list</span>
+                        Nuevo Paciente
+                    </button>
+                </div>
             </div>
         </div>
-        </div>
 
-        <!-- Search Section -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-gray-200">
-            <div class="relative">
-                <label for="search-empleado" class="sr-only">Buscar empleado</label>
-                <i class="fa-solid fa-search absolute top-1/2 left-4 transform -translate-y-1/2 text-gray-400 text-lg"></i>
-                <input
-                    type="search"
-                    id="search-empleado"
-                    placeholder="Buscar por nombre, email o rol..."
-                    class="w-full pl-12 pr-12 py-3.5 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
-                >
-                <button
-                    id="clear-search-empleado"
-                    class="absolute top-1/2 right-4 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors hidden"
-                    title="Limpiar búsqueda"
-                >
-                    <i class="fa-solid fa-times text-lg"></i>
+        <!-- Tabs Navigation -->
+        <div class="bg-white rounded-2xl shadow-xl mb-8 overflow-hidden">
+            <div class="flex border-b border-gray-200">
+                <button onclick="switchTab('empleados')"
+                    class="tab-button flex-1 px-8 py-4 font-semibold text-gray-600 hover:text-cyan-600 hover:bg-cyan-50 transition-all {% if tab_activo == 'empleados' %}active{% endif %}"
+                    data-tab="empleados">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">badge</span>
+                        <span>Empleados</span>
+                        <span class="ml-2 px-2.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-sm font-bold">{{
+                            empleados|length }}</span>
+                    </div>
+                </button>
+                <button onclick="switchTab('pacientes')"
+                    class="tab-button flex-1 px-8 py-4 font-semibold text-gray-600 hover:text-cyan-600 hover:bg-cyan-50 transition-all {% if tab_activo == 'pacientes' %}active{% endif %}"
+                    data-tab="pacientes">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">patient_list</span>
+                        <span>Pacientes</span>
+                        <span class="ml-2 px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">{{
+                            pacientes|length }}</span>
+                    </div>
                 </button>
             </div>
-        </div>
 
-        <!-- Tabla de Empleados -->
-        <div class="overflow-x-auto admin-card shadow-md mt-8">
-            <table class="admin-table w-full">
-                <thead>
-                    <tr>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                ID
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Nombre Completo
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Email
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Rol
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Estado
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Acciones
-                            </th>
-                        </tr>
-                </thead>
-                <tbody id="tabla-empleados-body" class="divide-y divide-gray-200">
-                    <!-- Los empleados se cargarán dinámicamente con JavaScript -->
-                </tbody>
-                </table>
-            </div>
-
-            <!-- Paginación -->
-            <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
-                <!-- Texto de registros -->
-                <div class="text-sm text-gray-600 text-center md:text-left">
-                    Mostrando <span id="inicio-rango" class="font-medium">0</span>-
-                    <span id="fin-rango" class="font-medium">0</span> de
-                    <span id="total-registros" class="font-medium">0</span> registros
+            <!-- TAB CONTENT: EMPLEADOS -->
+            <div id="tab-empleados" class="tab-content {% if tab_activo == 'empleados' %}active{% endif %} p-8">
+                <!-- Buscador Empleados -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <span
+                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                        <input type="search" id="search-empleado"
+                            placeholder="Buscar empleado por nombre, email o rol..."
+                            class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 rounded-xl transition-all">
+                        <button id="clear-search-empleado"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Controles de paginación -->
-                <nav id="paginacionNumeros" class="flex items-center space-x-2" aria-label="Pagination"></nav>
-            </div>
-        </div>
+                <!-- Tabla Empleados -->
+                <div class="overflow-hidden rounded-xl border border-gray-200">
+                    <table class="w-full">
+                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Empleado</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Correo</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Rol</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Estado</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase">Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-empleados-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Los empleados se cargan dinámicamente con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Paginación -->
+                <div
+                    class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+                    <!-- Texto de registros -->
+                    <div class="text-sm text-gray-600 text-center md:text-left">
+                        Mostrando <span id="inicio-rango" class="font-medium">0</span>-
+                        <span id="fin-rango" class="font-medium">0</span> de
+                        <span id="total-registros" class="font-medium">0</span> registros
+                    </div>
 
-        <!-- Tabla de Pacientes -->
-        <div class="overflow-x-auto admin-card shadow-md mt-12">
-            <h2 class="text-xl font-bold text-gray-800 px-6 py-4 border-b border-gray-200">Gestión de Pacientes</h2>
-            <table class="admin-table w-full">
-                <thead>
-                    <tr>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                ID
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Nombre Completo
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Email
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Documento
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Teléfono
-                            </th>
-                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                Estado
-                            </th>
-                        </tr>
-                </thead>
-                <tbody id="tabla-pacientes-body" class="divide-y divide-gray-200">
-                    </tbody>
-                </table>
+                    <!-- Controles de paginación -->
+                    <nav id="paginacionNumeros" class="flex items-center space-x-2" aria-label="Pagination"></nav>
+                </div>
             </div>
 
-            <!-- Paginación Pacientes -->
-            <div class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
-                <!-- Texto de registros -->
-                <div class="text-sm text-gray-600 text-center md:text-left">
-                    Mostrando <span id="inicio-rango-pacientes" class="font-medium">0</span>-
-                    <span id="fin-rango-pacientes" class="font-medium">0</span> de
-                    <span id="total-registros-pacientes" class="font-medium">0</span> pacientes
+            <!-- TAB CONTENT: PACIENTES -->
+            <div id="tab-pacientes" class="tab-content {% if tab_activo == 'pacientes' %}active{% endif %} p-8">
+                <!-- Buscador Pacientes -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <span
+                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                        <input type="search" id="search-paciente"
+                            placeholder="Buscar paciente por nombre, documento o correo..."
+                            class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl transition-all">
+                        <button id="clear-search-paciente"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Controles de paginación -->
-                <nav id="paginacionNumeros-pacientes" class="flex items-center space-x-2" aria-label="Pagination"></nav>
+                <!-- Tabla Pacientes -->
+                <div class="overflow-hidden rounded-xl border border-gray-200">
+                    <table class="w-full">
+                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Paciente</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Correo</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Teléfono</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Estado</th>
+                                <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase">Acciones
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-pacientes-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Los pacientes se cargan dinámicamente con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Paginación -->
+                <div
+                    class="bg-gray-50 px-6 py-4 flex flex-col md:flex-row items-center justify-between border-t border-gray-200 gap-3 md:gap-0">
+                    <!-- Texto de registros -->
+                    <div class="text-sm text-gray-600 text-center md:text-left">
+                        Mostrando <span id="inicio-rango-pacientes" class="font-medium">0</span>-
+                        <span id="fin-rango-pacientes" class="font-medium">0</span> de
+                        <span id="total-registros-pacientes" class="font-medium">0</span> registros
+                    </div>
+
+                    <!-- Controles de paginación -->
+                    <nav id="paginacionNumeros-pacientes" class="flex items-center space-x-2" aria-label="Pagination"></nav>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal Ver Perfil Empleado -->
+    <div id="modal-perfil-empleado" class="modal-overlay" onclick="cerrarModalPerfil(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white font-bold text-lg">
+                            <span id="modal-empleado-iniciales"></span>
+                        </div>
+                        <span id="modal-empleado-nombre"></span>
+                    </h2>
+                    <button onclick="cerrarModalPerfil()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <span class="material-symbols-outlined text-2xl">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-cyan-600">badge</span>
+                        Información del Empleado
+                    </h3>
+                    <div class="space-y-2">
+                        <div class="info-row">
+                            <span class="info-label">Documento:</span>
+                            <span class="info-value" id="modal-empleado-documento"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Correo:</span>
+                            <span class="info-value" id="modal-empleado-correo"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Teléfono:</span>
+                            <span class="info-value" id="modal-empleado-telefono"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Rol:</span>
+                            <span class="info-value">
+                                <span class="badge badge-info" id="modal-empleado-rol"></span>
+                            </span>
+                        </div>
+                        <div class="info-row" id="modal-empleado-especialidad-row" style="display: none;">
+                            <span class="info-label">Especialidad:</span>
+                            <span class="info-value" id="modal-empleado-especialidad"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Estado:</span>
+                            <span class="info-value">
+                                <span class="badge badge-success">Activo</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <a id="btn-ver-perfil-completo-empleado" href="#"
+                        class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-6 py-3 rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all shadow-lg hover:shadow-xl font-semibold">
+                        <span class="material-symbols-outlined">person</span>
+                        Ver Perfil Completo
+                    </a>
+                    <button onclick="cerrarModalPerfil()"
+                        class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Perfil Paciente -->
+    <div id="modal-perfil-paciente" class="modal-overlay" onclick="cerrarModalPerfil(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                            <span id="modal-paciente-iniciales"></span>
+                        </div>
+                        <span id="modal-paciente-nombre"></span>
+                    </h2>
+                    <button onclick="cerrarModalPerfil()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <span class="material-symbols-outlined text-2xl">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">patient_list</span>
+                        Información del Paciente
+                    </h3>
+                    <div class="space-y-2">
+                        <div class="info-row">
+                            <span class="info-label">Documento:</span>
+                            <span class="info-value" id="modal-paciente-documento"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Correo:</span>
+                            <span class="info-value" id="modal-paciente-correo"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Teléfono:</span>
+                            <span class="info-value" id="modal-paciente-telefono"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Fecha Nacimiento:</span>
+                            <span class="info-value" id="modal-paciente-nacimiento"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Estado:</span>
+                            <span class="info-value">
+                                <span class="badge badge-success" id="modal-paciente-estado">Activo</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <a id="btn-ver-perfil-completo-paciente" href="#"
+                        class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl font-semibold">
+                        <span class="material-symbols-outlined">person</span>
+                        Ver Perfil Completo
+                    </a>
+                    <button onclick="cerrarModalPerfil()"
+                        class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Registro de Empleado -->
+    <div id="modal-registro-empleado" class="modal-overlay">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+            onclick="event.stopPropagation()">
+            <div
+                class="sticky top-0 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-8 py-6 rounded-t-2xl z-10">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-4xl">person_add</span>
+                        <h2 class="text-3xl font-bold">Registrar Nuevo Empleado</h2>
+                    </div>
+                    <button onclick="cerrarModalRegistroEmpleado()"
+                        class="text-white hover:bg-white/20 rounded-full p-2 transition-all">
+                        <span class="material-symbols-outlined text-3xl">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <form id="form-registro-empleado" method="POST" action="/cuentas/gestionar-cuentas-internas"
+                class="p-8 space-y-6">
+                <!-- Información Personal -->
+                <div class="border-l-4 border-cyan-500 pl-4 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined">badge</span>
+                        Información Personal
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="emp-nombres" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Nombres <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-nombres-count">0</span>/60</span>
+                        </label>
+                        <input type="text" id="emp-nombres" name="nombres" required minlength="2" maxlength="60"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            placeholder="Ej: Juan Carlos">
+                    </div>
+
+                    <div>
+                        <label for="emp-apellidos" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Apellidos <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-apellidos-count">0</span>/60</span>
+                        </label>
+                        <input type="text" id="emp-apellidos" name="apellidos" required minlength="2" maxlength="60"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            placeholder="Ej: Pérez García">
+                    </div>
+
+                    <div>
+                        <label for="emp-documento" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Documento de Identidad <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-documento-count">0</span>/8</span>
+                        </label>
+                        <input type="text" id="emp-documento" name="documento" required minlength="8" maxlength="12"
+                            pattern="[0-9]+"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            placeholder="Ej: 12345678">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            Sexo <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex gap-6 mt-3">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="radio" name="sexo" value="Masculino" required
+                                    class="w-4 h-4 text-cyan-600 focus:ring-cyan-500">
+                                <span class="ml-2 text-gray-700">Masculino</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="radio" name="sexo" value="Femenino" required
+                                    class="w-4 h-4 text-cyan-600 focus:ring-cyan-500">
+                                <span class="ml-2 text-gray-700">Femenino</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="emp-telefono" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Teléfono <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-telefono-count">0</span>/9</span>
+                        </label>
+                        <input type="tel" id="emp-telefono" name="telefono" required minlength="9" maxlength="9"
+                            pattern="[0-9]+"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            placeholder="Ej: 987654321">
+                    </div>
+
+                    <div>
+                        <label for="emp-nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Fecha de Nacimiento <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" id="emp-nacimiento" name="fecha_nacimiento" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all">
+                    </div>
+                </div>
+
+                <!-- Información de Contacto -->
+                <div class="border-l-4 border-cyan-500 pl-4 mb-6 mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined">mail</span>
+                        Información de Contacto
+                    </h3>
+                </div>
+
+                <div>
+                    <label for="emp-email" class="block text-sm font-semibold text-gray-700 mb-2">
+                        Correo Electrónico <span class="text-red-500">*</span>
+                        <span class="text-xs text-gray-500 float-right"><span id="emp-email-count">0</span>/120</span>
+                    </label>
+                    <input type="email" id="emp-email" name="email" required maxlength="120"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                        placeholder="Ej: empleado@clinica.com">
+                    <p class="text-sm text-gray-500 mt-1">Este correo se usará para acceder al sistema</p>
+                </div>
+
+                <!-- Credenciales de Acceso -->
+                <div class="border-l-4 border-cyan-500 pl-4 mb-6 mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined">lock</span>
+                        Credenciales de Acceso
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="emp-password" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Contraseña <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="emp-password" name="password" required minlength="8" maxlength="64"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            placeholder="Mínimo 8 caracteres">
+                    </div>
+
+                    <div>
+                        <label for="emp-confirm-password" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Confirmar Contraseña <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" id="emp-confirm-password" name="confirm_password" required minlength="8"
+                            maxlength="64"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                            placeholder="Repita la contraseña">
+                    </div>
+                </div>
+
+                <!-- Rol y Especialidad -->
+                <div class="border-l-4 border-cyan-500 pl-4 mb-6 mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined">work</span>
+                        Rol y Especialidad
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="emp-rol" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Rol <span class="text-red-500">*</span>
+                        </label>
+                        <select id="emp-rol" name="rol" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all">
+                            <option value="">Seleccione un rol</option>
+                            {% for rol in roles %}
+                            <option value="{{ rol.id_rol }}">{{ rol.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="emp-especialidad-container" class="hidden">
+                        <label for="emp-especialidad" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Especialidad
+                        </label>
+                        <select id="emp-especialidad" name="especialidad"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all">
+                            <option value="">Seleccione una especialidad</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-4 pt-6 border-t border-gray-200">
+                    <button type="button" onclick="cerrarModalRegistroEmpleado()"
+                        class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-6 py-3 rounded-lg hover:from-cyan-700 hover:to-cyan-800 transition-all shadow-lg hover:shadow-xl font-semibold">
+                        <span class="material-symbols-outlined">person_add</span>
+                        Registrar Empleado
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Registro de Paciente -->
+    <div id="modal-registro-paciente" class="modal-overlay">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-6 rounded-t-2xl">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-4xl">patient_list</span>
+                        <h2 class="text-3xl font-bold">Nuevo Paciente</h2>
+                    </div>
+                    <button onclick="cerrarModalRegistroPaciente()"
+                        class="text-white hover:bg-white/20 rounded-full p-2 transition-all">
+                        <span class="material-symbols-outlined text-3xl">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-8">
+                <p class="text-gray-600 mb-6 text-center">
+                    El registro de pacientes se realiza desde el módulo específico de pacientes con todos los datos
+                    requeridos.
+                </p>
+
+                <div class="flex gap-4">
+                    <button onclick="cerrarModalRegistroPaciente()"
+                        class="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-semibold">
+                        Cancelar
+                    </button>
+                    <a href="/cuentas/registrar-cuenta-paciente"
+                        class="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl font-semibold">
+                        <span class="material-symbols-outlined">patient_list</span>
+                        Ir a Registro
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div id="confirmation-modal"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden items-center justify-center p-4"
+        style="animation: fadeIn 0.3s ease-out;">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
+            style="animation: slideUp 0.3s ease-out;">
+            <div class="flex flex-col items-center text-center">
+                <div id="confirm-icon-container" class="mb-4">
+                    <!-- El icono se cambiará dinámicamente -->
+                </div>
+                <h3 id="confirm-title" class="text-2xl font-bold text-gray-800 mb-3"></h3>
+                <p id="confirm-message" class="text-gray-600 mb-6"></p>
+
+                <div class="flex gap-3 w-full">
+                    <button type="button" id="confirm-cancel"
+                        class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
+                        Cancelar
+                    </button>
+                    <button type="button" id="confirm-accept"
+                        class="flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center">
+                        <span class="material-symbols-outlined text-sm mr-2"
+                            id="confirm-accept-icon">check_circle</span>
+                        <span id="confirm-accept-text">Aceptar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="data-container" style="display:none;" data-empleados="{{ empleados|tojson }}" data-pacientes="{{ pacientes|tojson }}"></div>
+
+    <style>
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+    <script src="/static/js/paginacion.js"></script>
     {% include 'footer.html' %}
 
-    <!-- Script de confirmación modal -->
-    <script src="{{ url_for('static', filename='js/confirmation-modal.js') }}"></script>
-    
-    <!-- Script de paginación limpia (sin conflictos) -->
-    <script src="{{ url_for('static', filename='js/paginacion-limpia.js') }}?v=clean2024"></script>
-</body>
-</html>
+    <!-- Script para pasar datos de empleados y pacientes a JavaScript -->
+    <script>
+        // Datos de empleados y pacientes pasados desde el backend
+        const datosEmpleados = {{ empleados|tojson }};
+        const datosPacientes = {{ pacientes|tojson }};
+    </script>
 
+    <script>
+        // ============================================
+        // OPTIMIZACIÓN: Cache de elementos DOM para mejor rendimiento
+        // ============================================
+        const DOM_CACHE = {
+            tabContents: null,
+            tabButtons: null,
+            init() {
+                this.tabContents = document.querySelectorAll('.tab-content');
+                this.tabButtons = document.querySelectorAll('.tab-button');
+            }
+        };
+
+        // Inicializar cache cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => DOM_CACHE.init());
+        } else {
+            DOM_CACHE.init();
+        }
+
+        // Sistema de tabs optimizado
+        function switchTab(tabName) {
+            // Usar requestAnimationFrame para optimizar cambios visuales
+            requestAnimationFrame(() => {
+                // Usar cache de elementos en lugar de querySelectorAll cada vez
+                if (DOM_CACHE.tabContents && DOM_CACHE.tabButtons) {
+                    DOM_CACHE.tabContents.forEach(content => {
+                        content.classList.remove('active');
+                    });
+
+                    DOM_CACHE.tabButtons.forEach(button => {
+                        button.classList.remove('active');
+                    });
+                } else {
+                    // Fallback si el cache no está listo
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+
+                    document.querySelectorAll('.tab-button').forEach(button => {
+                        button.classList.remove('active');
+                    });
+                }
+
+                // Activar el tab seleccionado
+                document.getElementById('tab-' + tabName).classList.add('active');
+                document.querySelector('[data-tab="' + tabName + '"]').classList.add('active');
+            });
+
+            // Actualizar URL sin recargar (fuera de requestAnimationFrame para no bloquear)
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabName);
+            window.history.pushState({}, '', url);
+        }
+
+        // Función para ver perfil de empleado
+        function verPerfilEmpleado(id, nombres, apellidos, documento, correo, telefono, rol, especialidad) {
+            const nombreCompleto = `${nombres} ${apellidos}`;
+            const iniciales = `${nombres.charAt(0)}${apellidos.charAt(0)}`;
+
+            // Llenar modal con información
+            document.getElementById('modal-empleado-nombre').textContent = nombreCompleto;
+            document.getElementById('modal-empleado-iniciales').textContent = iniciales;
+            document.getElementById('modal-empleado-documento').textContent = documento;
+            document.getElementById('modal-empleado-correo').textContent = correo;
+            document.getElementById('modal-empleado-telefono').textContent = telefono;
+            document.getElementById('modal-empleado-rol').textContent = rol;
+
+            // Mostrar/ocultar especialidad
+            if (especialidad && especialidad !== '' && especialidad !== 'None') {
+                document.getElementById('modal-empleado-especialidad').textContent = especialidad;
+                document.getElementById('modal-empleado-especialidad-row').style.display = 'flex';
+            } else {
+                document.getElementById('modal-empleado-especialidad-row').style.display = 'none';
+            }
+
+            // Configurar enlace de perfil completo
+            document.getElementById('btn-ver-perfil-completo-empleado').href = `/cuentas/ver-perfil-empleado/${id}`;
+
+            // Mostrar modal y bloquear scroll
+            document.getElementById('modal-perfil-empleado').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+
+        // Función para ver perfil de paciente
+        function verPerfilPaciente(id, nombres, apellidos, documento, correo, telefono, fechaNacimiento, estado) {
+            const nombreCompleto = `${nombres} ${apellidos}`;
+            const iniciales = `${nombres.charAt(0)}${apellidos.charAt(0)}`;
+
+            // Llenar modal con información
+            document.getElementById('modal-paciente-nombre').textContent = nombreCompleto;
+            document.getElementById('modal-paciente-iniciales').textContent = iniciales;
+            document.getElementById('modal-paciente-documento').textContent = documento;
+            document.getElementById('modal-paciente-correo').textContent = correo;
+            document.getElementById('modal-paciente-telefono').textContent = telefono;
+
+            // Formatear fecha de nacimiento
+            if (fechaNacimiento && fechaNacimiento !== 'None') {
+                const fecha = new Date(fechaNacimiento);
+                const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                document.getElementById('modal-paciente-nacimiento').textContent = fechaFormateada;
+            } else {
+                document.getElementById('modal-paciente-nacimiento').textContent = 'No especificada';
+            }
+
+            document.getElementById('modal-paciente-estado').textContent = estado;
+
+            // Configurar enlace de perfil completo
+            document.getElementById('btn-ver-perfil-completo-paciente').href = `/cuentas/ver-perfil-paciente/${id}`;
+
+            // Mostrar modal y bloquear scroll
+            document.getElementById('modal-perfil-paciente').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+
+        // Función para cerrar modales
+        function cerrarModalPerfil(event) {
+            // Si se hace clic en el overlay (no en el contenido del modal)
+            if (!event || event.target.classList.contains('modal-overlay')) {
+                document.getElementById('modal-perfil-empleado').classList.remove('active');
+                document.getElementById('modal-perfil-paciente').classList.remove('active');
+                // Desbloquear scroll del body
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        // Funciones para modales de registro
+        function abrirModalRegistroEmpleado() {
+            document.getElementById('modal-registro-empleado').classList.add('active');
+            // Bloquear scroll del body
+            document.body.classList.add('modal-open');
+        }
+
+        function cerrarModalRegistroEmpleado() {
+            document.getElementById('modal-registro-empleado').classList.remove('active');
+            document.getElementById('form-registro-empleado').reset();
+            // Desbloquear scroll del body
+            document.body.classList.remove('modal-open');
+        }
+
+        function abrirModalRegistroPaciente() {
+            document.getElementById('modal-registro-paciente').classList.add('active');
+            // Bloquear scroll del body
+            document.body.classList.add('modal-open');
+        }
+
+        function cerrarModalRegistroPaciente() {
+            document.getElementById('modal-registro-paciente').classList.remove('active');
+            // Desbloquear scroll del body
+            document.body.classList.remove('modal-open');
+        }
+
+        // Cerrar modales al hacer clic en el overlay
+        document.getElementById('modal-registro-empleado').addEventListener('click', function (e) {
+            if (e.target === this) {
+                cerrarModalRegistroEmpleado();
+            }
+        });
+
+        document.getElementById('modal-registro-paciente').addEventListener('click', function (e) {
+            if (e.target === this) {
+                cerrarModalRegistroPaciente();
+            }
+        });
+
+        // Cerrar modal con tecla Escape
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                // Cerrar todos los modales y desbloquear scroll
+                const modalesActivos = document.querySelectorAll('.modal-overlay.active');
+                if (modalesActivos.length > 0) {
+                    cerrarModalPerfil();
+                    cerrarModalRegistroEmpleado();
+                    cerrarModalRegistroPaciente();
+                }
+            }
+        });
+
+        // Modal empleados
+        document.getElementById('new-employee-button').addEventListener('click', function () {
+            abrirModalRegistroEmpleado();
+        });
+
+        // Modal pacientes
+        document.getElementById('new-patient-button').addEventListener('click', function () {
+            abrirModalRegistroPaciente();
+        });
+
+        // Manejo del campo de especialidad según el rol seleccionado
+        const rolSelect = document.getElementById('emp-rol');
+        const especialidadContainer = document.getElementById('emp-especialidad-container');
+        const especialidadSelect = document.getElementById('emp-especialidad');
+
+        if (rolSelect) {
+            rolSelect.addEventListener('change', async function () {
+                const rolNombre = this.options[this.selectedIndex].text.trim();
+
+                if (rolNombre === 'Médico') {
+                    especialidadContainer.classList.remove('hidden');
+                    especialidadSelect.required = true;
+
+                    // Cargar especialidades si no están cargadas
+                    if (especialidadSelect.options.length <= 1) {
+                        try {
+                            const response = await fetch('/cuentas/api/especialidades');
+                            const especialidades = await response.json();
+
+                            especialidadSelect.innerHTML = '<option value="">Seleccione una especialidad</option>';
+                            especialidades.forEach(esp => {
+                                const option = document.createElement('option');
+                                option.value = esp.id_especialidad;
+                                option.textContent = esp.nombre;
+                                especialidadSelect.appendChild(option);
+                            });
+                        } catch (error) {
+                            console.error('Error al cargar especialidades:', error);
+                        }
+                    }
+                } else {
+                    especialidadContainer.classList.add('hidden');
+                    especialidadSelect.required = false;
+                    especialidadSelect.value = '';
+                }
+            });
+        }
+
+        // Validación de contraseñas coincidentes
+        const passwordInput = document.getElementById('emp-password');
+        const confirmPasswordInput = document.getElementById('emp-confirm-password');
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                const value = this.value;
+                const parent = this.parentElement;
+                
+                // Eliminar mensaje previo
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                if (value.length > 0 && value.length < 8) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'La contraseña debe tener al menos 8 caracteres';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        if (confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                if (this.value !== passwordInput.value && this.value.length > 0) {
+                    this.setCustomValidity('Las contraseñas no coinciden');
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Las contraseñas no coinciden';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.setCustomValidity('');
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        // Validación de documento (solo números, exactamente 8 dígitos)
+        const documentoInput = document.getElementById('emp-documento');
+        if (documentoInput) {
+            documentoInput.addEventListener('input', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                // Solo permitir números
+                if (!/^\d*$/.test(this.value)) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Solo se permiten números';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                    this.value = this.value.replace(/\D/g, '');
+                } else if (this.value.length > 0 && this.value.length < 8) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-orange-500 mt-1';
+                    msg.textContent = `${this.value.length}/8 dígitos - Debe tener exactamente 8 dígitos`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-orange-500');
+                    this.classList.remove('border-red-500');
+                } else if (this.value.length === 8) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-green-500 mt-1';
+                    msg.textContent = '✓ Documento válido';
+                    parent.appendChild(msg);
+                    this.classList.remove('border-red-500', 'border-orange-500');
+                    this.classList.add('border-green-500');
+                } else {
+                    this.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                }
+            });
+        }
+
+        // Validación de teléfono (solo números, exactamente 9 dígitos)
+        const telefonoInput = document.getElementById('emp-telefono');
+        if (telefonoInput) {
+            telefonoInput.addEventListener('input', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                // Solo permitir números
+                if (!/^\d*$/.test(this.value)) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Solo se permiten números';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                    this.value = this.value.replace(/\D/g, '');
+                } else if (this.value.length > 0 && this.value.length < 9) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-orange-500 mt-1';
+                    msg.textContent = `${this.value.length}/9 dígitos - Debe tener exactamente 9 dígitos`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-orange-500');
+                    this.classList.remove('border-red-500');
+                } else if (this.value.length === 9) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-green-500 mt-1';
+                    msg.textContent = '✓ Teléfono válido';
+                    parent.appendChild(msg);
+                    this.classList.remove('border-red-500', 'border-orange-500');
+                    this.classList.add('border-green-500');
+                } else {
+                    this.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                }
+            });
+        }
+
+        // Validación de email en tiempo real
+        const emailInput = document.getElementById('emp-email');
+        if (emailInput) {
+            emailInput.addEventListener('blur', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (this.value && !emailRegex.test(this.value)) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = 'Formato de correo inválido';
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        // Validación de edad
+        const nacimientoInput = document.getElementById('emp-nacimiento');
+        if (nacimientoInput) {
+            nacimientoInput.addEventListener('change', function() {
+                const parent = this.parentElement;
+                const prevMsg = parent.querySelector('.validation-message');
+                if (prevMsg) prevMsg.remove();
+                
+                const fechaNac = new Date(this.value);
+                const hoy = new Date();
+                const edad = Math.floor((hoy - fechaNac) / (365.25 * 24 * 60 * 60 * 1000));
+                
+                if (edad < 18) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = `Edad: ${edad} años. Debe ser mayor de 18 años.`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                }
+            });
+        }
+
+        // ============================================
+        // CONTADORES DE CARACTERES
+        // ============================================
+        function agregarContador(inputId, counterId) {
+            const input = document.getElementById(inputId);
+            const counter = document.getElementById(counterId);
+            
+            if (input && counter) {
+                // Actualizar contador inicial
+                counter.textContent = input.value.length;
+                
+                // Actualizar en cada input
+                input.addEventListener('input', function() {
+                    counter.textContent = this.value.length;
+                    
+                    // Cambiar color si se acerca al límite
+                    const maxLength = parseInt(this.getAttribute('maxlength'));
+                    const percentage = (this.value.length / maxLength) * 100;
+                    
+                    if (percentage >= 90) {
+                        counter.parentElement.classList.remove('text-gray-500');
+                        counter.parentElement.classList.add('text-red-500', 'font-semibold');
+                    } else if (percentage >= 70) {
+                        counter.parentElement.classList.remove('text-gray-500', 'text-red-500');
+                        counter.parentElement.classList.add('text-orange-500', 'font-semibold');
+                    } else {
+                        counter.parentElement.classList.remove('text-red-500', 'text-orange-500', 'font-semibold');
+                        counter.parentElement.classList.add('text-gray-500');
+                    }
+                });
+            }
+        }
+
+        // Aplicar contadores a los campos
+        agregarContador('emp-nombres', 'emp-nombres-count');
+        agregarContador('emp-apellidos', 'emp-apellidos-count');
+        agregarContador('emp-documento', 'emp-documento-count');
+        agregarContador('emp-telefono', 'emp-telefono-count');
+        agregarContador('emp-email', 'emp-email-count');
+
+        // ============================================
+        // MANEJO DEL FORMULARIO DE REGISTRO DE EMPLEADO
+        // ============================================
+        const formRegistroEmpleado = document.getElementById('form-registro-empleado');
+        if (formRegistroEmpleado) {
+            formRegistroEmpleado.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                console.log('📝 Iniciando registro de empleado...');
+                
+                // Validaciones adicionales
+                const password = document.getElementById('emp-password').value;
+                const confirmPassword = document.getElementById('emp-confirm-password').value;
+                
+                if (password !== confirmPassword) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'Las contraseñas no coinciden. Por favor, verifique.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                if (password.length < 8) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'La contraseña debe tener al menos 8 caracteres.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar documento de identidad (solo números)
+                const documento = document.getElementById('emp-documento').value;
+                if (!/^\d{8}$/.test(documento)) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'El documento de identidad debe contener exactamente 8 dígitos.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar teléfono (solo números)
+                const telefono = document.getElementById('emp-telefono').value;
+                if (!/^\d{9}$/.test(telefono)) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'El teléfono debe contener exactamente 9 dígitos.',
+                        mensaje: 'El teléfono debe contener solo números.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar edad mínima (18 años)
+                const fechaNacimiento = new Date(document.getElementById('emp-nacimiento').value);
+                const hoy = new Date();
+                const edad = Math.floor((hoy - fechaNacimiento) / (365.25 * 24 * 60 * 60 * 1000));
+                
+                if (edad < 18) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'El empleado debe ser mayor de 18 años.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Preparar datos del formulario
+                const formData = new FormData(this);
+                const data = {
+                    accion: 'crear_empleado',
+                    nombres: formData.get('nombres'),
+                    apellidos: formData.get('apellidos'),
+                    documento_identidad: formData.get('documento'),
+                    sexo: formData.get('sexo'),
+                    telefono: formData.get('telefono'),
+                    fecha_nacimiento: formData.get('fecha_nacimiento'),
+                    correo: formData.get('email'),
+                    password: formData.get('password'),
+                    id_rol: formData.get('rol'),
+                    id_especialidad: formData.get('especialidad') || null
+                };
+                
+                console.log('📤 Datos a enviar:', data);
+                
+                // Deshabilitar botón de envío
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Registrando...';
+                
+                try {
+                    const response = await fetch('/cuentas/gestionar-cuentas-internas', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    console.log('📥 Respuesta del servidor:', result);
+                    
+                    if (result.success) {
+                        await mostrarConfirmacion({
+                            titulo: '¡Éxito!',
+                            mensaje: result.message || 'Empleado registrado correctamente.',
+                            tipo: 'success',
+                            textoAceptar: 'Aceptar'
+                        });
+                        
+                        // Cerrar modal y resetear formulario
+                        cerrarModalRegistroEmpleado();
+                        this.reset();
+                        
+                        // Recargar lista de empleados
+                        cargarEmpleados();
+                    } else {
+                        await mostrarConfirmacion({
+                            titulo: 'Error al Registrar',
+                            mensaje: result.error || 'No se pudo registrar el empleado. Intente nuevamente.',
+                            tipo: 'danger',
+                            textoAceptar: 'Entendido'
+                        });
+                    }
+                    
+                    // Restaurar botón
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    
+                } catch (error) {
+                    console.error('❌ Error en el registro:', error);
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Conexión',
+                        mensaje: 'No se pudo conectar con el servidor. Verifique su conexión.',
+                        tipo: 'danger',
+                        textoAceptar: 'Entendido'
+                    });
+                    
+                    // Restaurar botón
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            });
+        }
+
+        // Función de debounce para optimizar rendimiento
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Búsqueda empleados con debounce (optimizado para rendimiento)
+        const searchEmpleado = document.getElementById('search-empleado');
+        const clearSearchEmpleado = document.getElementById('clear-search-empleado');
+
+        const buscarEmpleado = debounce(function (searchTerm) {
+            const rows = document.querySelectorAll('#tab-empleados tbody tr');
+            const term = searchTerm.toLowerCase();
+
+            // Usar requestAnimationFrame para optimizar renderizado
+            requestAnimationFrame(() => {
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }, 150); // 150ms de delay para evitar búsquedas excesivas
+
+        searchEmpleado.addEventListener('input', function (e) {
+            const searchTerm = e.target.value;
+            clearSearchEmpleado.classList.toggle('hidden', !searchTerm);
+            buscarEmpleado(searchTerm);
+        });
+
+        clearSearchEmpleado.addEventListener('click', function () {
+            searchEmpleado.value = '';
+            searchEmpleado.dispatchEvent(new Event('input'));
+        });
+
+        // Búsqueda pacientes con debounce (optimizado para rendimiento)
+        const searchPaciente = document.getElementById('search-paciente');
+        const clearSearchPaciente = document.getElementById('clear-search-paciente');
+
+        const buscarPaciente = debounce(function (searchTerm) {
+            const rows = document.querySelectorAll('#tab-pacientes tbody tr');
+            const term = searchTerm.toLowerCase();
+
+            // Usar requestAnimationFrame para optimizar renderizado
+            requestAnimationFrame(() => {
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }, 150);
+
+        searchPaciente.addEventListener('input', function (e) {
+            const searchTerm = e.target.value;
+            clearSearchPaciente.classList.toggle('hidden', !searchTerm);
+            buscarPaciente(searchTerm);
+        });
+
+        clearSearchPaciente.addEventListener('click', function () {
+            searchPaciente.value = '';
+            searchPaciente.dispatchEvent(new Event('input'));
+        });
+
+        // ============================================
+        // MODAL DE CONFIRMACIÓN
+        // ============================================
+        function mostrarConfirmacion(opciones) {
+            return new Promise((resolve) => {
+                const { titulo, mensaje, tipo = 'info', textoAceptar = 'Aceptar', textoIconoAceptar = 'check_circle' } = opciones;
+
+                const confirmationModal = document.getElementById('confirmation-modal');
+                const iconContainer = document.getElementById('confirm-icon-container');
+                const acceptButton = document.getElementById('confirm-accept');
+
+                let iconoHTML = '';
+                let colorBoton = '';
+
+                switch (tipo) {
+                    case 'danger':
+                        iconoHTML = '<div class="bg-red-100 p-4 rounded-full"><span class="material-symbols-outlined text-red-600 text-5xl">warning</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700';
+                        break;
+                    case 'warning':
+                        iconoHTML = '<div class="bg-yellow-100 p-4 rounded-full"><span class="material-symbols-outlined text-yellow-600 text-5xl">error</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700';
+                        break;
+                    case 'success':
+                        iconoHTML = '<div class="bg-green-100 p-4 rounded-full"><span class="material-symbols-outlined text-green-600 text-5xl">check_circle</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700';
+                        break;
+                    case 'info':
+                    default:
+                        iconoHTML = '<div class="bg-blue-100 p-4 rounded-full"><span class="material-symbols-outlined text-blue-600 text-5xl">info</span></div>';
+                        colorBoton = 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700';
+                        break;
+                }
+
+                iconContainer.innerHTML = iconoHTML;
+                document.getElementById('confirm-title').textContent = titulo;
+                document.getElementById('confirm-message').textContent = mensaje;
+                document.getElementById('confirm-accept-text').textContent = textoAceptar;
+                document.getElementById('confirm-accept-icon').textContent = textoIconoAceptar;
+
+                acceptButton.className = `flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center ${colorBoton}`;
+
+                confirmationModal.classList.remove('hidden');
+                confirmationModal.classList.add('flex');
+                document.body.style.overflow = 'hidden';
+
+                const handleAccept = () => {
+                    confirmationModal.classList.add('hidden');
+                    confirmationModal.classList.remove('flex');
+                    document.body.style.overflow = 'auto';
+                    cleanup();
+                    resolve(true);
+                };
+
+                const handleCancel = () => {
+                    confirmationModal.classList.add('hidden');
+                    confirmationModal.classList.remove('flex');
+                    document.body.style.overflow = 'auto';
+                    cleanup();
+                    resolve(false);
+                };
+
+                const cleanup = () => {
+                    document.getElementById('confirm-accept').removeEventListener('click', handleAccept);
+                    document.getElementById('confirm-cancel').removeEventListener('click', handleCancel);
+                };
+
+                document.getElementById('confirm-accept').addEventListener('click', handleAccept);
+                document.getElementById('confirm-cancel').addEventListener('click', handleCancel);
+            });
+        }
+
+        // Funciones de eliminación
+        async function eliminarEmpleado(id, nombre) {
+            const confirmado = await mostrarConfirmacion({
+                titulo: '¿Eliminar Empleado?',
+                mensaje: `¿Estás seguro de eliminar al empleado ${nombre}? Esta acción no se puede deshacer.`,
+                tipo: 'danger',
+                textoAceptar: 'Eliminar',
+                textoIconoAceptar: 'delete'
+            });
+
+            if (confirmado) {
+                window.location.href = `/cuentas/eliminar-empleado/${id}`;
+            }
+        }
+
+        async function eliminarPaciente(id, nombre) {
+            const confirmado = await mostrarConfirmacion({
+                titulo: '¿Eliminar Paciente?',
+                mensaje: `¿Estás seguro de eliminar al paciente ${nombre}? Esta acción no se puede deshacer y se perderán todos sus datos médicos.`,
+                tipo: 'danger',
+                textoAceptar: 'Eliminar',
+                textoIconoAceptar: 'delete'
+            });
+
+            if (confirmado) {
+                window.location.href = `/cuentas/eliminar-paciente/${id}`;
+            }
+        }
+
+        // ============================================
+        // VALIDACIONES EN TIEMPO REAL
+        // ============================================
+
+        // Función de validación de nombres y apellidos
+        function validarNombre(input) {
+            const valor = input.value.trim();
+            const regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,60}$/;
+
+            if (valor === '') {
+                return { valido: false, mensaje: 'Este campo es obligatorio' };
+            } else if (valor.length < 2) {
+                return { valido: false, mensaje: 'Debe tener al menos 2 caracteres' };
+            } else if (valor.length > 60) {
+                return { valido: false, mensaje: 'Máximo 60 caracteres' };
+            } else if (!regex.test(valor)) {
+                return { valido: false, mensaje: 'Solo se permiten letras y espacios' };
+            }
+            return { valido: true, mensaje: '✓ Válido' };
+        }
+
+        // Función de validación de documento
+        function validarDocumento(input) {
+            const valor = input.value.trim();
+            const regex = /^[0-9]{8,12}$/;
+
+            if (valor === '') {
+                return { valido: false, mensaje: 'Este campo es obligatorio' };
+            } else if (!regex.test(valor)) {
+                return { valido: false, mensaje: 'Debe contener entre 8 y 12 dígitos numéricos' };
+            }
+            return { valido: true, mensaje: '✓ Válido' };
+        }
+
+        // Función de validación de teléfono
+        function validarTelefono(input) {
+            const valor = input.value.trim();
+            const regex = /^[0-9]{6,15}$/;
+
+            if (valor === '') {
+                return { valido: false, mensaje: 'Este campo es obligatorio' };
+            } else if (!regex.test(valor)) {
+                return { valido: false, mensaje: 'Debe contener entre 6 y 15 dígitos' };
+            }
+            return { valido: true, mensaje: '✓ Válido' };
+        }
+
+        // Función de validación de email
+        function validarEmail(input) {
+            const valor = input.value.trim();
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (valor === '') {
+                return { valido: false, mensaje: 'Este campo es obligatorio' };
+            } else if (valor.length > 120) {
+                return { valido: false, mensaje: 'Máximo 120 caracteres' };
+            } else if (!regex.test(valor)) {
+                return { valido: false, mensaje: 'Formato de correo inválido' };
+            }
+            return { valido: true, mensaje: '✓ Correo válido' };
+        }
+
+        // Función de validación de contraseña
+        function validarPassword(input) {
+            const valor = input.value;
+            const fortaleza = calcularFortalezaPassword(valor);
+
+            if (valor === '') {
+                return { valido: false, mensaje: 'Este campo es obligatorio', fortaleza: 0 };
+            } else if (valor.length < 8) {
+                return { valido: false, mensaje: 'Mínimo 8 caracteres', fortaleza: 0 };
+            } else if (valor.length > 64) {
+                return { valido: false, mensaje: 'Máximo 64 caracteres', fortaleza: 0 };
+            } else if (!/[A-Z]/.test(valor)) {
+                return { valido: false, mensaje: 'Debe contener al menos una mayúscula', fortaleza: 1 };
+            } else if (!/[a-z]/.test(valor)) {
+                return { valido: false, mensaje: 'Debe contener al menos una minúscula', fortaleza: 1 };
+            } else if (!/[0-9]/.test(valor)) {
+                return { valido: false, mensaje: 'Debe contener al menos un número', fortaleza: 2 };
+            }
+
+            return { valido: true, mensaje: `✓ Contraseña ${fortaleza === 3 ? 'fuerte' : fortaleza === 2 ? 'media' : 'débil'}`, fortaleza };
+        }
+
+        // Calcular fortaleza de contraseña
+        function calcularFortalezaPassword(password) {
+            let fortaleza = 0;
+            if (password.length >= 8) fortaleza++;
+            if (/[A-Z]/.test(password) && /[a-z]/.test(password)) fortaleza++;
+            if (/[0-9]/.test(password) && /[!@#$%^&*(),.?":{}|<>]/.test(password)) fortaleza++;
+            return fortaleza;
+        }
+
+        // Aplicar validación con feedback visual
+        function aplicarValidacion(input, validador) {
+            const resultado = validador(input);
+            const parent = input.closest('.input-wrapper') || input.parentElement;
+
+            // Limpiar mensajes previos
+            let mensaje = parent.querySelector('.validation-message');
+            if (!mensaje) {
+                mensaje = document.createElement('div');
+                mensaje.className = 'validation-message';
+                parent.appendChild(mensaje);
+            }
+
+            // Aplicar estilos y mensajes
+            input.classList.remove('valid', 'invalid', 'input-field');
+            input.classList.add('input-field');
+
+            if (input.value.trim() !== '') {
+                if (resultado.valido) {
+                    input.classList.add('valid');
+                    mensaje.className = 'validation-message success';
+                    mensaje.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> ${resultado.mensaje}`;
+                } else {
+                    input.classList.add('invalid');
+                    mensaje.className = 'validation-message error';
+                    mensaje.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">error</span> ${resultado.mensaje}`;
+                }
+            } else {
+                mensaje.innerHTML = '';
+            }
+
+            // Mostrar barra de fortaleza para contraseñas
+            if (resultado.fortaleza !== undefined && input.type === 'password') {
+                mostrarBarraFortaleza(input, resultado.fortaleza);
+            }
+
+            return resultado.valido;
+        }
+
+        // Mostrar barra de fortaleza de contraseña
+        function mostrarBarraFortaleza(input, fortaleza) {
+            const parent = input.parentElement;
+            let barraContainer = parent.querySelector('.password-strength');
+
+            if (!barraContainer) {
+                barraContainer = document.createElement('div');
+                barraContainer.className = 'password-strength';
+                const barra = document.createElement('div');
+                barra.className = 'password-strength-bar';
+                barraContainer.appendChild(barra);
+                parent.appendChild(barraContainer);
+            }
+
+            const barra = barraContainer.querySelector('.password-strength-bar');
+            barra.className = 'password-strength-bar';
+
+            if (fortaleza === 1) {
+                barra.classList.add('strength-weak');
+            } else if (fortaleza === 2) {
+                barra.classList.add('strength-medium');
+            } else if (fortaleza === 3) {
+                barra.classList.add('strength-strong');
+            } else {
+                barra.style.width = '0%';
+            }
+        }
+
+        // Esperar a que el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function () {
+            // Aplicar validaciones a campos del formulario de empleado
+            const empleadoForm = document.querySelector('#form-registro-empleado');
+
+            if (empleadoForm) {
+                // Validar nombres
+                const nombresInput = empleadoForm.querySelector('[name="nombres"]');
+                if (nombresInput) {
+                    nombresInput.addEventListener('input', function () {
+                        aplicarValidacion(this, validarNombre);
+                    });
+                    nombresInput.addEventListener('blur', function () {
+                        aplicarValidacion(this, validarNombre);
+                    });
+                }
+
+                // Validar apellidos
+                const apellidosInput = empleadoForm.querySelector('[name="apellidos"]');
+                if (apellidosInput) {
+                    apellidosInput.addEventListener('input', function () {
+                        aplicarValidacion(this, validarNombre);
+                    });
+                }
+
+                // Validar documento
+                const documentoInput = empleadoForm.querySelector('[name="documento"]');
+                if (documentoInput) {
+                    documentoInput.addEventListener('input', function () {
+                        aplicarValidacion(this, validarDocumento);
+                    });
+                }
+
+                // Validar teléfono
+                const telefonoInput = empleadoForm.querySelector('[name="telefono"]');
+                if (telefonoInput) {
+                    telefonoInput.addEventListener('input', function () {
+                        aplicarValidacion(this, validarTelefono);
+                    });
+                }
+
+                // Validar email
+                const emailInput = empleadoForm.querySelector('[name="email"]');
+                if (emailInput) {
+                    emailInput.addEventListener('input', function () {
+                        aplicarValidacion(this, validarEmail);
+                    });
+                }
+
+                // Validar contraseña
+                const passwordInput = empleadoForm.querySelector('[name="password"]');
+                if (passwordInput) {
+                    passwordInput.addEventListener('input', function () {
+                        aplicarValidacion(this, validarPassword);
+                    });
+                }
+
+                // Validar confirmación de contraseña
+                const confirmPasswordInput = empleadoForm.querySelector('[name="confirm-password"]');
+                if (confirmPasswordInput && passwordInput) {
+                    confirmPasswordInput.addEventListener('input', function () {
+                        const resultado = {
+                            valido: this.value === passwordInput.value && this.value !== '',
+                            mensaje: this.value === passwordInput.value && this.value !== ''
+                                ? '✓ Las contraseñas coinciden'
+                                : 'Las contraseñas no coinciden'
+                        };
+
+                        const parent = this.parentElement;
+                        let mensaje = parent.querySelector('.validation-message');
+                        if (!mensaje) {
+                            mensaje = document.createElement('div');
+                            mensaje.className = 'validation-message';
+                            parent.appendChild(mensaje);
+                        }
+
+                        this.classList.remove('valid', 'invalid', 'input-field');
+                        this.classList.add('input-field');
+
+                        if (this.value !== '') {
+                            if (resultado.valido) {
+                                this.classList.add('valid');
+                                mensaje.className = 'validation-message success';
+                                mensaje.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> ${resultado.mensaje}`;
+                            } else {
+                                this.classList.add('invalid');
+                                mensaje.className = 'validation-message error';
+                                mensaje.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">error</span> ${resultado.mensaje}`;
+                            }
+                        } else {
+                            mensaje.innerHTML = '';
+                        }
+                    });
+                }
+
+                // Validación final al enviar el formulario
+                empleadoForm.addEventListener('submit', async function (e) {
+                    e.preventDefault(); // Prevenir envío por defecto
+
+                    let formularioValido = true;
+
+                    // Validar todos los campos
+                    if (nombresInput) formularioValido &= aplicarValidacion(nombresInput, validarNombre);
+                    if (apellidosInput) formularioValido &= aplicarValidacion(apellidosInput, validarNombre);
+                    if (documentoInput) formularioValido &= aplicarValidacion(documentoInput, validarDocumento);
+                    if (telefonoInput) formularioValido &= aplicarValidacion(telefonoInput, validarTelefono);
+                    if (emailInput) formularioValido &= aplicarValidacion(emailInput, validarEmail);
+                    if (passwordInput) formularioValido &= aplicarValidacion(passwordInput, validarPassword);
+
+                    if (!formularioValido) {
+                        // Mostrar notificación de error
+                        const toast = document.createElement('div');
+                        toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-xl shadow-2xl z-[100] flex items-center gap-3';
+                        toast.style.animation = 'slideIn 0.3s ease-out';
+                        toast.innerHTML = `
+                            <span class="material-symbols-outlined">error</span>
+                            <span class="font-medium">Por favor, corrija los errores en el formulario antes de continuar.</span>
+                        `;
+                        document.body.appendChild(toast);
+                        setTimeout(() => {
+                            toast.style.animation = 'fadeOut 0.3s ease-out';
+                            setTimeout(() => toast.remove(), 300);
+                        }, 4000);
+                        return;
+                    }
+
+                    // Mostrar confirmación
+                    const nombreCompleto = `${nombresInput.value.trim()} ${apellidosInput.value.trim()}`;
+                    const confirmado = await mostrarConfirmacion({
+                        titulo: '¿Crear Nuevo Empleado?',
+                        mensaje: `¿Estás seguro de registrar al empleado ${nombreCompleto}? Se creará una cuenta de acceso con el email proporcionado.`,
+                        tipo: 'success',
+                        textoAceptar: 'Crear Empleado',
+                        textoIconoAceptar: 'person_add'
+                    });
+
+                    if (confirmado) {
+                        // Agregar indicador de carga al botón
+                        const submitBtn = this.querySelector('button[type="submit"]');
+                        if (submitBtn) {
+                            submitBtn.classList.add('btn-loading');
+                            submitBtn.disabled = true;
+                        }
+                        // Enviar el formulario
+                        this.submit();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Script de paginación reutilizable -->
+    <script src="{{ url_for('static', filename='js/pagination.js') }}" defer></script>
+
+    <!-- SCRIPT ÚNICO - GESTIÓN COMPLETA DE CUENTAS INTERNAS -->
+    <script src="{{ url_for('static', filename='js/cuentas-internas-completo.js') }}?v=scrollblock2024"></script>
+</body>
+
+</html>
