@@ -1554,6 +1554,19 @@ def reprogramar_reserva():
     
     return render_template('ReprogramarReserva.html')
 
+@reservas_bp.route('/solicitudes-cancelacion')
+def solicitudes_cancelacion():
+    """Gestionar Solicitudes de Cancelación"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+    
+    # Permitir acceso a trabajadores, administradores y empleados
+    tipo_usuario = session.get('tipo_usuario')
+    if tipo_usuario not in ['empleado', 'trabajador', 'administrador']:
+        return redirect(url_for('home'))
+    
+    return render_template('Cancelar.html')
+
 @reservas_bp.route('/gestionar-cancelaciones')
 def gestionar_cancelaciones():
     """Gestionar Cancelaciones"""
@@ -3754,13 +3767,13 @@ def api_solicitar_cancelacion():
 
 @reservas_bp.route('/api/trabajador/solicitudes-cancelacion')
 def api_trabajador_solicitudes_cancelacion():
-    """API para obtener todas las solicitudes de cancelación (para trabajadores)"""
+    """API para obtener todas las solicitudes de cancelación (para trabajadores, empleados y administradores)"""
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
-    # Verificar que sea trabajador o admin
+    # Verificar que sea trabajador, empleado o admin
     tipo_usuario = session.get('tipo_usuario')
-    if tipo_usuario not in ['trabajador', 'administrador']:
+    if tipo_usuario not in ['trabajador', 'administrador', 'empleado']:
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     conexion = None
@@ -3771,7 +3784,7 @@ def api_trabajador_solicitudes_cancelacion():
                 SELECT 
                     s.id_solicitud,
                     s.id_reserva,
-                    s.estado as estado_solicitud,
+                    s.estado as estado,
                     s.motivo,
                     s.respuesta,
                     s.fecha_solicitud,
@@ -3795,6 +3808,7 @@ def api_trabajador_solicitudes_cancelacion():
                 LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
                 LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                 LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                WHERE s.nueva_programacion_id IS NULL
                 ORDER BY 
                     CASE s.estado
                         WHEN 'Pendiente' THEN 1
@@ -3806,6 +3820,8 @@ def api_trabajador_solicitudes_cancelacion():
             cursor.execute(sql)
             solicitudes = cursor.fetchall()
 
+            print(f"📊 Total de solicitudes de cancelación encontradas: {len(solicitudes)}")
+            
             # Convertir fechas
             for solicitud in solicitudes:
                 if solicitud.get('fecha_programacion') and hasattr(solicitud['fecha_programacion'], 'strftime'):
@@ -3896,7 +3912,72 @@ def api_trabajador_procesar_cancelacion():
                     WHERE id_reserva = %s
                 """
                 cursor.execute(sql_cancelar_reserva, (id_reserva,))
-                mensaje = 'Solicitud aprobada. La reserva ha sido cancelada.'
+                
+                # Obtener información de la reserva para las notificaciones
+                sql_info_reserva = """
+                    SELECT 
+                        r.id_paciente,
+                        r.id_reserva,
+                        p.fecha,
+                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                        COALESCE(serv.nombre, 'Consulta Médica') as servicio,
+                        h.id_empleado as id_medico,
+                        CONCAT(emp.nombres, ' ', emp.apellidos) as nombre_medico,
+                        CONCAT(pac.nombres, ' ', pac.apellidos) as nombre_paciente
+                    FROM RESERVA r
+                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                    LEFT JOIN SERVICIO serv ON p.id_servicio = serv.id_servicio
+                    INNER JOIN PACIENTE pac ON r.id_paciente = pac.id_paciente
+                    LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                    LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                    WHERE r.id_reserva = %s
+                """
+                cursor.execute(sql_info_reserva, (id_reserva,))
+                info = cursor.fetchone()
+                
+                if info:
+                    # Notificar al paciente
+                    try:
+                        mensaje_paciente = f"Su solicitud de cancelación fue aprobada. La reserva de {info['servicio']} programada para el {info['fecha']} a las {info['hora_inicio']} ha sido cancelada."
+                        if respuesta:
+                            mensaje_paciente += f" Comentario: {respuesta}"
+                        
+                        Notificacion.crear(
+                            info['id_paciente'],
+                            'cancelacion_aprobada',
+                            mensaje_paciente,
+                            f'/paciente/mis-reservas'
+                        )
+                        print(f"✅ Notificación enviada al paciente {info['nombre_paciente']}")
+                    except Exception as e:
+                        print(f"❌ Error al notificar al paciente: {e}")
+                    
+                    # Notificar al médico (si existe)
+                    if info['id_medico']:
+                        try:
+                            mensaje_medico = f"La reserva del paciente {info['nombre_paciente']} para {info['servicio']} el {info['fecha']} a las {info['hora_inicio']} ha sido cancelada por solicitud del paciente."
+                            
+                            # Obtener id_usuario del empleado
+                            cursor.execute("SELECT id_usuario FROM EMPLEADO WHERE id_empleado = %s", (info['id_medico'],))
+                            empleado = cursor.fetchone()
+                            
+                            if empleado and empleado['id_usuario']:
+                                # Crear notificación para el médico (tipo usuario 'empleado')
+                                sql_notif_medico = """
+                                    INSERT INTO NOTIFICACION (id_usuario, tipo, mensaje, url, fecha_creacion, leida)
+                                    VALUES (%s, %s, %s, %s, NOW(), 0)
+                                """
+                                cursor.execute(sql_notif_medico, (
+                                    empleado['id_usuario'],
+                                    'reserva_cancelada',
+                                    mensaje_medico,
+                                    '/medico/agenda'
+                                ))
+                                print(f"✅ Notificación enviada al médico {info['nombre_medico']}")
+                        except Exception as e:
+                            print(f"❌ Error al notificar al médico: {e}")
+                
+                mensaje = 'Solicitud aprobada. La reserva ha sido cancelada y se enviaron notificaciones.'
             else:
                 mensaje = 'Solicitud rechazada. La reserva sigue activa.'
 
