@@ -1,5 +1,5 @@
 from bd import obtener_conexion
-from datetime import date
+from datetime import date, time
 
 def _get_cursor(conexion):
     """
@@ -28,24 +28,16 @@ class Medicamento:
         try:
             cursor = _get_cursor(conexion)
             try:
-                # Primero, actualizar automáticamente medicamentos vencidos
-                cursor.execute("""
-                    UPDATE MEDICAMENTO
-                    SET estado = 'Inactivo'
-                    WHERE fecha_vencimiento <= CURDATE() AND estado = 'Activo'
-                """)
-                conexion.commit()  # Confirmar la actualización
-
                 # Luego, obtener la lista actualizada
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
-                           estado
+                        DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                        DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
                     FROM MEDICAMENTO
                     ORDER BY nombre
                 """)
                 rows = cursor.fetchall()
+                print(f"DEBUG: {len(rows)} medicamentos encontrados") 
                 return _rows_to_dicts(cursor, rows)
             finally:
                 try:
@@ -64,8 +56,7 @@ class Medicamento:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
                            DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
-                           estado
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
                     FROM MEDICAMENTO
                     WHERE id_medicamento = %s
                 """, (id_medicamento,))
@@ -83,20 +74,15 @@ class Medicamento:
             conexion.close()
 
     @staticmethod
-    def crear(nombre, descripcion, stock, fecha_vencimiento, estado='Activo'):
-        # Verificar si la fecha de vencimiento es hoy, si es así, cambiar estado a 'Inactivo'
-        fecha_vencimiento_date = date.fromisoformat(fecha_vencimiento) if isinstance(fecha_vencimiento, str) else fecha_vencimiento
-        if fecha_vencimiento_date <= date.today():
-            estado = 'Inactivo'
-
+    def crear(nombre, descripcion, stock, fecha_vencimiento):
         conexion = obtener_conexion()
         try:
             cursor = conexion.cursor()
             try:
                 cursor.execute("""
-                    INSERT INTO MEDICAMENTO (nombre, descripcion, stock, fecha_registro, fecha_vencimiento, estado)
-                    VALUES (%s, %s, %s, CURDATE(), %s, %s)
-                """, (nombre, descripcion, stock, fecha_vencimiento, estado))
+                    INSERT INTO MEDICAMENTO (nombre, descripcion, stock, fecha_registro, fecha_vencimiento)
+                    VALUES (%s, %s, %s, CURDATE(), %s)
+                """, (nombre, descripcion, stock, fecha_vencimiento))
                 conexion.commit()
                 return {'id_medicamento': cursor.lastrowid}
             finally:
@@ -108,29 +94,16 @@ class Medicamento:
             conexion.close()
 
     @staticmethod
-    def actualizar(id_medicamento, nombre, descripcion, stock, fecha_vencimiento, estado=None):
-        # Si no se proporciona estado, verificar si la fecha de vencimiento requiere cambiar el estado
-        if estado is None:
-            fecha_vencimiento_date = date.fromisoformat(fecha_vencimiento) if isinstance(fecha_vencimiento, str) else fecha_vencimiento
-            if fecha_vencimiento_date <= date.today():
-                estado = 'Inactivo'
-
+    def actualizar(id_medicamento, nombre, descripcion, stock, fecha_vencimiento):
         conexion = obtener_conexion()
         try:
             cursor = conexion.cursor()
             try:
-                if estado is not None:
-                    cursor.execute("""
-                        UPDATE MEDICAMENTO
-                        SET nombre = %s, descripcion = %s, stock = %s, fecha_vencimiento = %s, estado = %s
-                        WHERE id_medicamento = %s
-                    """, (nombre, descripcion, stock, fecha_vencimiento, estado, id_medicamento))
-                else:
-                    cursor.execute("""
-                        UPDATE MEDICAMENTO
-                        SET nombre = %s, descripcion = %s, stock = %s, fecha_vencimiento = %s
-                        WHERE id_medicamento = %s
-                    """, (nombre, descripcion, stock, fecha_vencimiento, id_medicamento))
+                cursor.execute("""
+                    UPDATE MEDICAMENTO
+                    SET nombre = %s, descripcion = %s, stock = %s, fecha_vencimiento = %s
+                    WHERE id_medicamento = %s
+                """, (nombre, descripcion, stock, fecha_vencimiento, id_medicamento))
                 conexion.commit()
                 return {'modified_rows': cursor.rowcount}
             finally:
@@ -150,7 +123,7 @@ class Medicamento:
                 like = f'%{termino}%'
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           fecha_registro, fecha_vencimiento, estado
+                           fecha_registro, fecha_vencimiento
                     FROM MEDICAMENTO
                     WHERE nombre LIKE %s
                     ORDER BY nombre

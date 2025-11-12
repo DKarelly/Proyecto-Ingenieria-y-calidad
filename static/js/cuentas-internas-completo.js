@@ -1,6 +1,6 @@
 /**
  * GESTIÓN COMPLETA DE CUENTAS INTERNAS
- * Incluye: Modal, Paginación, Validaciones
+ * Incluye: Paginación, Validaciones
  * Versión limpia sin conflictos
  */
 
@@ -8,51 +8,14 @@ console.log('🔄 Iniciando sistema de gestión de cuentas internas...');
 
 // ==================== VARIABLES GLOBALES ====================
 let paginaActual = 1;
-const registrosPorPagina = 20;
+const registrosPorPagina = 10;
 let empleadosGlobal = [];
 
 let paginaActualPacientes = 1;
-const registrosPorPaginaPacientes = 20;
+const registrosPorPaginaPacientes = 10;
 let pacientesGlobal = [];
 
-// Elementos del modal
-let modal = null;
-let openButton = null;
-let closeButton = null;
 
-// ==================== MODAL MANAGEMENT ====================
-function initModal() {
-    modal = document.getElementById('register-employee-modal');
-    openButton = document.getElementById('new-employee-button');
-    closeButton = document.getElementById('close-register-employee-modal');
-
-    if (openButton && modal) {
-        openButton.addEventListener('click', () => {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden'; // Prevenir scroll del fondo
-        });
-    }
-
-    if (closeButton && modal) {
-        closeButton.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-            document.body.style.overflow = 'auto'; // Restaurar scroll
-        });
-    }
-
-    // Cerrar modal al hacer clic en el fondo
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                document.body.style.overflow = 'auto';
-            }
-        });
-    }
-}
 
 // ==================== PAGINACIÓN EMPLEADOS ====================
 function poblarTablaEmpleados(empleados) {
@@ -433,14 +396,11 @@ function eliminarEmpleado(idEmpleado, nombreCompleto) {
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM cargado - Inicializando sistema de gestión de cuentas internas...');
-    
-    // Inicializar modal
-    initModal();
-    
+
     // Cargar datos
     cargarEmpleados();
     cargarPacientes();
-    
+
     console.log('✅ Sistema inicializado correctamente');
 });
 

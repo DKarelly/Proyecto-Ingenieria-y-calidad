@@ -1,176 +1,34 @@
-document.addEventListener('DOMContentLoaded', () => {
+console.log('🔵 Script cargado');
+
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🟢 DOMContentLoaded disparado');
+    
+    const tablaBody = document.getElementById('tabla-recepciones-body');
     const modalRegistrar = document.getElementById('modalRegistrarRecepcion');
     const modalModificar = document.getElementById('modalModificarRecepcion');
-    const modalEliminar = document.getElementById('modalEliminar');
     const modalVerDetalles = document.getElementById('modalVerDetalles');
     const btnRegistrar = document.getElementById('btnRegistrarRecepcion');
-    const tablaBody = document.getElementById('tabla-recepciones-body');
     const formRegistrar = document.getElementById('formRegistrarRecepcion');
     const formModificar = document.getElementById('formModificarRecepcion');
 
-    // Abrir modal registrar
-    if (btnRegistrar) {
-        btnRegistrar.addEventListener('click', () => modalRegistrar.classList.add('show'));
-    }
-
-    // Evento para buscar medicamento en tiempo real
-    const nombreMedicamentoInput = document.getElementById('nombreMedicamento');
-    if (nombreMedicamentoInput) {
-        nombreMedicamentoInput.addEventListener('input', function() {
-            buscarMedicamento(this.value);
-        });
-    }
-
-    // Cerrar modales (botones .close)
-    document.addEventListener('click', (e) => {
-        if (e.target.matches('.close') || e.target.id === 'closeDetalles' || e.target.id === 'btnCerrarDetalles') {
-            [modalRegistrar, modalModificar, modalEliminar, modalVerDetalles].forEach(m => m && m.classList.remove('show'));
-        }
+    console.log('📦 Elementos encontrados:', {
+        tablaBody: !!tablaBody,
+        modalRegistrar: !!modalRegistrar,
+        btnRegistrar: !!btnRegistrar
     });
 
-    // Cerrar modal al hacer clic fuera
-    window.addEventListener('click', (e) => {
-        [modalRegistrar, modalModificar, modalEliminar, modalVerDetalles].forEach(m => {
-            if (m && e.target === m) m.classList.remove('show');
-        });
-    });
-
-    // Cargar medicamentos y poblar tabla
-    async function cargarMedicamentos() {
-        try {
-            const resp = await fetch('/farmacia/api/medicamentos', { credentials: 'same-origin' });
-            if (!resp.ok) throw new Error('Error al obtener medicamentos');
-            const medicamentos = await resp.json();
-            // Ordenar medicamentos por id de menor a mayor
-            medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
-            // Guardar medicamentos para búsqueda
-            window.medicamentos = medicamentos;
-            // Mostrar notificaciones de vencimiento
-            mostrarNotificacionesVencimiento(medicamentos);
-            inicializarPaginacion({
-                datos: medicamentos,
-                registrosPorPagina: 20, /* CANTIDAD DE FILAS EN LA PAGINACION */
-                renderFuncion: renderTabla
-            });
-        } catch (err) {
-            console.error(err);
-        }
+    if (!tablaBody) {
+        console.error('❌ tbody NO encontrado');
+        return;
     }
 
-    function renderTabla(medicamentos) {
-        if (!tablaBody) return;
-        tablaBody.innerHTML = '';
-        if (!medicamentos || medicamentos.length === 0) {
-            tablaBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">No se encontraron recepciones</td>
-                </tr>`;
-            return;
-        }
-
-        // Filtrar solo medicamentos con estado 'Activo'
-        const medicamentosActivos = medicamentos.filter(m => m.estado === 'Activo');
-
-        // Ordenar medicamentos por id de menor a mayor
-        medicamentosActivos.sort((a, b) => a.id_medicamento - b.id_medicamento);
-
-        // Poblar datalist con nombres de medicamentos para autocompletar
-        const datalist = document.getElementById('medicamentos-list');
-        if (datalist) {
-            datalist.innerHTML = '';
-            medicamentos.forEach(m => {
-                const option = document.createElement('option');
-                option.value = m.nombre;
-                datalist.appendChild(option);
-            });
-        }
-
-        medicamentosActivos.forEach(m => {
-            const tr = document.createElement('tr');
-            tr.dataset.id = m.id_medicamento;
-            tr.dataset.idMedicamento = m.id_medicamento;
-            tr.dataset.medicamento = m.nombre || '';
-            tr.dataset.descripcion = m.descripcion || '';
-            tr.dataset.cantidad = m.stock != null ? String(m.stock) : '';
-            tr.dataset.fechaRegistro = m.fecha_registro || '';
-            tr.dataset.fechaVencimiento = m.fecha_vencimiento || '';
-            tr.dataset.estado = m.estado || '';
-
-            tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${m.id_medicamento}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHtml(m.nombre)}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 max-w-48 truncate">${escapeHtml(m.descripcion || '')}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.stock ?? ''}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.fecha_registro || ''}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.fecha_vencimiento || ''}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <span class="badge-${(m.estado || '').toLowerCase()} px-2 py-1 rounded-full text-xs font-medium">
-                        ${m.estado || ''}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                    <button class="ver-detalle text-cyan-600 hover:text-cyan-900 mr-3" title="Ver detalles"> <i class="fas fa-eye"></i> </button>
-                    <button class="btn-editar text-blue-600 hover:text-blue-900 mr-3" title="Editar"> <i class="fas fa-edit"></i> </button>
-                </td>
-            `;
-            tablaBody.appendChild(tr);
-        });
-    }
-
-    // Delegación de eventos en tabla
-    if (tablaBody) {
-        tablaBody.addEventListener('click', (e) => {
-            const btn = e.target.closest('button');
-            if (!btn) return;
-            const tr = btn.closest('tr');
-            if (!tr) return;
-            if (btn.classList.contains('ver-detalle')) {
-                abrirDetalle(tr);
-            } else if (btn.classList.contains('btn-editar')) {
-                abrirEditar(tr);
-            } 
-        });
-    }
-
-    function abrirDetalle(tr) {
-        if (!modalVerDetalles) return;
-        setText('detalleNombre', tr.dataset.medicamento);
-        setText('detalleDescripcion', tr.dataset.descripcion);
-        setText('detalleStock', tr.dataset.cantidad);
-        setText('detalleFechaRegistro', tr.dataset.fechaRegistro);
-        setText('detalleFechaVencimiento', tr.dataset.fechaVencimiento);
-        setText('detalleEstado', tr.dataset.estado);
-        modalVerDetalles.classList.add('show');
-    }
-
-    function abrirEditar(tr) {
-        if (!modalModificar) return;
-        document.getElementById('idMedicamento').value = tr.dataset.idMedicamento || '';
-        document.getElementById('nombreMedicamentoEdit').value = tr.dataset.medicamento || '';
-        document.getElementById('stockEdit').value = tr.dataset.cantidad || '';
-        document.getElementById('fechaRegistroEdit').value = tr.dataset.fechaRegistro || '';
-        document.getElementById('fechaVencimientoEdit').value = tr.dataset.fechaVencimiento || '';
-        document.getElementById('descripcionEdit').value = tr.dataset.descripcion || '';
-        document.getElementById('estadoEdit').value = tr.dataset.estado || '';
-        modalModificar.classList.add('show');
-
-        // Asegurar validación y configuración del input stock en el modal de modificar
-        const stockEditInput = document.getElementById('stockEdit');
-        if (stockEditInput) {
-            stockEditInput.setAttribute('min', '1');
-            stockEditInput.setAttribute('step', '1');
-            // eliminar decimales pegados por el usuario al escribir
-            stockEditInput.addEventListener('input', () => {
-                const v = stockEditInput.value;
-                if (v.includes('.')) {
-                    stockEditInput.value = Math.trunc(Number(v)) || '';
-                }
-                // evitar valores negativos o cero en edición
-                if (stockEditInput.value !== '' && Number(stockEditInput.value) < 1) {
-                    stockEditInput.value = '1';
-                }
-            }, { once: false });
-        }
+    // ==================== FUNCIONES AUXILIARES ====================
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     function setText(id, text) {
@@ -178,47 +36,236 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.textContent = text || '';
     }
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str).replace(/[&<>"'`=\/]/g, s => ({
-            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;','=':'&#61;','/':'&#47;'
-        })[s]);
-    }
+    // ==================== CARGAR MEDICAMENTOS ====================
+    
+    async function cargarMedicamentos() {
+        console.log('🔄 Iniciando carga de medicamentos...');
+        
+        try {
+            console.log('📡 Fetch a /farmacia/api/medicamentos');
+            const resp = await fetch('/farmacia/api/medicamentos', { 
+                credentials: 'same-origin' 
+            });
+            
+            console.log('📊 Status:', resp.status);
+            
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}`);
+            }
+            
+            const medicamentos = await resp.json();
+            console.log('✅ Medicamentos recibidos:', medicamentos.length);
 
-    // Registrar medicamento (POST) - validar entero >=1
-    if (formRegistrar) {
-        // configurar input stock del modal registrar para mejor UX
-        const stockInput = document.getElementById('stock');
-        if (stockInput) {
-            stockInput.setAttribute('min', '1');
-            stockInput.setAttribute('step', '1');
-            stockInput.addEventListener('input', () => {
-                const v = stockInput.value;
-                if (v.includes('.')) {
-                    stockInput.value = Math.trunc(Number(v)) || '';
-                }
-                if (stockInput.value !== '' && Number(stockInput.value) < 1) {
-                    stockInput.value = '1';
-                }
-            }, { once: false });
-        }
+            // Ordenar
+            medicamentos.sort((a, b) => a.id_medicamento - b.id_medicamento);
 
-        formRegistrar.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nombre = document.getElementById('nombreMedicamento').value.trim();
-            const descripcion = document.getElementById('descripcion').value.trim();
-            const stockVal = document.getElementById('stock').value;
-            const fechaVencimiento = document.getElementById('fecha_vencimiento').value;
-            const estado = document.getElementById('estado').value.trim();
+            // Guardar globalmente
+            window.medicamentos = medicamentos;
 
-            if (!nombre || stockVal === '' || !fechaVencimiento) {
-                alert('Complete los campos obligatorios: nombre, stock, fecha de vencimiento.');
-                return;
+            // Notificaciones
+            mostrarNotificaciones(medicamentos);
+
+            // ✅ INICIALIZAR PAGINACIÓN
+            if (typeof inicializarPaginacion === 'function') {
+                console.log('🔧 Inicializando paginación...');
+                inicializarPaginacion({
+                    datos: medicamentos,
+                    registrosPorPagina: 10,
+                    renderFuncion: renderTabla,
+                    ids: {
+                        inicioRango: 'inicio-rango',
+                        finRango: 'fin-rango',
+                        totalRegistros: 'total-registros',
+                        paginacionNumeros: 'paginacionNumeros'
+                    }
+                });
+            } else {
+                console.warn('⚠️ paginacion2.js no cargado, renderizando sin paginación');
+                renderTabla(medicamentos);
+                actualizarContadores(medicamentos.length, medicamentos.length);
             }
 
-            const stockNum = Number(stockVal);
-            if (!Number.isInteger(stockNum) || stockNum < 1) {
-                alert('Stock debe ser un número entero mayor o igual a 1.');
+        } catch (err) {
+            console.error('❌ Error:', err);
+            tablaBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-red-500">
+                        Error: ${err.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function renderTabla(medicamentos) {
+        console.log('🎨 Renderizando', medicamentos.length, 'medicamentos');
+
+        tablaBody.innerHTML = '';
+
+        if (!medicamentos || medicamentos.length === 0) {
+            tablaBody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                        No hay medicamentos
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        medicamentos.forEach((m, i) => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition-colors';
+            
+            tr.dataset.idMedicamento = m.id_medicamento;
+            tr.dataset.medicamento = m.nombre || '';
+            tr.dataset.descripcion = m.descripcion || '';
+            tr.dataset.cantidad = m.stock || '0';
+            tr.dataset.fechaRegistro = m.fecha_registro || '';
+            tr.dataset.fechaVencimiento = m.fecha_vencimiento || '';
+
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${m.id_medicamento}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(m.nombre)}</td>
+                <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${escapeHtml(m.descripcion || '')}">${escapeHtml(m.descripcion || 'Sin descripción')}</td>
+                <td class="px-6 py-4 text-sm text-gray-900 text-center">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">${m.stock || 0}</span>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">${m.fecha_registro || 'N/A'}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">${m.fecha_vencimiento || 'N/A'}</td>
+                <td class="px-6 py-4 text-center text-sm">
+                    <button class="ver-detalle text-cyan-600 hover:text-cyan-900 mr-3 transition-colors" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn-editar text-blue-600 hover:text-blue-900 transition-colors" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            `;
+
+            tablaBody.appendChild(tr);
+        });
+
+        console.log('✅ Tabla renderizada con', medicamentos.length, 'filas');
+    }
+
+    function actualizarContadores(inicio, fin) {
+        const inicioRango = document.getElementById('inicio-rango');
+        const finRango = document.getElementById('fin-rango');
+        const totalRegistros = document.getElementById('total-registros');
+        const total = window.medicamentos ? window.medicamentos.length : 0;
+
+        if (inicioRango) inicioRango.textContent = total > 0 ? inicio : '0';
+        if (finRango) finRango.textContent = fin;
+        if (totalRegistros) totalRegistros.textContent = total;
+    }
+
+    function mostrarNotificaciones(medicamentos) {
+        const contenedor = document.getElementById('notificaciones-vencimiento');
+        if (!contenedor) return;
+
+        contenedor.innerHTML = '';
+        const hoy = new Date();
+        const en30Dias = new Date();
+        en30Dias.setDate(hoy.getDate() + 30);
+
+        const porVencer = medicamentos.filter(m => {
+            if (!m.fecha_vencimiento) return false;
+            const fv = new Date(m.fecha_vencimiento);
+            return fv >= hoy && fv <= en30Dias;
+        });
+
+        porVencer.forEach(m => {
+            const fv = new Date(m.fecha_vencimiento);
+            const dias = Math.ceil((fv - hoy) / (1000 * 60 * 60 * 24));
+            
+            const div = document.createElement('div');
+            div.className = 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm';
+            div.innerHTML = `
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="text-sm font-medium text-yellow-800">
+                            <i class="fas fa-pills mr-1"></i>
+                            ${escapeHtml(m.nombre)}
+                        </h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p><i class="fas fa-clock mr-1"></i> Vence en ${dias} día${dias !== 1 ? 's' : ''}</p>
+                            <p><i class="fas fa-boxes mr-1"></i> Stock actual: ${m.stock || 0}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(div);
+        });
+    }
+
+    // ==================== EVENTOS MODALES ====================
+    
+    if (btnRegistrar) {
+        btnRegistrar.addEventListener('click', () => {
+            if (modalRegistrar) modalRegistrar.classList.add('show');
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.close') || e.target.id === 'closeDetalles' || e.target.id === 'btnCerrarDetalles') {
+            [modalRegistrar, modalModificar, modalVerDetalles].forEach(m => {
+                if (m) m.classList.remove('show');
+            });
+        }
+    });
+
+    window.addEventListener('click', (e) => {
+        [modalRegistrar, modalModificar, modalVerDetalles].forEach(m => {
+            if (m && e.target === m) m.classList.remove('show');
+        });
+    });
+
+    if (tablaBody) {
+        tablaBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            
+            const tr = btn.closest('tr');
+            if (!tr) return;
+
+            if (btn.classList.contains('ver-detalle')) {
+                if (!modalVerDetalles) return;
+                setText('detalleNombre', tr.dataset.medicamento);
+                setText('detalleDescripcion', tr.dataset.descripcion);
+                setText('detalleStock', tr.dataset.cantidad);
+                setText('detalleFechaRegistro', tr.dataset.fechaRegistro);
+                setText('detalleFechaVencimiento', tr.dataset.fechaVencimiento);
+                modalVerDetalles.classList.add('show');
+            } else if (btn.classList.contains('btn-editar')) {
+                if (!modalModificar) return;
+                document.getElementById('idMedicamento').value = tr.dataset.idMedicamento;
+                document.getElementById('nombreMedicamentoEdit').value = tr.dataset.medicamento;
+                document.getElementById('stockEdit').value = tr.dataset.cantidad;
+                document.getElementById('fechaRegistroEdit').value = tr.dataset.fechaRegistro;
+                document.getElementById('fechaVencimientoEdit').value = tr.dataset.fechaVencimiento;
+                document.getElementById('descripcionEdit').value = tr.dataset.descripcion;
+                modalModificar.classList.add('show');
+            }
+        });
+    }
+
+    // ==================== FORMULARIOS ====================
+    
+    if (formRegistrar) {
+        formRegistrar.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('nombreMedicamento').value.trim();
+            const descripcion = document.getElementById('descripcion').value.trim();
+            const stock = parseInt(document.getElementById('stock').value);
+            const fecha_vencimiento = document.getElementById('fecha_vencimiento').value;
+
+            if (!nombre || !stock || !fecha_vencimiento) {
+                alert('Complete los campos obligatorios');
                 return;
             }
 
@@ -227,282 +274,67 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento, estado })
+                    body: JSON.stringify({ nombre, descripcion, stock, fecha_vencimiento })
                 });
+                
                 const data = await resp.json();
+                
                 if (resp.ok) {
-                    alert('Recepción registrada correctamente');
+                    alert('Medicamento registrado correctamente');
                     formRegistrar.reset();
                     modalRegistrar.classList.remove('show');
                     await cargarMedicamentos();
                 } else {
-                    console.error(data);
-                    alert(data.error || 'Error al registrar medicamento');
+                    alert(data.error || 'Error al registrar');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión al servidor');
+                alert('Error de conexión');
             }
         });
     }
 
-    // Modificar medicamento (PUT) - validar entero >=1
     if (formModificar) {
         formModificar.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const id = document.getElementById('idMedicamento').value;
             const nombre = document.getElementById('nombreMedicamentoEdit').value.trim();
-            const stockVal = document.getElementById('stockEdit').value;
-            const fechaVencimiento = document.getElementById('fechaVencimientoEdit').value;
             const descripcion = document.getElementById('descripcionEdit').value.trim();
-            const estado = document.getElementById('estadoEdit').value.trim();
+            const stock = parseInt(document.getElementById('stockEdit').value);
+            const fecha_vencimiento = document.getElementById('fechaVencimientoEdit').value;
 
-            if (!id || !nombre || stockVal === '' || !fechaVencimiento) {
-                alert('Complete los campos obligatorios para modificar.');
-                return;
-            }
-
-            const stockNum = Number(stockVal);
-            if (!Number.isInteger(stockNum) || stockNum < 1) {
-                alert('Stock debe ser un número entero mayor o igual a 1.');
+            if (!id || !nombre || !stock || !fecha_vencimiento) {
+                alert('Complete los campos obligatorios');
                 return;
             }
 
             try {
-                const resp = await fetch(`/farmacia/api/medicamentos/${encodeURIComponent(id)}`, {
+                const resp = await fetch(`/farmacia/api/medicamentos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'same-origin',
-                    body: JSON.stringify({ nombre, descripcion, stock: stockNum, fecha_vencimiento: fechaVencimiento, estado })
+                    body: JSON.stringify({ nombre, descripcion, stock, fecha_vencimiento })
                 });
+                
                 const data = await resp.json();
+                
                 if (resp.ok) {
-                    alert('Recepción modificada exitosamente');
+                    alert('Medicamento modificado correctamente');
                     modalModificar.classList.remove('show');
                     await cargarMedicamentos();
                 } else {
-                    console.error(data);
-                    alert(data.error || 'Error al modificar medicamento');
+                    alert(data.error || 'Error al modificar');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Error de conexión al servidor');
+                alert('Error de conexión');
             }
         });
     }
 
-    // Limpiar filtros
-    const btnLimpiar = document.getElementById('btnLimpiar');
-    if (btnLimpiar) {
-        btnLimpiar.addEventListener('click', (ev) => {
-            ev.preventDefault();
-            const formFiltros = document.getElementById('formFiltros');
-            if (formFiltros) formFiltros.reset();
-            // Mostrar todas las filas al limpiar filtros
-            const filas = tablaBody.querySelectorAll('tr');
-            filas.forEach(fila => {
-                fila.style.display = '';
-            });
-            cargarMedicamentos();
-        });
-    }
-
-    // Evento para buscar medicamento en el filtro de búsqueda
-    const filtroMedicamentoInput = document.getElementById('filtroMedicamento');
-    if (filtroMedicamentoInput) {
-        filtroMedicamentoInput.addEventListener('input', function() {
-            buscarMedicamentoFiltro(this.value);
-        });
-    }
-
-    function buscarMedicamentoFiltro(termino) {
-        if (!window.medicamentos || termino.length < 2) {
-            ocultarSugerenciasFiltro();
-            return;
-        }
-
-        const medicamentosFiltrados = window.medicamentos.filter(medicamento =>
-            medicamento.nombre.toLowerCase().includes(termino.toLowerCase())
-        );
-
-        mostrarSugerenciasFiltro(medicamentosFiltrados);
-    }
-
-    function mostrarSugerenciasFiltro(medicamentos) {
-        // Remover sugerencias anteriores
-        const sugerenciasAnteriores = document.querySelector('.sugerencias-filtro');
-        if (sugerenciasAnteriores) {
-            sugerenciasAnteriores.remove();
-        }
-
-        if (medicamentos.length === 0) {
-            return;
-        }
-
-        const inputFiltro = document.getElementById('filtroMedicamento');
-        const sugerenciasDiv = document.createElement('div');
-        sugerenciasDiv.className = 'sugerencias-filtro absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1';
-        sugerenciasDiv.style.width = inputFiltro.offsetWidth + 'px';
-
-        medicamentos.forEach(medicamento => {
-            const opcion = document.createElement('div');
-            opcion.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
-            opcion.textContent = medicamento.nombre;
-            opcion.onclick = function() {
-                seleccionarMedicamentoFiltro(medicamento);
-                sugerenciasDiv.remove();
-            };
-            sugerenciasDiv.appendChild(opcion);
-        });
-
-        // Posicionar las sugerencias
-        inputFiltro.parentNode.style.position = 'relative';
-        inputFiltro.parentNode.appendChild(sugerenciasDiv);
-    }
-
-    function seleccionarMedicamentoFiltro(medicamento) {
-        document.getElementById('filtroMedicamento').value = medicamento.nombre;
-        ocultarSugerenciasFiltro();
-        // Filtrar la tabla por el medicamento seleccionado
-        filtrarTablaPorMedicamento(medicamento.nombre);
-    }
-
-    function filtrarTablaPorMedicamento(nombreMedicamento) {
-        const filas = tablaBody.querySelectorAll('tr');
-        filas.forEach(fila => {
-            const nombreEnFila = fila.dataset.medicamento.toLowerCase();
-            if (nombreEnFila.includes(nombreMedicamento.toLowerCase())) {
-                fila.style.display = '';
-            } else {
-                fila.style.display = 'none';
-            }
-        });
-    }
-
-    function ocultarSugerenciasFiltro() {
-        const sugerencias = document.querySelector('.sugerencias-filtro');
-        if (sugerencias) {
-            sugerencias.remove();
-        }
-    }
-
-    // Ocultar sugerencias al hacer clic fuera
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#filtroMedicamento') && !e.target.closest('.sugerencias-filtro')) {
-            ocultarSugerenciasFiltro();
-        }
-    });
-
-    function buscarMedicamento(termino) {
-        if (!window.medicamentos || termino.length < 2) {
-            ocultarSugerenciasMedicamento();
-            return;
-        }
-
-        const medicamentosFiltrados = window.medicamentos.filter(medicamento =>
-            medicamento.nombre.toLowerCase().includes(termino.toLowerCase())
-        );
-
-        mostrarSugerenciasMedicamento(medicamentosFiltrados);
-    }
-
-    function mostrarSugerenciasMedicamento(medicamentos) {
-        // Remover sugerencias anteriores
-        const sugerenciasAnteriores = document.querySelector('.sugerencias-medicamentos');
-        if (sugerenciasAnteriores) {
-            sugerenciasAnteriores.remove();
-        }
-
-        if (medicamentos.length === 0) {
-            return;
-        }
-
-        const inputNombre = document.getElementById('nombreMedicamento');
-        const sugerenciasDiv = document.createElement('div');
-        sugerenciasDiv.className = 'sugerencias-medicamentos absolute z-10 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1';
-        sugerenciasDiv.style.width = inputNombre.offsetWidth + 'px';
-
-        medicamentos.forEach(medicamento => {
-            const opcion = document.createElement('div');
-            opcion.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer';
-            opcion.textContent = medicamento.nombre;
-            opcion.onclick = function() {
-                seleccionarMedicamento(medicamento);
-                sugerenciasDiv.remove();
-            };
-            sugerenciasDiv.appendChild(opcion);
-        });
-
-        // Posicionar las sugerencias
-        inputNombre.parentNode.style.position = 'relative';
-        inputNombre.parentNode.appendChild(sugerenciasDiv);
-    }
-
-    function seleccionarMedicamento(medicamento) {
-        document.getElementById('nombreMedicamento').value = medicamento.nombre;
-        ocultarSugerenciasMedicamento();
-    }
-
-    function ocultarSugerenciasMedicamento() {
-        const sugerencias = document.querySelector('.sugerencias-medicamentos');
-        if (sugerencias) {
-            sugerencias.remove();
-        }
-    }
-
-    // Ocultar sugerencias al hacer clic fuera
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#nombreMedicamento') && !e.target.closest('.sugerencias-medicamentos')) {
-            ocultarSugerenciasMedicamento();
-        }
-    });
-
-    // Función para mostrar notificaciones de vencimiento
-    function mostrarNotificacionesVencimiento(medicamentos) {
-        const contenedor = document.getElementById('notificaciones-vencimiento');
-        if (!contenedor) return;
-
-        contenedor.innerHTML = '';
-
-        const hoy = new Date();
-        const proximos30Dias = new Date();
-        proximos30Dias.setDate(hoy.getDate() + 30);
-
-        const medicamentosVenciendo = medicamentos.filter(medicamento => {
-            if (!medicamento.fecha_vencimiento) return false;
-            const fechaVencimiento = new Date(medicamento.fecha_vencimiento);
-            return fechaVencimiento >= hoy && fechaVencimiento <= proximos30Dias;
-        });
-
-        if (medicamentosVenciendo.length === 0) return;
-
-        medicamentosVenciendo.forEach(medicamento => {
-            const fechaVencimiento = new Date(medicamento.fecha_vencimiento);
-            const diasRestantes = Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24));
-
-            const notificacion = document.createElement('div');
-            notificacion.className = 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm';
-            notificacion.innerHTML = `
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-exclamation-triangle text-yellow-400 text-xl"></i>
-                    </div>
-                    <div class="ml-3 flex-1">
-                        <h3 class="text-sm font-medium text-yellow-800">
-                            <i class="fas fa-pills mr-1"></i>
-                            ${escapeHtml(medicamento.nombre)}
-                        </h3>
-                        <div class="mt-2 text-sm text-yellow-700">
-                            <p><i class="fas fa-clock mr-1"></i> Vence en ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''}</p>
-                            <p><i class="fas fa-boxes mr-1"></i> Stock actual: ${medicamento.stock || 0}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            contenedor.appendChild(notificacion);
-        });
-    }
-
-    // Inicializar
-    cargarMedicamentos();
+    // ==================== INICIALIZAR ====================
+    
+    console.log('🚀 Inicializando...');
+    await cargarMedicamentos();
 });
