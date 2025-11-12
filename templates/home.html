@@ -28,47 +28,56 @@
     {% include 'header.html' %}
 
     <!-- Contenedor principal con padding para el header fijo -->
-    <div class="container mx-auto px-4 pt-24">
-        <!-- Hero Section -->
-        <main class="relative rounded-2xl my-8 overflow-hidden animate-on-scroll">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+        <!-- Hero Section Minimalista con Imágenes -->
+        <main class="relative rounded-2xl my-6 overflow-hidden animate-on-scroll">
             <div class="swiper hero-swiper">
                 <div class="swiper-wrapper">
-                    <!-- Slide 1 -->
-                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada1.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
-                        <div class="flex items-center justify-center h-full bg-black/30">
-                            <div class="py-20 px-6 md:px-12 text-center max-w-2xl">
-                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">Tu salud es nuestra prioridad. Cuidamos de ti.</h1>
-                                <p class="text-white mb-8 text-lg drop-shadow-md">Programa tu cita hoy y da el primer paso hacia tu bienestar.</p>
-                                <a href="/usuarios/medicos"class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all duration-300 transform hover:scale-105 shadow-lg">Realizar Reserva</a>
+                    <!-- Slide 1 - Minimalista -->
+                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada1.jpg') }}'); background-size: cover; background-position: center; min-height: 400px;">
+                        <div class="flex items-center justify-center h-full bg-gradient-to-r from-cyan-900/70 to-blue-900/60">
+                            <div class="py-16 px-6 md:px-12 text-center max-w-3xl">
+                                <h1 class="text-4xl md:text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">Tu salud, nuestra <span class="text-cyan-300">prioridad</span></h1>
+                                <p class="text-white mb-8 text-xl max-w-2xl mx-auto font-semibold drop-shadow-lg">Atención médica integral con profesionales altamente capacitados</p>
+                                <a href="/usuarios/medicos" class="inline-flex items-center gap-2 bg-white text-cyan-700 font-semibold py-3 px-6 rounded-lg hover:bg-cyan-50 transition-all duration-200 shadow-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                    Agendar Cita
+                                </a>
                             </div>
                         </div>
                     </div>
-                    <!-- Slide 2 -->
-                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada2.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
-                        <div class="flex items-center justify-center h-full bg-black/30">
-                            <div class="py-20 px-6 md:px-12 text-center max-w-2xl">
-                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">Tecnología de Vanguardia</h1>
-                                <p class="text-white mb-8 text-lg drop-shadow-md">Equipos de última generación para un diagnóstico preciso y seguro.</p>
-                                <a href="#" class="inline-block bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all">Conoce Más</a>
+                    <!-- Slide 2 - Minimalista -->
+                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada2.jpg') }}'); background-size: cover; background-position: center; min-height: 400px;">
+                        <div class="flex items-center justify-center h-full bg-gradient-to-r from-blue-900/70 to-indigo-900/60">
+                            <div class="py-16 px-6 md:px-12 text-center max-w-3xl">
+                                <h1 class="text-4xl md:text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">Tecnología <span class="text-blue-300">avanzada</span></h1>
+                                <p class="text-white mb-8 text-xl max-w-2xl mx-auto font-semibold drop-shadow-lg">Contamos con la infraestructura más moderna para tu bienestar</p>
+                                <a href="#especialidades" class="inline-flex items-center gap-2 bg-white text-blue-700 font-semibold py-3 px-6 rounded-lg hover:bg-blue-50 transition-all duration-200 shadow-lg">
+                                    Ver Más
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </a>
                             </div>
                         </div>
                     </div>
-                    <!-- Slide 3 -->
-                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada3.jpg') }}'); background-size: cover; background-position: center; min-height: 500px;">
-                        <div class="flex items-center justify-center h-full bg-black/30">
-                            <div class="py-20 px-6 md:px-12 text-center max-w-2xl">
-                                <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-lg">Atención Humana y Cercana</h1>
-                                <p class="text-white mb-8 text-lg drop-shadow-md">Porque cada paciente es único, ofrecemos un trato personalizado y empático.</p>
-                                <a href="#" class="bg-cyan-400 text-white font-semibold py-3 px-8 rounded-lg hover:bg-cyan-500 transition-all">Nuestro Equipo</a>
+                    <!-- Slide 3 - Minimalista -->
+                    <div class="swiper-slide" style="background-image: url('{{ url_for('static', filename='images/portada3.jpg') }}'); background-size: cover; background-position: center; min-height: 400px;">
+                        <div class="flex items-center justify-center h-full bg-gradient-to-r from-teal-900/70 to-green-900/60">
+                            <div class="py-16 px-6 md:px-12 text-center max-w-3xl">
+                                <h1 class="text-4xl md:text-5xl font-bold text-white leading-tight mb-4 drop-shadow-lg">Atención <span class="text-teal-300">personalizada</span></h1>
+                                <p class="text-white mb-8 text-xl max-w-2xl mx-auto font-semibold drop-shadow-lg">Un equipo comprometido con tu salud y la de tu familia</p>
+                                <a href="#equipo" class="inline-flex items-center gap-2 bg-white text-teal-700 font-semibold py-3 px-6 rounded-lg hover:bg-teal-50 transition-all duration-200 shadow-lg">
+                                    Nuestro Equipo
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Navigation buttons -->
-                <div class="swiper-button-next"></div>
-                <div class="swiper-button-prev"></div>
-                <!-- Pagination -->
-                <div class="swiper-pagination"></div>
+                <!-- Botones de navegación -->
+                <div class="swiper-button-next !w-10 !h-10 !bg-white !rounded-full !shadow-lg after:!text-sm after:!font-bold after:!text-gray-700"></div>
+                <div class="swiper-button-prev !w-10 !h-10 !bg-white !rounded-full !shadow-lg after:!text-sm after:!font-bold after:!text-gray-700"></div>
+                <!-- Pagination minimalista -->
+                <div class="swiper-pagination !bottom-4"></div>
             </div>
         </main>
 
@@ -76,9 +85,9 @@
         {% if session.get('tipo_usuario') == 'paciente' %}
         <section class="py-12 animate-on-scroll">
             <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-3xl shadow-xl overflow-hidden">
-                <div class="grid md:grid-cols-2 gap-0">
+                <div class="grid md:grid-cols-[60%_40%] gap-0">
                     <!-- Contenido -->
-                    <div class="p-8 md:p-12 flex flex-col justify-center">
+                    <div class="p-6 md:p-10 flex flex-col justify-center">
                         <div class="inline-block mb-4">
                             <span class="bg-cyan-100 text-cyan-700 text-sm font-semibold px-4 py-2 rounded-full">Portal del Paciente</span>
                         </div>
@@ -91,7 +100,7 @@
                         </p>
 
                         <!-- Características -->
-                        <div class="space-y-4 mb-8">
+                        <div class="space-y-3 mb-8">
                             <div class="flex items-start gap-3">
                                 <div class="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -119,6 +128,24 @@
                                     <p class="text-gray-600 text-sm">Recibe la confirmación de tu cita al instante</p>
                                 </div>
                             </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Recordatorios Automáticos</h4>
+                                    <p class="text-gray-600 text-sm">Notificaciones por correo y SMS antes de tu consulta</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Staff Especializado</h4>
+                                    <p class="text-gray-600 text-sm">Acceso a un amplio equipo de médicos especialistas certificados</p>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Botón Principal -->
@@ -135,25 +162,25 @@
                     </div>
 
                     <!-- Imagen/Ilustración -->
-                    <div class="relative bg-gradient-to-br from-cyan-400 to-blue-500 p-8 md:p-12 flex items-center justify-center">
-                        <div class="relative w-full max-w-sm">
+                    <div class="relative bg-gradient-to-br from-cyan-400 to-blue-500 p-6 md:p-8 flex items-center justify-center">
+                        <div class="relative w-full max-w-[220px] group">
                             <!-- Icono grande de calendario -->
-                            <div class="bg-white rounded-3xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-300">
+                            <div class="bg-white rounded-xl p-5 shadow-xl transition-all duration-300">
                                 <div class="text-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-check mx-auto text-cyan-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-check mx-auto text-cyan-500 transition-colors duration-300">
                                         <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/>
                                         <path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>
                                     </svg>
-                                    <div class="mt-6">
-                                        <div class="text-4xl font-bold text-gray-800">24/7</div>
-                                        <div class="text-gray-600 font-medium mt-2">Disponible para ti</div>
+                                    <div class="mt-3">
+                                        <div class="text-2xl font-bold text-gray-800">24/7</div>
+                                        <div class="text-gray-600 font-medium text-xs mt-1">Disponible para ti</div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Elementos decorativos flotantes -->
-                            <div class="absolute -top-4 -left-4 w-20 h-20 bg-white/20 rounded-full animate-pulse"></div>
-                            <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
+                            <div class="absolute -top-3 -left-3 w-14 h-14 bg-white/20 rounded-full animate-pulse"></div>
+                            <div class="absolute -bottom-4 -right-4 w-20 h-20 bg-white/10 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
                         </div>
                     </div>
                 </div>
@@ -163,35 +190,35 @@
         <!-- Sección para Pacientes - Exámenes de Laboratorio -->
         <section class="py-12 animate-on-scroll">
             <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-3xl shadow-xl overflow-hidden">
-                <div class="grid md:grid-cols-2 gap-0">
+                <div class="grid md:grid-cols-[40%_60%] gap-0">
                     <!-- Imagen/Ilustración (primero en móvil, segundo en desktop) -->
-                    <div class="relative bg-gradient-to-br from-orange-400 to-red-500 p-8 md:p-12 flex items-center justify-center order-2 md:order-1">
-                        <div class="relative w-full max-w-sm">
+                    <div class="relative bg-gradient-to-br from-orange-400 to-red-500 p-6 md:p-8 flex items-center justify-center order-2 md:order-1">
+                        <div class="relative w-full max-w-[220px] group">
                             <!-- Icono grande de documento -->
-                            <div class="bg-white rounded-3xl p-8 shadow-2xl transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                            <div class="bg-white rounded-xl p-5 shadow-xl transition-all duration-300">
                                 <div class="text-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-orange-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-orange-500 transition-colors duration-300">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                         <polyline points="14 2 14 8 20 8"/>
                                         <line x1="16" y1="13" x2="8" y2="13"/>
                                         <line x1="16" y1="17" x2="8" y2="17"/>
                                         <polyline points="10 9 9 9 8 9"/>
                                     </svg>
-                                    <div class="mt-6">
-                                        <div class="text-4xl font-bold text-gray-800">Lab</div>
-                                        <div class="text-gray-600 font-medium mt-2">Resultados rápidos</div>
+                                    <div class="mt-3">
+                                        <div class="text-2xl font-bold text-gray-800">Lab</div>
+                                        <div class="text-gray-600 font-medium text-xs mt-1">Resultados rápidos</div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Elementos decorativos flotantes -->
-                            <div class="absolute -top-4 -right-4 w-20 h-20 bg-white/20 rounded-full animate-pulse"></div>
-                            <div class="absolute -bottom-6 -left-6 w-32 h-32 bg-white/10 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
+                            <div class="absolute -top-3 -right-3 w-14 h-14 bg-white/20 rounded-full animate-pulse"></div>
+                            <div class="absolute -bottom-4 -left-4 w-20 h-20 bg-white/10 rounded-full animate-pulse" style="animation-delay: 0.5s;"></div>
                         </div>
                     </div>
 
                     <!-- Contenido -->
-                    <div class="p-8 md:p-12 flex flex-col justify-center order-1 md:order-2">
+                    <div class="p-6 md:p-10 flex flex-col justify-center order-1 md:order-2">
                         <div class="inline-block mb-4">
                             <span class="bg-orange-100 text-orange-700 text-sm font-semibold px-4 py-2 rounded-full">Servicios de Laboratorio</span>
                         </div>
@@ -204,7 +231,7 @@
                         </p>
 
                         <!-- Características -->
-                        <div class="space-y-4 mb-8">
+                        <div class="space-y-3 mb-8">
                             <div class="flex items-start gap-3">
                                 <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -230,6 +257,24 @@
                                 <div>
                                     <h4 class="font-semibold text-gray-800">Resultados Digitales</h4>
                                     <p class="text-gray-600 text-sm">Accede a tus resultados de forma rápida y segura</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Entrega Rápida</h4>
+                                    <p class="text-gray-600 text-sm">Resultados disponibles en tu portal en 24-48 horas</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Preparación Guiada</h4>
+                                    <p class="text-gray-600 text-sm">Instrucciones claras de preparación para cada tipo de examen</p>
                                 </div>
                             </div>
                         </div>

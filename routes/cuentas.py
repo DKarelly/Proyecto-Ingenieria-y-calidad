@@ -765,7 +765,7 @@ def gestionar_cuentas_internas():
     finally:
         conexion.close()
     
-    return render_template('gestionarCuentasInternas_new.html', 
+    return render_template('gestionarCuentasInternas.html', 
                          empleados=empleados,
                          pacientes=pacientes,
                          roles=roles,
