@@ -410,7 +410,7 @@ class Incidencia:
                 # Actualizar asignación existente
                 query_update = """
                     UPDATE ASIGNAR_EMPLEADO_INCIDENCIA
-                    SET id_empleado = %s, 
+                    SET id_empleado = %s,
                         observaciones = %s,
                         estado_historial = 'En proceso'
                     WHERE id_incidencia = %s
@@ -419,7 +419,7 @@ class Incidencia:
             else:
                 # Crear nueva asignación
                 query_insert = """
-                    INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA 
+                    INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA
                     (id_incidencia, id_empleado, estado_historial, observaciones)
                     VALUES (%s, %s, 'En proceso', %s)
                 """
@@ -668,28 +668,7 @@ class Incidencia:
             if conexion:
                 conexion.close()
 
-    @staticmethod
-    def asignar_empleado(id_incidencia, id_empleado, observaciones=''):
-        """Asigna un empleado a una incidencia"""
-        try:
-            conexion = obtener_conexion()
-            cursor = conexion.cursor()
 
-            query = """
-                INSERT INTO ASIGNAR_EMPLEADO_INCIDENCIA
-                (id_incidencia, id_empleado, observaciones, estado_historial, fecha_resolucion)
-                VALUES (%s, %s, %s, 'Abierta', NULL)
-            """
-            cursor.execute(query, (id_incidencia, id_empleado, observaciones))
-            conexion.commit()
-            return True
-
-        except Exception as e:
-            print(f"Error asignando empleado: {e}")
-            return False
-        finally:
-            if 'conexion' in locals():
-                conexion.close()
 
     @staticmethod
     def actualizar_asignacion(id_incidencia, id_empleado, estado, prioridad):
