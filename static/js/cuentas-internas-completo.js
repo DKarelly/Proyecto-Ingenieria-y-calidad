@@ -71,7 +71,6 @@ function poblarTablaEmpleados(empleados) {
             
             // HTML COMPLETO restaurado
             tr.innerHTML = `
-                <td class="px-6 py-4 font-semibold text-slate-700">#${empleado.id_empleado}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-3">
                         <div class="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
@@ -238,7 +237,6 @@ function poblarTablaPacientes(pacientes) {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition-colors';
         tr.innerHTML = `
-            <td class="px-6 py-4 font-semibold text-slate-700">#${paciente.id_paciente}</td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -250,10 +248,6 @@ function poblarTablaPacientes(pacientes) {
             <td class="px-6 py-4 text-sm text-slate-600">
                 <i class="fa-solid fa-envelope text-slate-400 mr-2"></i>
                 ${paciente.correo || 'N/A'}
-            </td>
-            <td class="px-6 py-4 text-sm text-slate-600">
-                <i class="fa-solid fa-id-card text-slate-400 mr-2"></i>
-                ${paciente.documento_identidad || 'N/A'}
             </td>
             <td class="px-6 py-4 text-sm text-slate-600">
                 <i class="fa-solid fa-phone text-slate-400 mr-2"></i>
@@ -295,41 +289,91 @@ function poblarTablaPacientes(pacientes) {
 }
 
 function actualizarPaginacionPacientes(totalRegistros) {
+    console.log(`🔢 Actualizando paginación pacientes: ${totalRegistros} registros`);
+    
     const paginacionContainer = document.getElementById('paginacionNumeros-pacientes');
     const inicioRango = document.getElementById('inicio-rango-pacientes');
     const finRango = document.getElementById('fin-rango-pacientes');
     const totalRegistrosSpan = document.getElementById('total-registros-pacientes');
 
     if (!paginacionContainer || !inicioRango || !finRango || !totalRegistrosSpan) {
-        console.log('ℹ️ No se encontraron elementos de paginación para pacientes');
+        console.error('❌ No se encontraron elementos de paginación para pacientes');
         return;
     }
 
     const totalPaginas = Math.ceil(totalRegistros / registrosPorPaginaPacientes);
     paginacionContainer.innerHTML = '';
 
+    // Actualizar texto de rango
     const inicio = totalRegistros === 0 ? 0 : (paginaActualPacientes - 1) * registrosPorPaginaPacientes + 1;
     const fin = Math.min(paginaActualPacientes * registrosPorPaginaPacientes, totalRegistros);
     inicioRango.textContent = inicio;
     finRango.textContent = fin;
     totalRegistrosSpan.textContent = totalRegistros;
 
+    console.log(`📊 Rango: ${inicio}-${fin} de ${totalRegistros} | Páginas: ${totalPaginas}`);
+
     if (totalPaginas <= 1) return;
 
-    for (let i = 1; i <= totalPaginas; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i;
-        btn.className = `px-3 py-2 text-sm font-medium border rounded-lg transition-colors ${
-            i === paginaActualPacientes
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-        }`;
-        btn.addEventListener('click', () => {
-            paginaActualPacientes = i;
-            poblarTablaPacientes(pacientesGlobal);
-        });
-        paginacionContainer.appendChild(btn);
+    // Crear botones de página (máximo 6 visibles)
+    const maxVisible = 6;
+    let inicioPagina = Math.max(1, paginaActualPacientes - 2);
+    let finPagina = Math.min(totalPaginas, inicioPagina + maxVisible - 1);
+
+    if (finPagina - inicioPagina < maxVisible - 1) {
+        inicioPagina = Math.max(1, finPagina - maxVisible + 1);
     }
+
+    // Botón "Primera página" (si no estamos en la primera)
+    if (paginaActualPacientes > 1) {
+        paginacionContainer.appendChild(crearBotonPaginacionPacientes('primera', '«', () => {
+            paginaActualPacientes = 1;
+            poblarTablaPacientes(pacientesGlobal);
+        }));
+    }
+
+    // Botones numéricos
+    for (let i = inicioPagina; i <= finPagina; i++) {
+        const esActual = i === paginaActualPacientes;
+        paginacionContainer.appendChild(crearBotonPaginacionPacientes(
+            esActual ? 'activo' : 'normal',
+            i,
+            () => {
+                paginaActualPacientes = i;
+                poblarTablaPacientes(pacientesGlobal);
+            }
+        ));
+    }
+
+    // Botón "Última página" (si no estamos en la última)
+    if (paginaActualPacientes < totalPaginas) {
+        paginacionContainer.appendChild(crearBotonPaginacionPacientes('ultima', '»', () => {
+            paginaActualPacientes = totalPaginas;
+            poblarTablaPacientes(pacientesGlobal);
+        }));
+    }
+}
+
+// Función auxiliar para crear botones de paginación de pacientes
+function crearBotonPaginacionPacientes(tipo, texto, onClick) {
+    const btn = document.createElement('button');
+    btn.textContent = texto;
+
+    const baseClasses = 'px-3 py-2 text-sm font-medium border rounded-lg transition-colors';
+    const tipoClasses = {
+        'activo': 'bg-cyan-600 text-white border-cyan-600 cursor-default',
+        'normal': 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100',
+        'primera': 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100',
+        'ultima': 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+    };
+
+    btn.className = `${baseClasses} ${tipoClasses[tipo] || tipoClasses['normal']}`;
+
+    if (tipo !== 'activo') {
+        btn.addEventListener('click', onClick);
+    }
+
+    return btn;
 }
 
 // ==================== CARGA DE DATOS ====================

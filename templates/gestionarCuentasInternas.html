@@ -4,6 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Cache Control - Prevenir caché del navegador -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>Gestión de Usuarios - Clínica Unión</title>
 
     <!-- Preconnect para mejorar velocidad de carga de recursos externos -->
@@ -116,7 +122,7 @@
             color: #92400e;
         }
 
-        /* Estilos del modal - CENTRADO PERFECTO Y FORZADO */
+        /* Estilos del modal - POSICIÓN FIJA Y CENTRADO PERFECTO */
         .modal-overlay {
             display: none !important;
             position: fixed !important;
@@ -132,7 +138,7 @@
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             overflow-y: auto !important;
-            padding: 2rem 1rem !important;
+            padding: 0 !important;
         }
 
         .modal-overlay.active {
@@ -149,8 +155,8 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             max-width: 600px;
             width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
+            max-height: 80vh !important;
+            overflow-y: auto !important;
             animation: slideUp 0.3s ease-out;
             margin: auto !important;
             position: relative;
@@ -163,12 +169,15 @@
 
         .modal-overlay > .bg-white {
             margin: auto !important;
+            max-height: 80vh !important;
+            overflow-y: auto !important;
         }
 
-        /* Bloquear scroll del body cuando modal está abierto */
-        body.modal-open {
+        /* BLOQUEAR SCROLL DEL BODY CUANDO MODAL ESTÁ ABIERTO */
+        body.modal-abierto {
             overflow: hidden !important;
-            padding-right: 0px; /* Compensar la barra de scroll */
+            position: fixed !important;
+            width: 100% !important;
         }
 
         @keyframes slideUp {
@@ -470,7 +479,6 @@
                     <table class="w-full">
                         <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                             <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">ID</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Empleado</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Correo</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Rol</th>
@@ -521,7 +529,6 @@
                     <table class="w-full">
                         <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                             <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">ID</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Paciente</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Correo</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase">Teléfono</th>
@@ -970,6 +977,7 @@
 
     <!-- Script para pasar datos de empleados y pacientes a JavaScript -->
     <script>
+        // @ts-nocheck - Jinja2 template variables
         // Datos de empleados y pacientes pasados desde el backend
         const datosEmpleados = {{ empleados|tojson }};
         const datosPacientes = {{ pacientes|tojson }};
@@ -1056,7 +1064,7 @@
 
             // Mostrar modal y bloquear scroll
             document.getElementById('modal-perfil-empleado').classList.add('active');
-            document.body.classList.add('modal-open');
+            document.body.classList.add('modal-abierto');
         }
 
         // Función para ver perfil de paciente
@@ -1091,7 +1099,7 @@
 
             // Mostrar modal y bloquear scroll
             document.getElementById('modal-perfil-paciente').classList.add('active');
-            document.body.classList.add('modal-open');
+            document.body.classList.add('modal-abierto');
         }
 
         // Función para cerrar modales
@@ -1101,7 +1109,7 @@
                 document.getElementById('modal-perfil-empleado').classList.remove('active');
                 document.getElementById('modal-perfil-paciente').classList.remove('active');
                 // Desbloquear scroll del body
-                document.body.classList.remove('modal-open');
+                document.body.classList.remove('modal-abierto');
             }
         }
 
@@ -1109,26 +1117,26 @@
         function abrirModalRegistroEmpleado() {
             document.getElementById('modal-registro-empleado').classList.add('active');
             // Bloquear scroll del body
-            document.body.classList.add('modal-open');
+            document.body.classList.add('modal-abierto');
         }
 
         function cerrarModalRegistroEmpleado() {
             document.getElementById('modal-registro-empleado').classList.remove('active');
             document.getElementById('form-registro-empleado').reset();
             // Desbloquear scroll del body
-            document.body.classList.remove('modal-open');
+            document.body.classList.remove('modal-abierto');
         }
 
         function abrirModalRegistroPaciente() {
             document.getElementById('modal-registro-paciente').classList.add('active');
             // Bloquear scroll del body
-            document.body.classList.add('modal-open');
+            document.body.classList.add('modal-abierto');
         }
 
         function cerrarModalRegistroPaciente() {
             document.getElementById('modal-registro-paciente').classList.remove('active');
             // Desbloquear scroll del body
-            document.body.classList.remove('modal-open');
+            document.body.classList.remove('modal-abierto');
         }
 
         // Cerrar modales al hacer clic en el overlay
@@ -2045,7 +2053,7 @@
     <script src="{{ url_for('static', filename='js/pagination.js') }}" defer></script>
 
     <!-- SCRIPT ÚNICO - GESTIÓN COMPLETA DE CUENTAS INTERNAS -->
-    <script src="{{ url_for('static', filename='js/cuentas-internas-completo.js') }}?v=scrollblock2024"></script>
+    <script src="{{ url_for('static', filename='js/cuentas-internas-completo.js') }}?v=sinid2024"></script>
 </body>
 
 </html>
