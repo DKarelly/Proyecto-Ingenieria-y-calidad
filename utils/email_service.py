@@ -231,3 +231,526 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
 
 # Instancia global del servicio
 email_service = EmailService()
+
+
+def enviar_email_reserva_creada(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin, 
+                                medico_nombre, especialidad, servicio, id_reserva):
+    """Envía email al paciente cuando se crea una reserva"""
+    titulo = "Reserva Médica Confirmada"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Su reserva ha sido registrada exitosamente en nuestro sistema.
+    </p>
+    
+    <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de su Reserva</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>N° Reserva:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">#{id_reserva}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{medico_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>🏥 Especialidad:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{especialidad}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>⚠️ Importante:</strong> Por favor, llegue 15 minutos antes de su cita. 
+            Si necesita cancelar o reprogramar, hágalo con al menos 24 horas de anticipación.
+        </p>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        paciente_email, paciente_nombre, titulo, mensaje, tipo='confirmacion'
+    )
+
+
+def enviar_email_reserva_creada_medico(medico_email, medico_nombre, paciente_nombre, 
+                                       fecha, hora_inicio, hora_fin, servicio, id_reserva):
+    """Envía email al médico cuando se crea una reserva"""
+    titulo = "Nueva Reserva Asignada"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Se ha registrado una nueva reserva médica en su agenda.
+    </p>
+    
+    <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de la Reserva</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>N° Reserva:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">#{id_reserva}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👤 Paciente:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        medico_email, medico_nombre, titulo, mensaje, tipo='informacion'
+    )
+
+
+def enviar_email_cancelacion_aprobada(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin,
+                                      medico_nombre, especialidad, servicio, motivo_cancelacion, 
+                                      comentario_admin=None):
+    """Envía email al paciente cuando se aprueba su solicitud de cancelación"""
+    titulo = "Cancelación de Reserva Aprobada"
+    
+    comentario_html = ""
+    if comentario_admin:
+        comentario_html = f"""
+        <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+                <strong>💬 Comentario del personal:</strong><br>
+                {comentario_admin}
+            </p>
+        </div>
+        """
+    
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Su solicitud de cancelación ha sido <strong style="color: #22c55e;">aprobada</strong>.
+    </p>
+    
+    <div style="background-color: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #dc2626; font-size: 18px;">❌ Reserva Cancelada</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{medico_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>🏥 Especialidad:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{especialidad}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #fecaca;">
+            <p style="margin: 0; color: #991b1b; font-size: 13px;">
+                <strong>Motivo de cancelación:</strong> {motivo_cancelacion}
+            </p>
+        </div>
+    </div>
+    
+    {comentario_html}
+    
+    <p style="margin: 20px 0 0 0; color: #374151; font-size: 14px;">
+        Puede realizar una nueva reserva en cualquier momento a través de nuestro sistema.
+    </p>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        paciente_email, paciente_nombre, titulo, mensaje, tipo='cancelacion'
+    )
+
+
+def enviar_email_cancelacion_medico(medico_email, medico_nombre, paciente_nombre, fecha, 
+                                    hora_inicio, hora_fin, servicio, motivo_cancelacion):
+    """Envía email al médico cuando se cancela una cita"""
+    titulo = "Cita Médica Cancelada"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Una cita médica asignada a usted ha sido <strong style="color: #ef4444;">cancelada</strong>.
+    </p>
+    
+    <div style="background-color: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #dc2626; font-size: 18px;">❌ Cita Cancelada</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>👤 Paciente:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #fecaca;">
+            <p style="margin: 0; color: #991b1b; font-size: 13px;">
+                <strong>Motivo:</strong> {motivo_cancelacion}
+            </p>
+        </div>
+    </div>
+    
+    <p style="margin: 20px 0 0 0; color: #374151; font-size: 14px;">
+        Este espacio en su agenda ahora está disponible para nuevas reservas.
+    </p>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        medico_email, medico_nombre, titulo, mensaje, tipo='cancelacion'
+    )
+
+
+def enviar_email_reprogramacion_aprobada(paciente_email, paciente_nombre, 
+                                        fecha_anterior, hora_inicio_anterior, hora_fin_anterior,
+                                        fecha_nueva, hora_inicio_nueva, hora_fin_nueva,
+                                        medico_nombre, especialidad, servicio, 
+                                        motivo_reprogramacion, comentario_admin=None):
+    """Envía email al paciente cuando se aprueba su solicitud de reprogramación"""
+    titulo = "Reprogramación de Reserva Aprobada"
+    
+    comentario_html = ""
+    if comentario_admin:
+        comentario_html = f"""
+        <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+                <strong>💬 Comentario del personal:</strong><br>
+                {comentario_admin}
+            </p>
+        </div>
+        """
+    
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Su solicitud de reprogramación ha sido <strong style="color: #22c55e;">aprobada</strong>.
+    </p>
+    
+    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; margin: 20px 0; align-items: center;">
+        <!-- Fecha Anterior -->
+        <div style="background-color: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: #dc2626; font-size: 14px; text-align: center;">❌ Fecha Anterior</h4>
+            <p style="margin: 5px 0; color: #111827; font-size: 13px; text-align: center;">
+                <strong>📅</strong> {fecha_anterior}<br>
+                <strong>⏰</strong> {hora_inicio_anterior} - {hora_fin_anterior}
+            </p>
+        </div>
+        
+        <!-- Flecha -->
+        <div style="text-align: center; font-size: 24px; color: #0891b2;">
+            ➡️
+        </div>
+        
+        <!-- Fecha Nueva -->
+        <div style="background-color: #d1fae5; border: 2px solid #22c55e; border-radius: 8px; padding: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: #16a34a; font-size: 14px; text-align: center;">✅ Nueva Fecha</h4>
+            <p style="margin: 5px 0; color: #111827; font-size: 13px; text-align: center;">
+                <strong>📅</strong> {fecha_nueva}<br>
+                <strong>⏰</strong> {hora_inicio_nueva} - {hora_fin_nueva}
+            </p>
+        </div>
+    </div>
+    
+    <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de la Cita</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>👨‍⚕️ Médico:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{medico_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>🏥 Especialidad:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{especialidad}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0f2fe;">
+            <p style="margin: 0; color: #0c4a6e; font-size: 13px;">
+                <strong>Motivo de reprogramación:</strong> {motivo_reprogramacion}
+            </p>
+        </div>
+    </div>
+    
+    {comentario_html}
+    
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>⚠️ Recuerde:</strong> Por favor, llegue 15 minutos antes de su nueva cita.
+        </p>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        paciente_email, paciente_nombre, titulo, mensaje, tipo='confirmacion'
+    )
+
+
+def enviar_email_reprogramacion_medico(medico_email, medico_nombre, paciente_nombre,
+                                      fecha_anterior, hora_inicio_anterior, hora_fin_anterior,
+                                      fecha_nueva, hora_inicio_nueva, hora_fin_nueva,
+                                      servicio, motivo_reprogramacion):
+    """Envía email al médico cuando se reprograma una cita"""
+    titulo = "Cita Médica Reprogramada"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Una cita médica asignada a usted ha sido <strong style="color: #0891b2;">reprogramada</strong>.
+    </p>
+    
+    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; margin: 20px 0; align-items: center;">
+        <!-- Fecha Anterior -->
+        <div style="background-color: #fee2e2; border: 2px solid #ef4444; border-radius: 8px; padding: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: #dc2626; font-size: 14px; text-align: center;">❌ Fecha Anterior</h4>
+            <p style="margin: 5px 0; color: #111827; font-size: 13px; text-align: center;">
+                <strong>📅</strong> {fecha_anterior}<br>
+                <strong>⏰</strong> {hora_inicio_anterior} - {hora_fin_anterior}
+            </p>
+        </div>
+        
+        <!-- Flecha -->
+        <div style="text-align: center; font-size: 24px; color: #0891b2;">
+            ➡️
+        </div>
+        
+        <!-- Fecha Nueva -->
+        <div style="background-color: #d1fae5; border: 2px solid #22c55e; border-radius: 8px; padding: 15px;">
+            <h4 style="margin: 0 0 10px 0; color: #16a34a; font-size: 14px; text-align: center;">✅ Nueva Fecha</h4>
+            <p style="margin: 5px 0; color: #111827; font-size: 13px; text-align: center;">
+                <strong>📅</strong> {fecha_nueva}<br>
+                <strong>⏰</strong> {hora_inicio_nueva} - {hora_fin_nueva}
+            </p>
+        </div>
+    </div>
+    
+    <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>👤 Paciente:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+        
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0f2fe;">
+            <p style="margin: 0; color: #0c4a6e; font-size: 13px;">
+                <strong>Motivo:</strong> {motivo_reprogramacion}
+            </p>
+        </div>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        medico_email, medico_nombre, titulo, mensaje, tipo='informacion'
+    )
+
+
+def enviar_email_confirmacion_reserva(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin,
+                                     medico_nombre, especialidad, servicio):
+    """Envía email de confirmación cuando el trabajador confirma una reserva"""
+    titulo = "Reserva Médica Confirmada"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        Su reserva ha sido <strong style="color: #22c55e;">confirmada</strong> por nuestro personal.
+    </p>
+    
+    <div style="background-color: #d1fae5; border: 2px solid #22c55e; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #16a34a; font-size: 18px;">✅ Cita Confirmada</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{medico_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>🏥 Especialidad:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{especialidad}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
+            <strong>✨ Su cita está confirmada.</strong> Por favor, llegue 15 minutos antes de la hora programada.
+        </p>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        paciente_email, paciente_nombre, titulo, mensaje, tipo='confirmacion'
+    )
+
+
+def enviar_email_recordatorio_24h(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin,
+                                  medico_nombre, especialidad, servicio):
+    """Envía recordatorio 24 horas antes de la cita"""
+    titulo = "Recordatorio: Cita Médica Mañana"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 16px; color: #374151;">
+        Le recordamos que tiene una <strong>cita médica mañana</strong>.
+    </p>
+    
+    <div style="background-color: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #d97706; font-size: 18px;">🔔 Cita Programada para Mañana</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px; font-size: 16px; font-weight: bold;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{medico_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>🏥 Especialidad:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{especialidad}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0 0 10px 0; color: #1e40af; font-size: 14px; font-weight: bold;">
+            📝 Recomendaciones:
+        </p>
+        <ul style="margin: 0; padding-left: 20px; color: #1e3a8a; font-size: 13px; line-height: 1.8;">
+            <li>Llegue 15 minutos antes de su cita</li>
+            <li>Traiga su documento de identidad</li>
+            <li>Si tiene exámenes previos, tráigalos</li>
+            <li>Si necesita cancelar, hágalo con anticipación</li>
+        </ul>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        paciente_email, paciente_nombre, titulo, mensaje, tipo='recordatorio'
+    )
+
+
+def enviar_email_recordatorio_2h(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin,
+                                 medico_nombre, especialidad):
+    """Envía recordatorio 2 horas antes de la cita"""
+    titulo = "Recordatorio: Cita Médica en 2 Horas"
+    mensaje = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 17px; color: #dc2626; font-weight: bold;">
+        ⏰ Su cita médica es en aproximadamente <span style="color: #ef4444;">2 HORAS</span>
+    </p>
+    
+    <div style="background-color: #fee2e2; border: 3px solid #ef4444; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #dc2626; font-size: 20px;">🚨 Cita Próxima</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 10px 0; color: #6b7280; font-size: 15px; width: 35%;"><strong>📅 Hoy:</strong></td>
+                <td style="padding: 10px 0; color: #111827; font-size: 15px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0; color: #6b7280; font-size: 15px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 10px 0; color: #dc2626; font-size: 18px; font-weight: bold;">{hora_inicio}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0; color: #6b7280; font-size: 15px;"><strong>👨‍⚕️ Médico:</strong></td>
+                <td style="padding: 10px 0; color: #111827; font-size: 15px;">{medico_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 0; color: #6b7280; font-size: 15px;"><strong>🏥 Especialidad:</strong></td>
+                <td style="padding: 10px 0; color: #111827; font-size: 15px;">{especialidad}</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 15px; font-weight: bold;">
+            ⚠️ Recuerde llegar 15 minutos antes. ¡Nos vemos pronto!
+        </p>
+    </div>
+</div>
+    """
+    
+    return email_service.enviar_notificacion_email(
+        paciente_email, paciente_nombre, titulo, mensaje, tipo='recordatorio'
+    )
