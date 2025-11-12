@@ -779,6 +779,42 @@
                     <p class="text-gray-600">No tienes notificaciones en esta categoría</p>
                 </div>
                 {% endif %}
+
+                <!-- Modal Detalle de Cita -->
+                <div id="modal-detalle-cita" class="hidden fixed inset-0 z-50 flex items-start justify-center px-4" style="padding-top: calc(7rem - 50px); background: rgba(0,0,0,0.03); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
+                    <div class="bg-white rounded-2xl shadow-lg max-w-lg w-full overflow-hidden border border-gray-100">
+                        <div class="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-white to-blue-50">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-blue-500 text-lg">event</span>
+                                </div>
+                                <h3 class="text-base font-semibold text-gray-700">Información de la Cita</h3>
+                            </div>
+                            <button onclick="cerrarModalDetalleCita()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <span class="material-symbols-outlined text-xl">close</span>
+                            </button>
+                        </div>
+                        
+                        <div class="p-5">
+                            <!-- Título de la Cita -->
+                            <h4 class="text-lg font-semibold text-gray-800 mb-3" id="modal-cita-titulo">-</h4>
+
+                            <!-- Fecha y Hora -->
+                            <div class="space-y-2 mb-2 text-gray-600">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base text-gray-400">calendar_today</span>
+                                    <p id="modal-cita-fecha" class="text-sm">-</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base text-gray-400">schedule</span>
+                                    <p id="modal-cita-horario" class="text-sm">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer removed (no aceptar button as requested) -->
+                    </div>
+                </div>
             </main>
         </div>
     </div>
@@ -988,9 +1024,82 @@
         }
 
         function verDetalleCita(citaId) {
-            console.log(`Ver detalles de la cita ${citaId}`);
-            alert(`Vista de detalles de la cita ${citaId}.\nAquí podrás ver:\n- Información del paciente\n- Tipo de consulta\n- Diagnóstico (si existe)\n- Estado de la cita\n\nPróximamente disponible.`);
+            // Obtener información de la cita desde los datos del calendario
+            const citaElements = document.querySelectorAll('.cita-event');
+            let citaEncontrada = null;
+            let celda = null;
+            
+            citaElements.forEach(el => {
+                const onclick = el.getAttribute('onclick');
+                if (onclick && onclick.includes(`verDetalleCita(${citaId})`)) {
+                    citaEncontrada = {
+                        paciente: el.querySelector('.text-xs.font-bold') ? el.querySelector('.text-xs.font-bold').textContent : 'Paciente',
+                        tipo: el.querySelectorAll('.text-xs')[1] ? el.querySelectorAll('.text-xs')[1].textContent : 'Consulta',
+                        horario: el.querySelector('.text-xs.font-medium') ? el.querySelector('.text-xs.font-medium').textContent : ''
+                    };
+                    celda = el.closest('td');
+                }
+            });
+
+            if (citaEncontrada && celda) {
+                // Obtener el índice de la columna y el encabezado correspondiente
+                const columnIndex = Array.from(celda.parentElement.children).indexOf(celda);
+                const table = celda.closest('table');
+                let diaTexto = '';
+                let fechaTexto = '';
+
+                if (table) {
+                    const headerRow = table.querySelector('thead tr');
+                    if (headerRow && headerRow.children[columnIndex]) {
+                        const diaHeader = headerRow.children[columnIndex];
+                        // intentamos leer un div (nombre del día) y una etiqueta pequeña con la fecha
+                        diaTexto = diaHeader.querySelector('div')?.textContent.trim() || diaHeader.textContent.trim() || '';
+                        fechaTexto = diaHeader.querySelector('.text-xs')?.textContent.trim() || diaHeader.querySelector('time')?.textContent.trim() || '';
+                    }
+                }
+
+                // Mapear abreviaturas a nombres completos (es)
+                function diaCompleto(nombre) {
+                    if (!nombre) return '';
+                    const m = {
+                        'Lun': 'Lunes', 'Mar': 'Martes', 'Mie': 'Miércoles', 'Mié': 'Miércoles', 'Mié': 'Miércoles',
+                        'Jue': 'Jueves', 'Vie': 'Viernes', 'Sab': 'Sábado', 'Dom': 'Domingo',
+                        'Lunes':'Lunes','Martes':'Martes','Miércoles':'Miércoles','Jueves':'Jueves','Viernes':'Viernes','Sábado':'Sábado','Domingo':'Domingo'
+                    };
+                    // tomar la primera palabra si incluye la fecha junto al nombre
+                    const key = nombre.split(' ')[0];
+                    return m[key] || nombre;
+                }
+
+                // Evitar duplicar la fecha si ya está incluida en el encabezado
+                const dayToken = (diaTexto || '').split(/\s+/)[0];
+                const diaNombre = diaCompleto(dayToken);
+                const fechaFinal = fechaTexto ? `${diaNombre} ${fechaTexto}` : diaNombre || fechaTexto || '';
+
+                // Llenar el modal con la información
+                document.getElementById('modal-cita-titulo').textContent = citaEncontrada.paciente + ' - ' + citaEncontrada.tipo;
+                document.getElementById('modal-cita-fecha').textContent = fechaFinal;
+                document.getElementById('modal-cita-horario').textContent = citaEncontrada.horario;
+
+                // Mostrar modal (fondo tenue y posición alta)
+                const modal = document.getElementById('modal-detalle-cita');
+                modal.classList.remove('hidden');
+            } else {
+                console.log(`Ver detalles de la cita ${citaId}`);
+            }
         }
+
+        function cerrarModalDetalleCita() {
+            document.getElementById('modal-detalle-cita').classList.add('hidden');
+        }
+
+        // Cerrar modal al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            const modalCita = document.getElementById('modal-detalle-cita');
+            if (modalCita && e.target === modalCita) {
+                cerrarModalDetalleCita();
+            }
+        });
 
         // Funciones para notificaciones
         function filtrarNotificaciones(tipo) {
