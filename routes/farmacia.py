@@ -35,9 +35,7 @@ def gestionar_recepcion_medicamentos():
 def api_listar_medicamentos():
     try:
         medicamentos = Medicamento.listar()
-        # Filtrar solo medicamentos activos para la gestión de recepción
-        medicamentos_activos = [m for m in medicamentos if m.get('estado') == 'Activo']
-        return jsonify(medicamentos_activos)
+        return jsonify(medicamentos)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -45,13 +43,11 @@ def api_listar_medicamentos():
 def api_crear_medicamento():
     try:
         datos = request.json
-        estado = datos.get('estado', 'Activo')
         resultado = Medicamento.crear(
             datos['nombre'],
             datos['descripcion'],
             datos['stock'],
-            datos['fecha_vencimiento'],
-            estado
+            datos['fecha_vencimiento']
         )
         return jsonify(resultado), 201
     except Exception as e:
@@ -71,14 +67,12 @@ def api_obtener_medicamento(id_medicamento):
 def api_actualizar_medicamento(id_medicamento):
     try:
         datos = request.json
-        estado = datos.get('estado')
         resultado = Medicamento.actualizar(
             id_medicamento,
             datos['nombre'],
             datos['descripcion'],
             datos['stock'],
-            datos['fecha_vencimiento'],
-            estado
+            datos['fecha_vencimiento']
         )
         return jsonify(resultado)
     except Exception as e:
@@ -89,9 +83,7 @@ def api_buscar_medicamentos():
     try:
         termino = request.args.get('termino', '')
         resultados = Medicamento.buscar(termino)
-        # Filtrar solo medicamentos activos para la búsqueda en recepción
-        resultados_activos = [m for m in resultados if m.get('estado') == 'Activo']
-        return jsonify(resultados_activos)
+        return jsonify(resultados)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
