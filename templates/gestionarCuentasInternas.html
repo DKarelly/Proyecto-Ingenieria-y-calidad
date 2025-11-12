@@ -929,10 +929,10 @@
 
     <!-- Modal de Confirmación -->
     <div id="confirmation-modal"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden items-center justify-center p-4"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4"
         style="animation: fadeIn 0.3s ease-out;">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
-            style="animation: slideUp 0.3s ease-out;">
+            style="animation: slideUp 0.3s ease-out; margin: auto;">
             <div class="flex flex-col items-center text-center">
                 <div id="confirm-icon-container" class="mb-4">
                     <!-- El icono se cambiará dinámicamente -->
@@ -1647,6 +1647,9 @@
                 const confirmationModal = document.getElementById('confirmation-modal');
                 const iconContainer = document.getElementById('confirm-icon-container');
                 const acceptButton = document.getElementById('confirm-accept');
+                
+                // Asegurar que el modal de confirmación tenga z-index más alto
+                confirmationModal.style.zIndex = '99999';
 
                 let iconoHTML = '';
                 let colorBoton = '';
@@ -1681,11 +1684,15 @@
 
                 confirmationModal.classList.remove('hidden');
                 confirmationModal.classList.add('flex');
+                confirmationModal.style.display = 'flex';
+                confirmationModal.style.alignItems = 'center';
+                confirmationModal.style.justifyContent = 'center';
                 document.body.style.overflow = 'hidden';
 
                 const handleAccept = () => {
                     confirmationModal.classList.add('hidden');
                     confirmationModal.classList.remove('flex');
+                    confirmationModal.style.zIndex = '9999';
                     document.body.style.overflow = 'auto';
                     cleanup();
                     resolve(true);
@@ -1694,6 +1701,7 @@
                 const handleCancel = () => {
                     confirmationModal.classList.add('hidden');
                     confirmationModal.classList.remove('flex');
+                    confirmationModal.style.zIndex = '9999';
                     document.body.style.overflow = 'auto';
                     cleanup();
                     resolve(false);
@@ -2037,11 +2045,19 @@
                     if (confirmado) {
                         // Agregar indicador de carga al botón
                         const submitBtn = this.querySelector('button[type="submit"]');
+                        
                         if (submitBtn) {
-                            submitBtn.classList.add('btn-loading');
                             submitBtn.disabled = true;
+                            submitBtn.innerHTML = `
+                                <svg class="animate-spin h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="ml-2">Registrando empleado...</span>
+                            `;
                         }
-                        // Enviar el formulario
+
+                        // Enviar formulario de forma tradicional (el backend ya maneja flash messages)
                         this.submit();
                     }
                 });
