@@ -36,17 +36,6 @@
                 transform: scaleY(1);
             }
         }
-        
-        /* Indicador de que la celda es clickeable */
-        .calendar-cell:not(:has(.absolute.inset-1))::after {
-            content: '⏱';
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: 10px;
-            opacity: 0.3;
-            pointer-events: none;
-        }
     </style>
     <script>
         // Configuración personalizada (si es necesaria)
@@ -328,25 +317,16 @@
                                     {% set tiene_horario = day in horarios and horarios[day].bloques %}
                                     
                                     {% if tiene_horario %}
-                                    <td class="p-0 border border-gray-200 h-20 align-top relative hover:bg-blue-50 cursor-pointer transition-colors calendar-cell"
+                                    <td class="p-0 border border-gray-200 h-20 align-top relative calendar-cell"
                                         data-day="{{ day }}" data-hour="{{ hour }}">
-                                        <!-- Desglose de 15 minutos -->
-                                        <div class="time-breakdown hidden w-full bg-white border-2 border-blue-400 shadow-xl rounded flex flex-col my-1">
-                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
-                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 0)">{{ '%02d:00'|format(hour) }}</div>
-                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
-                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 15)">{{ '%02d:15'|format(hour) }}</div>
-                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer border-b border-blue-200 font-semibold flex items-center justify-center transition-colors"
-                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 30)">{{ '%02d:30'|format(hour) }}</div>
-                                            <div class="flex-1 px-3 py-3 text-sm text-gray-700 hover:bg-blue-200 cursor-pointer font-semibold flex items-center justify-center transition-colors"
-                                                 onclick="event.stopPropagation(); abrirFormularioEvento({{ day }}, {{ hour }}, 45)">{{ '%02d:45'|format(hour) }}</div>
-                                        </div>
                                         {# OPTIMIZACIÓN: Citas pre-calculadas con estilos en backend #}
                                         {% set clave_cita = day|string + '_' + hour|string %}
                                         {% if citas_semana and clave_cita in citas_semana %}
                                             {% for cita in citas_semana[clave_cita] %}
-                                            <div class="absolute left-1 right-1 rounded px-2 py-1 text-white overflow-hidden shadow-md z-10"
-                                                 style="top: 4px; height: {{ cita.altura }}px; background-color: {{ cita.color }};">
+                                            <div class="cita-event absolute rounded px-2 py-1 text-white overflow-hidden shadow-md z-10 cursor-pointer hover:shadow-lg transition-all"
+                                                 style="top: {{ cita.offset }}px; height: {{ cita.altura }}px; background-color: {{ cita.color }}; left: 2px; right: 2px;"
+                                                 data-inicio="{{ cita.hora_inicio_str }}" data-fin="{{ cita.hora_fin_str }}" data-dia="{{ day }}" data-hora="{{ hour }}"
+                                                 onclick="event.stopPropagation(); verDetalleCita({{ cita.id }})">
                                                 <div class="text-xs font-bold line-clamp-1">{{ cita.paciente }}</div>
                                                 <div class="text-xs opacity-90 line-clamp-1">{{ cita.tipo }}</div>
                                                 <div class="text-xs font-medium mt-1">{{ cita.hora_inicio_str }} - {{ cita.hora_fin_str }}</div>
@@ -806,62 +786,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Panel Médico cargado correctamente');
-
-            // Expandir desglose de tiempo empujando toda la fila hacia abajo (por HORA)
-            const calendarCells = document.querySelectorAll('.calendar-cell');
-            let activeHour = null;
-
-            function toggleHourRow(hour) {
-                const rowCells = document.querySelectorAll(`.calendar-cell[data-hour="${hour}"]`);
-                let anyVisible = false;
-                rowCells.forEach(c => {
-                    const b = c.querySelector('.time-breakdown');
-                    if (b && !b.classList.contains('hidden')) anyVisible = true;
-                });
-
-                // Ocultar anterior si es distinta
-                if (activeHour !== null && activeHour !== String(hour)) {
-                    const prevCells = document.querySelectorAll(`.calendar-cell[data-hour="${activeHour}"]`);
-                    prevCells.forEach(c => {
-                        const b = c.querySelector('.time-breakdown');
-                        if (b) b.classList.add('hidden');
-                    });
-                }
-
-                if (anyVisible) {
-                    rowCells.forEach(c => {
-                        const b = c.querySelector('.time-breakdown');
-                        if (b) b.classList.add('hidden');
-                    });
-                    activeHour = null;
-                } else {
-                    rowCells.forEach(c => {
-                        const b = c.querySelector('.time-breakdown');
-                        if (b) b.classList.remove('hidden');
-                    });
-                    activeHour = String(hour);
-                }
-            }
-
-            calendarCells.forEach(cell => {
-                cell.addEventListener('click', function(e) {
-                    if (e.target.closest('.absolute.inset-1') || e.target.closest('[data-minute]')) return;
-                    e.stopPropagation();
-                    const hour = this.dataset.hour;
-                    toggleHourRow(hour);
-                });
-            });
-
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.calendar-cell') && activeHour !== null) {
-                    const cells = document.querySelectorAll(`.calendar-cell[data-hour="${activeHour}"]`);
-                    cells.forEach(c => {
-                        const b = c.querySelector('.time-breakdown');
-                        if (b) b.classList.add('hidden');
-                    });
-                    activeHour = null;
-                }
-            });
 
             // Búsqueda de pacientes
             const buscarInput = document.getElementById('buscar-paciente');

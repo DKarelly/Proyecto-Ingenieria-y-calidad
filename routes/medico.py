@@ -309,8 +309,10 @@ def obtener_citas_semana(id_empleado):
                 hora_fin = cita['hora_fin']
             
             # OPTIMIZACIÓN: Pre-calcular toda la info de la cita aquí
-            duracion_horas = (hora_fin.hour - hora_inicio.hour) + (hora_fin.minute - hora_inicio.minute) / 60
-            altura_px = int(duracion_horas * 80) - 8  # Pre-calcular altura en píxeles
+            duracion_minutos = (hora_fin.hour - hora_inicio.hour) * 60 + (hora_fin.minute - hora_inicio.minute)
+            altura_px = max(1, int((duracion_minutos / 60) * 80))  # Pre-calcular altura en píxeles
+            offset_minutos = hora_inicio.minute
+            offset_px = int((offset_minutos / 60) * 80) if offset_minutos > 0 else 0
             
             # Solo agregar en la hora de inicio (más eficiente)
             clave = f"{dia_semana}_{hora_inicio.hour}"
@@ -334,6 +336,7 @@ def obtener_citas_semana(id_empleado):
                 'tipo': cita['tipo_servicio'] if cita['tipo_servicio'] else 'Consulta',
                 'estado': cita['estado'],
                 'altura': altura_px,
+                'offset': offset_px,
                 'color': color
             })
         
