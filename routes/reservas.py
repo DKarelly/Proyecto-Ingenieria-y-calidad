@@ -4026,193 +4026,144 @@ def api_trabajador_procesar_cancelacion():
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     data = request.get_json() or {}
-    id_solicitud = data.get('id_solicitud')
-    accion = data.get('accion')  # 'Aprobada' o 'Rechazada'
-    respuesta = data.get('respuesta', '')
+    id_reserva = data.get('id_reserva')
+    estado = data.get('estado')  # 'Aprobada' o 'Rechazada'
 
-    if not id_solicitud:
-        return jsonify({'error': 'ID de solicitud es requerido'}), 400
+    if not id_reserva:
+        return jsonify({'error': 'Falta id_reserva'}), 400
 
-
-    if accion not in ['Aprobada', 'Rechazada']:
-        return jsonify({'error': 'Acción inválida. Use "Aprobada" o "Rechazada"'}), 400
+    if estado not in ['Aprobada', 'Rechazada']:
+        return jsonify({'error': 'Estado inválido'}), 400
 
     conexion = None
     try:
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
-            # Verificar que la solicitud existe y está pendiente
-            sql_verificar = """
-                SELECT s.id_solicitud, s.id_reserva, s.estado, r.estado as estado_reserva
+            # Buscar la solicitud pendiente para esta reserva
+            cursor.execute("""
+                SELECT s.id_solicitud, s.motivo, r.id_paciente
                 FROM SOLICITUD s
                 INNER JOIN RESERVA r ON s.id_reserva = r.id_reserva
-                WHERE s.id_solicitud = %s
-            """
-            cursor.execute(sql_verificar, (id_solicitud,))
+                WHERE s.id_reserva = %s 
+                AND s.estado = 'Pendiente'
+                AND s.motivo IS NOT NULL
+                AND s.nueva_programacion_id IS NULL
+                ORDER BY s.fecha_solicitud DESC
+                LIMIT 1
+            """, (id_reserva,))
+            
             solicitud = cursor.fetchone()
             
             if not solicitud:
-                return jsonify({'error': 'Solicitud no encontrada'}), 404
+                return jsonify({'error': 'No se encontró solicitud de cancelación pendiente'}), 404
             
-            if solicitud['estado'] != 'Pendiente':
-                return jsonify({'error': 'Esta solicitud ya fue procesada'}), 400
-
-            id_reserva = solicitud['id_reserva']
-
-            # Actualizar la solicitud
-            sql_actualizar_solicitud = """
-                UPDATE SOLICITUD 
+            id_solicitud = solicitud['id_solicitud']
+            id_paciente = solicitud['id_paciente']
+            
+            # Actualizar estado de la solicitud
+            cursor.execute("""
+                UPDATE SOLICITUD
                 SET estado = %s,
-                    respuesta = %s,
                     fecha_respuesta = NOW()
                 WHERE id_solicitud = %s
-            """
-            cursor.execute(sql_actualizar_solicitud, (accion, respuesta, id_solicitud))
-
-            # Si se aprueba, cancelar la reserva
-            if accion == 'Aprobada':
-                sql_cancelar_reserva = """
-                    UPDATE RESERVA 
-                    SET estado = 'Cancelada',
-                        fecha_cancelada = NOW()
-                    WHERE id_reserva = %s
-                """
-                cursor.execute(sql_cancelar_reserva, (id_reserva,))
-                
-                # Obtener información de la reserva para las notificaciones
+            """, (estado, id_solicitud))
+            
+            # Si se aprueba, actualizar estado de la reserva y liberar programación
+            if estado == 'Aprobada':
+                # Obtener información de la reserva para emails
                 sql_info_reserva = """
                     SELECT 
-                        r.id_paciente,
                         r.id_reserva,
-                        p.fecha,
-                        TIME_FORMAT(p.hora_inicio, '%H:%i') as hora_inicio,
-                        TIME_FORMAT(p.hora_fin, '%H:%i') as hora_fin,
-                        COALESCE(serv.nombre, 'Consulta Médica') as servicio,
-                        h.id_empleado as id_medico,
-                        CONCAT(emp.nombres, ' ', emp.apellidos) as nombre_medico,
-                        CONCAT(pac.nombres, ' ', pac.apellidos) as nombre_paciente,
-                        pac.correo as paciente_email,
-                        emp.correo as medico_email,
-                        esp.nombre as especialidad,
-                        s.motivo as motivo_cancelacion
+                        r.id_programacion,
+                        r.id_paciente,
+                        CONCAT(pac.nombres, ' ', pac.apellidos) as paciente_nombre,
+                        pac.documento_identidad as paciente_dni,
+                        u.correo as paciente_correo,
+                        p.fecha as fecha_programacion,
+                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                        s.nombre as servicio,
+                        s.id_tipo_servicio as tipo,
+                        CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                        u_medico.correo as medico_correo,
+                        esp.nombre as especialidad
                     FROM RESERVA r
-                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-                    LEFT JOIN SERVICIO serv ON p.id_servicio = serv.id_servicio
                     INNER JOIN PACIENTE pac ON r.id_paciente = pac.id_paciente
+                    INNER JOIN USUARIO u ON pac.id_usuario = u.id_usuario
+                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                    INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
                     LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
-                    LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
-                    LEFT JOIN ESPECIALIDAD esp ON emp.id_especialidad = esp.id_especialidad
-                    INNER JOIN SOLICITUD s ON s.id_reserva = r.id_reserva AND s.id_solicitud = %s
+                    LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN USUARIO u_medico ON e.id_usuario = u_medico.id_usuario
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
                     WHERE r.id_reserva = %s
                 """
-                cursor.execute(sql_info_reserva, (id_solicitud, id_reserva,))
-                info = cursor.fetchone()
+                cursor.execute(sql_info_reserva, (id_reserva,))
+                info_reserva = cursor.fetchone()
                 
-                if info:
-                    # Notificar al paciente
-                    try:
-                        mensaje_paciente = f"Su solicitud de cancelación fue aprobada. La reserva de {info['servicio']} programada para el {info['fecha']} a las {info['hora_inicio']} ha sido cancelada."
-                        if respuesta:
-                            mensaje_paciente += f" Comentario: {respuesta}"
-                        
-                        Notificacion.crear(
-                            info['id_paciente'],
-                            'cancelacion_aprobada',
-                            mensaje_paciente,
-                            f'/paciente/mis-reservas'
+                # Actualizar estado de la reserva a Cancelada
+                cursor.execute("""
+                    UPDATE RESERVA
+                    SET estado = 'Cancelada',
+                        motivo_cancelacion = (SELECT motivo FROM SOLICITUD WHERE id_solicitud = %s)
+                    WHERE id_reserva = %s
+                """, (id_solicitud, id_reserva))
+                
+                # Liberar la programación
+                id_programacion = info_reserva['id_programacion']
+                cursor.execute("""
+                    UPDATE PROGRAMACION
+                    SET estado = 'Disponible'
+                    WHERE id_programacion = %s
+                """, (id_programacion,))
+                
+                conexion.commit()
+                
+                # Enviar emails de cancelación
+                try:
+                    # Email al paciente
+                    enviar_email_cancelacion_aprobada(
+                        destinatario=info_reserva['paciente_correo'],
+                        paciente_nombre=info_reserva['paciente_nombre'],
+                        servicio=info_reserva['servicio'],
+                        fecha=info_reserva['fecha_programacion'].strftime('%d/%m/%Y'),
+                        hora=info_reserva['hora_inicio']
+                    )
+                    
+                    # Email al médico (si existe)
+                    if info_reserva.get('medico_correo'):
+                        enviar_email_cancelacion_medico(
+                            destinatario=info_reserva['medico_correo'],
+                            medico_nombre=info_reserva['medico_nombre'],
+                            paciente_nombre=info_reserva['paciente_nombre'],
+                            servicio=info_reserva['servicio'],
+                            fecha=info_reserva['fecha_programacion'].strftime('%d/%m/%Y'),
+                            hora=info_reserva['hora_inicio']
                         )
-                        print(f"✅ Notificación enviada al paciente {info['nombre_paciente']}")
-                    except Exception as e:
-                        print(f"❌ Error al notificar al paciente: {e}")
-                    
-                    # Enviar EMAIL al paciente
-                    if info.get('paciente_email'):
-                        try:
-                            fecha_formateada = info['fecha'].strftime('%d de %B de %Y') if isinstance(info['fecha'], (date, datetime)) else str(info['fecha'])
-                            
-                            resultado_email = enviar_email_cancelacion_aprobada(
-                                paciente_email=info['paciente_email'],
-                                paciente_nombre=info['nombre_paciente'],
-                                fecha=fecha_formateada,
-                                hora_inicio=info['hora_inicio'],
-                                hora_fin=info['hora_fin'],
-                                medico_nombre=info['nombre_medico'] or 'No asignado',
-                                especialidad=info['especialidad'] or 'General',
-                                servicio=info['servicio'],
-                                motivo_cancelacion=info['motivo_cancelacion'],
-                                comentario_admin=respuesta if respuesta else None
-                            )
-                            
-                            if resultado_email['success']:
-                                print(f"📧 Email enviado exitosamente al paciente: {info['paciente_email']}")
-                            else:
-                                print(f"⚠️ No se pudo enviar email al paciente: {resultado_email['message']}")
-                        except Exception as e:
-                            print(f"❌ Error al enviar email al paciente: {e}")
-                            import traceback
-                            traceback.print_exc()
-                    
-                    # Notificar al médico (si existe)
-                    if info['id_medico']:
-                        try:
-                            mensaje_medico = f"La reserva del paciente {info['nombre_paciente']} para {info['servicio']} el {info['fecha']} a las {info['hora_inicio']} ha sido cancelada por solicitud del paciente."
-                            
-                            # Obtener id_usuario del empleado
-                            cursor.execute("SELECT id_usuario FROM EMPLEADO WHERE id_empleado = %s", (info['id_medico'],))
-                            empleado = cursor.fetchone()
-                            
-                            if empleado and empleado['id_usuario']:
-                                # Crear notificación para el médico (tipo usuario 'empleado')
-                                sql_notif_medico = """
-                                    INSERT INTO NOTIFICACION (id_usuario, tipo, mensaje, url, fecha_creacion, leida)
-                                    VALUES (%s, %s, %s, %s, NOW(), 0)
-                                """
-                                cursor.execute(sql_notif_medico, (
-                                    empleado['id_usuario'],
-                                    'reserva_cancelada',
-                                    mensaje_medico,
-                                    '/medico/agenda'
-                                ))
-                                print(f"✅ Notificación enviada al médico {info['nombre_medico']}")
-                        except Exception as e:
-                            print(f"❌ Error al notificar al médico: {e}")
-                        
-                        # Enviar EMAIL al médico
-                        if info.get('medico_email'):
-                            try:
-                                fecha_formateada = info['fecha'].strftime('%d de %B de %Y') if isinstance(info['fecha'], (date, datetime)) else str(info['fecha'])
-                                
-                                resultado_email = enviar_email_cancelacion_medico(
-                                    medico_email=info['medico_email'],
-                                    medico_nombre=info['nombre_medico'],
-                                    paciente_nombre=info['nombre_paciente'],
-                                    fecha=fecha_formateada,
-                                    hora_inicio=info['hora_inicio'],
-                                    hora_fin=info['hora_fin'],
-                                    servicio=info['servicio'],
-                                    motivo_cancelacion=info['motivo_cancelacion']
-                                )
-                                
-                                if resultado_email['success']:
-                                    print(f"📧 Email enviado exitosamente al médico: {info['medico_email']}")
-                                else:
-                                    print(f"⚠️ No se pudo enviar email al médico: {resultado_email['message']}")
-                            except Exception as e:
-                                print(f"❌ Error al enviar email al médico: {e}")
-                                import traceback
-                                traceback.print_exc()
+                except Exception as e:
+                    print(f"❌ Error enviando emails de cancelación: {e}")
+                    import traceback
+                    traceback.print_exc()
                 
-                mensaje = 'Solicitud aprobada. La reserva ha sido cancelada y se enviaron notificaciones y emails.'
+                # Crear notificación para el paciente
+                try:
+                    Notificacion.crear_cancelacion_aprobada(id_paciente, id_reserva)
+                except Exception as e:
+                    print(f"Error creando notificación: {e}")
+                
+                return jsonify({'success': True, 'message': 'Cancelación aprobada exitosamente'})
             else:
-                mensaje = 'Solicitud rechazada. La reserva sigue activa.'
-
-            conexion.commit()
-
-            return jsonify({
-                'success': True,
-                'message': mensaje
-            }), 200
-
+                # Solo actualizar la solicitud como rechazada
+                conexion.commit()
+                
+                # Crear notificación para el paciente
+                try:
+                    Notificacion.crear_cancelacion_rechazada(id_paciente, id_reserva)
+                except Exception as e:
+                    print(f"Error creando notificación: {e}")
+                
+                return jsonify({'success': True, 'message': 'Solicitud de cancelación rechazada'})
+            
     except Exception as e:
         if conexion:
             conexion.rollback()
@@ -4222,11 +4173,7 @@ def api_trabajador_procesar_cancelacion():
         return jsonify({'error': f'Error al procesar solicitud: {str(e)}'}), 500
     finally:
         if conexion:
-            try:
-                conexion.close()
-            except:
-                pass
-
+            conexion.close()
 
 # ========== ENDPOINTS PARA PACIENTES: SOLICITUDES DE REPROGRAMACIÓN Y CANCELACIÓN ==========
 
