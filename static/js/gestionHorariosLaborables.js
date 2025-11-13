@@ -11,6 +11,9 @@ function inicializarEventos() {
     if (btnRegistrarHorario) {
         btnRegistrarHorario.onclick = function () {
             cargarEmpleados();
+            // Establecer fecha mínima como hoy
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha').min = today;
             document.getElementById('modalRegistrarHorario').classList.add('show');
         }
     }
@@ -295,6 +298,10 @@ function editarHorario(idHorario) {
 
                 // Guardar el ID del horario para la modificación
                 document.getElementById('formModificarHorario').dataset.idHorario = idHorario;
+
+                // Establecer fecha mínima como hoy para evitar fechas pasadas
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('fechaMod').min = today;
 
                 document.getElementById('modalModificarHorario').classList.add('show');
             } else {

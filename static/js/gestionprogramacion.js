@@ -33,6 +33,20 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('idEmpleado').value = '';
             document.getElementById('nombreEmpleado').value = '';
             document.getElementById('idHorario').value = '';
+            // Establecer fecha mínima como hoy
+            const today = new Date().toISOString().split('T')[0];
+            const fechaInput = document.getElementById('fechaProgramacion');
+            fechaInput.min = today;
+            // Agregar listener para prevenir fechas pasadas
+            fechaInput.addEventListener('change', function() {
+                const selectedDate = new Date(this.value);
+                const todayDate = new Date();
+                todayDate.setHours(0, 0, 0, 0);
+                if (selectedDate < todayDate) {
+                    alert('No se puede seleccionar una fecha pasada.');
+                    this.value = '';
+                }
+            });
             // Cargar tipos de servicio y servicios
             loadTiposServicio('tipoServicioProgramacion');
             loadServicios('servicioProgramacion');
@@ -157,6 +171,13 @@ document.addEventListener('DOMContentLoaded', function() {
         formRegistrar.addEventListener('submit', function(event) {
             event.preventDefault();
             const formData = new FormData(formRegistrar);
+            const fechaSeleccionada = new Date(formData.get('fechaProgramacion'));
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (fechaSeleccionada < today) {
+                alert('No se puede seleccionar una fecha pasada.');
+                return;
+            }
             const data = {
                 fecha: formData.get('fechaProgramacion'),
                 hora_inicio: formData.get('horaInicio'),
@@ -195,6 +216,13 @@ document.addEventListener('DOMContentLoaded', function() {
         formModificar.addEventListener('submit', function(event) {
             event.preventDefault();
             const formData = new FormData(formModificar);
+            const fechaSeleccionada = new Date(formData.get('fechaProgramacionEdit'));
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (fechaSeleccionada < today) {
+                alert('No se puede seleccionar una fecha pasada.');
+                return;
+            }
             const id = formData.get('idProgramacionEdit');
             const data = {
                 fecha: formData.get('fechaProgramacionEdit'),
@@ -756,6 +784,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('horaInicioEdit').value = prog.hora_inicio;
                 document.getElementById('horaFinEdit').value = prog.hora_fin;
                 document.getElementById('estadoProgramacionEdit').value = prog.estado;
+                // Establecer fecha mínima como hoy para edición
+                const today = new Date().toISOString().split('T')[0];
+                const fechaEditInput = document.getElementById('fechaProgramacionEdit');
+                fechaEditInput.min = today;
+                // Agregar listener para prevenir fechas pasadas en edición
+                fechaEditInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    const todayDate = new Date();
+                    todayDate.setHours(0, 0, 0, 0);
+                    if (selectedDate < todayDate) {
+                        alert('No se puede seleccionar una fecha pasada.');
+                        this.value = '';
+                    }
+                });
                 // Cargar tipos de servicio primero, establecer valor, luego cargar servicios filtrados
                 loadTiposServicio('tipoServicioProgramacionEdit').then(() => {
                     document.getElementById('tipoServicioProgramacionEdit').value = prog.id_tipo_servicio;
