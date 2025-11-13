@@ -304,60 +304,25 @@
         }
 
         function abrirModalAprobar(idSolicitud) {
-            console.log('🔍 Abriendo modal para solicitud ID:', idSolicitud);
             solicitudSeleccionada = solicitudes.find(s => s.id_solicitud === idSolicitud);
-            if (!solicitudSeleccionada) {
-                console.error('❌ No se encontró la solicitud con ID:', idSolicitud);
-                return;
-            }
-
-            console.log('📋 Datos de la solicitud seleccionada:', solicitudSeleccionada);
+            if (!solicitudSeleccionada) return;
 
             document.getElementById('modal-paciente').textContent = `${solicitudSeleccionada.paciente_nombres} ${solicitudSeleccionada.paciente_apellidos}`;
             document.getElementById('modal-dni').textContent = solicitudSeleccionada.paciente_dni;
             document.getElementById('modal-servicio').textContent = solicitudSeleccionada.servicio;
             document.getElementById('modal-medico').textContent = solicitudSeleccionada.especialidad || 'Consulta General';
             
-            // Corregir formato de fecha
-            try {
-                const fechaCita = new Date(solicitudSeleccionada.fecha_programacion);
-                console.log('📅 Fecha programación original:', solicitudSeleccionada.fecha_programacion);
-                console.log('📅 Objeto Date creado:', fechaCita);
-                
-                const fechaStr = fechaCita.toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                
-                console.log('📅 Fecha formateada:', fechaStr);
-                
-                document.getElementById('modal-fecha-hora').textContent = 
-                    `${fechaStr} - ${solicitudSeleccionada.hora_inicio} a ${solicitudSeleccionada.hora_fin}`;
-            } catch (error) {
-                console.error('❌ Error al formatear fecha:', error);
-                document.getElementById('modal-fecha-hora').textContent = 
-                    `${solicitudSeleccionada.fecha_programacion} - ${solicitudSeleccionada.hora_inicio} a ${solicitudSeleccionada.hora_fin}`;
-            }
+            const fechaCita = new Date(solicitudSeleccionada.fecha_programacion + 'T00:00:00');
+            const fechaStr = fechaCita.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+            document.getElementById('modal-fecha-hora').textContent = 
+                `${fechaStr} - ${solicitudSeleccionada.hora_inicio} a ${solicitudSeleccionada.hora_fin}`;
             
-            // El estado debe ser el de la RESERVA, no de la SOLICITUD
-            const estadoReserva = solicitudSeleccionada.estado_reserva || 'Pendiente';
-            console.log('📊 Estado de la reserva:', estadoReserva);
-            
-            const estadoSpan = document.getElementById('modal-estado');
-            estadoSpan.textContent = estadoReserva;
-            
-            // Cambiar color del badge según el estado
-            estadoSpan.className = 'px-2 py-1 rounded text-xs';
-            if (estadoReserva === 'Cancelada') {
-                estadoSpan.className += ' bg-red-100 text-red-800';
-            } else if (estadoReserva === 'Confirmada') {
-                estadoSpan.className += ' bg-green-100 text-green-800';
-            } else {
-                estadoSpan.className += ' bg-yellow-100 text-yellow-800';
-            }
-            
+            document.getElementById('modal-estado').textContent = solicitudSeleccionada.estado_reserva || 'Pendiente';
             document.getElementById('modal-motivo').textContent = solicitudSeleccionada.motivo;
             document.getElementById('modal-comentario').value = '';
             
