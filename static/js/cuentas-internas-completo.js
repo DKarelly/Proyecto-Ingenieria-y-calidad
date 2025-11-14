@@ -444,8 +444,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Leer datos desde las variables globales en el HTML
     console.log('📊 Leyendo datos de empleados y pacientes...');
     
+    // Guardar datos completos en variables globales para búsqueda
+    let empleadosCompletosGlobal = [];
+    let pacientesCompletosGlobal = [];
+
     if (typeof datosEmpleados !== 'undefined' && datosEmpleados) {
         console.log(`✅ Empleados encontrados: ${datosEmpleados.length} registros`);
+        empleadosCompletosGlobal = datosEmpleados;
         poblarTablaEmpleados(datosEmpleados);
     } else {
         console.log('🔄 Intentando cargar desde data-container...');
@@ -455,6 +460,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const empleadosData = JSON.parse(dataContainer.getAttribute('data-empleados') || '[]');
                 const pacientesData = JSON.parse(dataContainer.getAttribute('data-pacientes') || '[]');
                 console.log(`✅ Datos parseados - Empleados: ${empleadosData.length}, Pacientes: ${pacientesData.length}`);
+                empleadosCompletosGlobal = empleadosData;
+                pacientesCompletosGlobal = pacientesData;
                 poblarTablaEmpleados(empleadosData);
                 poblarTablaPacientes(pacientesData);
             } catch (error) {
@@ -471,8 +478,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (typeof datosPacientes !== 'undefined' && datosPacientes) {
         console.log(`✅ Pacientes encontrados: ${datosPacientes.length} registros`);
+        pacientesCompletosGlobal = datosPacientes;
         poblarTablaPacientes(datosPacientes);
     }
+
+    // Hacer disponibles globalmente para las funciones de búsqueda en el HTML
+    window.empleadosCompletosGlobal = empleadosCompletosGlobal;
+    window.pacientesCompletosGlobal = pacientesCompletosGlobal;
 
     console.log('✅ Sistema inicializado correctamente');
 });

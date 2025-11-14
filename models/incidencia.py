@@ -54,6 +54,49 @@ class Incidencia:
                 print("[DEBUG] Connection closed")
 
     @staticmethod
+    def obtener_pendientes():
+        """Obtiene solo las incidencias con estado 'En progreso'"""
+        try:
+            import pymysql.cursors
+            conexion = obtener_conexion()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+            query = """
+                SELECT
+                    i.id_incidencia,
+                    i.descripcion,
+                    i.categoria,
+                    i.prioridad,
+                    i.estado,
+                    DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
+                    DATE_FORMAT(i.fecha_resolucion, '%d/%m/%Y') as fecha_resolucion,
+                    p.nombres as paciente_nombres,
+                    p.apellidos as paciente_apellidos
+                FROM INCIDENCIA i
+                LEFT JOIN PACIENTE p ON i.id_paciente = p.id_paciente
+                WHERE i.estado = 'En progreso'
+                ORDER BY i.id_incidencia DESC
+            """
+
+            cursor.execute(query)
+            incidencias = cursor.fetchall()
+
+            # Formatear los datos para el frontend
+            for inc in incidencias:
+                inc['paciente'] = f"{inc['paciente_nombres']} {inc['paciente_apellidos']}" if inc['paciente_nombres'] else 'No asignado'
+
+            return incidencias
+
+        except Exception as e:
+            print(f"Error obteniendo incidencias pendientes: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+        finally:
+            if 'conexion' in locals():
+                conexion.close()
+
+    @staticmethod
     def buscar(filtros):
         """Busca incidencias con filtros aplicados"""
         try:
@@ -65,7 +108,8 @@ class Incidencia:
                 SELECT
                     i.id_incidencia,
                     i.descripcion,
-                    DATE_FORMAT(i.fecha_registro, '%d/%m/%Y') as fecha_registro,
+                    DATE_FORMAT(i.fecha_registro, '%%d/%%m/%%Y') as fecha_registro,
+                    DATE_FORMAT(i.fecha_resolucion, '%%d/%%m/%%Y') as fecha_resolucion,
                     p.nombres as paciente_nombres,
                     p.apellidos as paciente_apellidos,
                     i.categoria,
@@ -78,12 +122,16 @@ class Incidencia:
 
             params = []
 
-            # Filtro por paciente
+            # Filtro por paciente (mejorado para buscar por nombre completo o partes)
             if filtros.get('paciente') and filtros['paciente'].strip():
-                terminos_paciente = filtros['paciente'].strip().split()
-                for termino in terminos_paciente:
-                    query += " AND LOWER(CONCAT(p.nombres, ' ', p.apellidos)) LIKE LOWER(%s)"
-                    params.append(f"%{termino}%")
+                termino_paciente = filtros['paciente'].strip()
+                # Buscar que el nombre O apellido O nombre completo contenga el término (búsqueda más flexible)
+                # Buscar en nombres O apellidos O nombre completo concatenado
+                query += " AND (LOWER(p.nombres) LIKE LOWER(%s) OR LOWER(p.apellidos) LIKE LOWER(%s) OR LOWER(CONCAT(COALESCE(p.nombres, ''), ' ', COALESCE(p.apellidos, ''))) LIKE LOWER(%s))"
+                params.append(f"%{termino_paciente}%")
+                params.append(f"%{termino_paciente}%")
+                params.append(f"%{termino_paciente}%")
+                print(f"[BUSCAR] Filtrando por paciente: '{termino_paciente}'")
 
             # Filtro por fecha de registro
             if filtros.get('fecha_registro') and filtros['fecha_registro']:
@@ -101,19 +149,32 @@ class Incidencia:
                 params.append(filtros['prioridad'].strip())
 
             # Filtro por estado
-            if filtros.get('estado') and filtros['estado'].strip() and filtros['estado'] != '':
+            # Si se busca por paciente, mostrar TODOS los estados (sin filtrar)
+            # Si NO se busca por paciente, por defecto mostrar solo "En progreso"
+            if not filtros.get('paciente') or not filtros['paciente'].strip():
+                # Si no hay búsqueda por paciente, filtrar por "En progreso" por defecto
+                query += " AND i.estado = 'En progreso'"
+            elif filtros.get('estado') and filtros['estado'].strip() and filtros['estado'] != '':
+                # Si hay búsqueda por paciente pero también hay un estado específico seleccionado, usarlo
                 query += " AND i.estado = %s"
                 params.append(filtros['estado'].strip())
+            # Si hay búsqueda por paciente pero NO hay estado seleccionado, NO filtrar por estado (mostrar todos)
 
             query += " ORDER BY i.id_incidencia DESC"
 
+            print(f"[BUSCAR] Query SQL: {query}")
+            print(f"[BUSCAR] Params: {params}")
+            
             cursor.execute(query, params)
             incidencias = cursor.fetchall()
+
+            print(f"[BUSCAR] Incidencias encontradas: {len(incidencias)}")
 
             # Formatear los datos para el frontend
             for inc in incidencias:
                 inc['paciente'] = f"{inc['paciente_nombres']} {inc['paciente_apellidos']}" if inc['paciente_nombres'] else 'No asignado'
 
+            print(f"[BUSCAR] Incidencias formateadas: {len(incidencias)}")
             return incidencias
 
         except Exception as e:
@@ -253,6 +314,10 @@ class Incidencia:
             if estado is not None:
                 updates_incidencia.append("estado = %s")
                 params_incidencia.append(estado)
+                
+                # Si el estado se cambia a 'Resuelta', establecer fecha_resolucion
+                if estado == 'Resuelta':
+                    updates_incidencia.append("fecha_resolucion = NOW()")
 
             if updates_incidencia:
                 params_incidencia.append(id_incidencia)
