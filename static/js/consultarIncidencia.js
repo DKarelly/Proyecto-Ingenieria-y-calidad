@@ -41,7 +41,7 @@ function showToast(message, type = 'success') {
 }
 
 // Funcionalidad de modales
-const modales = ['modalDetalle', 'modalEditar', 'modalResolver'];
+const modales = ['modalDetalle', 'modalResolver'];
 
 modales.forEach(modalId => {
     const modal = document.getElementById(modalId);
@@ -67,16 +67,21 @@ window.onclick = function(event) {
 // Cargar incidencias al inicio
 async function cargarIncidencias() {
     try {
+        console.log('Cargando incidencias...');
         const response = await fetch('/seguridad/api/incidencias');
+        console.log('Respuesta del API:', response.status, response.ok);
         if (response.ok) {
             incidenciasData = await response.json();
+            console.log('Datos cargados:', incidenciasData);
             actualizarContadoresPrioridad();
             aplicarFiltrosDinamicos(); // Aplicar filtro de prioridad inicial
         } else {
-            console.error('Error al cargar incidencias');
+            console.error('Error al cargar incidencias - Status:', response.status);
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error de conexión:', error);
     }
 }
 
@@ -151,7 +156,7 @@ function mostrarIncidencias(incidencias) {
                     <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${categoria}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">${prioridadBadge}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${incidencia.empleado}</td>
+
                 <td class="px-6 py-4 whitespace-nowrap text-center">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium badge-${estadoClass}">
                         ${estado}
@@ -162,10 +167,6 @@ function mostrarIncidencias(incidencias) {
                         <button class="btn-ver-detalle action-btn action-btn-view" data-id="${incidencia.id_incidencia}">
                             <i class="fas fa-eye"></i>
                             <span class="tooltip">Ver Detalle</span>
-                        </button>
-                        <button class="btn-editar action-btn action-btn-edit" data-id="${incidencia.id_incidencia}">
-                            <i class="fas fa-edit"></i>
-                            <span class="tooltip">Editar</span>
                         </button>
                         ${btnResolver}
                     </div>
@@ -189,14 +190,6 @@ function asignarEventosBotones() {
         }
     });
 
-    // Botones de editar
-    document.querySelectorAll('.btn-editar').forEach(btn => {
-        btn.onclick = function() {
-            const id = this.getAttribute('data-id');
-            mostrarEditarIncidencia(id);
-        }
-    });
-
     // Botones de resolver
     document.querySelectorAll('.btn-resolver').forEach(btn => {
         btn.onclick = function() {
@@ -217,7 +210,7 @@ function mostrarDetalleIncidencia(id) {
         document.getElementById('detalleDescripcion').textContent = incidencia.descripcion;
         document.getElementById('detalleEstado').textContent = incidencia.estado || 'Abierta';
         document.getElementById('detallePrioridad').textContent = incidencia.prioridad || 'Media';
-        document.getElementById('detalleResponsable').textContent = incidencia.empleado;
+
         document.getElementById('detalleFechaResolucion').textContent = incidencia.fecha_resolucion || 'Pendiente';
         document.getElementById('detalleObservaciones').textContent = incidencia.observaciones || 'Sin observaciones';
         document.getElementById('modalDetalle').classList.add('show');
@@ -234,6 +227,7 @@ function mostrarEditarIncidencia(id) {
         document.getElementById('editPrioridad').value = incidencia.prioridad || 'Media';
         document.getElementById('editCategoria').value = incidencia.categoria || 'Otro';
         
+
         // Cargar empleado si existe
         if (incidencia.empleado && incidencia.empleado !== 'Sin asignar') {
             document.getElementById('editResponsable').value = incidencia.empleado;
@@ -269,7 +263,6 @@ function mostrarResolverIncidencia(id) {
     }
 
     document.getElementById('resolverId').value = id;
-    document.getElementById('comentarioResolucion').value = '';
     document.getElementById('modalResolver').classList.add('show');
 }
 
@@ -482,7 +475,6 @@ if (formResolver) {
         btnConfirmar.innerHTML = '<span class="btn-loader"></span> Resolviendo...';
 
         const idIncidencia = document.getElementById('resolverId').value;
-        const comentario = document.getElementById('comentarioResolucion').value;
 
         try {
             const url = `/seguridad/api/incidencias/${idIncidencia}/resolver`;
@@ -494,9 +486,7 @@ if (formResolver) {
                     'Content-Type': 'application/json',
                 },
                 credentials: 'same-origin',
-                body: JSON.stringify({
-                    comentario: comentario
-                })
+                body: JSON.stringify({})
             });
 
             console.log('Respuesta:', response.status);
