@@ -62,6 +62,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Guardar globalmente
             window.medicamentos = medicamentos;
 
+            // Poblar datalist para autocompletar
+            const datalist = document.getElementById('medicamentos-list');
+            if (datalist) {
+                datalist.innerHTML = '';
+                medicamentos.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.nombre;
+                    datalist.appendChild(option);
+                });
+            }
+
             // Notificaciones
             mostrarNotificaciones(medicamentos);
 
@@ -85,6 +96,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 actualizarContadores(medicamentos.length, medicamentos.length);
             }
 
+            // Inicializar filtro de búsqueda
+            inicializarFiltroBusqueda();
+
         } catch (err) {
             console.error('❌ Error:', err);
             tablaBody.innerHTML = `
@@ -94,6 +108,65 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                 </tr>
             `;
+        }
+    }
+
+    function inicializarFiltroBusqueda() {
+        const filtroInput = document.getElementById('filtroMedicamento');
+        const btnLimpiar = document.getElementById('btnLimpiar');
+
+        if (filtroInput) {
+            filtroInput.addEventListener('input', (e) => {
+                const termino = e.target.value.toLowerCase().trim();
+                let datosFiltrados = window.medicamentos;
+
+                if (termino) {
+                    datosFiltrados = window.medicamentos.filter(m =>
+                        m.nombre.toLowerCase().includes(termino)
+                    );
+                }
+
+                // Reinicializar paginación con datos filtrados
+                if (typeof inicializarPaginacion === 'function') {
+                    inicializarPaginacion({
+                        datos: datosFiltrados,
+                        registrosPorPagina: 10,
+                        renderFuncion: renderTabla,
+                        ids: {
+                            inicioRango: 'inicio-rango',
+                            finRango: 'fin-rango',
+                            totalRegistros: 'total-registros',
+                            paginacionNumeros: 'paginacionNumeros'
+                        }
+                    });
+                } else {
+                    renderTabla(datosFiltrados);
+                    actualizarContadores(datosFiltrados.length, datosFiltrados.length);
+                }
+            });
+        }
+
+        if (btnLimpiar) {
+            btnLimpiar.addEventListener('click', () => {
+                filtroInput.value = '';
+                // Reinicializar paginación con todos los datos
+                if (typeof inicializarPaginacion === 'function') {
+                    inicializarPaginacion({
+                        datos: window.medicamentos,
+                        registrosPorPagina: 10,
+                        renderFuncion: renderTabla,
+                        ids: {
+                            inicioRango: 'inicio-rango',
+                            finRango: 'fin-rango',
+                            totalRegistros: 'total-registros',
+                            paginacionNumeros: 'paginacionNumeros'
+                        }
+                    });
+                } else {
+                    renderTabla(window.medicamentos);
+                    actualizarContadores(window.medicamentos.length, window.medicamentos.length);
+                }
+            });
         }
     }
 
@@ -202,11 +275,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // ==================== VALIDACIÓN DE STOCK ====================
+
+    function validarStockInput(input) {
+        input.addEventListener('input', (e) => {
+            let value = e.target.value;
+            // Remover cualquier carácter que no sea dígito
+            value = value.replace(/[^0-9]/g, '');
+            // Asegurar que no sea vacío o cero
+            if (value === '' || parseInt(value) === 0) {
+                value = '';
+            }
+            e.target.value = value;
+        });
+
+        input.addEventListener('keydown', (e) => {
+            // Prevenir la tecla de menos (-)
+            if (e.key === '-' || e.keyCode === 189) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // ==================== VALIDACIÓN DE FECHAS ====================
+
+    function validarFechaVencimiento(input) {
+        input.addEventListener('input', (e) => {
+            const hoyActual = new Date();
+            const hoyActualStr = hoyActual.getFullYear() + '-' + String(hoyActual.getMonth() + 1).padStart(2, '0') + '-' + String(hoyActual.getDate()).padStart(2, '0');
+            if (e.target.value < hoyActualStr) {
+                e.target.value = hoyActualStr;
+            }
+        });
+        input.addEventListener('change', (e) => {
+            const hoyActual = new Date();
+            const hoyActualStr = hoyActual.getFullYear() + '-' + String(hoyActual.getMonth() + 1).padStart(2, '0') + '-' + String(hoyActual.getDate()).padStart(2, '0');
+            if (e.target.value < hoyActualStr) {
+                e.target.value = hoyActualStr;
+                alert('La fecha de vencimiento no puede ser anterior a hoy.');
+            }
+        });
+        input.addEventListener('mousedown', (e) => {
+            const hoyActual = new Date();
+            const hoyActualStr = hoyActual.getFullYear() + '-' + String(hoyActual.getMonth() + 1).padStart(2, '0') + '-' + String(hoyActual.getDate()).padStart(2, '0');
+            e.target.setAttribute('min', hoyActualStr);
+        });
+        input.addEventListener('focus', (e) => {
+            const hoyActual = new Date();
+            const hoyActualStr = hoyActual.getFullYear() + '-' + String(hoyActual.getMonth() + 1).padStart(2, '0') + '-' + String(hoyActual.getDate()).padStart(2, '0');
+            e.target.setAttribute('min', hoyActualStr);
+        });
+        input.addEventListener('click', (e) => {
+            const hoyActual = new Date();
+            const hoyActualStr = hoyActual.getFullYear() + '-' + String(hoyActual.getMonth() + 1).padStart(2, '0') + '-' + String(hoyActual.getDate()).padStart(2, '0');
+            e.target.setAttribute('min', hoyActualStr);
+        });
+    }
+
+    // Aplicar validación a los inputs de stock
+    const stockInput = document.getElementById('stock');
+    const stockEditInput = document.getElementById('stockEdit');
+    if (stockInput) validarStockInput(stockInput);
+    if (stockEditInput) validarStockInput(stockEditInput);
+
+    // Aplicar validación a las fechas de vencimiento
+    const fechaVencimientoInput = document.getElementById('fecha_vencimiento');
+    const fechaVencimientoEditInput = document.getElementById('fechaVencimientoEdit');
+    if (fechaVencimientoInput) validarFechaVencimiento(fechaVencimientoInput);
+    if (fechaVencimientoEditInput) validarFechaVencimiento(fechaVencimientoEditInput);
+
     // ==================== EVENTOS MODALES ====================
-    
+
     if (btnRegistrar) {
         btnRegistrar.addEventListener('click', () => {
-            if (modalRegistrar) modalRegistrar.classList.add('show');
+            if (modalRegistrar) {
+                // Repopular datalist para autocompletar
+                const datalist = document.getElementById('medicamentos-list');
+                if (datalist && window.medicamentos) {
+                    datalist.innerHTML = '';
+                    window.medicamentos.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m.nombre;
+                        datalist.appendChild(option);
+                    });
+                }
+                modalRegistrar.classList.add('show');
+            }
         });
     }
 
@@ -246,7 +400,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('nombreMedicamentoEdit').value = tr.dataset.medicamento;
                 document.getElementById('stockEdit').value = tr.dataset.cantidad;
                 document.getElementById('fechaRegistroEdit').value = tr.dataset.fechaRegistro;
-                document.getElementById('fechaVencimientoEdit').value = tr.dataset.fechaVencimiento;
+                const fechaVencimientoEdit = document.getElementById('fechaVencimientoEdit');
+                const hoy = new Date();
+                const hoyStr = hoy.toISOString().split('T')[0];
+                fechaVencimientoEdit.setAttribute('min', hoyStr);
+                const originalDate = new Date(tr.dataset.fechaVencimiento);
+                const maxDate = originalDate > hoy ? originalDate : hoy;
+                fechaVencimientoEdit.value = maxDate.toISOString().split('T')[0];
                 document.getElementById('descripcionEdit').value = tr.dataset.descripcion;
                 modalModificar.classList.add('show');
             }
@@ -258,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (formRegistrar) {
         formRegistrar.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const nombre = document.getElementById('nombreMedicamento').value.trim();
             const descripcion = document.getElementById('descripcion').value.trim();
             const stock = parseInt(document.getElementById('stock').value);
@@ -266,6 +426,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (!nombre || !stock || !fecha_vencimiento) {
                 alert('Complete los campos obligatorios');
+                return;
+            }
+
+            if (stock <= 0) {
+                alert('El stock debe ser mayor a 0');
                 return;
             }
 
@@ -297,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (formModificar) {
         formModificar.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const id = document.getElementById('idMedicamento').value;
             const nombre = document.getElementById('nombreMedicamentoEdit').value.trim();
             const descripcion = document.getElementById('descripcionEdit').value.trim();
@@ -306,6 +471,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (!id || !nombre || !stock || !fecha_vencimiento) {
                 alert('Complete los campos obligatorios');
+                return;
+            }
+
+            if (stock <= 0) {
+                alert('El stock debe ser mayor a 0');
                 return;
             }
 
