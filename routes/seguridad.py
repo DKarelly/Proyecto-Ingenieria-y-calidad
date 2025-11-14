@@ -129,41 +129,7 @@ def api_buscar_incidencias():
     incidencias = Incidencia.buscar(filtros)
     return jsonify(incidencias)
 
-@seguridad_bp.route('/api/incidencias/asignar', methods=['POST'])
-def api_asignar_empleado():
-    """API para asignar un empleado a una incidencia"""
-    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 401
 
-    data = request.get_json()
-    
-    try:
-        resultado = Incidencia.asignar_empleado(
-            id_incidencia=data.get('id_incidencia'),
-            id_empleado=data.get('id_empleado'),
-            observaciones=data.get('observaciones', '')
-        )
-        return jsonify(resultado)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@seguridad_bp.route('/api/incidencias/actualizar-estado', methods=['POST'])
-def api_actualizar_estado():
-    """API para actualizar el estado de una incidencia"""
-    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 401
-
-    data = request.get_json()
-    
-    try:
-        resultado = Incidencia.actualizar_estado(
-            id_historial=data.get('id_historial'),
-            estado=data.get('estado'),
-            observaciones=data.get('observaciones')
-        )
-        return jsonify(resultado)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 @seguridad_bp.route('/api/incidencias/buscar-pacientes', methods=['GET'])
 def api_buscar_pacientes():
@@ -413,8 +379,7 @@ def api_crear_incidencia():
             descripcion=descripcion.strip(),
             id_paciente=id_paciente,
             categoria=categoria,
-            prioridad=prioridad,
-            id_empleado=id_empleado  # Puede ser None si no se asigna
+            prioridad=prioridad
         )
         
         print('[API CREAR INCIDENCIA] Resultado:', resultado)
@@ -438,27 +403,25 @@ def api_actualizar_incidencia(id_incidencia):
     """API para actualizar una incidencia completa"""
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
         return jsonify({'error': 'No autorizado'}), 401
-    
+
     try:
         data = request.get_json()
         print(f'[API ACTUALIZAR INCIDENCIA] ID: {id_incidencia}, Datos: {data}')
-        
+
         # Actualizar incidencia
         resultado = Incidencia.actualizar(
             id_incidencia=id_incidencia,
             descripcion=data.get('descripcion'),
             categoria=data.get('categoria'),
             prioridad=data.get('prioridad'),
-            id_empleado=data.get('id_empleado'),
-            estado=data.get('estado'),
-            observaciones=data.get('observaciones')
+            estado=data.get('estado')
         )
-        
+
         if resultado.get('success'):
             return jsonify(resultado), 200
         else:
             return jsonify(resultado), 400
-            
+
     except Exception as e:
         print(f'[API ACTUALIZAR INCIDENCIA] Error: {e}')
         import traceback
@@ -473,26 +436,22 @@ def api_resolver_incidencia(id_incidencia):
     """API para resolver una incidencia (marcar como resuelta)"""
     if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
         return jsonify({'error': 'No autorizado'}), 401
-    
+
     try:
         data = request.get_json()
         print(f'[API RESOLVER INCIDENCIA] ID: {id_incidencia}, Datos: {data}')
-        
-        # Aceptar tanto 'comentario' como 'observaciones'
-        observaciones = data.get('observaciones') or data.get('comentario', 'Incidencia resuelta')
-        
-        # Resolver la incidencia (actualizar estado a 'Resuelta' y agregar fecha de resolución)
+
+        # Resolver la incidencia (actualizar estado a 'Resuelta')
         resultado = Incidencia.actualizar(
             id_incidencia=id_incidencia,
-            estado='Resuelta',
-            observaciones=observaciones
+            estado='Resuelta'
         )
-        
+
         if resultado.get('success'):
             return jsonify(resultado), 200
         else:
             return jsonify(resultado), 400
-            
+
     except Exception as e:
         print(f'[API RESOLVER INCIDENCIA] Error: {e}')
         import traceback
