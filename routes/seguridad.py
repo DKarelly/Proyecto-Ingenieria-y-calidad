@@ -109,25 +109,50 @@ def api_obtener_incidencias():
     incidencias = Incidencia.obtener_todas()
     return jsonify(incidencias)
 
+@seguridad_bp.route('/api/incidencias/pendientes', methods=['GET'])
+def api_obtener_incidencias_pendientes():
+    """API para obtener solo las incidencias con estado 'En progreso'"""
+    try:
+        incidencias = Incidencia.obtener_pendientes()
+        return jsonify(incidencias), 200
+    except Exception as e:
+        print(f'[API OBTENER PENDIENTES] Error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': f'Error al obtener incidencias pendientes: {str(e)}'
+        }), 500
+
 @seguridad_bp.route('/api/incidencias/buscar', methods=['POST'])
 def api_buscar_incidencias():
     """API para buscar incidencias con filtros"""
-    if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
-        return jsonify({'error': 'No autorizado'}), 401
+    try:
+        if 'usuario_id' not in session or session.get('tipo_usuario') != 'empleado':
+            return jsonify({'error': 'No autorizado'}), 401
 
-    data = request.get_json()
-    filtros = {
-        'paciente': data.get('paciente', ''),
-        'empleado': data.get('empleado', ''),
-        'fecha_registro': data.get('fecha_registro', ''),
-        'fecha_resolucion': data.get('fecha_resolucion', ''),
-        'estado': data.get('estado', ''),
-        'categoria': data.get('categoria', ''),
-        'prioridad': data.get('prioridad', '')
-    }
+        data = request.get_json()
+        if not data:
+            data = {}
+        
+        filtros = {
+            'paciente': data.get('paciente', ''),
+            'empleado': data.get('empleado', ''),
+            'fecha_registro': data.get('fecha_registro', ''),
+            'fecha_resolucion': data.get('fecha_resolucion', ''),
+            'estado': data.get('estado', ''),
+            'categoria': data.get('categoria', ''),
+            'prioridad': data.get('prioridad', '')
+        }
 
-    incidencias = Incidencia.buscar(filtros)
-    return jsonify(incidencias)
+        incidencias = Incidencia.buscar(filtros)
+        return jsonify(incidencias)
+    except Exception as e:
+        print(f'[API BUSCAR INCIDENCIAS] Error: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': f'Error al buscar incidencias: {str(e)}'
+        }), 500
 
 
 

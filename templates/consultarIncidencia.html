@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultar Incidencia - Clínica Union</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Noto+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -279,7 +284,7 @@
         <!-- Pestañas de Prioridad -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 mb-6 admin-card overflow-hidden">
             <div class="flex border-b border-gray-200">
-                <button class="priority-tab active flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 border-b-2 border-green-500" data-priority="Baja">
+                <button class="priority-tab active flex-1 px-6 py-4 text-center font-semibold transition-all duration-200 border-b-2 border-transparent" data-priority="Baja">
                     <div class="flex items-center justify-center gap-2">
                         <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                             <i class="fas fa-chevron-down text-green-600"></i>
@@ -327,11 +332,12 @@
                                 type="text"
                                 id="filtroPaciente"
                                 placeholder="Buscar paciente..."
-                                oninput="this.value = this.value.replace(/[0-9]/g, '')"
+                                maxlength="100"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             >
                             <div id="sugerenciasPaciente" class="absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto hidden">
                             </div>
+                            <p id="errorFiltroPaciente" class="mt-1 text-xs text-red-500 hidden"></p>
                         </div>
 
 
@@ -347,6 +353,7 @@
                                 <option>En progreso</option>
                                 <option>Resuelta</option>
                             </select>
+                            <p id="errorFiltroEstado" class="mt-1 text-xs text-red-500 hidden"></p>
                         </div>
                     </div>
 
@@ -360,8 +367,10 @@
                             <input
                                 type="date"
                                 id="filtroFechaRegistro"
+                                max=""
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             >
+                            <p id="errorFiltroFechaRegistro" class="mt-1 text-xs text-red-500 hidden"></p>
                         </div>
 
                         <!-- Fecha Resolución -->
@@ -373,8 +382,10 @@
                             <input
                                 type="date"
                                 id="filtroFechaResolucion"
+                                max=""
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-200 focus:border-cyan-500 transition-colors"
                             >
+                            <p id="errorFiltroFechaResolucion" class="mt-1 text-xs text-red-500 hidden"></p>
                         </div>
 
                         <!-- Categoría -->
@@ -393,6 +404,7 @@
                                 <option>Atención al Paciente</option>
                                 <option>Otro</option>
                             </select>
+                            <p id="errorFiltroCategoria" class="mt-1 text-xs text-red-500 hidden"></p>
                         </div>
                     </div>
 
@@ -448,7 +460,7 @@
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaIncidencias" class="divide-y divide-gray-200">
+                    <tbody id="tabla-incidencias-cuerpo" class="divide-y divide-gray-200">
                         <!-- Datos dinámicos -->
                     </tbody>
                 </table>

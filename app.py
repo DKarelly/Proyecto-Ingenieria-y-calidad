@@ -17,6 +17,12 @@ def serve_static(filename):
     """Servir archivos estáticos optimizados"""
     return send_from_directory('static', filename, max_age=0 if app.debug else 31536000)
 
+# Ruta para favicon
+@app.route('/favicon.ico')
+def favicon():
+    """Servir el favicon"""
+    return send_from_directory('static', 'favicon.svg', mimetype='image/svg+xml')
+
 # Inicializar pool de conexiones al arrancar la aplicación
 # Esto mejora el rendimiento al reutilizar conexiones
 from bd import inicializar_pool

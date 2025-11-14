@@ -141,11 +141,24 @@
             padding: 0 !important;
         }
 
-        .modal-overlay.active {
+        .modal-overlay.active,
+        .modal-overlay.flex {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             flex-direction: column !important;
+        }
+        
+        /* Modal de confirmación con z-index más alto */
+        #confirmation-modal {
+            z-index: 99999 !important;
+        }
+        
+        #confirmation-modal.active,
+        #confirmation-modal.flex {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         .modal-content {
@@ -745,14 +758,36 @@
                     </div>
 
                     <div>
-                        <label for="emp-documento" class="block text-sm font-semibold text-gray-700 mb-2">
-                            Documento de Identidad <span class="text-red-500">*</span>
-                            <span class="text-xs text-gray-500 float-right"><span id="emp-documento-count">0</span>/8</span>
+                        <label for="emp-tipo-documento" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-cyan-600 text-sm">badge</span>
+                            Tipo de Documento <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="emp-documento" name="documento" required minlength="8" maxlength="12"
-                            pattern="[0-9]+"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                            placeholder="Ej: 12345678">
+                        <div class="relative">
+                            <select id="emp-tipo-documento" name="tipo-documento" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all appearance-none cursor-pointer pr-10">
+                                <option value="">Seleccione...</option>
+                                <option value="DNI">DNI - Documento Nacional de Identidad</option>
+                                <option value="CE">CE - Carnet de Extranjería</option>
+                                <option value="PASAPORTE">Pasaporte</option>
+                            </select>
+                            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-lg">arrow_drop_down</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="emp-documento" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-cyan-600 text-sm">badge</span>
+                            Número de Documento <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500 ml-auto"><span id="emp-documento-count">0</span>/<span id="emp-documento-max">12</span></span>
+                        </label>
+                        <input type="text" id="emp-documento" name="documento" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            placeholder="Seleccione el tipo de documento primero"
+                            disabled>
+                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1" id="emp-documento-hint">
+                            <span class="material-symbols-outlined text-xs">info</span>
+                            <span id="emp-documento-hint-text">Seleccione el tipo de documento primero</span>
+                        </p>
                     </div>
 
                     <div>
@@ -929,9 +964,10 @@
 
     <!-- Modal de Confirmación -->
     <div id="confirmation-modal"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] hidden items-center justify-center p-4"
-        style="animation: fadeIn 0.3s ease-out;">
+        class="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm z-[99999] hidden items-center justify-center p-4"
+        onclick="if(event.target === this) { document.getElementById('confirmation-modal').classList.add('hidden'); document.getElementById('confirmation-modal').classList.remove('flex'); document.body.style.overflow = 'auto'; }">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative"
+            onclick="event.stopPropagation()"
             style="animation: slideUp 0.3s ease-out; margin: auto;">
             <div class="flex flex-col items-center text-center">
                 <div id="confirm-icon-container" class="mb-4">
@@ -942,8 +978,8 @@
 
                 <div class="flex gap-3 w-full">
                     <button type="button" id="confirm-cancel"
-                        class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400">
-                        <span class="material-symbols-outlined text-sm align-middle mr-1">close</span>
+                        class="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-semibold transition-all hover:border-gray-400 inline-flex items-center justify-center">
+                        <span class="material-symbols-outlined text-sm mr-1">close</span>
                         Cancelar
                     </button>
                     <button type="button" id="confirm-accept"
@@ -972,7 +1008,7 @@
             }
         }
     </style>
-    <script src="/static/js/paginacion.js"></script>
+    <script src="{{ url_for('static', filename='js/pagination.js') }}"></script>
     {% include 'footer.html' %}
 
     <!-- Script para pasar datos de empleados y pacientes a JavaScript -->
@@ -1258,40 +1294,129 @@
             });
         }
 
-        // Validación de documento (solo números, exactamente 8 dígitos)
+        // Configuración de tipos de documento con sus longitudes y patrones
+        const tiposDocumentoEmpleado = {
+            'DNI': { min: 8, max: 8, pattern: /^[0-9]{8}$/, placeholder: '12345678', hint: 'Ingrese 8 dígitos', maxDisplay: '8' },
+            'CE': { min: 9, max: 12, pattern: /^[0-9]{9,12}$/, placeholder: '123456789', hint: 'Ingrese entre 9 y 12 dígitos', maxDisplay: '12' },
+            'PASAPORTE': { min: 6, max: 15, pattern: /^[A-Z0-9]{6,15}$/, placeholder: 'ABC123456', hint: 'Ingrese entre 6 y 15 caracteres (letras y números)', maxDisplay: '15' }
+        };
+
+        // Manejar cambio de tipo de documento
+        const tipoDocumentoSelect = document.getElementById('emp-tipo-documento');
         const documentoInput = document.getElementById('emp-documento');
-        if (documentoInput) {
-            documentoInput.addEventListener('input', function() {
-                const parent = this.parentElement;
+        const documentoHint = document.getElementById('emp-documento-hint-text');
+        const documentoMax = document.getElementById('emp-documento-max');
+        const documentoCount = document.getElementById('emp-documento-count');
+
+        // Función para solo números
+        function soloNumeros() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        }
+
+        // Función para pasaporte (letras y números, mayúsculas)
+        function handlePasaporteInput() {
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        }
+
+        if (tipoDocumentoSelect && documentoInput) {
+            tipoDocumentoSelect.addEventListener('change', function() {
+                const tipo = this.value;
+                documentoInput.value = ''; // Limpiar el campo
+                
+                // Limpiar mensajes de validación previos
+                const parent = documentoInput.parentElement;
                 const prevMsg = parent.querySelector('.validation-message');
                 if (prevMsg) prevMsg.remove();
+                documentoInput.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
                 
-                // Solo permitir números
-                if (!/^\d*$/.test(this.value)) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-red-500 mt-1';
-                    msg.textContent = 'Solo se permiten números';
-                    parent.appendChild(msg);
-                    this.classList.add('border-red-500');
-                    this.value = this.value.replace(/\D/g, '');
-                } else if (this.value.length > 0 && this.value.length < 8) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-orange-500 mt-1';
-                    msg.textContent = `${this.value.length}/8 dígitos - Debe tener exactamente 8 dígitos`;
-                    parent.appendChild(msg);
-                    this.classList.add('border-orange-500');
-                    this.classList.remove('border-red-500');
-                } else if (this.value.length === 8) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-green-500 mt-1';
-                    msg.textContent = '✓ Documento válido';
-                    parent.appendChild(msg);
-                    this.classList.remove('border-red-500', 'border-orange-500');
-                    this.classList.add('border-green-500');
+                if (tipo && tiposDocumentoEmpleado[tipo]) {
+                    const config = tiposDocumentoEmpleado[tipo];
+                    documentoInput.maxLength = config.max;
+                    documentoInput.placeholder = config.placeholder;
+                    documentoHint.textContent = config.hint;
+                    documentoMax.textContent = config.maxDisplay;
+                    documentoInput.disabled = false;
+                    documentoInput.pattern = config.pattern.source;
+                    
+                    // Limpiar listeners previos para evitar duplicados
+                    documentoInput.removeEventListener('input', soloNumeros);
+                    documentoInput.removeEventListener('input', handlePasaporteInput);
+
+                    // Asignar el listener correcto
+                    if (tipo === 'PASAPORTE') {
+                        documentoInput.addEventListener('input', handlePasaporteInput);
+                    } else {
+                        documentoInput.addEventListener('input', soloNumeros);
+                    }
+                    
+                    // Validar documento en tiempo real
+                    documentoInput.addEventListener('input', function() {
+                        validarDocumentoEmpleado(this, tipo);
+                    });
                 } else {
-                    this.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                    documentoInput.disabled = true;
+                    documentoInput.placeholder = 'Seleccione el tipo de documento primero';
+                    documentoHint.textContent = 'Seleccione el tipo de documento primero';
+                    documentoMax.textContent = '12';
+                    // Limpiar listeners si no hay tipo seleccionado
+                    documentoInput.removeEventListener('input', soloNumeros);
+                    documentoInput.removeEventListener('input', handlePasaporteInput);
                 }
+                
+                // Actualizar contador
+                documentoCount.textContent = '0';
             });
+        }
+
+        // Función para validar documento según tipo
+        function validarDocumentoEmpleado(input, tipo) {
+            const parent = input.parentElement;
+            const prevMsg = parent.querySelector('.validation-message');
+            if (prevMsg) prevMsg.remove();
+            
+            if (!tipo || !tiposDocumentoEmpleado[tipo]) return;
+            
+            const config = tiposDocumentoEmpleado[tipo];
+            const valor = input.value;
+            
+            // Actualizar contador
+            if (documentoCount) documentoCount.textContent = valor.length;
+            
+            if (valor.length === 0) {
+                input.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                return;
+            }
+            
+            if (!config.pattern.test(valor)) {
+                const msg = document.createElement('p');
+                msg.className = 'validation-message text-sm text-red-500 mt-1';
+                
+                if (tipo === 'DNI') {
+                    msg.textContent = 'Debe tener exactamente 8 dígitos';
+                } else if (tipo === 'CE') {
+                    msg.textContent = `Debe tener entre 9 y 12 dígitos (actual: ${valor.length})`;
+                } else if (tipo === 'PASAPORTE') {
+                    msg.textContent = 'Debe tener entre 6 y 15 caracteres alfanuméricos';
+                }
+                
+                parent.appendChild(msg);
+                input.classList.add('border-red-500');
+                input.classList.remove('border-orange-500', 'border-green-500');
+            } else if (valor.length < config.min) {
+                const msg = document.createElement('p');
+                msg.className = 'validation-message text-sm text-orange-500 mt-1';
+                msg.textContent = `${valor.length}/${config.min} caracteres - Debe tener al menos ${config.min} caracteres`;
+                parent.appendChild(msg);
+                input.classList.add('border-orange-500');
+                input.classList.remove('border-red-500', 'border-green-500');
+            } else {
+                const msg = document.createElement('p');
+                msg.className = 'validation-message text-sm text-green-500 mt-1';
+                msg.textContent = '✓ Documento válido';
+                parent.appendChild(msg);
+                input.classList.remove('border-red-500', 'border-orange-500');
+                input.classList.add('border-green-500');
+            }
         }
 
         // Validación de teléfono (solo números, exactamente 9 dígitos)
@@ -1449,12 +1574,35 @@
                     return;
                 }
                 
-                // Validar documento de identidad (solo números)
-                const documento = document.getElementById('emp-documento').value;
-                if (!/^\d{8}$/.test(documento)) {
+                // Validar tipo de documento
+                const tipoDocumento = document.getElementById('emp-tipo-documento').value;
+                if (!tipoDocumento) {
                     await mostrarConfirmacion({
                         titulo: 'Error de Validación',
-                        mensaje: 'El documento de identidad debe contener exactamente 8 dígitos.',
+                        mensaje: 'Debe seleccionar un tipo de documento.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
+                // Validar documento según tipo
+                const documento = document.getElementById('emp-documento').value;
+                const tiposDoc = tiposDocumentoEmpleado[tipoDocumento];
+                
+                if (!tiposDoc || !tiposDoc.pattern.test(documento)) {
+                    let mensajeError = 'Documento inválido.';
+                    if (tipoDocumento === 'DNI') {
+                        mensajeError = 'El DNI debe tener exactamente 8 dígitos.';
+                    } else if (tipoDocumento === 'CE') {
+                        mensajeError = 'El Carnet de Extranjería debe tener entre 9 y 12 dígitos.';
+                    } else if (tipoDocumento === 'PASAPORTE') {
+                        mensajeError = 'El Pasaporte debe tener entre 6 y 15 caracteres alfanuméricos.';
+                    }
+                    
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: mensajeError,
                         tipo: 'warning',
                         textoAceptar: 'Entendido'
                     });
@@ -1466,8 +1614,7 @@
                 if (!/^\d{9}$/.test(telefono)) {
                     await mostrarConfirmacion({
                         titulo: 'Error de Validación',
-                        mensaje: 'El teléfono debe contener exactamente 9 dígitos.',
-                        mensaje: 'El teléfono debe contener solo números.',
+                        mensaje: 'El teléfono debe contener exactamente 9 dígitos numéricos.',
                         tipo: 'warning',
                         textoAceptar: 'Entendido'
                     });
@@ -1495,6 +1642,7 @@
                     accion: 'crear_empleado',
                     nombres: formData.get('nombres'),
                     apellidos: formData.get('apellidos'),
+                    tipo_documento: formData.get('tipo-documento'),
                     documento_identidad: formData.get('documento'),
                     sexo: formData.get('sexo'),
                     telefono: formData.get('telefono'),
@@ -1514,56 +1662,87 @@
                 submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Registrando...';
                 
                 try {
+                    console.log('📤 Enviando datos:', data);
                     const response = await fetch('/cuentas/gestionar-cuentas-internas', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: JSON.stringify(data)
                     });
                     
-                    const result = await response.json();
-                    console.log('📥 Respuesta del servidor:', result);
+                    console.log('📥 Estado de respuesta:', response.status, response.statusText);
+                    console.log('📥 Content-Type:', response.headers.get('content-type'));
                     
-                    if (result.success) {
-                        await mostrarConfirmacion({
+                    // Verificar si la respuesta es JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        console.error('❌ Respuesta no es JSON:', text);
+                        throw new Error('La respuesta del servidor no es JSON. Estado: ' + response.status);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('📥 Respuesta del servidor (JSON):', result);
+                    console.log('📥 Tipo de result:', typeof result);
+                    console.log('📥 result.success:', result?.success);
+                    console.log('📥 result.success === true?', result?.success === true);
+                    console.log('📥 Condición if (result && result.success):', !!(result && result.success));
+                    
+                    // Restaurar botón primero antes de mostrar modales
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    
+                    // Verificar estructura de respuesta
+                    if (result && (result.success === true || result.success === 'true')) {
+                        console.log('✅ Entrando en bloque de éxito');
+                        
+                        // Cerrar modal de registro primero
+                        cerrarModalRegistroEmpleado();
+                        
+                        // Mostrar modal de confirmación de éxito
+                        const confirmado = await mostrarConfirmacion({
                             titulo: '¡Éxito!',
                             mensaje: result.message || 'Empleado registrado correctamente.',
                             tipo: 'success',
                             textoAceptar: 'Aceptar'
                         });
                         
-                        // Cerrar modal y resetear formulario
-                        cerrarModalRegistroEmpleado();
+                        // Resetear formulario
                         this.reset();
                         
-                        // Recargar lista de empleados
-                        cargarEmpleados();
+                        // Recargar página después de cerrar el modal de confirmación
+                        if (confirmado !== false) {
+                            window.location.reload();
+                        }
                     } else {
+                        console.log('❌ Entrando en bloque de error');
+                        console.log('❌ result:', result);
+                        console.log('❌ result.error:', result?.error);
+                        console.log('❌ result.message:', result?.message);
                         await mostrarConfirmacion({
                             titulo: 'Error al Registrar',
-                            mensaje: result.error || 'No se pudo registrar el empleado. Intente nuevamente.',
+                            mensaje: result?.error || result?.message || 'No se pudo registrar el empleado. Intente nuevamente.',
                             tipo: 'danger',
                             textoAceptar: 'Entendido'
                         });
                     }
                     
-                    // Restaurar botón
+                } catch (error) {
+                    console.error('❌ Error completo en el registro:', error);
+                    console.error('❌ Stack trace:', error.stack);
+                    
+                    // Restaurar botón antes de mostrar modal
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalBtnText;
                     
-                } catch (error) {
-                    console.error('❌ Error en el registro:', error);
                     await mostrarConfirmacion({
                         titulo: 'Error de Conexión',
-                        mensaje: 'No se pudo conectar con el servidor. Verifique su conexión.',
+                        mensaje: 'No se pudo conectar con el servidor: ' + (error.message || 'Error desconocido'),
                         tipo: 'danger',
                         textoAceptar: 'Entendido'
                     });
-                    
-                    // Restaurar botón
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText;
                 }
             });
         }
@@ -1581,61 +1760,192 @@
             };
         }
 
-        // Búsqueda empleados con debounce (optimizado para rendimiento)
+        // Función para obtener datos completos de empleados
+        function obtenerDatosEmpleadosCompletos() {
+            // Prioridad 1: Variable global del script externo
+            if (typeof window.empleadosCompletosGlobal !== 'undefined' && window.empleadosCompletosGlobal.length > 0) {
+                return window.empleadosCompletosGlobal;
+            }
+            // Prioridad 2: Variable global del HTML
+            if (typeof datosEmpleados !== 'undefined' && datosEmpleados && datosEmpleados.length > 0) {
+                return datosEmpleados;
+            }
+            // Prioridad 3: Data container
+            const dataContainer = document.getElementById('data-container');
+            if (dataContainer) {
+                try {
+                    const datos = JSON.parse(dataContainer.getAttribute('data-empleados') || '[]');
+                    if (datos.length > 0) return datos;
+                } catch (e) {
+                    console.error('Error al parsear empleados:', e);
+                }
+            }
+            // Prioridad 4: empleadosGlobal del script externo
+            if (typeof empleadosGlobal !== 'undefined' && empleadosGlobal.length > 0) {
+                return empleadosGlobal;
+            }
+            return [];
+        }
+
+        // Función para obtener datos completos de pacientes
+        function obtenerDatosPacientesCompletos() {
+            // Prioridad 1: Variable global del script externo
+            if (typeof window.pacientesCompletosGlobal !== 'undefined' && window.pacientesCompletosGlobal.length > 0) {
+                return window.pacientesCompletosGlobal;
+            }
+            // Prioridad 2: Variable global del HTML
+            if (typeof datosPacientes !== 'undefined' && datosPacientes && datosPacientes.length > 0) {
+                return datosPacientes;
+            }
+            // Prioridad 3: Data container
+            const dataContainer = document.getElementById('data-container');
+            if (dataContainer) {
+                try {
+                    const datos = JSON.parse(dataContainer.getAttribute('data-pacientes') || '[]');
+                    if (datos.length > 0) return datos;
+                } catch (e) {
+                    console.error('Error al parsear pacientes:', e);
+                }
+            }
+            // Prioridad 4: pacientesGlobal del script externo
+            if (typeof pacientesGlobal !== 'undefined' && pacientesGlobal.length > 0) {
+                return pacientesGlobal;
+            }
+            return [];
+        }
+
+        // Función para filtrar empleados
+        function filtrarYMostrarEmpleados(termino) {
+            const empleadosCompletos = obtenerDatosEmpleadosCompletos();
+            
+            if (!termino || termino.trim() === '') {
+                // Si no hay término, mostrar todos
+                if (typeof poblarTablaEmpleados === 'function') {
+                    paginaActual = 1;
+                    poblarTablaEmpleados(empleadosCompletos);
+                }
+                return;
+            }
+
+            const terminoLower = termino.toLowerCase().trim();
+            
+            if (empleadosCompletos.length === 0) {
+                console.warn('⚠️ No hay datos de empleados disponibles para buscar');
+                return;
+            }
+
+            // Filtrar empleados
+            const empleadosFiltrados = empleadosCompletos.filter(empleado => {
+                const nombreCompleto = `${empleado.nombres || ''} ${empleado.apellidos || ''}`.toLowerCase();
+                const correo = (empleado.correo || '').toLowerCase();
+                const rol = (empleado.rol || '').toLowerCase();
+                const documento = String(empleado.documento_identidad || '').toLowerCase();
+                
+                return nombreCompleto.includes(terminoLower) ||
+                       correo.includes(terminoLower) ||
+                       rol.includes(terminoLower) ||
+                       documento.includes(terminoLower);
+            });
+
+            // Resetear a primera página y mostrar resultados
+            paginaActual = 1;
+            if (typeof poblarTablaEmpleados === 'function') {
+                poblarTablaEmpleados(empleadosFiltrados);
+            }
+        }
+
+        // Función para filtrar pacientes
+        function filtrarYMostrarPacientes(termino) {
+            const pacientesCompletos = obtenerDatosPacientesCompletos();
+            
+            if (!termino || termino.trim() === '') {
+                // Si no hay término, mostrar todos
+                if (typeof poblarTablaPacientes === 'function') {
+                    paginaActualPacientes = 1;
+                    poblarTablaPacientes(pacientesCompletos);
+                }
+                return;
+            }
+
+            const terminoLower = termino.toLowerCase().trim();
+            
+            if (pacientesCompletos.length === 0) {
+                console.warn('⚠️ No hay datos de pacientes disponibles para buscar');
+                return;
+            }
+
+            // Filtrar pacientes
+            const pacientesFiltrados = pacientesCompletos.filter(paciente => {
+                const nombreCompleto = `${paciente.nombres || ''} ${paciente.apellidos || ''}`.toLowerCase();
+                const correo = (paciente.correo || '').toLowerCase();
+                const telefono = String(paciente.telefono || '').toLowerCase();
+                const documento = String(paciente.documento_identidad || '').toLowerCase();
+                
+                return nombreCompleto.includes(terminoLower) ||
+                       correo.includes(terminoLower) ||
+                       telefono.includes(terminoLower) ||
+                       documento.includes(terminoLower);
+            });
+
+            // Resetear a primera página y mostrar resultados
+            paginaActualPacientes = 1;
+            if (typeof poblarTablaPacientes === 'function') {
+                poblarTablaPacientes(pacientesFiltrados);
+            }
+        }
+
+        // Búsqueda empleados con debounce
         const searchEmpleado = document.getElementById('search-empleado');
         const clearSearchEmpleado = document.getElementById('clear-search-empleado');
 
-        const buscarEmpleado = debounce(function (searchTerm) {
-            const rows = document.querySelectorAll('#tab-empleados tbody tr');
-            const term = searchTerm.toLowerCase();
+        if (searchEmpleado) {
+            const buscarEmpleado = debounce(function (searchTerm) {
+                filtrarYMostrarEmpleados(searchTerm);
+            }, 300); // 300ms de delay
 
-            // Usar requestAnimationFrame para optimizar renderizado
-            requestAnimationFrame(() => {
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(term) ? '' : 'none';
-                });
+            searchEmpleado.addEventListener('input', function (e) {
+                const searchTerm = e.target.value;
+                if (clearSearchEmpleado) {
+                    clearSearchEmpleado.classList.toggle('hidden', !searchTerm);
+                }
+                buscarEmpleado(searchTerm);
             });
-        }, 150); // 150ms de delay para evitar búsquedas excesivas
 
-        searchEmpleado.addEventListener('input', function (e) {
-            const searchTerm = e.target.value;
-            clearSearchEmpleado.classList.toggle('hidden', !searchTerm);
-            buscarEmpleado(searchTerm);
-        });
+            if (clearSearchEmpleado) {
+                clearSearchEmpleado.addEventListener('click', function () {
+                    searchEmpleado.value = '';
+                    searchEmpleado.dispatchEvent(new Event('input'));
+                });
+            }
+        }
 
-        clearSearchEmpleado.addEventListener('click', function () {
-            searchEmpleado.value = '';
-            searchEmpleado.dispatchEvent(new Event('input'));
-        });
-
-        // Búsqueda pacientes con debounce (optimizado para rendimiento)
+        // Búsqueda pacientes con debounce
         const searchPaciente = document.getElementById('search-paciente');
         const clearSearchPaciente = document.getElementById('clear-search-paciente');
 
-        const buscarPaciente = debounce(function (searchTerm) {
-            const rows = document.querySelectorAll('#tab-pacientes tbody tr');
-            const term = searchTerm.toLowerCase();
+        if (searchPaciente) {
+            const buscarPaciente = debounce(function (searchTerm) {
+                filtrarYMostrarPacientes(searchTerm);
+            }, 300); // 300ms de delay
 
-            // Usar requestAnimationFrame para optimizar renderizado
-            requestAnimationFrame(() => {
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(term) ? '' : 'none';
-                });
+            searchPaciente.addEventListener('input', function (e) {
+                const searchTerm = e.target.value;
+                if (clearSearchPaciente) {
+                    clearSearchPaciente.classList.toggle('hidden', !searchTerm);
+                }
+                buscarPaciente(searchTerm);
             });
-        }, 150);
 
-        searchPaciente.addEventListener('input', function (e) {
-            const searchTerm = e.target.value;
-            clearSearchPaciente.classList.toggle('hidden', !searchTerm);
-            buscarPaciente(searchTerm);
-        });
+            if (clearSearchPaciente) {
+                clearSearchPaciente.addEventListener('click', function () {
+                    searchPaciente.value = '';
+                    searchPaciente.dispatchEvent(new Event('input'));
+                });
+            }
+        }
 
-        clearSearchPaciente.addEventListener('click', function () {
-            searchPaciente.value = '';
-            searchPaciente.dispatchEvent(new Event('input'));
-        });
+        // Las funciones de búsqueda ya están listas y usan las funciones auxiliares
+        // que obtienen los datos dinámicamente cuando se necesitan
 
         // ============================================
         // MODAL DE CONFIRMACIÓN
@@ -1682,27 +1992,39 @@
 
                 acceptButton.className = `flex-1 px-6 py-3 rounded-lg text-white font-semibold transition-all shadow-lg hover:shadow-xl inline-flex items-center justify-center ${colorBoton}`;
 
+                // Asegurar que el modal esté visible
                 confirmationModal.classList.remove('hidden');
-                confirmationModal.classList.add('flex');
+                confirmationModal.classList.add('flex', 'active');
                 confirmationModal.style.display = 'flex';
                 confirmationModal.style.alignItems = 'center';
                 confirmationModal.style.justifyContent = 'center';
+                confirmationModal.style.position = 'fixed';
+                confirmationModal.style.zIndex = '99999';
+                document.body.classList.add('modal-abierto', 'modal-open');
                 document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
 
                 const handleAccept = () => {
                     confirmationModal.classList.add('hidden');
-                    confirmationModal.classList.remove('flex');
-                    confirmationModal.style.zIndex = '9999';
+                    confirmationModal.classList.remove('flex', 'active');
+                    confirmationModal.style.display = 'none';
+                    document.body.classList.remove('modal-abierto', 'modal-open');
                     document.body.style.overflow = 'auto';
+                    document.body.style.position = '';
+                    document.body.style.width = '';
                     cleanup();
                     resolve(true);
                 };
 
                 const handleCancel = () => {
                     confirmationModal.classList.add('hidden');
-                    confirmationModal.classList.remove('flex');
-                    confirmationModal.style.zIndex = '9999';
+                    confirmationModal.classList.remove('flex', 'active');
+                    confirmationModal.style.display = 'none';
+                    document.body.classList.remove('modal-abierto', 'modal-open');
                     document.body.style.overflow = 'auto';
+                    document.body.style.position = '';
+                    document.body.style.width = '';
                     cleanup();
                     resolve(false);
                 };
@@ -2001,72 +2323,13 @@
                     });
                 }
 
-                // Validación final al enviar el formulario
-                empleadoForm.addEventListener('submit', async function (e) {
-                    e.preventDefault(); // Prevenir envío por defecto
-
-                    let formularioValido = true;
-
-                    // Validar todos los campos
-                    if (nombresInput) formularioValido &= aplicarValidacion(nombresInput, validarNombre);
-                    if (apellidosInput) formularioValido &= aplicarValidacion(apellidosInput, validarNombre);
-                    if (documentoInput) formularioValido &= aplicarValidacion(documentoInput, validarDocumento);
-                    if (telefonoInput) formularioValido &= aplicarValidacion(telefonoInput, validarTelefono);
-                    if (emailInput) formularioValido &= aplicarValidacion(emailInput, validarEmail);
-                    if (passwordInput) formularioValido &= aplicarValidacion(passwordInput, validarPassword);
-
-                    if (!formularioValido) {
-                        // Mostrar notificación de error
-                        const toast = document.createElement('div');
-                        toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-xl shadow-2xl z-[100] flex items-center gap-3';
-                        toast.style.animation = 'slideIn 0.3s ease-out';
-                        toast.innerHTML = `
-                            <span class="material-symbols-outlined">error</span>
-                            <span class="font-medium">Por favor, corrija los errores en el formulario antes de continuar.</span>
-                        `;
-                        document.body.appendChild(toast);
-                        setTimeout(() => {
-                            toast.style.animation = 'fadeOut 0.3s ease-out';
-                            setTimeout(() => toast.remove(), 300);
-                        }, 4000);
-                        return;
-                    }
-
-                    // Mostrar confirmación
-                    const nombreCompleto = `${nombresInput.value.trim()} ${apellidosInput.value.trim()}`;
-                    const confirmado = await mostrarConfirmacion({
-                        titulo: '¿Crear Nuevo Empleado?',
-                        mensaje: `¿Estás seguro de registrar al empleado ${nombreCompleto}? Se creará una cuenta de acceso con el email proporcionado.`,
-                        tipo: 'success',
-                        textoAceptar: 'Crear Empleado',
-                        textoIconoAceptar: 'person_add'
-                    });
-
-                    if (confirmado) {
-                        // Agregar indicador de carga al botón
-                        const submitBtn = this.querySelector('button[type="submit"]');
-                        
-                        if (submitBtn) {
-                            submitBtn.disabled = true;
-                            submitBtn.innerHTML = `
-                                <svg class="animate-spin h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span class="ml-2">Registrando empleado...</span>
-                            `;
-                        }
-
-                        // Enviar formulario de forma tradicional (el backend ya maneja flash messages)
-                        this.submit();
-                    }
-                });
+                // El submit del formulario ya está manejado por el listener anterior (línea 1423)
+                // que usa AJAX para enviar los datos
             }
         });
     </script>
 
-    <!-- Script de paginación reutilizable -->
-    <script src="{{ url_for('static', filename='js/pagination.js') }}" defer></script>
+    <!-- Script de paginación reutilizable (ya cargado arriba) -->
 
     <!-- SCRIPT ÚNICO - GESTIÓN COMPLETA DE CUENTAS INTERNAS -->
     <script src="{{ url_for('static', filename='js/cuentas-internas-completo.js') }}?v=sinid2024"></script>

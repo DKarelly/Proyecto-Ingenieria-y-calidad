@@ -409,6 +409,7 @@ def registrar_cuenta_paciente():
             # Obtener datos del formulario
             nombres = request.form.get('nombres', '').strip()
             apellidos = request.form.get('apellidos', '').strip()
+            tipo_documento = request.form.get('tipo-documento', '').strip()
             documento = request.form.get('documento-identidad', '').strip()
             sexo = request.form.get('sexo', '').strip()
             telefono = request.form.get('telefono', '').strip()
@@ -418,42 +419,64 @@ def registrar_cuenta_paciente():
             password = request.form.get('password', '')
             confirm_password = request.form.get('confirm-password', '')
             
+            # Verificar si es una petición AJAX
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Content-Type') == 'application/json'
+            
             # Validar campos requeridos
-            if not all([nombres, apellidos, documento, sexo, telefono, fecha_nacimiento, email, id_distrito, password]):
+            if not all([nombres, apellidos, tipo_documento, documento, sexo, telefono, fecha_nacimiento, email, id_distrito, password]):
+                if is_ajax:
+                    return jsonify({
+                        'success': False,
+                        'error': 'Todos los campos marcados con (*) son obligatorios'
+                    }), 400
                 flash('Todos los campos marcados con (*) son obligatorios', 'error')
                 return redirect(url_for('cuentas.registrar_cuenta_paciente'))
             
-            # Validar DNI (8 dígitos)
-            if len(documento) != 8 or not documento.isdigit():
-                flash('El DNI debe tener exactamente 8 dígitos', 'error')
+            def error_response(message):
+                if is_ajax:
+                    return jsonify({'success': False, 'error': message}), 400
+                flash(message, 'error')
                 return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+            
+            # Validar tipo de documento
+            tipos_validos = ['DNI', 'CE', 'PASAPORTE']
+            if tipo_documento not in tipos_validos:
+                return error_response('Tipo de documento inválido')
+            
+            # Validar documento según tipo
+            if tipo_documento == 'DNI':
+                if len(documento) != 8 or not documento.isdigit():
+                    return error_response('El DNI debe tener exactamente 8 dígitos')
+            elif tipo_documento == 'CE':
+                if len(documento) < 9 or len(documento) > 12 or not documento.isdigit():
+                    return error_response('El Carnet de Extranjería debe tener entre 9 y 12 dígitos')
+            elif tipo_documento == 'PASAPORTE':
+                if len(documento) < 6 or len(documento) > 15:
+                    return error_response('El Pasaporte debe tener entre 6 y 15 caracteres')
+                if not documento.replace(' ', '').replace('-', '').isalnum():
+                    return error_response('El Pasaporte solo puede contener letras y números')
             
             # Validar teléfono (9 dígitos)
             if len(telefono) != 9 or not telefono.isdigit():
-                flash('El teléfono debe tener exactamente 9 dígitos', 'error')
-                return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+                return error_response('El teléfono debe tener exactamente 9 dígitos')
             
             # Validar contraseñas
             if password != confirm_password:
-                flash('Las contraseñas no coinciden', 'error')
-                return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+                return error_response('Las contraseñas no coinciden')
             
             if len(password) < 6:
-                flash('La contraseña debe tener al menos 6 caracteres', 'error')
-                return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+                return error_response('La contraseña debe tener al menos 6 caracteres')
             
             # Verificar si el correo ya existe
             usuario_existente = Usuario.obtener_por_correo(email)
             if usuario_existente:
-                flash('El correo electrónico ya está registrado', 'error')
-                return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+                return error_response('El correo electrónico ya está registrado')
             
             # Verificar si el documento ya existe
             from models.paciente import Paciente
             paciente_existente = Paciente.obtener_por_documento(documento)
             if paciente_existente:
-                flash('El documento de identidad ya está registrado', 'error')
-                return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+                return error_response('El documento de identidad ya está registrado')
             
             # Crear usuario primero
             resultado_usuario = Usuario.crear_usuario(
@@ -463,6 +486,11 @@ def registrar_cuenta_paciente():
             )
             
             if 'error' in resultado_usuario:
+                if is_ajax:
+                    return jsonify({
+                        'success': False,
+                        'error': f'Error al crear usuario: {resultado_usuario["error"]}'
+                    }), 400
                 flash(f'Error al crear usuario: {resultado_usuario["error"]}', 'error')
                 return redirect(url_for('cuentas.registrar_cuenta_paciente'))
             
@@ -489,13 +517,29 @@ def registrar_cuenta_paciente():
             if 'error' in resultado_paciente:
                 # Si falla, eliminar el usuario creado
                 Usuario.eliminar(id_usuario)
-                flash(f'Error al crear paciente: {resultado_paciente["error"]}', 'error')
-                return redirect(url_for('cuentas.registrar_cuenta_paciente'))
+                return jsonify({
+                    'success': False,
+                    'error': f'Error al crear paciente: {resultado_paciente["error"]}'
+                }), 400
             
-            flash('Cuenta de paciente creada exitosamente', 'success')
-            return redirect(url_for('cuentas.gestionar_datos_pacientes'))
+            return jsonify({
+                'success': True,
+                'message': f'Cuenta de paciente {nombres} {apellidos} creada exitosamente',
+                'paciente': {
+                    'nombres': nombres,
+                    'apellidos': apellidos,
+                    'documento': documento
+                }
+            }), 200
             
         except Exception as e:
+            # Verificar si es AJAX
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.headers.get('Content-Type') == 'application/json'
+            if is_ajax:
+                return jsonify({
+                    'success': False,
+                    'error': f'Error al procesar la solicitud: {str(e)}'
+                }), 500
             flash(f'Error al procesar la solicitud: {str(e)}', 'error')
             return redirect(url_for('cuentas.registrar_cuenta_paciente'))
     
@@ -537,6 +581,7 @@ def gestionar_cuentas_internas():
                     print('[DEBUG] Procesando petición JSON para crear empleado')
                     nombres = data.get('nombres', '').strip()
                     apellidos = data.get('apellidos', '').strip()
+                    tipo_documento = data.get('tipo_documento', '').strip()
                     documento = data.get('documento_identidad', '').strip()
                     telefono = data.get('telefono', '').strip()
                     email = data.get('correo', '').strip()
@@ -546,6 +591,25 @@ def gestionar_cuentas_internas():
                     sexo = data.get('sexo', '')
                     fecha_nacimiento = data.get('fecha_nacimiento', '').strip()
                     confirm_password = password  # En JSON ya se validó en frontend
+                    
+                    # Validar tipo de documento si viene
+                    if tipo_documento:
+                        tipos_validos = ['DNI', 'CE', 'PASAPORTE']
+                        if tipo_documento not in tipos_validos:
+                            return handle_error('Tipo de documento inválido')
+                        
+                        # Validar documento según tipo
+                        if tipo_documento == 'DNI':
+                            if len(documento) != 8 or not documento.isdigit():
+                                return handle_error('El DNI debe tener exactamente 8 dígitos')
+                        elif tipo_documento == 'CE':
+                            if len(documento) < 9 or len(documento) > 12 or not documento.isdigit():
+                                return handle_error('El Carnet de Extranjería debe tener entre 9 y 12 dígitos')
+                        elif tipo_documento == 'PASAPORTE':
+                            if len(documento) < 6 or len(documento) > 15:
+                                return handle_error('El Pasaporte debe tener entre 6 y 15 caracteres')
+                            if not documento.replace(' ', '').replace('-', '').isalnum():
+                                return handle_error('El Pasaporte solo puede contener letras y números')
                 else:
                     return jsonify({'success': False, 'error': 'Acción no reconocida'}), 400
             else:
@@ -553,6 +617,7 @@ def gestionar_cuentas_internas():
                 print('[DEBUG] Procesando FormData tradicional')
                 nombres = request.form.get('nombres', '').strip()
                 apellidos = request.form.get('apellidos', '').strip()
+                tipo_documento = request.form.get('tipo-documento', '').strip()  # También puede venir por FormData
                 documento = request.form.get('documento', '').strip()
                 telefono = request.form.get('telefono', '').strip()
                 email = request.form.get('email', '').strip()
@@ -585,9 +650,12 @@ def gestionar_cuentas_internas():
             if len(apellidos) < 2 or len(apellidos) > 60:
                 return handle_error('Los apellidos deben tener entre 2 y 60 caracteres')
 
-            # Validar documento (solo números, exactamente 8 dígitos)
-            if not documento.isdigit() or len(documento) != 8:
-                return handle_error('El documento debe contener exactamente 8 dígitos')
+            # Validar documento según tipo
+            # Si no hay tipo_documento especificado, asumir DNI (compatibilidad)
+            if not tipo_documento:
+                if not documento.isdigit() or len(documento) != 8:
+                    return handle_error('El documento debe contener exactamente 8 dígitos')
+            # Si hay tipo_documento, ya se validó arriba en la sección JSON
 
             # Validar sexo
             if sexo not in ['Masculino', 'Femenino']:
@@ -660,14 +728,20 @@ def gestionar_cuentas_internas():
 
             # Obtener ubicación (distrito)
             # El formulario envía departamento/provincia/distrito; guardamos el id de distrito
-            id_distrito = request.form.get('distrito')
+            if request.is_json:
+                id_distrito = data.get('id_distrito')
+            else:
+                id_distrito = request.form.get('distrito')
             try:
                 id_distrito = int(id_distrito) if id_distrito not in (None, '', 'undefined') else None
             except (ValueError, TypeError):
                 id_distrito = None
 
             # Obtener especialidad si el rol es médico
-            id_especialidad = request.form.get('especialidad')
+            if request.is_json:
+                id_especialidad = data.get('id_especialidad')
+            else:
+                id_especialidad = request.form.get('especialidad')
             try:
                 id_especialidad = int(id_especialidad) if id_especialidad not in (None, '', 'undefined') else None
             except (ValueError, TypeError):
@@ -717,12 +791,15 @@ def gestionar_cuentas_internas():
 
             print(f'[DEBUG] ========== Empleado creado exitosamente con ID: {resultado_empleado.get("id_empleado")} ==========')
             
-            if request.is_json:
-                return jsonify({
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                print('[DEBUG] Retornando respuesta JSON')
+                response = jsonify({
                     'success': True, 
                     'message': 'Empleado registrado exitosamente',
                     'id_empleado': resultado_empleado.get("id_empleado")
-                }), 200
+                })
+                response.headers['Content-Type'] = 'application/json'
+                return response, 200
             else:
                 flash('Empleado registrado exitosamente', 'success')
                 return redirect(url_for('cuentas.gestionar_cuentas_internas'))

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crear Cuenta de Paciente - Clínica Unión</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}">
+    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -83,29 +88,51 @@
                     </div>
                 </div>
 
-                <!-- Documento de Identidad y Sexo -->
+                <!-- Tipo de Documento y Documento de Identidad -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="tipo-documento">
+                            <i class="fa-solid fa-id-card text-cyan-600"></i>
+                            Tipo de Documento <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select
+                                class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                                id="tipo-documento"
+                                name="tipo-documento"
+                                required
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="DNI">DNI - Documento Nacional de Identidad</option>
+                                <option value="CE">CE - Carnet de Extranjería</option>
+                                <option value="PASAPORTE">Pasaporte</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
                     <div class="space-y-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="documento-identidad">
                             <i class="fa-solid fa-id-card text-cyan-600"></i>
-                            Documento de Identidad (DNI) <span class="text-red-500">*</span>
+                            Número de Documento <span class="text-red-500">*</span>
                         </label>
                         <input
                             class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
                             id="documento-identidad"
                             name="documento-identidad"
-                            placeholder="12345678"
+                            placeholder="Ingrese el número"
                             type="text"
-                            maxlength="8"
-                            pattern="[0-9]{8}"
                             inputmode="numeric"
                             required
                         />
-                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <p class="text-xs text-gray-500 mt-1 flex items-center gap-1" id="documento-hint">
                             <i class="fa-solid fa-info-circle"></i>
-                            Ingrese 8 dígitos sin espacios
+                            <span id="documento-hint-text">Seleccione el tipo de documento primero</span>
                         </p>
                     </div>
+                </div>
+
+                <!-- Sexo -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
                         <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2" for="sexo">
                             <i class="fa-solid fa-venus-mars text-cyan-600"></i>
@@ -416,14 +443,72 @@
             }
         }
 
-        // Validación de solo números en DNI y teléfono
-        document.getElementById('documento-identidad').addEventListener('input', function(e) {
+        // Configuración de tipos de documento con sus longitudes y patrones
+        const tiposDocumento = {
+            'DNI': { min: 8, max: 8, pattern: /^[0-9]{8}$/, placeholder: '12345678', hint: 'Ingrese 8 dígitos' },
+            'CE': { min: 9, max: 12, pattern: /^[0-9]{9,12}$/, placeholder: '123456789', hint: 'Ingrese entre 9 y 12 dígitos' },
+            'PASAPORTE': { min: 6, max: 15, pattern: /^[A-Z0-9]{6,15}$/, placeholder: 'ABC123456', hint: 'Ingrese entre 6 y 15 caracteres (letras y números)' }
+        };
+
+        // Manejar cambio de tipo de documento
+        const tipoDocumentoSelect = document.getElementById('tipo-documento');
+        const documentoInput = document.getElementById('documento-identidad');
+        const documentoHint = document.getElementById('documento-hint-text');
+
+        tipoDocumentoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            documentoInput.value = ''; // Limpiar el campo
+            
+            if (tipo && tiposDocumento[tipo]) {
+                const config = tiposDocumento[tipo];
+                documentoInput.maxLength = config.max;
+                documentoInput.placeholder = config.placeholder;
+                documentoHint.textContent = config.hint;
+                documentoInput.disabled = false;
+                documentoInput.pattern = config.pattern.source;
+                
+                // Cambiar inputmode según tipo
+                if (tipo === 'PASAPORTE') {
+                    documentoInput.setAttribute('inputmode', 'text');
+                } else {
+                    documentoInput.setAttribute('inputmode', 'numeric');
+                }
+            } else {
+                documentoInput.disabled = true;
+                documentoInput.placeholder = 'Seleccione el tipo de documento primero';
+                documentoHint.textContent = 'Seleccione el tipo de documento primero';
+            }
+            
+            // Limpiar errores
+            setFieldError('documento-identidad', '');
+            setFieldError('tipo-documento', '');
+            
+            // Validar tipo de documento
+            setFieldError('tipo-documento', validators['tipo-documento'](tipo));
+        });
+
+        // Función para solo números
+        function soloNumeros(e) {
             this.value = this.value.replace(/[^0-9]/g, '');
+        }
+        
+        // Listener para validar documento en tiempo real según tipo
+        documentoInput.addEventListener('input', function() {
+            const tipo = tipoDocumentoSelect.value;
+            const valor = this.value;
+            
+            if (tipo === 'PASAPORTE') {
+                this.value = valor.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            } else if (tipo === 'DNI' || tipo === 'CE') {
+                this.value = valor.replace(/[^0-9]/g, '');
+            }
+            
+            // Validar en tiempo real
+            setFieldError('documento-identidad', validators['documento-identidad'](this.value));
         });
         
-        document.getElementById('telefono').addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
+        // Validación de solo números en teléfono
+        document.getElementById('telefono').addEventListener('input', soloNumeros);
 
         // Validación y confirmación del formulario con modal unificado
         (function(){
@@ -437,7 +522,8 @@
 
                 e.preventDefault();
 
-                const dni = document.getElementById('documento-identidad').value;
+                const tipoDocumento = document.getElementById('tipo-documento').value;
+                const documento = document.getElementById('documento-identidad').value.trim();
                 const telefono = document.getElementById('telefono').value;
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirm-password').value;
@@ -447,11 +533,30 @@
                 const nombres = document.getElementById('nombres').value.trim();
                 const apellidos = document.getElementById('apellidos').value.trim();
 
-                // Validaciones básicas existentes
-                if (!/^\d{8}$/.test(dni)) { 
-                    showNotification('El DNI debe tener exactamente 8 dígitos', 'error'); 
-                    document.getElementById('documento-identidad').focus(); 
+                // Validación de tipo de documento
+                if (!tipoDocumento) { 
+                    showNotification('Debe seleccionar el tipo de documento', 'error'); 
+                    document.getElementById('tipo-documento').focus(); 
                     return; 
+                }
+
+                // Validación de número de documento según tipo
+                if (!tiposDocumento[tipoDocumento]) {
+                    showNotification('Tipo de documento inválido', 'error');
+                    return;
+                }
+
+                const docConfig = tiposDocumento[tipoDocumento];
+                if (!docConfig.pattern.test(documento)) {
+                    showNotification(docConfig.hint, 'error');
+                    document.getElementById('documento-identidad').focus();
+                    return;
+                }
+
+                if (documento.length < docConfig.min || documento.length > docConfig.max) {
+                    showNotification(docConfig.hint, 'error');
+                    document.getElementById('documento-identidad').focus();
+                    return;
                 }
                 if (!sexo) { 
                     showNotification('Debe seleccionar el sexo', 'error'); 
@@ -484,6 +589,8 @@
                     return; 
                 }
 
+                // El tipo de documento ya está en el select con name="tipo-documento", no necesitamos campo oculto
+
                 // Mostrar modal de confirmación usando el nuevo sistema
                 const confirmado = await mostrarConfirmacion({
                     titulo: '¿Crear Cuenta de Paciente?',
@@ -494,12 +601,67 @@
                 });
 
                 if (confirmado) {
-                    // Mostrar indicador y enviar
+                    // Mostrar indicador y enviar con AJAX
                     const btnSubmit = document.getElementById('btnSubmitRegistro');
+                    const btnOriginal = btnSubmit.innerHTML;
                     btnSubmit.disabled = true;
                     btnSubmit.innerHTML = '<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Registrando...';
-                    readyToSubmit = true;
-                    form.submit();
+                    
+                    // Crear FormData del formulario
+                    const formData = new FormData(form);
+                    
+                    // Enviar con fetch
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData,
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Mostrar modal de éxito
+                            mostrarConfirmacion({
+                                titulo: '¡Registro Exitoso!',
+                                mensaje: data.message,
+                                tipo: 'success',
+                                textoAceptar: 'Continuar',
+                                textoIconoAceptar: 'check_circle'
+                            }).then(() => {
+                                // Limpiar formulario después de cerrar el modal
+                                form.reset();
+                                // Limpiar todos los errores
+                                realtimeIds.forEach(id => {
+                                    setFieldError(id, '');
+                                });
+                                // Deshabilitar campo de documento
+                                documentoInput.disabled = true;
+                                tipoDocumentoSelect.value = '';
+                                documentoHint.textContent = 'Seleccione el tipo de documento primero';
+                                documentoInput.placeholder = 'Seleccione el tipo de documento primero';
+                                
+                                // Restaurar botón
+                                btnSubmit.disabled = false;
+                                btnSubmit.innerHTML = btnOriginal;
+                                readyToSubmit = false;
+                            });
+                        } else {
+                            // Mostrar error
+                            showNotification(data.error || 'Error al crear la cuenta', 'error');
+                            btnSubmit.disabled = false;
+                            btnSubmit.innerHTML = btnOriginal;
+                            readyToSubmit = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Error de conexión. Por favor, intenta nuevamente.', 'error');
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = btnOriginal;
+                        readyToSubmit = false;
+                    });
                 }
             });
         })();
@@ -649,35 +811,96 @@
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const validators = {
-            'nombres': v => !v ? 'El nombre es obligatorio' : (v.trim().length < 2 ? 'El nombre debe tener al menos 2 caracteres' : ''),
-            'apellidos': v => !v ? 'Los apellidos son obligatorios' : (v.trim().length < 2 ? 'Los apellidos deben tener al menos 2 caracteres' : ''),
-            'documento-identidad': v => (/^\d{8}$/.test(v) ? '' : 'El DNI debe tener exactamente 8 dígitos'),
+            'nombres': v => {
+                const trimmed = v ? v.trim() : '';
+                if (!trimmed) return 'El nombre es obligatorio';
+                if (trimmed.length < 2) return 'El nombre debe tener al menos 2 caracteres';
+                if (trimmed.length > 100) return 'El nombre no puede exceder 100 caracteres';
+                if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-']+$/.test(trimmed)) return 'El nombre solo puede contener letras, espacios y caracteres básicos';
+                return '';
+            },
+            'apellidos': v => {
+                const trimmed = v ? v.trim() : '';
+                if (!trimmed) return 'Los apellidos son obligatorios';
+                if (trimmed.length < 2) return 'Los apellidos deben tener al menos 2 caracteres';
+                if (trimmed.length > 100) return 'Los apellidos no pueden exceder 100 caracteres';
+                if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.\-']+$/.test(trimmed)) return 'Los apellidos solo pueden contener letras, espacios y caracteres básicos';
+                return '';
+            },
+            'tipo-documento': v => (!!v ? '' : 'Debe seleccionar el tipo de documento'),
+            'documento-identidad': v => {
+                const tipo = document.getElementById('tipo-documento').value;
+                if (!tipo) return 'Seleccione el tipo de documento primero';
+                if (!v || !v.trim()) return 'El número de documento es obligatorio';
+                const docConfig = tiposDocumento[tipo];
+                if (!docConfig) return 'Tipo de documento inválido';
+                if (!docConfig.pattern.test(v)) return docConfig.hint;
+                if (v.length < docConfig.min || v.length > docConfig.max) return docConfig.hint;
+                return '';
+            },
             'sexo': v => (!!v ? '' : 'Debe seleccionar el sexo'),
-            'telefono': v => (/^\d{9}$/.test(v) ? '' : 'El teléfono debe tener exactamente 9 dígitos'),
-            'fecha-nacimiento': v => (!!v ? '' : 'Debe seleccionar fecha de nacimiento'),
-            'email': v => (emailRegex.test(v) ? '' : 'Correo electrónico inválido'),
+            'telefono': v => {
+                if (!v) return 'El teléfono es obligatorio';
+                if (!/^\d{9}$/.test(v)) return 'El teléfono debe tener exactamente 9 dígitos';
+                return '';
+            },
+            'fecha-nacimiento': v => {
+                if (!v) return 'Debe seleccionar fecha de nacimiento';
+                const fecha = new Date(v);
+                const hoy = new Date();
+                if (fecha > hoy) return 'La fecha de nacimiento no puede ser futura';
+                const edad = Math.floor((hoy - fecha) / (365.25 * 24 * 60 * 60 * 1000));
+                if (edad > 150) return 'La fecha de nacimiento no es válida';
+                return '';
+            },
+            'email': v => {
+                if (!v) return 'El correo electrónico es obligatorio';
+                if (!emailRegex.test(v)) return 'Correo electrónico inválido';
+                if (v.length > 100) return 'El correo no puede exceder 100 caracteres';
+                return '';
+            },
             'departamento': v => (!!v ? '' : 'Seleccione un departamento'),
             'provincia': v => (!!v ? '' : 'Seleccione una provincia'),
             'distrito': v => (!!v ? '' : 'Seleccione un distrito'),
-            'password': v => (v && v.length >= 6 ? '' : 'La contraseña debe tener al menos 6 caracteres'),
-            'confirm-password': v => (v === document.getElementById('password').value ? '' : 'Las contraseñas no coinciden')
+            'password': v => {
+                if (!v) return 'La contraseña es obligatoria';
+                if (v.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
+                if (v.length > 100) return 'La contraseña no puede exceder 100 caracteres';
+                return '';
+            },
+            'confirm-password': v => {
+                const password = document.getElementById('password').value;
+                if (!v) return 'Debe confirmar la contraseña';
+                if (v !== password) return 'Las contraseñas no coinciden';
+                return '';
+            }
         };
 
-        const realtimeIds = ['nombres','apellidos','documento-identidad','sexo','telefono','fecha-nacimiento','email','departamento','provincia','distrito','password','confirm-password'];
+        const realtimeIds = ['nombres','apellidos','tipo-documento','documento-identidad','sexo','telefono','fecha-nacimiento','email','departamento','provincia','distrito','password','confirm-password'];
         realtimeIds.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             const evt = (el.tagName === 'SELECT' || el.type === 'date') ? 'change' : 'input';
             el.addEventListener(evt, () => {
                 let val = el.value;
-                if (id === 'documento-identidad' || id === 'telefono') {
-                    const digits = val.replace(/[^0-9]/g, '');
-                    if (digits !== val) { el.value = digits; val = digits; }
+                
+                // Si cambia el tipo de documento, validar el número de documento
+                if (id === 'tipo-documento') {
+                    setFieldError('documento-identidad', validators['documento-identidad'](document.getElementById('documento-identidad').value));
                 }
+                
+                // Limpiar caracteres no permitidos (ya se maneja en los listeners específicos)
+                
                 if (id === 'confirm-password') {
-                    // si cambia passwd, revalida ambos
+                    // Si cambia confirm-password, revalidar ambos campos de contraseña
                     setFieldError('password', validators['password'](document.getElementById('password').value));
                 }
+                
+                if (id === 'password') {
+                    // Si cambia password, revalidar confirm-password
+                    setFieldError('confirm-password', validators['confirm-password'](document.getElementById('confirm-password').value));
+                }
+                
                 setFieldError(id, validators[id] ? validators[id](val) : '');
             });
         });
