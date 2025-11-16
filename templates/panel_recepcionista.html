@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Recepcionista - Clínica Unión</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    
+    <!-- Tailwind CSS compilado -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+    
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20
+        }
+        
+        /* Animación para el desglose de tiempo */
+        .time-breakdown {
+            animation: expandIn 0.2s ease-out;
+            transform-origin: top;
+        }
+        
+        @keyframes expandIn {
+            from {
+                opacity: 0;
+                transform: scaleY(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scaleY(1);
+            }
+        }
+    </style>
+    <script>
+        // Configuración personalizada (si es necesaria)
+        const customConfig = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#06B6D4',
+                            light: '#E0F9FC',
+                            dark: '#0891B2'
+                        },
+                        medical: {
+                            cyan: '#06B6D4',
+                            teal: '#14B8A6',
+                            emerald: '#10B981'
+                        },
+                        "background-light": "#F8F9FC",
+                        "background-dark": "#0A0A0A",
+                        "surface-light": "#FFFFFF",
+                        "surface-dark": "#141414",
+                        "border-light": "#EFF1F4",
+                        "border-dark": "#2A2A2A",
+                        "text-primary-light": "#1F2937",
+                        "text-primary-dark": "#E5E7EB",
+                        "text-secondary-light": "#6B7280",
+                        "text-secondary-dark": "#9CA3AF",
+                    },
+                    fontFamily: {
+                        display: ["Sora", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem"
+                    },
+                    boxShadow: {
+                        'subtle': '0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03)',
+                        'subtle-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
+                        'medical': '0 10px 25px -5px rgba(6, 182, 212, 0.15)'
+                    }
+                },
+            },
+        };
+    </script>
+</head>
+
+<body class="font-body bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark antialiased">
+    {% include 'header_recepcionista.html' %}
+
+    <div class="flex h-[calc(100vh-80px)]">
+        <!-- Sidebar Recepcionista -->
+        <aside class="w-[280px] flex-shrink-0 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex flex-col">
+            <nav class="flex-1 px-6 py-6 space-y-2">
+                <!-- Dashboard -->
+                <a href="/recepcionista/panel" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if not subsistema %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
+                    <span class="material-symbols-outlined text-xl {% if not subsistema %}filled{% endif %}">dashboard</span>
+                    <span class="font-semibold">Dashboard</span>
+                </a>
+
+                <!-- Cuentas -->
+                <div class="space-y-1">
+                    <a href="/recepcionista/panel?subsistema=cuentas" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'cuentas' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
+                        <span class="material-symbols-outlined text-xl {% if subsistema == 'cuentas' %}filled{% endif %}">account_circle</span>
+                        <span class="font-semibold">Cuentas</span>
+                    </a>
+                    {% if subsistema == 'cuentas' %}
+                    <a href="/recepcionista/panel?subsistema=cuentas&accion=registrar" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
+                        <span class="material-symbols-outlined text-lg">person_add</span>
+                        <span>Registrar Paciente</span>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Reserva -->
+                <a href="/recepcionista/panel?subsistema=reserva" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'reserva' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
+                    <span class="material-symbols-outlined text-xl {% if subsistema == 'reserva' %}filled{% endif %}">event_available</span>
+                    <span class="font-semibold">Reserva</span>
+                </a>
+
+                <!-- Incidencia -->
+                <div class="space-y-1">
+                    <a href="/recepcionista/panel?subsistema=incidencia" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'incidencia' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
+                        <span class="material-symbols-outlined text-xl {% if subsistema == 'incidencia' %}filled{% endif %}">report_problem</span>
+                        <span class="font-semibold">Incidencia</span>
+                    </a>
+                    {% if subsistema == 'incidencia' %}
+                    <a href="/recepcionista/panel?subsistema=incidencia&accion=generar" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
+                        <span class="material-symbols-outlined text-lg">add_circle</span>
+                        <span>Generar Incidencia</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <main class="flex-1 overflow-y-auto p-8">
+                {% if not subsistema %}
+                <!-- Dashboard Principal -->
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Bienvenido, {{ session.get('nombre_usuario', 'Recepcionista') }}</h2>
+                    <p class="text-gray-600">Aquí está tu resumen del día</p>
+                </div>
+
+                <!-- Estadísticas Rápidas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Reservas de Hoy -->
+                    <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-6 text-white shadow-medical">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="material-symbols-outlined text-4xl opacity-80">event</span>
+                            <span class="text-3xl font-bold">{{ stats.reservas_hoy or 0 }}</span>
+                        </div>
+                        <h3 class="text-sm font-medium opacity-90 mb-1">Reservas de Hoy</h3>
+                        <p class="text-xs opacity-75">Reservas confirmadas</p>
+                    </div>
+
+                    <!-- Pacientes Registrados -->
+                    <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white shadow-medical">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="material-symbols-outlined text-4xl opacity-80">groups</span>
+                            <span class="text-3xl font-bold">{{ stats.pacientes_registrados or 0 }}</span>
+                        </div>
+                        <h3 class="text-sm font-medium opacity-90 mb-1">Pacientes Registrados</h3>
+                        <p class="text-xs opacity-75">Esta semana</p>
+                    </div>
+
+                    <!-- Incidencias Pendientes -->
+                    <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-medical">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="material-symbols-outlined text-4xl opacity-80">report_problem</span>
+                            <span class="text-3xl font-bold">{{ stats.incidencias_pendientes or 0 }}</span>
+                        </div>
+                        <h3 class="text-sm font-medium opacity-90 mb-1">Incidencias Pendientes</h3>
+                        <p class="text-xs opacity-75">Requieren atención</p>
+                    </div>
+                </div>
+
+                <!-- Contenido del Dashboard -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Nuevas Incidencias -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">Nuevas Incidencias</h3>
+                            <a href="/recepcionista/panel?subsistema=incidencia" class="text-cyan-600 hover:text-cyan-700 text-sm font-semibold flex items-center gap-1">
+                                Ver todas
+                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                            </a>
+                        </div>
+
+                        <div class="space-y-4" id="incidencias-recientes">
+                            <!-- Las incidencias se cargarán dinámicamente -->
+                            <div class="text-center py-8 text-gray-500">
+                                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">report_problem</span>
+                                <p class="font-medium">Cargando incidencias...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accesos Rápidos -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6">Accesos Rápidos</h3>
+
+                        <div class="space-y-3">
+                            <a href="/recepcionista/panel?subsistema=cuentas&accion=registrar" class="flex items-center gap-3 p-3 rounded-xl hover:bg-cyan-50 transition-colors group">
+                                <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                                    <span class="material-symbols-outlined text-cyan-600">person_add</span>
+                                </div>
+                                <span class="font-semibold text-gray-700 group-hover:text-cyan-700">Registrar Paciente</span>
+                            </a>
+
+                            <a href="/recepcionista/panel?subsistema=reserva" class="flex items-center gap-3 p-3 rounded-xl hover:bg-teal-50 transition-colors group">
+                                <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center group-hover:bg-teal-200 transition-colors">
+                                    <span class="material-symbols-outlined text-teal-600">event_available</span>
+                                </div>
+                                <span class="font-semibold text-gray-700 group-hover:text-teal-700">Generar Reserva</span>
+                            </a>
+
+                            <a href="/recepcionista/panel?subsistema=incidencia&accion=generar" class="flex items-center gap-3 p-3 rounded-xl hover:bg-blue-50 transition-colors group">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                    <span class="material-symbols-outlined text-blue-600">add_circle</span>
+                                </div>
+                                <span class="font-semibold text-gray-700 group-hover:text-blue-700">Generar Incidencia</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if subsistema == 'cuentas' %}
+                <!-- Subsistema: Cuentas -->
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Cuentas</h2>
+                    <p class="text-gray-600">Administrar cuentas de pacientes</p>
+                </div>
+
+                {% if accion == 'registrar' %}
+                <!-- Formulario de Registro de Paciente -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Registrar Nueva Cuenta de Paciente</h3>
+                        <p class="text-sm text-gray-600 mt-1">Complete todos los campos requeridos</p>
+                    </div>
+
+                    <form id="registro-paciente-form" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Nombres -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Nombres <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="nombres" name="nombres" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Apellidos -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Apellidos <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="apellidos" name="apellidos" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+
+                            <!-- DNI -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    DNI <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="dni" name="dni" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Fecha de Nacimiento -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Fecha de Nacimiento <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Teléfono -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Teléfono <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" id="telefono" name="telefono" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Email <span class="text-red-500">*</span>
+                                </label>
+                                <input type="email" id="email" name="email" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Dirección <span class="text-red-500">*</span>
+                            </label>
+                            <textarea id="direccion" name="direccion" rows="3" required
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"></textarea>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="flex gap-4">
+                            <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:from-cyan-600 hover:to-teal-600 transition-all font-semibold shadow-md">
+                                Registrar Paciente
+                            </button>
+                            <button type="button" onclick="window.location.href='/recepcionista/panel?subsistema=cuentas'" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <!-- Lista de Pacientes -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <!-- Barra de búsqueda -->
+                    <div class="mb-6">
+                        <div class="relative">
+                            <input type="text" id="buscar-paciente" placeholder="Buscar paciente por nombre o DNI..."
+                                   class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de pacientes -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 font-semibold text-gray-700">Paciente</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-gray-700">DNI</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-gray-700">Teléfono</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
+                                    <th class="text-left py-3 px-4 font-semibold text-gray-700">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-pacientes">
+                                <!-- Los pacientes se cargarán dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+                {% if subsistema == 'reserva' %}
+                <!-- Subsistema: Reserva -->
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Sistema de Reservas</h2>
+                    <p class="text-gray-600">Gestionar reservas de citas y servicios</p>
+                </div>
+
+                <!-- Aquí iría todo el contenido del sistema de reservas -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">event_available</span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Sistema de Reservas</h3>
+                        <p class="text-gray-600">Funcionalidad completa de reservas próximamente disponible</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if subsistema == 'incidencia' %}
+                <!-- Subsistema: Incidencia -->
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Sistema de Incidencias</h2>
+                    <p class="text-gray-600">Gestionar y crear incidencias del sistema</p>
+                </div>
+
+                {% if accion == 'generar' %}
+                <!-- Formulario para Generar Incidencia -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">Generar Nueva Incidencia</h3>
+                        <p class="text-sm text-gray-600 mt-1">Reportar un problema o incidencia</p>
+                    </div>
+
+                    <form id="incidencia-form" class="space-y-6">
+                        <!-- Tipo de Incidencia -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Tipo de Incidencia <span class="text-red-500">*</span>
+                            </label>
+                            <select id="tipo_incidencia" name="tipo_incidencia" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                <option value="">Seleccionar tipo...</option>
+                                <option value="técnico">Problema Técnico</option>
+                                <option value="administrativo">Problema Administrativo</option>
+                                <option value="médico">Problema Médico</option>
+                                <option value="seguridad">Problema de Seguridad</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <!-- Severidad -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Severidad <span class="text-red-500">*</span>
+                            </label>
+                            <select id="severidad" name="severidad" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                <option value="">Seleccionar severidad...</option>
+                                <option value="baja">Baja</option>
+                                <option value="media">Media</option>
+                                <option value="alta">Alta</option>
+                                <option value="crítica">Crítica</option>
+                            </select>
+                        </div>
+
+                        <!-- Título -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Título <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="titulo" name="titulo" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                   placeholder="Breve descripción del problema">
+                        </div>
+
+                        <!-- Descripción -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Descripción <span class="text-red-500">*</span>
+                            </label>
+                            <textarea id="descripcion" name="descripcion" rows="4" required
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                      placeholder="Describe detalladamente el problema o incidencia..."></textarea>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="flex gap-4">
+                            <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-xl hover:from-cyan-600 hover:to-teal-600 transition-all font-semibold shadow-md">
+                                Generar Incidencia
+                            </button>
+                            <button type="button" onclick="window.location.href='/recepcionista/panel?subsistema=incidencia'" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-semibold">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <!-- Lista de Incidencias -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <!-- Filtros -->
+                    <div class="mb-6 flex flex-wrap gap-3">
+                        <button onclick="filtrarIncidencias('todas')" class="filtro-incidencia active px-4 py-2 rounded-lg text-sm font-medium">
+                            Todas
+                        </button>
+                        <button onclick="filtrarIncidencias('abierta')" class="filtro-incidencia px-4 py-2 rounded-lg text-sm font-medium">
+                            Abiertas
+                        </button>
+                        <button onclick="filtrarIncidencias('progreso')" class="filtro-incidencia px-4 py-2 rounded-lg text-sm font-medium">
+                            En Progreso
+                        </button>
+                        <button onclick="filtrarIncidencias('cerrada')" class="filtro-incidencia px-4 py-2 rounded-lg text-sm font-medium">
+                            Cerradas
+                        </button>
+                    </div>
+
+                    <!-- Lista de incidencias -->
+                    <div class="space-y-4" id="lista-incidencias">
+                        <!-- Las incidencias se cargarán dinámicamente -->
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">report_problem</span>
+                            <p class="font-medium">Cargando incidencias...</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Panel Recepcionista cargado correctamente');
+
+            // Cargar estadísticas del dashboard
+            if (!window.location.search.includes('subsistema')) {
+                cargarEstadisticas();
+                cargarIncidenciasRecientes();
+            }
+
+            // Cargar pacientes si estamos en cuentas
+            if (window.location.search.includes('subsistema=cuentas') && !window.location.search.includes('accion=registrar')) {
+                cargarPacientes();
+            }
+
+            // Cargar incidencias si estamos en incidencia
+            if (window.location.search.includes('subsistema=incidencia') && !window.location.search.includes('accion=generar')) {
+                cargarIncidencias();
+            }
+
+            // Formulario de registro de paciente
+            const registroForm = document.getElementById('registro-paciente-form');
+            if (registroForm) {
+                registroForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(this);
+
+                    try {
+                        const response = await fetch('/recepcionista/pacientes/registrar', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            alert('Paciente registrado exitosamente');
+                            window.location.href = '/recepcionista/panel?subsistema=cuentas';
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error al registrar paciente');
+                    }
+                });
+            }
+
+            // Formulario de incidencia
+            const incidenciaForm = document.getElementById('incidencia-form');
+            if (incidenciaForm) {
+                incidenciaForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(this);
+
+                    try {
+                        const response = await fetch('/recepcionista/incidencias/generar', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            alert('Incidencia generada exitosamente');
+                            window.location.href = '/recepcionista/panel?subsistema=incidencia';
+                        } else {
+                            alert('Error: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Error al generar incidencia');
+                    }
+                });
+            }
+
+            // Búsqueda de pacientes
+            const buscarInput = document.getElementById('buscar-paciente');
+            if (buscarInput) {
+                buscarInput.addEventListener('input', function(e) {
+                    const termino = e.target.value.toLowerCase();
+                    const filas = document.querySelectorAll('.paciente-row');
+
+                    filas.forEach(fila => {
+                        const nombre = fila.dataset.nombre.toLowerCase();
+                        const dni = fila.dataset.dni.toLowerCase();
+
+                        if (nombre.includes(termino) || dni.includes(termino)) {
+                            fila.style.display = '';
+                        } else {
+                            fila.style.display = 'none';
+                        }
+                    });
+                });
+            }
+        });
+
+        // Funciones para cargar datos
+        async function cargarEstadisticas() {
+            try {
+                const response = await fetch('/recepcionista/dashboard/stats');
+                const stats = await response.json();
+
+                // Actualizar estadísticas en el DOM
+                document.querySelector('.text-3xl.font-bold').textContent = stats.reservas_hoy || 0;
+                // Actualizar otros stats según sea necesario
+            } catch (error) {
+                console.error('Error cargando estadísticas:', error);
+            }
+        }
+
+        async function cargarIncidenciasRecientes() {
+            try {
+                const response = await fetch('/recepcionista/incidencias/recientes');
+                const incidencias = await response.json();
+
+                const container = document.getElementById('incidencias-recientes');
+
+                if (incidencias.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">check_circle</span>
+                            <p class="font-medium">No hay nuevas incidencias</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                incidencias.forEach(incidencia => {
+                    const severidadClass = {
+                        'baja': 'bg-yellow-100 text-yellow-700',
+                        'media': 'bg-orange-100 text-orange-700',
+                        'alta': 'bg-red-100 text-red-700',
+                        'crítica': 'bg-red-100 text-red-700'
+                    }[incidencia.severidad] || 'bg-gray-100 text-gray-700';
+
+                    html += `
+                        <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl hover:shadow-md transition-shadow">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                                    !
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">${incidencia.titulo}</h4>
+                                <p class="text-sm text-gray-600">${incidencia.descripcion.substring(0, 100)}...</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-block px-2 py-1 ${severidadClass} text-xs font-semibold rounded-full mt-1">${incidencia.severidad}</span>
+                                <p class="text-xs text-gray-500 mt-1">${new Date(incidencia.fecha_creacion).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando incidencias recientes:', error);
+            }
+        }
+
+        async function cargarPacientes() {
+            try {
+                const response = await fetch('/recepcionista/pacientes/listar');
+                const pacientes = await response.json();
+
+                const tbody = document.getElementById('tabla-pacientes');
+
+                if (pacientes.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-gray-500">
+                                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">groups</span>
+                                <p>No hay pacientes registrados</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                pacientes.forEach(paciente => {
+                    html += `
+                        <tr class="border-b border-gray-100 paciente-row" 
+                            data-nombre="${paciente.nombres} ${paciente.apellidos}" 
+                            data-dni="${paciente.dni}">
+                            <td class="py-4 px-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                        ${paciente.nombres[0]}${paciente.apellidos[0]}
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-800">${paciente.nombres} ${paciente.apellidos}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-4 px-4 text-gray-600">${paciente.dni}</td>
+                            <td class="py-4 px-4 text-gray-600">${paciente.telefono}</td>
+                            <td class="py-4 px-4 text-gray-600">${paciente.email}</td>
+                            <td class="py-4 px-4">
+                                <button onclick="verDetallePaciente(${paciente.id_paciente})" 
+                                        class="text-cyan-600 hover:text-cyan-700 font-semibold text-sm flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                    Ver Detalles
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando pacientes:', error);
+            }
+        }
+
+        async function cargarIncidencias() {
+            try {
+                const response = await fetch('/recepcionista/incidencias/listar');
+                const incidencias = await response.json();
+
+                const container = document.getElementById('lista-incidencias');
+
+                if (incidencias.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">report_problem</span>
+                            <p>No hay incidencias registradas</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                incidencias.forEach(incidencia => {
+                    const estadoClass = {
+                        'abierta': 'bg-red-100 text-red-700',
+                        'progreso': 'bg-yellow-100 text-yellow-700',
+                        'cerrada': 'bg-green-100 text-green-700'
+                    }[incidencia.estado] || 'bg-gray-100 text-gray-700';
+
+                    const severidadClass = {
+                        'baja': 'bg-blue-100 text-blue-700',
+                        'media': 'bg-orange-100 text-orange-700',
+                        'alta': 'bg-red-100 text-red-700',
+                        'crítica': 'bg-red-100 text-red-700

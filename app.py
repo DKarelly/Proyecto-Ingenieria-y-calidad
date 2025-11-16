@@ -42,6 +42,7 @@ def registrar_blueprints():
     from routes.paciente import paciente_bp
     from routes.trabajador import trabajador_bp
     from routes.medico import medico_bp
+    from routes.recepcionista import recepcionista_bp
 
     app.register_blueprint(usuarios_bp, url_prefix='/usuarios')
     app.register_blueprint(cuentas_bp, url_prefix='/cuentas')
@@ -54,6 +55,7 @@ def registrar_blueprints():
     app.register_blueprint(paciente_bp, url_prefix='/paciente')
     app.register_blueprint(trabajador_bp, url_prefix='/trabajador')
     app.register_blueprint(medico_bp, url_prefix='/medico')
+    app.register_blueprint(recepcionista_bp)
 
 # Registrar blueprints
 registrar_blueprints()
@@ -114,7 +116,11 @@ def admin_panel():
         # Si no es administrador, redirigir según su rol
         if id_rol == 2:  # Médico
             return redirect(url_for('medico.panel'))
-        else:  # Otros empleados
+        elif id_rol == 3:  # Recepcionista
+            return redirect(url_for('recepcionista.panel'))
+        elif id_rol == 4:  # Farmacéutico
+            return redirect(url_for('farmacia.panel'))
+        else:  # Otros empleados (incluyendo Laboratorista rol 5)
             return redirect(url_for('trabajador.panel'))
 
     # Leer el subsistema desde el querystring para resaltar la sección y mostrar su contenido

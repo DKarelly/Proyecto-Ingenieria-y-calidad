@@ -56,7 +56,12 @@ def reportes():
 def panel():
     """Dashboard principal del trabajador (conmutador por subsistema vía query param)."""
     subsistema = request.args.get('subsistema')
-    # Unificar visualización en el dashboard principal
+
+    # Si es laboratorista (id_rol = 5), redirigir al panel de farmacia
+    if session.get('id_rol') == 5:
+        return redirect(url_for('farmacia.panel'))
+
+    # Unificar visualización en el dashboard principal para otros trabajadores
     return redirect(url_for('admin_panel', subsistema=subsistema))
 
 @trabajador_bp.route('/panel')

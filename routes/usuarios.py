@@ -65,7 +65,13 @@ def login():
                 return redirect(url_for('admin.panel'))
             elif id_rol == 2:  # Médico
                 return redirect(url_for('medico.panel'))
-            else:  # Otros empleados (recepcionista, farmacéutico, laboratorista)
+            elif id_rol == 4:  # Farmacéutico
+                return redirect(url_for('farmacia.panel'))
+            elif id_rol == 5:  # Laboratorista
+                return redirect(url_for('trabajador.panel', subsistema='laboratorio'))
+            elif id_rol == 3:  # Recepcionista
+                return redirect(url_for('recepcionista.panel'))
+            else:  # Otros empleados (laboratorista, etc.)
                 return redirect(url_for('trabajador.panel'))
         else:  # Paciente
             return redirect(url_for('usuarios.perfil'))
