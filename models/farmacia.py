@@ -139,38 +139,23 @@ class Medicamento:
         finally:
             conexion.close()
 
-class DetalleMedicamento:
     @staticmethod
-    def registrar_entrega(id_empleado, id_paciente, id_medicamento, cantidad):
+    def obtener_recientes(limite=5):
+        """Obtiene los medicamentos más recientes registrados"""
         conexion = obtener_conexion()
         try:
-            cursor = conexion.cursor()
+            cursor = _get_cursor(conexion)
             try:
-                # Bloqueo y verificación de stock
-                # Dependiendo del conector, FOR UPDATE funciona si la transacción está activa.
-                cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
-                med = cursor.fetchone()
-                if not med:
-                    return {'error': 'Medicamento no encontrado'}
-                # med puede ser tuple o dict
-                stock_actual = med[0] if not isinstance(med, dict) else med.get('stock')
-                if stock_actual is None or stock_actual < cantidad:
-                    return {'error': 'Stock insuficiente'}
-
                 cursor.execute("""
-                    INSERT INTO DETALLE_MEDICAMENTO (id_empleado, id_paciente, id_medicamento, cantidad)
-                    VALUES (%s, %s, %s, %s)
-                """, (id_empleado, id_paciente, id_medicamento, cantidad))
-
-                cursor.execute("""
-                    UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s
-                """, (cantidad, id_medicamento))
-
-                conexion.commit()
-                return {'id_detalle': cursor.lastrowid}
-            except Exception as e:
-                conexion.rollback()
-                return {'error': str(e)}
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                    FROM MEDICAMENTO
+                    ORDER BY fecha_registro DESC
+                    LIMIT %s
+                """, (limite,))
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
             finally:
                 try:
                     cursor.close()
@@ -180,22 +165,57 @@ class DetalleMedicamento:
             conexion.close()
 
     @staticmethod
-    def listar_entregas():
+    def obtener_por_vencer(dias=30, limite=None):
+        """Obtiene medicamentos próximos a vencer en los próximos X días"""
+        from datetime import date, timedelta
+        fecha_limite = date.today() + timedelta(days=dias)
+
+        conexion = obtener_conexion()
+        try:
+            cursor = _get_cursor(conexion)
+            try:
+                query = """
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATEDIFF(fecha_vencimiento, CURDATE()) as dias_para_vencer
+                    FROM MEDICAMENTO
+                    WHERE fecha_vencimiento <= %s AND fecha_vencimiento >= CURDATE()
+                    ORDER BY fecha_vencimiento ASC
+                """
+                params = [fecha_limite]
+
+                if limite:
+                    query += " LIMIT %s"
+                    params.append(limite)
+
+                cursor.execute(query, params)
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+
+
+    @staticmethod
+    def obtener_recibidos_hoy():
+        """Obtiene los medicamentos recibidos hoy"""
         conexion = obtener_conexion()
         try:
             cursor = _get_cursor(conexion)
             try:
                 cursor.execute("""
-                    SELECT d.id_detalle as id, d.cantidad, d.id_empleado, d.id_paciente, d.id_medicamento,
-                           m.nombre as medicamento,
-                           CONCAT(p.nombres, ' ', p.apellidos) as paciente,
-                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           CURDATE() as fecha_entrega
-                    FROM DETALLE_MEDICAMENTO d
-                    JOIN MEDICAMENTO m ON d.id_medicamento = m.id_medicamento
-                    JOIN PACIENTE p ON d.id_paciente = p.id_paciente
-                    JOIN EMPLEADO e ON d.id_empleado = e.id_empleado
-                    ORDER BY d.id_detalle DESC
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                    FROM MEDICAMENTO
+                    WHERE DATE(fecha_registro) = CURDATE()
+                    ORDER BY fecha_registro DESC
                 """)
                 rows = cursor.fetchall()
                 return _rows_to_dicts(cursor, rows)
@@ -208,27 +228,24 @@ class DetalleMedicamento:
             conexion.close()
 
     @staticmethod
-    def obtener_entrega_por_id(id_detalle):
+    def obtener_ingresos_recientes():
+        """Obtiene los medicamentos registrados en la última semana"""
         conexion = obtener_conexion()
         try:
             cursor = _get_cursor(conexion)
             try:
                 cursor.execute("""
-                    SELECT d.id_detalle as id, d.cantidad, d.id_empleado, d.id_paciente, d.id_medicamento,
-                           m.nombre as medicamento,
-                           CONCAT(p.nombres, ' ', p.apellidos) as paciente,
-                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           CURDATE() as fecha_entrega
-                    FROM DETALLE_MEDICAMENTO d
-                    JOIN MEDICAMENTO m ON d.id_medicamento = m.id_medicamento
-                    JOIN PACIENTE p ON d.id_paciente = p.id_paciente
-                    JOIN EMPLEADO e ON d.id_empleado = e.id_empleado
-                    WHERE d.id_detalle = %s
-                """, (id_detalle,))
-                row = cursor.fetchone()
-                if row is None:
-                    return None
-                return _rows_to_dicts(cursor, [row])[0]
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           stock as cantidad,
+                           fecha_registro as fecha_ingreso
+                    FROM MEDICAMENTO
+                    WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                    ORDER BY fecha_registro DESC
+                """)
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
             finally:
                 try:
                     cursor.close()
@@ -238,59 +255,22 @@ class DetalleMedicamento:
             conexion.close()
 
     @staticmethod
-    def actualizar_entrega(id_detalle, id_empleado, id_paciente, id_medicamento, cantidad):
+    def listar_con_detalles():
+        """Obtiene todos los medicamentos con detalles adicionales"""
         conexion = obtener_conexion()
         try:
-            cursor = conexion.cursor()
+            cursor = _get_cursor(conexion)
             try:
-                # Get current delivery
-                cursor.execute("SELECT cantidad, id_medicamento FROM DETALLE_MEDICAMENTO WHERE id_detalle = %s", (id_detalle,))
-                current = cursor.fetchone()
-                if not current:
-                    return {'error': 'Entrega no encontrada'}
-                old_quantity = current['cantidad']
-                old_medicamento = current['id_medicamento']
-
-                # If medication changed, adjust stocks
-                if id_medicamento != old_medicamento:
-                    # Return stock to old medication
-                    cursor.execute("UPDATE MEDICAMENTO SET stock = stock + %s WHERE id_medicamento = %s", (old_quantity, old_medicamento))
-                    # Check and take from new medication
-                    cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
-                    med = cursor.fetchone()
-                    if not med:
-                        return {'error': 'Medicamento no encontrado'}
-                    stock_actual = med['stock']
-                    if stock_actual < cantidad:
-                        return {'error': 'Stock insuficiente'}
-                    cursor.execute("UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s", (cantidad, id_medicamento))
-                else:
-                    # Same medication, adjust difference
-                    difference = cantidad - old_quantity
-                    if difference > 0:
-                        # Need more stock
-                        cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
-                        med = cursor.fetchone()
-                        stock_actual = med['stock']
-                        if stock_actual < difference:
-                            return {'error': 'Stock insuficiente'}
-                        cursor.execute("UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s", (difference, id_medicamento))
-                    elif difference < 0:
-                        # Return excess stock
-                        cursor.execute("UPDATE MEDICAMENTO SET stock = stock + %s WHERE id_medicamento = %s", (-difference, id_medicamento))
-
-                # Update delivery
                 cursor.execute("""
-                    UPDATE DETALLE_MEDICAMENTO
-                    SET id_empleado = %s, id_paciente = %s, id_medicamento = %s, cantidad = %s
-                    WHERE id_detalle = %s
-                """, (id_empleado, id_paciente, id_medicamento, cantidad, id_detalle))
-
-                conexion.commit()
-                return {'modified_rows': cursor.rowcount}
-            except Exception as e:
-                conexion.rollback()
-                return {'error': str(e)}
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATEDIFF(fecha_vencimiento, CURDATE()) as dias_para_vencer
+                    FROM MEDICAMENTO
+                    ORDER BY nombre
+                """)
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
             finally:
                 try:
                     cursor.close()
@@ -298,6 +278,83 @@ class DetalleMedicamento:
                     pass
         finally:
             conexion.close()
+
+    @staticmethod
+    def obtener_vencidos():
+        """Obtiene medicamentos que ya han vencido"""
+        conexion = obtener_conexion()
+        try:
+            cursor = _get_cursor(conexion)
+            try:
+                cursor.execute("""
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATEDIFF(CURDATE(), fecha_vencimiento) as dias_vencido
+                    FROM MEDICAMENTO
+                    WHERE fecha_vencimiento < CURDATE()
+                    ORDER BY fecha_vencimiento ASC
+                """)
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def obtener_stock_bajo(umbral=10):
+        """Obtiene medicamentos con stock bajo (por defecto menos de 10 unidades)"""
+        conexion = obtener_conexion()
+        try:
+            cursor = _get_cursor(conexion)
+            try:
+                cursor.execute("""
+                    SELECT id_medicamento, nombre, descripcion, stock,
+                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                    FROM MEDICAMENTO
+                    WHERE stock <= %s
+                    ORDER BY stock ASC
+                """, (umbral,))
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def retirar(id_medicamento):
+        """Retira un medicamento del inventario (lo marca como retirado o elimina)"""
+        conexion = obtener_conexion()
+        try:
+            cursor = conexion.cursor()
+            try:
+                # Verificar que el medicamento existe
+                cursor.execute("SELECT id_medicamento FROM MEDICAMENTO WHERE id_medicamento = %s", (id_medicamento,))
+                if not cursor.fetchone():
+                    return {'error': 'Medicamento no encontrado'}
+
+                # Eliminar el medicamento del inventario
+                cursor.execute("DELETE FROM MEDICAMENTO WHERE id_medicamento = %s", (id_medicamento,))
+                conexion.commit()
+                return {'success': True, 'message': 'Medicamento retirado del inventario'}
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+
 
 class Paciente:
     @staticmethod
