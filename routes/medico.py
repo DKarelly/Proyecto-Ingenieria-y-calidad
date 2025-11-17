@@ -816,7 +816,7 @@ def diagnosticos():
 @medico_required
 def guardar_diagnostico():
     """
-    Guarda un diagnóstico para una cita y la marca como completada
+    Guarda un diagnóstico para una cita, la marca como completada y gestiona autorizaciones
     """
     conexion = None
     try:
@@ -824,11 +824,34 @@ def guardar_diagnostico():
         diagnostico = request.form.get('diagnostico')
         observaciones = request.form.get('observaciones', '')
         
+        # Autorizaciones
+        id_servicio_examen = request.form.get('id_servicio_examen')
+        observaciones_examen = request.form.get('observaciones_examen', '')
+        
+        id_servicio_operacion = request.form.get('id_servicio_operacion')
+        id_empleado_operacion = request.form.get('id_empleado_operacion')
+        observaciones_operacion = request.form.get('observaciones_operacion', '')
+        
         if not id_cita or not diagnostico:
             return jsonify({'success': False, 'message': 'Faltan datos requeridos'}), 400
         
         conexion = obtener_conexion()
         cursor = conexion.cursor()
+        
+        # Obtener información de la cita para las autorizaciones
+        cursor.execute("""
+            SELECT r.id_paciente
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            WHERE c.id_cita = %s
+        """, (id_cita,))
+        
+        cita_info = cursor.fetchone()
+        if not cita_info:
+            return jsonify({'success': False, 'message': 'Cita no encontrada'}), 404
+        
+        id_paciente = cita_info['id_paciente']
+        id_empleado = session.get('id_empleado')
         
         # Actualizar la cita con el diagnóstico y cambiar estado a Completada
         cursor.execute("""
@@ -838,6 +861,33 @@ def guardar_diagnostico():
                 estado = 'Completada'
             WHERE id_cita = %s
         """, (diagnostico, observaciones, id_cita))
+        
+        # Crear autorización de examen si se seleccionó
+        if id_servicio_examen and id_servicio_examen != '':
+            cursor.execute("""
+                INSERT INTO AUTORIZACION_EXAMEN 
+                (id_cita, id_paciente, id_empleado_autoriza, id_servicio, observaciones, estado)
+                VALUES (%s, %s, %s, %s, %s, 'Pendiente')
+            """, (id_cita, id_paciente, id_empleado, id_servicio_examen, observaciones_examen))
+        
+        # Crear autorización de operación si se seleccionó
+        if id_servicio_operacion and id_servicio_operacion != '':
+            # Determinar si es derivación
+            es_derivacion = 0
+            id_empleado_asignado = id_empleado  # Por defecto, el mismo médico
+            
+            if id_empleado_operacion and id_empleado_operacion != '' and id_empleado_operacion != str(id_empleado):
+                # Es una derivación a otro médico
+                es_derivacion = 1
+                id_empleado_asignado = id_empleado_operacion
+            
+            cursor.execute("""
+                INSERT INTO AUTORIZACION_OPERACION 
+                (id_cita, id_paciente, id_empleado_autoriza, id_empleado_asignado, id_servicio, 
+                 observaciones, estado, es_derivacion)
+                VALUES (%s, %s, %s, %s, %s, %s, 'Pendiente', %s)
+            """, (id_cita, id_paciente, id_empleado, id_empleado_asignado, 
+                  id_servicio_operacion, observaciones_operacion, es_derivacion))
         
         conexion.commit()
         
@@ -993,6 +1043,149 @@ def api_buscar_paciente():
 
 
 # Manejo de errores específico para el módulo médico
+@medico_bp.route('/api/servicios-examenes', methods=['GET'])
+@medico_required
+def api_servicios_examenes():
+    """
+    Obtiene los servicios de tipo Exámenes y Diagnóstico (id_tipo_servicio = 4)
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        cursor.execute("""
+            SELECT id_servicio, nombre, descripcion
+            FROM SERVICIO
+            WHERE id_tipo_servicio = 4 AND estado = 'Activo'
+            ORDER BY nombre
+        """)
+        
+        servicios = cursor.fetchall()
+        return jsonify({'success': True, 'servicios': servicios})
+        
+    except Exception as e:
+        print(f"Error al obtener servicios de exámenes: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/servicios-operaciones', methods=['GET'])
+@medico_required
+def api_servicios_operaciones():
+    """
+    Obtiene los servicios de tipo Procedimientos Quirúrgicos (id_tipo_servicio = 2)
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener la especialidad del médico actual
+        cursor.execute("""
+            SELECT id_especialidad
+            FROM EMPLEADO
+            WHERE id_empleado = %s
+        """, (id_empleado,))
+        
+        empleado = cursor.fetchone()
+        id_especialidad = empleado['id_especialidad'] if empleado else None
+        
+        # Obtener servicios de operaciones de la misma especialidad o generales (sin especialidad)
+        if id_especialidad:
+            cursor.execute("""
+                SELECT id_servicio, nombre, descripcion
+                FROM SERVICIO
+                WHERE id_tipo_servicio = 2 AND estado = 'Activo'
+                  AND (id_especialidad = %s OR id_especialidad IS NULL)
+                ORDER BY nombre
+            """, (id_especialidad,))
+        else:
+            cursor.execute("""
+                SELECT id_servicio, nombre, descripcion
+                FROM SERVICIO
+                WHERE id_tipo_servicio = 2 AND estado = 'Activo'
+                ORDER BY nombre
+            """)
+        
+        servicios = cursor.fetchall()
+        return jsonify({'success': True, 'servicios': servicios})
+        
+    except Exception as e:
+        print(f"Error al obtener servicios de operaciones: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/medicos-misma-especialidad', methods=['GET'])
+@medico_required
+def api_medicos_misma_especialidad():
+    """
+    Obtiene médicos con la misma especialidad que el médico actual
+    y que tengan servicios de operaciones disponibles
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener la especialidad del médico actual
+        cursor.execute("""
+            SELECT id_especialidad
+            FROM EMPLEADO
+            WHERE id_empleado = %s
+        """, (id_empleado,))
+        
+        empleado = cursor.fetchone()
+        if not empleado or not empleado['id_especialidad']:
+            return jsonify({'success': True, 'medicos': []})
+        
+        id_especialidad = empleado['id_especialidad']
+        
+        # Obtener médicos con la misma especialidad (excluyendo al médico actual)
+        # y que tengan horarios activos (están disponibles)
+        cursor.execute("""
+            SELECT DISTINCT e.id_empleado, e.nombres, e.apellidos, esp.nombre as especialidad
+            FROM EMPLEADO e
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            INNER JOIN HORARIO h ON e.id_empleado = h.id_empleado
+            WHERE e.id_especialidad = %s
+              AND e.id_empleado != %s
+              AND e.estado = 'Activo'
+              AND e.id_rol = 2
+              AND h.activo = 1
+            ORDER BY e.apellidos, e.nombres
+        """, (id_especialidad, id_empleado))
+        
+        medicos = cursor.fetchall()
+        
+        # Formatear los datos
+        medicos_formateados = []
+        for m in medicos:
+            medicos_formateados.append({
+                'id_empleado': m['id_empleado'],
+                'nombre_completo': f"Dr. {m['nombres']} {m['apellidos']}",
+                'especialidad': m['especialidad']
+            })
+        
+        return jsonify({'success': True, 'medicos': medicos_formateados})
+        
+    except Exception as e:
+        print(f"Error al obtener médicos: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
 @medico_bp.errorhandler(404)
 def medico_not_found(error):
     """
