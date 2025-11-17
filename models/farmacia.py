@@ -149,12 +149,14 @@ class Medicamento:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
                            DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           stock as cantidad
                     FROM MEDICAMENTO
                     ORDER BY fecha_registro DESC
                     LIMIT %s
                 """, (limite,))
                 rows = cursor.fetchall()
+                print(f"DEBUG obtener_recientes: {len(rows)} medicamentos encontrados")
                 return _rows_to_dicts(cursor, rows)
             finally:
                 try:
@@ -228,22 +230,22 @@ class Medicamento:
             conexion.close()
 
     @staticmethod
-    def obtener_ingresos_recientes():
-        """Obtiene los medicamentos registrados en la última semana"""
+    def obtener_ingresos_recientes(limite=10):
+        """Obtiene los medicamentos registrados en los últimos 7 días"""
         conexion = obtener_conexion()
         try:
             cursor = _get_cursor(conexion)
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_vencimiento, '%%d/%%m/%%Y') as fecha_vencimiento,
                            stock as cantidad,
-                           fecha_registro as fecha_ingreso
+                           DATE_FORMAT(fecha_registro, '%%d/%%m/%%Y') as fecha_ingreso
                     FROM MEDICAMENTO
                     WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                     ORDER BY fecha_registro DESC
-                """)
+                    LIMIT %s
+                """, (limite,))
                 rows = cursor.fetchall()
                 return _rows_to_dicts(cursor, rows)
             finally:
