@@ -358,6 +358,167 @@ class Medicamento:
 
 
 
+class DetalleMedicamento:
+    @staticmethod
+    def registrar_entrega(id_empleado, id_paciente, id_medicamento, cantidad):
+        conexion = obtener_conexion()
+        try:
+            cursor = conexion.cursor()
+            try:
+                # Bloqueo y verificación de stock
+                # Dependiendo del conector, FOR UPDATE funciona si la transacción está activa.
+                cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
+                med = cursor.fetchone()
+                if not med:
+                    return {'error': 'Medicamento no encontrado'}
+                # med puede ser tuple o dict
+                stock_actual = med[0] if not isinstance(med, dict) else med.get('stock')
+                if stock_actual is None or stock_actual < cantidad:
+                    return {'error': 'Stock insuficiente'}
+
+                cursor.execute("""
+                    INSERT INTO DETALLE_MEDICAMENTO (id_empleado, id_paciente, id_medicamento, cantidad)
+                    VALUES (%s, %s, %s, %s)
+                """, (id_empleado, id_paciente, id_medicamento, cantidad))
+
+                cursor.execute("""
+                    UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s
+                """, (cantidad, id_medicamento))
+
+                conexion.commit()
+                return {'id_detalle': cursor.lastrowid}
+            except Exception as e:
+                conexion.rollback()
+                return {'error': str(e)}
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def listar_entregas():
+        conexion = obtener_conexion()
+        try:
+            cursor = _get_cursor(conexion)
+            try:
+                cursor.execute("""
+                    SELECT d.id_detalle as id, d.cantidad, d.id_empleado, d.id_paciente, d.id_medicamento,
+                           m.nombre as medicamento,
+                           CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
+                           CURDATE() as fecha_entrega
+                    FROM DETALLE_MEDICAMENTO d
+                    JOIN MEDICAMENTO m ON d.id_medicamento = m.id_medicamento
+                    JOIN PACIENTE p ON d.id_paciente = p.id_paciente
+                    JOIN EMPLEADO e ON d.id_empleado = e.id_empleado
+                    ORDER BY d.id_detalle DESC
+                """)
+                rows = cursor.fetchall()
+                return _rows_to_dicts(cursor, rows)
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def obtener_entrega_por_id(id_detalle):
+        conexion = obtener_conexion()
+        try:
+            cursor = _get_cursor(conexion)
+            try:
+                cursor.execute("""
+                    SELECT d.id_detalle as id, d.cantidad, d.id_empleado, d.id_paciente, d.id_medicamento,
+                           m.nombre as medicamento,
+                           CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                           CONCAT(e.nombres, ' ', e.apellidos) as empleado,
+                           CURDATE() as fecha_entrega
+                    FROM DETALLE_MEDICAMENTO d
+                    JOIN MEDICAMENTO m ON d.id_medicamento = m.id_medicamento
+                    JOIN PACIENTE p ON d.id_paciente = p.id_paciente
+                    JOIN EMPLEADO e ON d.id_empleado = e.id_empleado
+                    WHERE d.id_detalle = %s
+                """, (id_detalle,))
+                row = cursor.fetchone()
+                if row is None:
+                    return None
+                return _rows_to_dicts(cursor, [row])[0]
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def actualizar_entrega(id_detalle, id_empleado, id_paciente, id_medicamento, cantidad):
+        conexion = obtener_conexion()
+        try:
+            cursor = conexion.cursor()
+            try:
+                # Get current delivery
+                cursor.execute("SELECT cantidad, id_medicamento FROM DETALLE_MEDICAMENTO WHERE id_detalle = %s", (id_detalle,))
+                current = cursor.fetchone()
+                if not current:
+                    return {'error': 'Entrega no encontrada'}
+                old_quantity = current['cantidad']
+                old_medicamento = current['id_medicamento']
+
+                # If medication changed, adjust stocks
+                if id_medicamento != old_medicamento:
+                    # Return stock to old medication
+                    cursor.execute("UPDATE MEDICAMENTO SET stock = stock + %s WHERE id_medicamento = %s", (old_quantity, old_medicamento))
+                    # Check and take from new medication
+                    cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
+                    med = cursor.fetchone()
+                    if not med:
+                        return {'error': 'Medicamento no encontrado'}
+                    stock_actual = med['stock']
+                    if stock_actual < cantidad:
+                        return {'error': 'Stock insuficiente'}
+                    cursor.execute("UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s", (cantidad, id_medicamento))
+                else:
+                    # Same medication, adjust difference
+                    difference = cantidad - old_quantity
+                    if difference > 0:
+                        # Need more stock
+                        cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
+                        med = cursor.fetchone()
+                        stock_actual = med['stock']
+                        if stock_actual < difference:
+                            return {'error': 'Stock insuficiente'}
+                        cursor.execute("UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s", (difference, id_medicamento))
+                    elif difference < 0:
+                        # Return excess stock
+                        cursor.execute("UPDATE MEDICAMENTO SET stock = stock + %s WHERE id_medicamento = %s", (-difference, id_medicamento))
+
+                # Update delivery
+                cursor.execute("""
+                    UPDATE DETALLE_MEDICAMENTO
+                    SET id_empleado = %s, id_paciente = %s, id_medicamento = %s, cantidad = %s
+                    WHERE id_detalle = %s
+                """, (id_empleado, id_paciente, id_medicamento, cantidad, id_detalle))
+
+                conexion.commit()
+                return {'modified_rows': cursor.rowcount}
+            except Exception as e:
+                conexion.rollback()
+                return {'error': str(e)}
+            finally:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+        finally:
+            conexion.close()
+
+
 class Paciente:
     @staticmethod
     def buscar(termino):
@@ -366,11 +527,11 @@ class Paciente:
             cursor = _get_cursor(conexion)
             try:
                 cursor.execute("""
-                    SELECT id_paciente, nombres, apellidos
+                    SELECT id_paciente, nombres as nombre, apellidos as apellido, documento_identidad as dni
                     FROM PACIENTE
-                    WHERE nombres LIKE %s OR apellidos LIKE %s
+                    WHERE nombres LIKE %s OR apellidos LIKE %s OR documento_identidad LIKE %s
                     LIMIT 10
-                """, (f'%{termino}%', f'%{termino}%'))
+                """, (f'%{termino}%', f'%{termino}%', f'%{termino}%'))
                 rows = cursor.fetchall()
                 return _rows_to_dicts(cursor, rows)
             finally:
