@@ -219,3 +219,115 @@ def api_mis_incidencias():
             conexion.close()
         except:
             pass
+
+
+# ========== AUTORIZACIONES DE EXÁMENES Y OPERACIONES ==========
+
+@paciente_bp.route('/autorizaciones')
+def autorizaciones():
+    """Vista de autorizaciones médicas del paciente"""
+    if 'usuario_id' not in session:
+        return redirect(url_for('home'))
+
+    if session.get('tipo_usuario') != 'paciente':
+        return redirect(url_for('home'))
+
+    return render_template('AutorizacionesPaciente.html')
+
+
+@paciente_bp.route('/api/autorizaciones-pendientes')
+def api_autorizaciones_pendientes():
+    """API que retorna las autorizaciones pendientes del paciente"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    try:
+        # Obtener el id_paciente del usuario
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Obtener autorizaciones de exámenes pendientes
+            sql_examenes = """
+                SELECT ae.id_autorizacion_examen,
+                       ae.id_cita,
+                       ae.estado,
+                       ae.fecha_autorizacion,
+                       ae.observaciones,
+                       s.nombre as servicio_nombre,
+                       s.descripcion as servicio_descripcion,
+                       e.nombres as medico_nombres,
+                       e.apellidos as medico_apellidos,
+                       c.fecha_cita
+                FROM AUTORIZACION_EXAMEN ae
+                INNER JOIN SERVICIO s ON ae.id_servicio = s.id_servicio
+                INNER JOIN EMPLEADO e ON ae.id_empleado_autoriza = e.id_empleado
+                INNER JOIN CITA c ON ae.id_cita = c.id_cita
+                WHERE ae.id_paciente = %s
+                  AND ae.estado = 'Pendiente'
+                ORDER BY ae.fecha_autorizacion DESC
+            """
+            cursor.execute(sql_examenes, (id_paciente,))
+            autorizaciones_examenes = cursor.fetchall()
+
+            # Obtener autorizaciones de operaciones pendientes
+            sql_operaciones = """
+                SELECT ao.id_autorizacion_operacion,
+                       ao.id_cita,
+                       ao.estado,
+                       ao.fecha_autorizacion,
+                       ao.observaciones,
+                       ao.es_derivacion,
+                       s.nombre as servicio_nombre,
+                       s.descripcion as servicio_descripcion,
+                       e1.nombres as medico_autoriza_nombres,
+                       e1.apellidos as medico_autoriza_apellidos,
+                       e2.nombres as medico_asignado_nombres,
+                       e2.apellidos as medico_asignado_apellidos,
+                       c.fecha_cita
+                FROM AUTORIZACION_OPERACION ao
+                INNER JOIN SERVICIO s ON ao.id_servicio = s.id_servicio
+                INNER JOIN EMPLEADO e1 ON ao.id_empleado_autoriza = e1.id_empleado
+                LEFT JOIN EMPLEADO e2 ON ao.id_empleado_asignado = e2.id_empleado
+                INNER JOIN CITA c ON ao.id_cita = c.id_cita
+                WHERE ao.id_paciente = %s
+                  AND ao.estado = 'Pendiente'
+                ORDER BY ao.fecha_autorizacion DESC
+            """
+            cursor.execute(sql_operaciones, (id_paciente,))
+            autorizaciones_operaciones = cursor.fetchall()
+
+            # Convertir fechas a string para serialización JSON
+            for auth in autorizaciones_examenes:
+                if auth.get('fecha_autorizacion'):
+                    auth['fecha_autorizacion'] = auth['fecha_autorizacion'].strftime('%Y-%m-%d %H:%M:%S')
+                if auth.get('fecha_cita'):
+                    auth['fecha_cita'] = auth['fecha_cita'].strftime('%Y-%m-%d')
+
+            for auth in autorizaciones_operaciones:
+                if auth.get('fecha_autorizacion'):
+                    auth['fecha_autorizacion'] = auth['fecha_autorizacion'].strftime('%Y-%m-%d %H:%M:%S')
+                if auth.get('fecha_cita'):
+                    auth['fecha_cita'] = auth['fecha_cita'].strftime('%Y-%m-%d')
+
+            return jsonify({
+                'autorizaciones_examenes': autorizaciones_examenes,
+                'autorizaciones_operaciones': autorizaciones_operaciones
+            })
+
+    except Exception as e:
+        return jsonify({'error': f'Error al obtener autorizaciones: {str(e)}'}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
