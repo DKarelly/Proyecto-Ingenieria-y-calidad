@@ -576,12 +576,60 @@
                                       placeholder="Ingresa el diagnóstico médico..."></textarea>
                         </div>
 
-                        <!-- Observaciones -->
+                        <!-- Observaciones del diagnóstico -->
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Observaciones</label>
-                            <textarea id="observaciones" name="observaciones" rows="3"
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Observaciones del Diagnóstico</label>
+                            <textarea id="observaciones" name="observaciones" rows="2"
                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
-                                      placeholder="Observaciones adicionales, indicaciones, etc..."></textarea>
+                                      placeholder="Observaciones adicionales del diagnóstico..."></textarea>
+                        </div>
+
+                        <!-- Separador -->
+                        <div class="border-t border-gray-200 pt-4">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Autorizaciones</h4>
+                        </div>
+
+                        <!-- Autorización de Examen -->
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-symbols-outlined text-blue-600">laboratory</span>
+                                <label class="text-sm font-semibold text-gray-700">Autorizar Examen</label>
+                            </div>
+                            <select id="id_servicio_examen" name="id_servicio_examen"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent mb-3">
+                                <option value="">-- No autorizar examen --</option>
+                            </select>
+                            <textarea id="observaciones_examen" name="observaciones_examen" rows="2"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                                      placeholder="Observaciones para el examen (opcional)..."></textarea>
+                        </div>
+
+                        <!-- Autorización de Operación -->
+                        <div class="bg-purple-50 p-4 rounded-xl border border-purple-200">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="material-symbols-outlined text-purple-600">surgical</span>
+                                <label class="text-sm font-semibold text-gray-700">Autorizar Operación</label>
+                            </div>
+                            <select id="id_servicio_operacion" name="id_servicio_operacion"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent mb-3"
+                                    onchange="toggleMedicoOperacion()">
+                                <option value="">-- No autorizar operación --</option>
+                            </select>
+                            
+                            <!-- Selección de médico para derivación (se muestra solo si se autoriza operación) -->
+                            <div id="div-medico-operacion" class="hidden mt-3">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Asignar a Médico (opcional - dejar vacío para realizar usted mismo)
+                                </label>
+                                <select id="id_empleado_operacion" name="id_empleado_operacion"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent mb-3">
+                                    <option value="">-- Yo realizaré la operación --</option>
+                                </select>
+                            </div>
+                            
+                            <textarea id="observaciones_operacion" name="observaciones_operacion" rows="2"
+                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
+                                      placeholder="Observaciones para la operación (opcional)..."></textarea>
                         </div>
 
                         <!-- Botones -->
@@ -875,12 +923,27 @@
         });
 
         // Funciones para diagnósticos
-        function abrirFormularioDiagnostico(idCita, nombrePaciente, dni) {
+        async function abrirFormularioDiagnostico(idCita, nombrePaciente, dni) {
             document.getElementById('form-diagnostico').classList.remove('hidden');
             document.getElementById('id_cita').value = idCita;
             document.getElementById('form-paciente-info').textContent = `Paciente: ${nombrePaciente} - DNI: ${dni}`;
             document.getElementById('diagnostico').value = '';
             document.getElementById('observaciones').value = '';
+            document.getElementById('observaciones_examen').value = '';
+            document.getElementById('observaciones_operacion').value = '';
+            document.getElementById('id_servicio_examen').value = '';
+            document.getElementById('id_servicio_operacion').value = '';
+            document.getElementById('id_empleado_operacion').value = '';
+            document.getElementById('div-medico-operacion').classList.add('hidden');
+            
+            // Cargar servicios de exámenes
+            await cargarServiciosExamenes();
+            
+            // Cargar servicios de operaciones
+            await cargarServiciosOperaciones();
+            
+            // Cargar médicos para derivación
+            await cargarMedicosDerivacion();
             
             // Scroll al formulario
             document.getElementById('form-diagnostico').scrollIntoView({ behavior: 'smooth' });
@@ -888,6 +951,82 @@
 
         function cerrarFormularioDiagnostico() {
             document.getElementById('form-diagnostico').classList.add('hidden');
+        }
+        
+        function toggleMedicoOperacion() {
+            const selectOperacion = document.getElementById('id_servicio_operacion');
+            const divMedico = document.getElementById('div-medico-operacion');
+            
+            if (selectOperacion.value && selectOperacion.value !== '') {
+                divMedico.classList.remove('hidden');
+            } else {
+                divMedico.classList.add('hidden');
+            }
+        }
+        
+        async function cargarServiciosExamenes() {
+            try {
+                const response = await fetch('/medico/api/servicios-examenes');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('id_servicio_examen');
+                    select.innerHTML = '<option value="">-- No autorizar examen --</option>';
+                    
+                    result.servicios.forEach(servicio => {
+                        const option = document.createElement('option');
+                        option.value = servicio.id_servicio;
+                        option.textContent = servicio.nombre;
+                        option.title = servicio.descripcion;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar servicios de exámenes:', error);
+            }
+        }
+        
+        async function cargarServiciosOperaciones() {
+            try {
+                const response = await fetch('/medico/api/servicios-operaciones');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('id_servicio_operacion');
+                    select.innerHTML = '<option value="">-- No autorizar operación --</option>';
+                    
+                    result.servicios.forEach(servicio => {
+                        const option = document.createElement('option');
+                        option.value = servicio.id_servicio;
+                        option.textContent = servicio.nombre;
+                        option.title = servicio.descripcion;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar servicios de operaciones:', error);
+            }
+        }
+        
+        async function cargarMedicosDerivacion() {
+            try {
+                const response = await fetch('/medico/api/medicos-misma-especialidad');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('id_empleado_operacion');
+                    select.innerHTML = '<option value="">-- Yo realizaré la operación --</option>';
+                    
+                    result.medicos.forEach(medico => {
+                        const option = document.createElement('option');
+                        option.value = medico.id_empleado;
+                        option.textContent = `${medico.nombre_completo} - ${medico.especialidad}`;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar médicos:', error);
+            }
         }
 
         // Funciones para historial de pacientes
