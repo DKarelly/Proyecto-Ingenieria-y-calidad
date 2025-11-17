@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from models.farmacia import Medicamento, DetalleMedicamento, Paciente, Empleado
-from datetime import datetime
+import datetime
 
 farmacia_bp = Blueprint('farmacia', __name__)
 
@@ -17,9 +17,6 @@ def panel():
     """Panel específico de farmacia para farmacéuticos (rol 4)"""
     if 'id_rol' not in session or session['id_rol'] not in [1, 4]:
         return redirect(url_for('usuarios.login'))
-
-    # Obtener estadísticas para el dashboard
-    import datetime
 
     # Estadísticas rápidas
     stats = {
