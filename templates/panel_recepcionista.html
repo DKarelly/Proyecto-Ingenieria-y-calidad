@@ -394,37 +394,14 @@
                             <select id="tipo_incidencia" name="tipo_incidencia" required
                                     class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                                 <option value="">Seleccionar tipo...</option>
-                                <option value="técnico">Problema Técnico</option>
-                                <option value="administrativo">Problema Administrativo</option>
-                                <option value="médico">Problema Médico</option>
-                                <option value="seguridad">Problema de Seguridad</option>
+                                <option value="infraestructura">Infraestructura</option>
+                                <option value="equipamiento_medico">Equipamiento Médico</option>
+                                <option value="insumos">Insumos</option>
+                                <option value="hardware">Hardware</option>
+                                <option value="software">Software</option>
+                                <option value="atencion_paciente">Atencion al Paciente</option>
                                 <option value="otro">Otro</option>
                             </select>
-                        </div>
-
-                        <!-- Severidad -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Severidad <span class="text-red-500">*</span>
-                            </label>
-                            <select id="severidad" name="severidad" required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                                <option value="">Seleccionar severidad...</option>
-                                <option value="baja">Baja</option>
-                                <option value="media">Media</option>
-                                <option value="alta">Alta</option>
-                                <option value="crítica">Crítica</option>
-                            </select>
-                        </div>
-
-                        <!-- Título -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Título <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" id="titulo" name="titulo" required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                   placeholder="Breve descripción del problema">
                         </div>
 
                         <!-- Descripción -->
@@ -435,6 +412,27 @@
                             <textarea id="descripcion" name="descripcion" rows="4" required
                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                       placeholder="Describe detalladamente el problema o incidencia..."></textarea>
+                        </div>
+
+                        <!-- Prioridad -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                Prioridad <span class="text-red-500">*</span>
+                            </label>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="prioridad" value="Baja" required class="mr-2">
+                                    Baja
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="prioridad" value="Media" class="mr-2">
+                                    Media
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="radio" name="prioridad" value="Alta" class="mr-2">
+                                    Alta
+                                </label>
+                            </div>
                         </div>
 
                         <!-- Botones -->
@@ -730,4 +728,59 @@
                         'baja': 'bg-blue-100 text-blue-700',
                         'media': 'bg-orange-100 text-orange-700',
                         'alta': 'bg-red-100 text-red-700',
-                        'crítica': 'bg-red-100 text-red-700
+                        'crítica': 'bg-red-100 text-red-700'
+                    }[incidencia.severidad] || 'bg-gray-100 text-gray-700';
+
+                    html += `
+                        <div class="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow" data-estado="${incidencia.estado}">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 ${estadoClass} rounded-full flex items-center justify-center text-white font-bold">
+                                    ${incidencia.estado === 'abierta' ? '!' : incidencia.estado === 'progreso' ? '~' : '✓'}
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-800">${incidencia.titulo}</h4>
+                                <p class="text-sm text-gray-600">${incidencia.descripcion.substring(0, 100)}...</p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="inline-block px-2 py-1 ${severidadClass} text-xs font-semibold rounded-full">${incidencia.severidad}</span>
+                                    <span class="inline-block px-2 py-1 ${estadoClass} text-xs font-semibold rounded-full">${incidencia.estado}</span>
+                                </div>
+                            </div>
+                            <div class="text-right text-xs text-gray-500">
+                                ${new Date(incidencia.fecha_creacion).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error cargando incidencias:', error);
+            }
+        }
+
+        // Función para filtrar incidencias
+        function filtrarIncidencias(filtro) {
+            const buttons = document.querySelectorAll('.filtro-incidencia');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const incidencias = document.querySelectorAll('#lista-incidencias > div:not(.text-center)');
+            incidencias.forEach(incidencia => {
+                const estado = incidencia.dataset.estado;
+                if (filtro === 'todas' || estado === filtro) {
+                    incidencia.style.display = '';
+                } else {
+                    incidencia.style.display = 'none';
+                }
+            });
+        }
+
+        // Función para ver detalles del paciente
+        function verDetallePaciente(id) {
+            // Implementar lógica para ver detalles del paciente
+            console.log('Ver detalles del paciente:', id);
+        }
+    </script>
+</body>
+</html>
