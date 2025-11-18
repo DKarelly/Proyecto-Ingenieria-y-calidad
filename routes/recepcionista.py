@@ -127,7 +127,7 @@ def obtener_pacientes():
 
 def obtener_incidencias():
     """
-    Obtiene todas las incidencias
+    Obtiene todas las incidencias con información del paciente
     """
     conexion = None
     try:
@@ -136,18 +136,30 @@ def obtener_incidencias():
 
         cursor.execute("""
             SELECT
-                id_incidencia,
-                titulo,
-                descripcion,
-                tipo_incidencia,
-                severidad,
-                estado,
-                fecha_creacion
-            FROM INCIDENCIA
-            ORDER BY fecha_creacion DESC
+                i.id_incidencia,
+                i.descripcion,
+                i.categoria,
+                i.prioridad,
+                i.estado,
+                i.fecha_registro,
+                i.id_paciente,
+                p.nombres,
+                p.apellidos,
+                p.documento_identidad as dni
+            FROM INCIDENCIA i
+            LEFT JOIN PACIENTE p ON i.id_paciente = p.id_paciente
+            ORDER BY i.fecha_registro DESC
         """)
 
         incidencias = cursor.fetchall()
+
+        # Formatear los datos para incluir nombre completo del paciente
+        for incidencia in incidencias:
+            if incidencia['nombres'] and incidencia['apellidos']:
+                incidencia['paciente_nombre'] = f"{incidencia['nombres']} {incidencia['apellidos']}"
+            else:
+                incidencia['paciente_nombre'] = 'No asignado'
+
         return incidencias
 
     except Exception as e:
@@ -240,6 +252,51 @@ def api_pacientes_listar():
     return jsonify(pacientes)
 
 
+@recepcionista_bp.route('/pacientes/buscar')
+@recepcionista_required
+def api_pacientes_buscar():
+    """
+    API: Busca pacientes por nombre o DNI para autocompletado
+    """
+    try:
+        query = request.args.get('q', '').strip()
+
+        if len(query) < 2:
+            return jsonify([])
+
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+
+        # Buscar pacientes que coincidan con el término de búsqueda
+        cursor.execute("""
+            SELECT
+                p.id_paciente,
+                p.nombres,
+                p.apellidos,
+                p.documento_identidad as dni
+            FROM PACIENTE p
+            INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+            WHERE u.estado = 'activo'
+            AND (
+                CONCAT(p.nombres, ' ', p.apellidos) LIKE %s
+                OR p.documento_identidad LIKE %s
+            )
+            ORDER BY p.apellidos, p.nombres
+            LIMIT 10
+        """, (f'%{query}%', f'%{query}%'))
+
+        pacientes = cursor.fetchall()
+
+        return jsonify(pacientes)
+
+    except Exception as e:
+        print(f"Error al buscar pacientes: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+    finally:
+        if 'conexion' in locals() and conexion:
+            conexion.close()
+
+
 @recepcionista_bp.route('/pacientes/registrar', methods=['POST'])
 @recepcionista_required
 def api_pacientes_registrar():
@@ -310,10 +367,27 @@ def api_pacientes_registrar():
 @recepcionista_required
 def api_incidencias_listar():
     """
-    API: Lista todas las incidencias
+    API: Lista todas las incidencias, con filtro opcional por paciente
     """
-    incidencias = obtener_incidencias()
-    return jsonify(incidencias)
+    try:
+        q = request.args.get('q', '').strip().lower()
+        incidencias = obtener_incidencias()
+
+        if q:
+            filtered = []
+            for inc in incidencias:
+                paciente_nombre = (inc.get('paciente_nombre', '') or '').lower()
+                dni = (inc.get('dni', '') or '').lower()
+                if q in paciente_nombre or q in dni:
+                    filtered.append(inc)
+            incidencias = filtered
+
+        return jsonify({'incidencias': incidencias})
+    except Exception as e:
+        print(f"Error al listar incidencias: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Error interno del servidor al cargar incidencias'}), 500
 
 
 @recepcionista_bp.route('/incidencias/generar', methods=['POST'])
