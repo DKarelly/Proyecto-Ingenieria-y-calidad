@@ -138,7 +138,8 @@ def panel():
                          inventario=inventario,
                          medicamentos_vencidos=medicamentos_vencidos,
                          medicamentos_stock_bajo=medicamentos_stock_bajo,
-                         datetime=datetime)
+                         datetime=datetime,
+                         session=session)
 
 @farmacia_bp.route('/gestionar-medicamentos')
 def gestionar_medicamentos():

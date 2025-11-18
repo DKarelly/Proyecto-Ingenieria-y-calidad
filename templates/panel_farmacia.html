@@ -1052,7 +1052,7 @@ function buscarPacientes(query) {
 
         function seleccionarMedicamento(medicamento) {
             // Llenar el formulario con el medicamento seleccionado
-            document.getElementById('id_medicamento_entrega').value = medicamento.id;
+            document.getElementById('id_medicamento_entrega').value = medicamento.id_medicamento;
             document.getElementById('buscar-medicamento-entrega').value = medicamento.nombre;
 
             // Ocultar resultados de búsqueda
