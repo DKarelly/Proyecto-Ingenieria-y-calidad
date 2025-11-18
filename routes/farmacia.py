@@ -64,14 +64,7 @@ def panel():
     medicamentos_por_vencer = []
     try:
         medicamentos_por_vencer = Medicamento.obtener_por_vencer(30, limite=5)
-        # Parsear fechas de string a datetime para el template
-        from datetime import datetime
-        for med in medicamentos_por_vencer:
-            if 'fecha_vencimiento' in med and isinstance(med['fecha_vencimiento'], str):
-                try:
-                    med['fecha_vencimiento'] = datetime.strptime(med['fecha_vencimiento'], '%Y-%m-%d')
-                except ValueError:
-                    pass  # Mantener como string si no se puede parsear
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos por vencer: {e}")
 
@@ -87,11 +80,10 @@ def panel():
     try:
         entregas_recientes = DetalleMedicamento.listar_entregas()[:5]  # Últimas 5 entregas
         # Parsear fechas de string a datetime para el template
-        from datetime import datetime
         for entrega in entregas_recientes:
             if 'fecha_entrega' in entrega and isinstance(entrega['fecha_entrega'], str):
                 try:
-                    entrega['fecha_entrega'] = datetime.strptime(entrega['fecha_entrega'], '%Y-%m-%d')
+                    entrega['fecha_entrega'] = datetime.datetime.strptime(entrega['fecha_entrega'], '%Y-%m-%d')
                 except ValueError:
                     pass  # Mantener como string si no se puede parsear
     except Exception as e:
@@ -101,14 +93,7 @@ def panel():
     inventario = []
     try:
         inventario = Medicamento.listar_con_detalles()
-        # Parsear fechas de string a datetime para el template
-        from datetime import datetime
-        for item in inventario:
-            if 'fecha_vencimiento' in item and isinstance(item['fecha_vencimiento'], str):
-                try:
-                    item['fecha_vencimiento'] = datetime.strptime(item['fecha_vencimiento'], '%Y-%m-%d')
-                except ValueError:
-                    pass  # Mantener como string si no se puede parsear
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo inventario: {e}")
 
@@ -116,14 +101,7 @@ def panel():
     medicamentos_vencidos = []
     try:
         medicamentos_vencidos = Medicamento.obtener_vencidos()
-        # Parsear fechas de string a datetime para el template
-        from datetime import datetime
-        for med in medicamentos_vencidos:
-            if 'fecha_vencimiento' in med and isinstance(med['fecha_vencimiento'], str):
-                try:
-                    med['fecha_vencimiento'] = datetime.strptime(med['fecha_vencimiento'], '%Y-%m-%d')
-                except ValueError:
-                    pass  # Mantener como string si no se puede parsear
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos vencidos: {e}")
 
@@ -131,14 +109,7 @@ def panel():
     medicamentos_stock_bajo = []
     try:
         medicamentos_stock_bajo = Medicamento.obtener_stock_bajo()
-        # Parsear fechas de string a datetime para el template
-        from datetime import datetime
-        for med in medicamentos_stock_bajo:
-            if 'fecha_vencimiento' in med and isinstance(med['fecha_vencimiento'], str):
-                try:
-                    med['fecha_vencimiento'] = datetime.strptime(med['fecha_vencimiento'], '%Y-%m-%d')
-                except ValueError:
-                    pass  # Mantener como string si no se puede parsear
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos con stock bajo: {e}")
 
@@ -282,15 +253,40 @@ def api_actualizar_entrega(id_detalle):
 def api_registrar_entrega():
     try:
         datos = request.json
+        print(f"DEBUG API: Datos recibidos: {datos}")
+
+        # Obtener id_empleado de la sesión
+        id_empleado = session.get('id_empleado')
+        if not id_empleado:
+            return jsonify({'success': False, 'message': 'Usuario no autenticado'}), 401
+
+        # Mapear las claves del frontend a las esperadas
+        id_paciente = datos.get('id_paciente_entrega')
+        id_medicamento = datos.get('id_medicamento_entrega')
+        cantidad = datos.get('cantidad_entrega')
+
+        # Validar que todos los datos estén presentes y no sean 'undefined'
+        if not id_paciente or id_paciente == 'undefined' or not id_medicamento or id_medicamento == 'undefined' or not cantidad:
+            return jsonify({'success': False, 'message': 'Debe seleccionar un paciente y un medicamento válidos'}), 400
+
+        try:
+            cantidad = int(cantidad)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Cantidad debe ser un número'}), 400
+
         resultado = DetalleMedicamento.registrar_entrega(
-            datos['id_empleado'],
-            datos['id_paciente'],
-            datos['id_medicamento'],
-            datos['cantidad']
+            id_empleado,
+            id_paciente,
+            id_medicamento,
+            cantidad
         )
-        return jsonify(resultado), 201
+        print(f"DEBUG API: Resultado del modelo: {resultado}")
+        if 'error' in resultado:
+            return jsonify({'success': False, 'message': resultado['error']}), 400
+        return jsonify({'success': True, 'message': 'Entrega registrada exitosamente', 'data': resultado}), 201
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"DEBUG API: Error en API: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 # API Endpoints para búsqueda de Pacientes y Empleados
 @farmacia_bp.route('/api/pacientes/buscar', methods=['GET'])

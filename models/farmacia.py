@@ -28,14 +28,13 @@ class Medicamento:
         try:
             cursor = _get_cursor(conexion)
             try:
-                # Luego, obtener la lista actualizada
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                        DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                        DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
-                    FROM MEDICAMENTO
-                    ORDER BY nombre
-                """)
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento
+                        FROM MEDICAMENTO
+                        ORDER BY nombre
+                    """)
                 rows = cursor.fetchall()
                 print(f"DEBUG: {len(rows)} medicamentos encontrados") 
                 return _rows_to_dicts(cursor, rows)
@@ -55,8 +54,8 @@ class Medicamento:
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento
                     FROM MEDICAMENTO
                     WHERE id_medicamento = %s
                 """, (id_medicamento,))
@@ -148,8 +147,8 @@ class Medicamento:
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento,
                            stock as cantidad
                     FROM MEDICAMENTO
                     ORDER BY fecha_registro DESC
@@ -171,6 +170,7 @@ class Medicamento:
         """Obtiene medicamentos próximos a vencer en los próximos X días"""
         from datetime import date, timedelta
         fecha_limite = date.today() + timedelta(days=dias)
+        fecha_limite_str = fecha_limite.strftime('%Y-%m-%d')
 
         conexion = obtener_conexion()
         try:
@@ -178,14 +178,14 @@ class Medicamento:
             try:
                 query = """
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_registro, '%%d/%%m/%%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%%d/%%m/%%Y') as fecha_vencimiento,
                            DATEDIFF(fecha_vencimiento, CURDATE()) as dias_para_vencer
                     FROM MEDICAMENTO
                     WHERE fecha_vencimiento <= %s AND fecha_vencimiento >= CURDATE()
                     ORDER BY fecha_vencimiento ASC
                 """
-                params = [fecha_limite]
+                params = [fecha_limite_str]
 
                 if limite:
                     query += " LIMIT %s"
@@ -213,8 +213,8 @@ class Medicamento:
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento
                     FROM MEDICAMENTO
                     WHERE DATE(fecha_registro) = CURDATE()
                     ORDER BY fecha_registro DESC
@@ -231,18 +231,18 @@ class Medicamento:
 
     @staticmethod
     def obtener_ingresos_recientes(limite=10):
-        """Obtiene los medicamentos registrados en los últimos 7 días"""
+        """Obtiene los medicamentos registrados exactamente hace 7 días"""
         conexion = obtener_conexion()
         try:
             cursor = _get_cursor(conexion)
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_vencimiento, '%%d/%%m/%%Y') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento,
                            stock as cantidad,
-                           DATE_FORMAT(fecha_registro, '%%d/%%m/%%Y') as fecha_ingreso
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_ingreso
                     FROM MEDICAMENTO
-                    WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                    WHERE DATE(fecha_registro) = DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                     ORDER BY fecha_registro DESC
                     LIMIT %s
                 """, (limite,))
@@ -265,8 +265,8 @@ class Medicamento:
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento,
                            DATEDIFF(fecha_vencimiento, CURDATE()) as dias_para_vencer
                     FROM MEDICAMENTO
                     ORDER BY nombre
@@ -290,8 +290,8 @@ class Medicamento:
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento,
                            DATEDIFF(CURDATE(), fecha_vencimiento) as dias_vencido
                     FROM MEDICAMENTO
                     WHERE fecha_vencimiento < CURDATE()
@@ -316,8 +316,8 @@ class Medicamento:
             try:
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%Y-%m-%d') as fecha_vencimiento
+                           DATE_FORMAT(fecha_registro, '%%d/%%m/%%Y') as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, '%%d/%%m/%%Y') as fecha_vencimiento
                     FROM MEDICAMENTO
                     WHERE stock <= %s
                     ORDER BY stock ASC
@@ -361,33 +361,45 @@ class Medicamento:
 class DetalleMedicamento:
     @staticmethod
     def registrar_entrega(id_empleado, id_paciente, id_medicamento, cantidad):
+        print(f"DEBUG: Registrando entrega - Empleado: {id_empleado}, Paciente: {id_paciente}, Medicamento: {id_medicamento}, Cantidad: {cantidad}")
         conexion = obtener_conexion()
         try:
             cursor = conexion.cursor()
             try:
                 # Bloqueo y verificación de stock
                 # Dependiendo del conector, FOR UPDATE funciona si la transacción está activa.
+                print(f"DEBUG: Verificando stock para medicamento {id_medicamento}")
                 cursor.execute("SELECT stock FROM MEDICAMENTO WHERE id_medicamento = %s FOR UPDATE", (id_medicamento,))
                 med = cursor.fetchone()
+                print(f"DEBUG: Resultado de SELECT stock: {med}")
                 if not med:
+                    print("DEBUG: Medicamento no encontrado")
                     return {'error': 'Medicamento no encontrado'}
                 # med puede ser tuple o dict
                 stock_actual = med[0] if not isinstance(med, dict) else med.get('stock')
+                print(f"DEBUG: Stock actual: {stock_actual}")
                 if stock_actual is None or stock_actual < cantidad:
+                    print(f"DEBUG: Stock insuficiente. Actual: {stock_actual}, Requerido: {cantidad}")
                     return {'error': 'Stock insuficiente'}
 
+                print("DEBUG: Insertando detalle de medicamento")
                 cursor.execute("""
-                    INSERT INTO DETALLE_MEDICAMENTO (id_empleado, id_paciente, id_medicamento, cantidad)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO DETALLE_MEDICAMENTO (id_empleado, id_paciente, id_medicamento, cantidad, fecha_entrega)
+                    VALUES (%s, %s, %s, %s, CURDATE())
                 """, (id_empleado, id_paciente, id_medicamento, cantidad))
+                id_detalle = cursor.lastrowid
+                print(f"DEBUG: ID detalle insertado: {id_detalle}")
 
+                print("DEBUG: Actualizando stock")
                 cursor.execute("""
                     UPDATE MEDICAMENTO SET stock = stock - %s WHERE id_medicamento = %s
                 """, (cantidad, id_medicamento))
 
                 conexion.commit()
-                return {'id_detalle': cursor.lastrowid}
+                print(f"DEBUG: Entrega registrada exitosamente con ID: {id_detalle}")
+                return {'id_detalle': id_detalle}
             except Exception as e:
+                print(f"DEBUG: Error en la transacción: {str(e)}")
                 conexion.rollback()
                 return {'error': str(e)}
             finally:
@@ -409,7 +421,7 @@ class DetalleMedicamento:
                            m.nombre as medicamento,
                            CONCAT(p.nombres, ' ', p.apellidos) as paciente,
                            CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           CURDATE() as fecha_entrega
+                           d.fecha_entrega
                     FROM DETALLE_MEDICAMENTO d
                     JOIN MEDICAMENTO m ON d.id_medicamento = m.id_medicamento
                     JOIN PACIENTE p ON d.id_paciente = p.id_paciente
@@ -437,7 +449,7 @@ class DetalleMedicamento:
                            m.nombre as medicamento,
                            CONCAT(p.nombres, ' ', p.apellidos) as paciente,
                            CONCAT(e.nombres, ' ', e.apellidos) as empleado,
-                           CURDATE() as fecha_entrega
+                           d.fecha_entrega
                     FROM DETALLE_MEDICAMENTO d
                     JOIN MEDICAMENTO m ON d.id_medicamento = m.id_medicamento
                     JOIN PACIENTE p ON d.id_paciente = p.id_paciente
