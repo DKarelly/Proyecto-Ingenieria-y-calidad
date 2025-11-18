@@ -538,7 +538,7 @@
                                 <p class="text-sm text-gray-600">DNI: {{ cita.dni }} | Fecha: {{ cita.fecha.strftime('%d/%m/%Y') if cita.fecha else 'N/A' }} - {{ cita.hora }}</p>
                             </div>
                             <div>
-                                <button onclick="abrirFormularioDiagnostico({{ cita.id_cita }}, '{{ cita.paciente }}', '{{ cita.dni }}')" 
+                                <button onclick="abrirFormularioDiagnostico({{ cita.id_cita }}, '{{ cita.paciente }}', '{{ cita.dni }}', {{ cita.id_paciente }})" 
                                         class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-lg hover:from-cyan-600 hover:to-teal-600 transition-all font-semibold text-sm flex items-center gap-2">
                                     <span class="material-symbols-outlined text-sm">edit_note</span>
                                     Registrar Diagnóstico
@@ -565,6 +565,7 @@
 
                     <form id="diagnostico-form" class="space-y-6">
                         <input type="hidden" id="id_cita" name="id_cita">
+                        <input type="hidden" id="id_paciente" name="id_paciente">
 
                         <!-- Diagnóstico -->
                         <div>
@@ -582,6 +583,79 @@
                             <textarea id="observaciones" name="observaciones" rows="3"
                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent" 
                                       placeholder="Observaciones adicionales, indicaciones, etc..."></textarea>
+                        </div>
+
+                        <!-- Sección de Autorizaciones -->
+                        <div class="border-t border-gray-200 pt-6">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4">Autorizar Procedimientos</h4>
+                            
+                            <!-- Autorizar Examen -->
+                            <div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <input type="checkbox" id="check_autorizar_examen" 
+                                           class="w-5 h-5 text-cyan-600 rounded focus:ring-2 focus:ring-cyan-500"
+                                           onchange="toggleAutorizacionExamen()">
+                                    <label for="check_autorizar_examen" class="font-semibold text-gray-800 cursor-pointer">
+                                        <span class="material-symbols-outlined text-lg align-middle mr-1">biotech</span>
+                                        Autorizar Examen Médico
+                                    </label>
+                                </div>
+                                
+                                <div id="fields_examen" class="hidden space-y-3 ml-8">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            Tipo de Examen <span class="text-red-500">*</span>
+                                        </label>
+                                        <select id="servicio_examen" name="id_servicio_examen"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm">
+                                            <option value="">-- Seleccione el tipo de examen --</option>
+                                        </select>
+                                        <p class="text-xs text-gray-500 mt-1">Seleccione el examen que el paciente debe realizarse</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Autorizar Operación -->
+                            <div class="p-4 bg-orange-50 rounded-xl border border-orange-200">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <input type="checkbox" id="check_autorizar_operacion" 
+                                           class="w-5 h-5 text-cyan-600 rounded focus:ring-2 focus:ring-cyan-500"
+                                           onchange="toggleAutorizacionOperacion()">
+                                    <label for="check_autorizar_operacion" class="font-semibold text-gray-800 cursor-pointer">
+                                        <span class="material-symbols-outlined text-lg align-middle mr-1">surgical</span>
+                                        Autorizar Operación
+                                    </label>
+                                </div>
+                                
+                                <div id="fields_operacion" class="hidden space-y-3 ml-8">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                                            Tipo de Operación <span class="text-red-500">*</span>
+                                        </label>
+                                        <select id="servicio_operacion" name="id_servicio_operacion"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm"
+                                                onchange="onServicioOperacionChange()">
+                                            <option value="">-- Seleccione el tipo de operación --</option>
+                                        </select>
+                                        <p class="text-xs text-gray-500 mt-1">Puede realizar la operación usted mismo o derivarla a otro médico</p>
+                                    </div>
+                                    <div id="div_derivar_operacion" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">¿Desea derivar a otro médico?</label>
+                                        <select id="especialidad_operacion" name="id_especialidad_operacion" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm"
+                                                onchange="cargarMedicosPorEspecialidad()">
+                                            <option value="">-- No derivar (yo realizaré la operación) --</option>
+                                        </select>
+                                    </div>
+                                    <div id="div_medico_operacion" class="hidden">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Asignar Médico Especialista</label>
+                                        <select id="medico_operacion" name="id_medico_operacion" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 text-sm">
+                                            <option value="">-- Seleccione médico --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Botones -->
@@ -850,6 +924,13 @@
                     e.preventDefault();
 
                     const formData = new FormData(this);
+                    
+                    // Agregar flags de autorización
+                    const autorizarExamen = document.getElementById('check_autorizar_examen')?.checked || false;
+                    const autorizarOperacion = document.getElementById('check_autorizar_operacion')?.checked || false;
+                    
+                    formData.append('autorizar_examen', autorizarExamen);
+                    formData.append('autorizar_operacion', autorizarOperacion);
 
                     try {
                         const response = await fetch('/medico/diagnosticos/guardar', {
@@ -860,7 +941,7 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            alert('Diagnóstico guardado exitosamente. La cita ha sido marcada como completada.');
+                            alert(result.message);
                             window.location.reload();
                         } else {
                             alert('Error: ' + result.message);
@@ -875,12 +956,21 @@
         });
 
         // Funciones para diagnósticos
-        function abrirFormularioDiagnostico(idCita, nombrePaciente, dni) {
+        function abrirFormularioDiagnostico(idCita, nombrePaciente, dni, idPaciente) {
             document.getElementById('form-diagnostico').classList.remove('hidden');
             document.getElementById('id_cita').value = idCita;
+            document.getElementById('id_paciente').value = idPaciente || '';
             document.getElementById('form-paciente-info').textContent = `Paciente: ${nombrePaciente} - DNI: ${dni}`;
             document.getElementById('diagnostico').value = '';
             document.getElementById('observaciones').value = '';
+            
+            // Resetear checkboxes de autorización
+            document.getElementById('check_autorizar_examen').checked = false;
+            document.getElementById('check_autorizar_operacion').checked = false;
+            document.getElementById('fields_examen').classList.add('hidden');
+            document.getElementById('fields_operacion').classList.add('hidden');
+            document.getElementById('div_derivar_operacion').classList.add('hidden');
+            document.getElementById('div_medico_operacion').classList.add('hidden');
             
             // Scroll al formulario
             document.getElementById('form-diagnostico').scrollIntoView({ behavior: 'smooth' });
@@ -1180,6 +1270,171 @@
             // Esta función actualizaría los contadores en tiempo real
             // Por ahora solo simula la actualización
             console.log('Contadores actualizados');
+        }
+
+        // ========== FUNCIONES PARA AUTORIZACIONES DE PROCEDIMIENTOS ==========
+        
+        function toggleAutorizacionExamen() {
+            const checkbox = document.getElementById('check_autorizar_examen');
+            const fields = document.getElementById('fields_examen');
+            
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                cargarServiciosExamen();
+            } else {
+                fields.classList.add('hidden');
+            }
+        }
+
+        function toggleAutorizacionOperacion() {
+            const checkbox = document.getElementById('check_autorizar_operacion');
+            const fields = document.getElementById('fields_operacion');
+            
+            if (checkbox.checked) {
+                fields.classList.remove('hidden');
+                cargarServiciosOperacion();
+                cargarEspecialidades();
+            } else {
+                fields.classList.add('hidden');
+                document.getElementById('div_derivar_operacion').classList.add('hidden');
+                document.getElementById('div_medico_operacion').classList.add('hidden');
+            }
+        }
+
+        async function cargarServiciosExamen() {
+            try {
+                const response = await fetch('/medico/api/obtener_servicios_examen');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('servicio_examen');
+                    
+                    // Limpiar opciones excepto la primera
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    
+                    // Agregar servicios
+                    result.servicios.forEach(servicio => {
+                        const option = document.createElement('option');
+                        option.value = servicio.id_servicio;
+                        option.textContent = servicio.nombre;
+                        if (servicio.nombre_especialidad) {
+                            option.textContent += ` (${servicio.nombre_especialidad})`;
+                        }
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar servicios de examen:', error);
+            }
+        }
+
+        async function cargarServiciosOperacion() {
+            try {
+                const response = await fetch('/medico/api/obtener_servicios_operacion');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('servicio_operacion');
+                    
+                    // Limpiar opciones excepto la primera
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    
+                    // Agregar servicios
+                    result.servicios.forEach(servicio => {
+                        const option = document.createElement('option');
+                        option.value = servicio.id_servicio;
+                        option.textContent = servicio.nombre;
+                        if (servicio.nombre_especialidad) {
+                            option.textContent += ` (${servicio.nombre_especialidad})`;
+                        }
+                        option.dataset.especialidad = servicio.id_especialidad || '';
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar servicios de operación:', error);
+            }
+        }
+
+        function onServicioOperacionChange() {
+            const select = document.getElementById('servicio_operacion');
+            const divDerivar = document.getElementById('div_derivar_operacion');
+            
+            if (select.value) {
+                divDerivar.classList.remove('hidden');
+            } else {
+                divDerivar.classList.add('hidden');
+                document.getElementById('div_medico_operacion').classList.add('hidden');
+            }
+        }
+
+        async function cargarEspecialidades() {
+            try {
+                const response = await fetch('/medico/api/obtener_especialidades');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('especialidad_operacion');
+                    
+                    // Limpiar opciones excepto la primera
+                    while (select.options.length > 1) {
+                        select.remove(1);
+                    }
+                    
+                    // Agregar especialidades
+                    result.especialidades.forEach(esp => {
+                        const option = document.createElement('option');
+                        option.value = esp.id_especialidad;
+                        option.textContent = esp.nombre;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error al cargar especialidades:', error);
+            }
+        }
+
+        async function cargarMedicosPorEspecialidad() {
+            const especialidadId = document.getElementById('especialidad_operacion').value;
+            const divMedico = document.getElementById('div_medico_operacion');
+            const selectMedico = document.getElementById('medico_operacion');
+            
+            if (!especialidadId || especialidadId === '') {
+                divMedico.classList.add('hidden');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/medico/api/obtener_medicos_por_especialidad/${especialidadId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Limpiar opciones excepto la primera
+                    while (selectMedico.options.length > 1) {
+                        selectMedico.remove(1);
+                    }
+                    
+                    // Agregar médicos
+                    result.medicos.forEach(medico => {
+                        const option = document.createElement('option');
+                        option.value = medico.id_empleado;
+                        option.textContent = medico.nombre_completo;
+                        selectMedico.appendChild(option);
+                    });
+                    
+                    divMedico.classList.remove('hidden');
+                } else {
+                    divMedico.classList.add('hidden');
+                    alert('No se encontraron médicos con esa especialidad');
+                }
+            } catch (error) {
+                console.error('Error al cargar médicos:', error);
+                divMedico.classList.add('hidden');
+            }
         }
 
         // Agregar estilos para los botones de filtro

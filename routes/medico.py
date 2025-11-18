@@ -7,6 +7,9 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from functools import wraps
 from datetime import datetime, date, timedelta
 from bd import obtener_conexion
+from models.autorizacion_procedimiento import AutorizacionProcedimiento
+from models.empleado import Empleado
+from models.servicio import Servicio
 
 # Crear el Blueprint
 medico_bp = Blueprint('medico', __name__, url_prefix='/medico')
@@ -816,15 +819,21 @@ def diagnosticos():
 @medico_required
 def guardar_diagnostico():
     """
-    Guarda un diagnóstico para una cita y la marca como completada
+    Guarda un diagnóstico para una cita y la marca como completada.
+    También puede autorizar exámenes u operaciones si se solicita.
     """
     conexion = None
     try:
         id_cita = request.form.get('id_cita')
+        id_paciente = request.form.get('id_paciente')
         diagnostico = request.form.get('diagnostico')
         observaciones = request.form.get('observaciones', '')
         
-        if not id_cita or not diagnostico:
+        # Datos de autorización de procedimientos
+        autorizar_examen = request.form.get('autorizar_examen') == 'true'
+        autorizar_operacion = request.form.get('autorizar_operacion') == 'true'
+        
+        if not id_cita or not diagnostico or not id_paciente:
             return jsonify({'success': False, 'message': 'Faltan datos requeridos'}), 400
         
         conexion = obtener_conexion()
@@ -839,9 +848,62 @@ def guardar_diagnostico():
             WHERE id_cita = %s
         """, (diagnostico, observaciones, id_cita))
         
+        id_empleado = session.get('id_empleado')
+        
+        # Procesar autorizaciones si se solicitaron
+        autorizaciones_creadas = []
+        
+        if autorizar_examen:
+            id_servicio_examen = request.form.get('id_servicio_examen')
+            
+            if id_servicio_examen:
+                resultado = AutorizacionProcedimiento.crear({
+                    'id_cita': id_cita,
+                    'id_paciente': id_paciente,
+                    'id_medico_autoriza': id_empleado,
+                    'tipo_procedimiento': 'EXAMEN',
+                    'id_servicio': int(id_servicio_examen),
+                    'id_especialidad_requerida': None,
+                    'id_medico_asignado': None
+                })
+                
+                if resultado.get('success'):
+                    autorizaciones_creadas.append('examen')
+        
+        if autorizar_operacion:
+            id_servicio_operacion = request.form.get('id_servicio_operacion')
+            id_especialidad_req = request.form.get('id_especialidad_operacion')
+            id_medico_asignado = request.form.get('id_medico_operacion')
+            
+            # Convertir valores vacíos a None
+            id_especialidad_req = int(id_especialidad_req) if id_especialidad_req and id_especialidad_req != '' else None
+            id_medico_asignado = int(id_medico_asignado) if id_medico_asignado and id_medico_asignado != '' else None
+            
+            if id_servicio_operacion:
+                # Si no se asignó médico y no requiere especialidad específica, puede hacerla el mismo médico
+                if not id_medico_asignado and not id_especialidad_req:
+                    id_medico_asignado = id_empleado
+                
+                resultado = AutorizacionProcedimiento.crear({
+                    'id_cita': id_cita,
+                    'id_paciente': id_paciente,
+                    'id_medico_autoriza': id_empleado,
+                    'tipo_procedimiento': 'OPERACION',
+                    'id_servicio': int(id_servicio_operacion),
+                    'id_especialidad_requerida': id_especialidad_req,
+                    'id_medico_asignado': id_medico_asignado
+                })
+                
+                if resultado.get('success'):
+                    autorizaciones_creadas.append('operación')
+        
         conexion.commit()
         
-        return jsonify({'success': True, 'message': 'Diagnóstico guardado exitosamente'})
+        mensaje = 'Diagnóstico guardado exitosamente. La cita ha sido marcada como completada.'
+        if autorizaciones_creadas:
+            mensaje += f' Se autorizaron: {", ".join(autorizaciones_creadas)}.'
+        
+        return jsonify({'success': True, 'message': mensaje})
 
     except Exception as e:
         if conexion:
@@ -990,6 +1052,137 @@ def api_buscar_paciente():
     pacientes = []
 
     return jsonify({'success': True, 'pacientes': pacientes})
+
+
+@medico_bp.route('/api/obtener_especialidades', methods=['GET'])
+@medico_required
+def obtener_especialidades():
+    """
+    Obtiene todas las especialidades médicas disponibles
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        cursor.execute("""
+            SELECT id_especialidad, nombre, descripcion
+            FROM ESPECIALIDAD
+            WHERE estado = 'activo'
+            ORDER BY nombre
+        """)
+        
+        especialidades = cursor.fetchall()
+        
+        return jsonify({'success': True, 'especialidades': especialidades})
+        
+    except Exception as e:
+        print(f"Error al obtener especialidades: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/obtener_medicos_por_especialidad/<int:id_especialidad>', methods=['GET'])
+@medico_required
+def obtener_medicos_por_especialidad(id_especialidad):
+    """
+    Obtiene médicos que pueden realizar procedimientos de una especialidad específica
+    """
+    try:
+        medicos = AutorizacionProcedimiento.obtener_medicos_por_especialidad(id_especialidad)
+        return jsonify({'success': True, 'medicos': medicos})
+        
+    except Exception as e:
+        print(f"Error al obtener médicos: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/obtener_servicios_por_especialidad/<int:id_especialidad>', methods=['GET'])
+@medico_required
+def obtener_servicios_por_especialidad(id_especialidad):
+    """
+    Obtiene servicios (operaciones) disponibles para una especialidad
+    """
+    try:
+        servicios = Servicio.obtener_por_especialidad(id_especialidad)
+        return jsonify({'success': True, 'servicios': servicios})
+        
+    except Exception as e:
+        print(f"Error al obtener servicios: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/obtener_servicios_examen', methods=['GET'])
+@medico_required
+def obtener_servicios_examen():
+    """
+    Obtiene todos los servicios de tipo EXAMEN
+    """
+    try:
+        servicios = AutorizacionProcedimiento.obtener_servicios_examen()
+        return jsonify({'success': True, 'servicios': servicios})
+        
+    except Exception as e:
+        print(f"Error al obtener servicios de examen: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/obtener_servicios_operacion', methods=['GET'])
+@medico_required
+def obtener_servicios_operacion():
+    """
+    Obtiene servicios de tipo OPERACION que el médico actual puede realizar o derivar
+    """
+    try:
+        id_empleado = session.get('id_empleado')
+        
+        # Obtener especialidad del médico
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("SELECT id_especialidad FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+        result = cursor.fetchone()
+        conexion.close()
+        
+        id_especialidad_medico = result['id_especialidad'] if result else None
+        
+        servicios = AutorizacionProcedimiento.obtener_servicios_operacion(id_especialidad_medico)
+        return jsonify({'success': True, 'servicios': servicios})
+        
+    except Exception as e:
+        print(f"Error al obtener servicios de operación: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/verificar_autorizaciones/<int:id_paciente>', methods=['GET'])
+def verificar_autorizaciones(id_paciente):
+    """
+    Verifica si un paciente tiene autorizaciones pendientes (para habilitar botones)
+    Ruta pública para que el paciente pueda verificar sus autorizaciones
+    """
+    try:
+        permisos = AutorizacionProcedimiento.obtener_pendientes_por_paciente(id_paciente)
+        return jsonify({'success': True, 'permisos': permisos})
+        
+    except Exception as e:
+        print(f"Error al verificar autorizaciones: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/obtener_autorizaciones_cita/<int:id_cita>', methods=['GET'])
+@medico_required
+def obtener_autorizaciones_cita(id_cita):
+    """
+    Obtiene las autorizaciones asociadas a una cita específica
+    """
+    try:
+        autorizaciones = AutorizacionProcedimiento.obtener_por_cita(id_cita)
+        return jsonify({'success': True, 'autorizaciones': autorizaciones})
+        
+    except Exception as e:
+        print(f"Error al obtener autorizaciones: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 # Manejo de errores específico para el módulo médico

@@ -11,6 +11,7 @@ from .servicio import Servicio
 from .horario import Horario
 from .notificacion import Notificacion
 from .catalogos import Especialidad, Rol, Categoria, TipoServicio
+from .autorizacion_procedimiento import AutorizacionProcedimiento
 
 __all__ = [
     'Usuario',
@@ -24,5 +25,6 @@ __all__ = [
     'Especialidad',
     'Rol',
     'Categoria',
-    'TipoServicio'
+    'TipoServicio',
+    'AutorizacionProcedimiento'
 ]
