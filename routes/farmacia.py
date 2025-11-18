@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
-from models.farmacia import Medicamento, Paciente, Empleado
-from datetime import datetime
+from models.farmacia import Medicamento, DetalleMedicamento, Paciente, Empleado
+import datetime
 
 farmacia_bp = Blueprint('farmacia', __name__)
 
@@ -18,9 +18,6 @@ def panel():
     if 'id_rol' not in session or session['id_rol'] not in [1, 4]:
         return redirect(url_for('usuarios.login'))
 
-    # Obtener estadísticas para el dashboard
-    import datetime
-
     # Estadísticas rápidas
     stats = {
         'medicamentos_recibidos': 0,
@@ -37,8 +34,16 @@ def panel():
         print(f"Error obteniendo medicamentos recibidos hoy: {e}")
         stats['medicamentos_recibidos'] = 0
 
-    # Medicamentos entregados hoy (set to 0 since no delivery table exists)
-    stats['medicamentos_entregados'] = 0
+    # Medicamentos entregados hoy
+    try:
+        entregas_hoy = DetalleMedicamento.listar_entregas()
+        # Filtrar entregas de hoy
+        hoy_str = datetime.date.today().strftime('%Y-%m-%d')
+        entregas_hoy_filtradas = [e for e in entregas_hoy if isinstance(e.get('fecha_entrega'), str) and e.get('fecha_entrega') == hoy_str]
+        stats['medicamentos_entregados'] = len(entregas_hoy_filtradas)
+    except Exception as e:
+        print(f"Error obteniendo medicamentos entregados hoy: {e}")
+        stats['medicamentos_entregados'] = 0
 
     # Alertas de vencimiento (próximos 30 días)
     try:
@@ -59,6 +64,7 @@ def panel():
     medicamentos_por_vencer = []
     try:
         medicamentos_por_vencer = Medicamento.obtener_por_vencer(30, limite=5)
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos por vencer: {e}")
 
@@ -69,13 +75,25 @@ def panel():
     except Exception as e:
         print(f"Error obteniendo ingresos recientes: {e}")
 
-    # Entregas recientes (empty list since no delivery table exists)
+    # Entregas recientes
     entregas_recientes = []
+    try:
+        entregas_recientes = DetalleMedicamento.listar_entregas()[:5]  # Últimas 5 entregas
+        # Parsear fechas de string a datetime para el template
+        for entrega in entregas_recientes:
+            if 'fecha_entrega' in entrega and isinstance(entrega['fecha_entrega'], str):
+                try:
+                    entrega['fecha_entrega'] = datetime.datetime.strptime(entrega['fecha_entrega'], '%Y-%m-%d')
+                except ValueError:
+                    pass  # Mantener como string si no se puede parsear
+    except Exception as e:
+        print(f"Error obteniendo entregas recientes: {e}")
 
     # Inventario completo
     inventario = []
     try:
         inventario = Medicamento.listar_con_detalles()
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo inventario: {e}")
 
@@ -83,6 +101,7 @@ def panel():
     medicamentos_vencidos = []
     try:
         medicamentos_vencidos = Medicamento.obtener_vencidos()
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos vencidos: {e}")
 
@@ -90,6 +109,7 @@ def panel():
     medicamentos_stock_bajo = []
     try:
         medicamentos_stock_bajo = Medicamento.obtener_stock_bajo()
+        # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos con stock bajo: {e}")
 
@@ -118,7 +138,8 @@ def panel():
                          inventario=inventario,
                          medicamentos_vencidos=medicamentos_vencidos,
                          medicamentos_stock_bajo=medicamentos_stock_bajo,
-                         datetime=datetime)
+                         datetime=datetime,
+                         session=session)
 
 @farmacia_bp.route('/gestionar-medicamentos')
 def gestionar_medicamentos():
@@ -195,22 +216,78 @@ def api_buscar_medicamentos():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# API Endpoints para Entrega de Medicamentos (disabled since no delivery table exists)
+# API Endpoints para Entrega de Medicamentos
 @farmacia_bp.route('/api/entregas', methods=['GET'])
 def api_listar_entregas():
-    return jsonify({'error': 'Entregas no disponibles - tabla no existe'}), 501
+    try:
+        entregas = DetalleMedicamento.listar_entregas()
+        return jsonify(entregas)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @farmacia_bp.route('/api/entregas/<int:id_detalle>', methods=['GET'])
 def api_obtener_entrega(id_detalle):
-    return jsonify({'error': 'Entregas no disponibles - tabla no existe'}), 501
+    try:
+        entrega = DetalleMedicamento.obtener_entrega_por_id(id_detalle)
+        if entrega:
+            return jsonify(entrega)
+        return jsonify({'error': 'Entrega no encontrada'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @farmacia_bp.route('/api/entregas/<int:id_detalle>', methods=['PUT'])
 def api_actualizar_entrega(id_detalle):
-    return jsonify({'error': 'Entregas no disponibles - tabla no existe'}), 501
+    try:
+        datos = request.json
+        resultado = DetalleMedicamento.actualizar_entrega(
+            id_detalle,
+            datos['id_empleado'],
+            datos['id_paciente'],
+            datos['id_medicamento'],
+            datos['cantidad']
+        )
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @farmacia_bp.route('/api/entregas', methods=['POST'])
 def api_registrar_entrega():
-    return jsonify({'error': 'Entregas no disponibles - tabla no existe'}), 501
+    try:
+        datos = request.json
+        print(f"DEBUG API: Datos recibidos: {datos}")
+
+        # Obtener id_empleado de la sesión
+        id_empleado = session.get('id_empleado')
+        if not id_empleado:
+            return jsonify({'success': False, 'message': 'Usuario no autenticado'}), 401
+
+        # Mapear las claves del frontend a las esperadas
+        id_paciente = datos.get('id_paciente_entrega')
+        id_medicamento = datos.get('id_medicamento_entrega')
+        cantidad = datos.get('cantidad_entrega')
+
+        # Validar que todos los datos estén presentes y no sean 'undefined'
+        if not id_paciente or id_paciente == 'undefined' or not id_medicamento or id_medicamento == 'undefined' or not cantidad:
+            return jsonify({'success': False, 'message': 'Debe seleccionar un paciente y un medicamento válidos'}), 400
+
+        try:
+            cantidad = int(cantidad)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Cantidad debe ser un número'}), 400
+
+        resultado = DetalleMedicamento.registrar_entrega(
+            id_empleado,
+            id_paciente,
+            id_medicamento,
+            cantidad
+        )
+        print(f"DEBUG API: Resultado del modelo: {resultado}")
+        if 'error' in resultado:
+            return jsonify({'success': False, 'message': resultado['error']}), 400
+        return jsonify({'success': True, 'message': 'Entrega registrada exitosamente', 'data': resultado}), 201
+    except Exception as e:
+        print(f"DEBUG API: Error en API: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 # API Endpoints para búsqueda de Pacientes y Empleados
 @farmacia_bp.route('/api/pacientes/buscar', methods=['GET'])
@@ -267,6 +344,18 @@ def api_buscar_pacientes_entrega():
         if len(busqueda) < 2:
             return jsonify([])
         resultados = Paciente.buscar(busqueda)
+        return jsonify(resultados)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# API Endpoint para buscar medicamentos (usado por el formulario de entrega)
+@farmacia_bp.route('/api/medicamentos/entrega', methods=['GET'])
+def api_buscar_medicamentos_entrega():
+    try:
+        busqueda = request.args.get('busqueda', '')
+        if len(busqueda) < 2:
+            return jsonify([])
+        resultados = Medicamento.buscar(busqueda)
         return jsonify(resultados)
     except Exception as e:
         return jsonify({'error': str(e)}), 500

@@ -192,6 +192,7 @@
                                     <div class="flex-1">
                                         <h4 class="font-semibold text-gray-800">{{ med.nombre }}</h4>
                                         <p class="text-sm text-gray-600">Stock: {{ med.stock }} unidades</p>
+                                        <p class="text-sm text-gray-600">Vence: {{ med.fecha_vencimiento }}</p>
                                     </div>
                                     <div class="text-right">
                                         <p class="font-semibold text-cyan-600">{{ med.cantidad }} unidades</p>
@@ -236,37 +237,72 @@
                             </a>
                         </div>
 
-                        <!-- Notificaciones de Medicamentos por Vencer -->
+                        <!-- Alertas de Medicamentos -->
                         <div class="border-t border-gray-200 pt-6">
                             <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-amber-600">warning</span>
-                                Medicamentos por Vencer
+                                <span class="material-symbols-outlined text-red-600">warning</span>
+                                Alertas de Medicamentos
                             </h4>
 
                             <div class="space-y-3">
+                                <!-- Medicamentos Próximos a Vencer -->
                                 {% if medicamentos_por_vencer %}
-                                    {% for med in medicamentos_por_vencer[:3] %}
+                                    {% for med in medicamentos_por_vencer[:2] %}
                                     <div class="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                         <div class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                                            <span class="material-symbols-outlined text-amber-600 text-sm">medication</span>
+                                            <span class="material-symbols-outlined text-amber-600 text-sm">schedule</span>
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <p class="text-sm font-semibold text-gray-800 truncate">{{ med.nombre }}</p>
-                                            <p class="text-xs text-amber-700">Vence: {{ med.fecha_vencimiento.strftime('%d/%m/%Y') }}</p>
+                                            <p class="text-xs text-amber-700">Vence en {{ med.dias_para_vencer }} días</p>
                                         </div>
-                                        <span class="text-xs font-bold text-amber-600">{{ med.dias_restantes }} días</span>
+                                        <span class="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded">Por Vencer</span>
                                     </div>
                                     {% endfor %}
-                                    {% if medicamentos_por_vencer|length > 3 %}
-                                    <a href="/farmacia/panel?subsistema=alertas" class="text-center block text-cyan-600 hover:text-cyan-700 text-sm font-semibold py-2">
-                                        Ver todas las alertas ({{ medicamentos_por_vencer|length }})
-                                    </a>
-                                    {% endif %}
-                                {% else %}
+                                {% endif %}
+
+                                <!-- Medicamentos Vencidos -->
+                                {% if medicamentos_vencidos %}
+                                    {% for med in medicamentos_vencidos[:2] %}
+                                    <div class="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-red-600 text-sm">error</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-800 truncate">{{ med.nombre }}</p>
+                                            <p class="text-xs text-red-700">Vencido hace {{ med.dias_vencido }} días</p>
+                                        </div>
+                                        <span class="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded">Vencido</span>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+
+                                <!-- Medicamentos con Stock Bajo -->
+                                {% if medicamentos_stock_bajo %}
+                                    {% for med in medicamentos_stock_bajo[:2] %}
+                                    <div class="flex items-center gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                            <span class="material-symbols-outlined text-orange-600 text-sm">inventory</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-800 truncate">{{ med.nombre }}</p>
+                                            <p class="text-xs text-orange-700">Stock: {{ med.stock }} unidades</p>
+                                        </div>
+                                        <span class="text-xs font-bold text-orange-600 bg-orange-100 px-2 py-1 rounded">Stock Bajo</span>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+
+                                <!-- Mensaje cuando no hay alertas -->
+                                {% if not medicamentos_por_vencer and not medicamentos_vencidos and not medicamentos_stock_bajo %}
                                     <div class="text-center py-4 text-gray-500">
                                         <span class="material-symbols-outlined text-3xl mb-1 block text-gray-400">check_circle</span>
-                                        <p class="text-xs">No hay medicamentos por vencer</p>
+                                        <p class="text-xs">No hay alertas activas</p>
                                     </div>
+                                {% else %}
+                                    <a href="/farmacia/panel?subsistema=alertas" class="text-center block text-cyan-600 hover:text-cyan-700 text-sm font-semibold py-2">
+                                        Ver todas las alertas
+                                    </a>
                                 {% endif %}
                             </div>
                         </div>
@@ -312,7 +348,7 @@
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 Fecha de Vencimiento <span class="text-red-500">*</span>
                             </label>
-                            <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" required min="{{ (datetime.date.today() + datetime.timedelta(days=1)).isoformat() }}"
+                            <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" required min="{{ (datetime.datetime.now() + datetime.timedelta(days=1)).date().isoformat() }}"
                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                         </div>
 
@@ -390,8 +426,13 @@
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Buscar Paciente</h3>
                     <div class="relative">
                         <input type="text" id="buscar-paciente-farmacia" placeholder="Buscar por nombre o DNI..."
+                               oninput="this.value = this.value.replace(/[0-9]/g, '')"
                                class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    </div>
+                    <!-- Resultados de búsqueda -->
+                    <div id="resultados-paciente" class="mt-4 space-y-2 hidden">
+                        <!-- Los resultados se mostrarán aquí dinámicamente -->
                     </div>
                 </div>
 
@@ -401,6 +442,7 @@
 
                     <form id="entrega-form" class="space-y-6">
                         <input type="hidden" id="id_paciente_entrega" name="id_paciente_entrega">
+                        <input type="hidden" id="id_medicamento_entrega" name="id_medicamento_entrega">
 
                         <!-- Información del Paciente -->
                         <div class="bg-gray-50 rounded-xl p-4">
@@ -408,34 +450,34 @@
                             <p id="info-paciente-entrega" class="text-gray-600">Selecciona un paciente para continuar</p>
                         </div>
 
-                        <!-- Medicamento -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Medicamento <span class="text-red-500">*</span>
-                            </label>
-                            <select id="medicamento_entrega" name="medicamento_entrega" required
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
-                                <option value="">Selecciona un medicamento</option>
-                                <!-- Opciones se cargarán dinámicamente -->
-                            </select>
-                        </div>
+                        <!-- Medicamento y Cantidad -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Medicamento -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Medicamento <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="buscar-medicamento-entrega" placeholder="      Buscar medicamento..."
+                                           class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">medication</span>
+                                </div>
+                                <!-- Resultados de búsqueda -->
+                                <div id="resultados-medicamento" class="mt-2 space-y-2 hidden">
+                                    <!-- Los resultados se mostrarán aquí dinámicamente -->
+                                </div>
+                            </div>
 
-                        <!-- Cantidad -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                Cantidad a Entregar <span class="text-red-500">*</span>
-                            </label>
-                            <input type="number" id="cantidad_entrega" name="cantidad_entrega" min="1" required
-                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                   placeholder="Ej: 30">
-                        </div>
-
-                        <!-- Indicaciones -->
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Indicaciones Médicas</label>
-                            <textarea id="indicaciones" name="indicaciones" rows="3"
-                                      class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                                      placeholder="Indicaciones de uso, dosis, frecuencia..."></textarea>
+                            <!-- Cantidad -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    Cantidad a Entregar <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" id="cantidad_entrega" name="cantidad_entrega" min="1" required
+                                       oninput="this.value = this.value.replace(/[^0-9]/g, '').replace(/\+/g, '').replace(/-/g, '').replace(/\./g, '').replace(/^0+/, '')"
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                       placeholder="Ej: 30">
+                            </div>
                         </div>
 
                         <!-- Botones -->
@@ -468,7 +510,7 @@
                                 <p class="text-sm text-gray-600">{{ entrega.medicamento }} - {{ entrega.cantidad }} unidades</p>
                             </div>
                             <div class="text-right">
-                                <p class="font-semibold text-teal-600">{{ entrega.fecha_entrega.strftime('%d/%m/%Y %H:%M') }}</p>
+                                <p class="font-semibold text-teal-600">{{ entrega.fecha_entrega.strftime('%d/%m/%Y') }}</p>
                                 <span class="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full mt-1">Entregado</span>
                             </div>
                         </div>
@@ -519,8 +561,6 @@
                             <thead>
                                 <tr class="border-b border-gray-200 bg-gray-50">
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Medicamento</th>
-                                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Laboratorio</th>
-                                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Lote</th>
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Stock</th>
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Vencimiento</th>
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Estado</th>
@@ -538,14 +578,12 @@
                                             <span class="font-semibold text-gray-800">{{ item.nombre }}</span>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-6 text-gray-600">{{ item.laboratorio }}</td>
-                                    <td class="py-4 px-6 text-gray-600">{{ item.lote }}</td>
                                     <td class="py-4 px-6">
                                         <span class="font-semibold {% if item.stock < 10 %}text-red-600{% elif item.stock < 50 %}text-amber-600{% else %}text-green-600{% endif %}">
                                             {{ item.stock }}
                                         </span>
                                     </td>
-                                    <td class="py-4 px-6 text-gray-600">{{ item.fecha_vencimiento.strftime('%d/%m/%Y') }}</td>
+                                    <td class="py-4 px-6 text-gray-600">{{ item.fecha_vencimiento }}</td>
                                     <td class="py-4 px-6">
                                         {% if item.dias_para_vencer < 0 %}
                                         <span class="inline-block px-3 py-1 bg-red-100 text-red-700 text-xs font-semibold rounded-full">Vencido</span>
@@ -599,10 +637,10 @@
                                     <p class="text-sm text-amber-700">Stock actual: {{ med.stock }} unidades</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="font-semibold text-amber-600">{{ med.fecha_vencimiento.strftime('%d/%m/%Y') }}</p>
-                                    <p class="text-sm text-gray-600">{{ med.dias_restantes }} días restantes</p>
+                                    <p class="font-semibold text-amber-600">{{ med.fecha_vencimiento }}</p>
+                                    <p class="text-sm text-gray-600">{{ med.dias_para_vencer }} días restantes</p>
                                     <span class="inline-block px-3 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full mt-2">
-                                        {% if med.dias_restantes <= 7 %}Crítico{% elif med.dias_restantes <= 15 %}Alto{% else %}Medio{% endif %}
+                                        {% if med.dias_para_vencer <= 7 %}Crítico{% elif med.dias_para_vencer <= 15 %}Alto{% else %}Medio{% endif %}
                                     </span>
                                 </div>
                             </div>
@@ -639,7 +677,7 @@
                                     <p class="text-sm text-red-700">Stock actual: {{ med.stock }} unidades</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="font-semibold text-red-600">{{ med.fecha_vencimiento.strftime('%d/%m/%Y') }}</p>
+                                    <p class="font-semibold text-red-600">{{ med.fecha_vencimiento }}</p>
                                     <p class="text-sm text-gray-600">Vencido hace {{ med.dias_vencido }} días</p>
                                     <button onclick="gestionarMedicamentoVencido({{ med.id }})" class="mt-2 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors">
                                         Gestionar
@@ -676,7 +714,7 @@
                                 <div class="flex-1">
                                     <h4 class="font-semibold text-gray-800">{{ med.nombre }}</h4>
                                     <p class="text-sm text-gray-600">{{ med.laboratorio }} - Lote: {{ med.lote }}</p>
-                                    <p class="text-sm text-orange-700">Vence: {{ med.fecha_vencimiento.strftime('%d/%m/%Y') }}</p>
+                                    <p class="text-sm text-orange-700">Vence: {{ med.fecha_vencimiento.strftime('%d/%m/%Y') if med.fecha_vencimiento is not string else med.fecha_vencimiento }}</p>
                                 </div>
                                 <div class="text-right">
                                     <p class="font-semibold text-orange-600">{{ med.stock }} unidades</p>
@@ -713,8 +751,10 @@
             // Configurar formularios
             configurarFormularioRecepcion();
             configurarBusquedaPacientes();
+            configurarBusquedaMedicamentos();
+            configurarFormularioEntrega();
             configurarFiltrosInventario();
-            
+
             // Cargar datos iniciales si es necesario
             cargarDatosIniciales();
         }
@@ -734,6 +774,25 @@
             if (input) {
                 input.addEventListener('input', function() {
                     buscarPacientes(this.value);
+                });
+            }
+        }
+
+        function configurarBusquedaMedicamentos() {
+            const input = document.getElementById('buscar-medicamento-entrega');
+            if (input) {
+                input.addEventListener('input', function() {
+                    buscarMedicamentos(this.value);
+                });
+            }
+        }
+
+        function configurarFormularioEntrega() {
+            const form = document.getElementById('entrega-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    registrarEntregaMedicamento();
                 });
             }
         }
@@ -809,8 +868,8 @@ function buscarPacientes(query) {
 
             filas.forEach(fila => {
                 const nombre = fila.cells[0].textContent.toLowerCase();
-                const stock = parseInt(fila.cells[3].textContent);
-                const estado = fila.cells[5].textContent.toLowerCase();
+                const stock = parseInt(fila.cells[1].textContent);
+                const estado = fila.cells[3].textContent.toLowerCase();
 
                 let mostrar = true;
 
@@ -922,8 +981,117 @@ function buscarPacientes(query) {
 
         // Funciones de utilidad
         function mostrarResultadosBusqueda(pacientes) {
-            // Implementar lógica para mostrar resultados de búsqueda de pacientes
-            console.log('Resultados de búsqueda:', pacientes);
+            const resultadosDiv = document.getElementById('resultados-paciente');
+            if (!resultadosDiv) return;
+
+            // Limpiar resultados anteriores
+            resultadosDiv.innerHTML = '';
+
+            if (pacientes && pacientes.length > 0) {
+                pacientes.forEach(function(paciente) {
+                    const pacienteDiv = document.createElement('div');
+                    pacienteDiv.className = 'p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors';
+                    pacienteDiv.onclick = function() { seleccionarPaciente(paciente); };
+            pacienteDiv.innerHTML = `<div class="font-semibold text-gray-800">${paciente.nombre} ${paciente.apellido}</div><div class="text-sm text-gray-600">DNI: ${paciente.dni}</div>`;
+                    resultadosDiv.appendChild(pacienteDiv);
+                });
+                resultadosDiv.classList.remove('hidden');
+            } else {
+                resultadosDiv.classList.add('hidden');
+            }
+        }
+
+        function seleccionarPaciente(paciente) {
+            // Llenar el formulario con la información del paciente seleccionado
+            document.getElementById('id_paciente_entrega').value = paciente.id_paciente;
+            document.getElementById('info-paciente-entrega').textContent = `${paciente.nombre} ${paciente.apellido} (DNI: ${paciente.dni})`;
+
+            // Mostrar el formulario de entrega
+            document.getElementById('formulario-entrega').classList.remove('hidden');
+
+            // Ocultar resultados de búsqueda
+            document.getElementById('resultados-paciente').classList.add('hidden');
+
+            // Limpiar el campo de búsqueda
+            document.getElementById('buscar-paciente-farmacia').value = '';
+        }
+
+        function buscarMedicamentos(query) {
+            if (query.length < 2) return;
+
+            fetch('/farmacia/api/medicamentos/entrega?busqueda=' + encodeURIComponent(query))
+            .then(response => response.json())
+            .then(data => {
+                mostrarResultadosMedicamento(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function mostrarResultadosMedicamento(medicamentos) {
+            const resultadosDiv = document.getElementById('resultados-medicamento');
+            if (!resultadosDiv) return;
+
+            // Limpiar resultados anteriores
+            resultadosDiv.innerHTML = '';
+
+            if (medicamentos && medicamentos.length > 0) {
+                medicamentos.forEach(function(medicamento) {
+                    const medDiv = document.createElement('div');
+                    medDiv.className = 'p-3 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors';
+                    medDiv.onclick = function() { seleccionarMedicamento(medicamento); };
+                    medDiv.innerHTML = `<div class="font-semibold text-gray-800">${medicamento.nombre}</div><div class="text-sm text-gray-600">Stock: ${medicamento.stock} unidades</div>`;
+                    resultadosDiv.appendChild(medDiv);
+                });
+                resultadosDiv.classList.remove('hidden');
+            } else {
+                resultadosDiv.classList.add('hidden');
+            }
+        }
+
+        function seleccionarMedicamento(medicamento) {
+            // Llenar el formulario con el medicamento seleccionado
+            document.getElementById('id_medicamento_entrega').value = medicamento.id_medicamento;
+            document.getElementById('buscar-medicamento-entrega').value = medicamento.nombre;
+
+            // Ocultar resultados de búsqueda
+            document.getElementById('resultados-medicamento').classList.add('hidden');
+        }
+
+        function registrarEntregaMedicamento() {
+            const formData = new FormData(document.getElementById('entrega-form'));
+            const data = Object.fromEntries(formData);
+
+            // Validar datos
+            if (!data.id_paciente_entrega || !data.id_medicamento_entrega || !data.cantidad_entrega) {
+                mostrarMensaje('Por favor complete todos los campos obligatorios', 'error');
+                return;
+            }
+
+            // Enviar datos al servidor
+            fetch('/farmacia/api/entregas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    mostrarMensaje('Entrega registrada exitosamente', 'success');
+                    cerrarFormularioEntrega();
+                    // Recargar lista de entregas recientes
+                    location.reload();
+                } else {
+                    mostrarMensaje(result.message || 'Error al registrar entrega', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('Error de conexión', 'error');
+            });
         }
     </script>
 </body>
