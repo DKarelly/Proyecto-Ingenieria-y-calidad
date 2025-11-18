@@ -525,8 +525,6 @@
                             <thead>
                                 <tr class="border-b border-gray-200 bg-gray-50">
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Medicamento</th>
-                                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Laboratorio</th>
-                                    <th class="text-left py-4 px-6 font-semibold text-gray-700">Lote</th>
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Stock</th>
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Vencimiento</th>
                                     <th class="text-left py-4 px-6 font-semibold text-gray-700">Estado</th>
@@ -544,8 +542,6 @@
                                             <span class="font-semibold text-gray-800">{{ item.nombre }}</span>
                                         </div>
                                     </td>
-                                    <td class="py-4 px-6 text-gray-600">{{ item.laboratorio }}</td>
-                                    <td class="py-4 px-6 text-gray-600">{{ item.lote }}</td>
                                     <td class="py-4 px-6">
                                         <span class="font-semibold {% if item.stock < 10 %}text-red-600{% elif item.stock < 50 %}text-amber-600{% else %}text-green-600{% endif %}">
                                             {{ item.stock }}
@@ -836,8 +832,8 @@ function buscarPacientes(query) {
 
             filas.forEach(fila => {
                 const nombre = fila.cells[0].textContent.toLowerCase();
-                const stock = parseInt(fila.cells[3].textContent);
-                const estado = fila.cells[5].textContent.toLowerCase();
+                const stock = parseInt(fila.cells[1].textContent);
+                const estado = fila.cells[3].textContent.toLowerCase();
 
                 let mostrar = true;
 
