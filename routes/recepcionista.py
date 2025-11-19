@@ -104,10 +104,10 @@ def obtener_pacientes():
                 p.id_paciente,
                 p.nombres,
                 p.apellidos,
-                p.documento_identidad,
+                p.documento_identidad as dni,
                 p.sexo,
                 u.telefono,
-                u.correo
+                u.correo as email
             FROM PACIENTE p
             INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
             WHERE u.estado = 'activo'
@@ -398,47 +398,33 @@ def api_incidencias_generar():
     """
     try:
         tipo_incidencia = request.form.get('tipo_incidencia')
-        severidad = request.form.get('severidad')
-        titulo = request.form.get('titulo')
         descripcion = request.form.get('descripcion')
+        prioridad = request.form.get('prioridad')
+        id_paciente = request.form.get('id_paciente')  # Opcional
 
         # Validaciones
-        if not all([tipo_incidencia, severidad, titulo, descripcion]):
-            return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
+        if not all([tipo_incidencia, descripcion, prioridad]):
+            return jsonify({'success': False, 'message': 'Tipo de incidencia, descripción y prioridad son requeridos'}), 400
 
         # Obtener ID del empleado recepcionista
         id_empleado = session.get('id_empleado')
         if not id_empleado:
             return jsonify({'success': False, 'message': 'No se pudo identificar al empleado'}), 400
 
-        conexion = obtener_conexion()
-        cursor = conexion.cursor()
+        # Usar el modelo Incidencia para crear la incidencia
+        from models.incidencia import Incidencia
+        resultado = Incidencia.crear(descripcion, id_paciente, tipo_incidencia, prioridad)
 
-        # Insertar incidencia
-        cursor.execute("""
-            INSERT INTO INCIDENCIA (
-                titulo, descripcion, tipo_incidencia, severidad,
-                estado, id_empleado_reporta, fecha_creacion
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (
-            titulo, descripcion, tipo_incidencia, severidad,
-            'abierta', id_empleado, datetime.now()
-        ))
-
-        conexion.commit()
-
-        return jsonify({'success': True, 'message': 'Incidencia generada exitosamente'})
+        if resultado['success']:
+            return jsonify({'success': True, 'message': 'Incidencia generada exitosamente'})
+        else:
+            return jsonify({'success': False, 'message': resultado['message']}), 500
 
     except Exception as e:
-        if 'conexion' in locals() and conexion:
-            conexion.rollback()
         print(f"Error al generar incidencia: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error interno: {str(e)}'}), 500
-    finally:
-        if 'conexion' in locals() and conexion:
-            conexion.close()
 
 
 # Manejo de errores específico para el módulo recepcionista
