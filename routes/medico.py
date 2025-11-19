@@ -872,17 +872,47 @@ def guardar_diagnostico():
         
         if autorizar_operacion:
             id_servicio_operacion = request.form.get('id_servicio_operacion')
-            id_especialidad_req = request.form.get('id_especialidad_operacion')
-            id_medico_asignado = request.form.get('id_medico_operacion')
+            id_medico_derivar = request.form.get('id_medico_derivar_operacion')
             
             # Convertir valores vacíos a None
-            id_especialidad_req = int(id_especialidad_req) if id_especialidad_req and id_especialidad_req != '' else None
-            id_medico_asignado = int(id_medico_asignado) if id_medico_asignado and id_medico_asignado != '' else None
+            id_medico_derivar = int(id_medico_derivar) if id_medico_derivar and id_medico_derivar != '' else None
             
             if id_servicio_operacion:
-                # Si no se asignó médico y no requiere especialidad específica, puede hacerla el mismo médico
-                if not id_medico_asignado and not id_especialidad_req:
+                # Validación: Si NO se deriva, el médico logueado DEBE poder operar
+                if not id_medico_derivar:
+                    # Obtener servicios que puede realizar el médico logueado
+                    cursor.execute("""
+                        SELECT COUNT(*) as puede_operar
+                        FROM SERVICIO s
+                        INNER JOIN EMPLEADO_SERVICIO es ON s.id_servicio = es.id_servicio
+                        WHERE s.id_servicio = %s 
+                        AND es.id_empleado = %s
+                        AND s.id_tipo_servicio = 2
+                    """, (id_servicio_operacion, id_empleado))
+                    
+                    resultado_validacion = cursor.fetchone()
+                    puede_operar = resultado_validacion['puede_operar'] if resultado_validacion else 0
+                    
+                    if not puede_operar:
+                        conexion.close()
+                        return jsonify({
+                            'success': False, 
+                            'message': 'Usted no está autorizado para realizar esta operación. Debe derivar a otro médico.'
+                        }), 403
+                    
+                    # Si puede operar, asignarla a sí mismo
                     id_medico_asignado = id_empleado
+                else:
+                    # Si se deriva, asignarla al médico seleccionado
+                    id_medico_asignado = id_medico_derivar
+                
+                # Obtener la especialidad requerida del servicio de operación
+                cursor.execute("""
+                    SELECT id_especialidad FROM SERVICIO WHERE id_servicio = %s
+                """, (id_servicio_operacion,))
+                
+                servicio_result = cursor.fetchone()
+                id_especialidad_req = servicio_result['id_especialidad'] if servicio_result else None
                 
                 resultado = AutorizacionProcedimiento.crear({
                     'id_cita': id_cita,
@@ -1118,10 +1148,23 @@ def obtener_servicios_por_especialidad(id_especialidad):
 @medico_required
 def obtener_servicios_examen():
     """
-    Obtiene todos los servicios de tipo EXAMEN
+    Obtiene servicios de tipo EXAMEN de la especialidad del médico logueado
+    El médico solo puede autorizar exámenes de su especialidad
     """
     try:
-        servicios = AutorizacionProcedimiento.obtener_servicios_examen()
+        id_empleado = session.get('id_empleado')
+        
+        # Obtener especialidad del médico logueado
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("SELECT id_especialidad FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+        result = cursor.fetchone()
+        conexion.close()
+        
+        id_especialidad_medico = result['id_especialidad'] if result else None
+        
+        # Obtener solo exámenes de la especialidad del médico
+        servicios = AutorizacionProcedimiento.obtener_servicios_examen(id_especialidad_medico)
         return jsonify({'success': True, 'servicios': servicios})
         
     except Exception as e:
@@ -1152,6 +1195,51 @@ def obtener_servicios_operacion():
         
     except Exception as e:
         print(f"Error al obtener servicios de operación: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/obtener_medicos_mi_especialidad', methods=['GET'])
+@medico_required
+def obtener_medicos_mi_especialidad():
+    """
+    Obtiene médicos de la misma especialidad del médico logueado
+    Se usa para derivar operaciones sin mostrar selector de especialidad
+    """
+    try:
+        id_empleado = session.get('id_empleado')
+        
+        # Obtener especialidad del médico logueado
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("""
+            SELECT id_especialidad, nombres, apellidos 
+            FROM EMPLEADO 
+            WHERE id_empleado = %s
+        """, (id_empleado,))
+        result = cursor.fetchone()
+        
+        if not result:
+            conexion.close()
+            return jsonify({'success': False, 'message': 'Médico no encontrado'}), 404
+        
+        id_especialidad_medico = result['id_especialidad']
+        medico_actual_nombre = f"{result['nombres']} {result['apellidos']}"
+        
+        # Obtener otros médicos de la misma especialidad
+        medicos = AutorizacionProcedimiento.obtener_medicos_por_especialidad(id_especialidad_medico)
+        
+        # Filtrar para excluir el médico actual
+        medicos_filtrados = [m for m in medicos if m['id_empleado'] != id_empleado]
+        
+        conexion.close()
+        return jsonify({
+            'success': True, 
+            'medicos': medicos_filtrados,
+            'especialidad_nombre': medicos[0]['especialidad'] if medicos else 'N/A'
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener médicos de mi especialidad: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 

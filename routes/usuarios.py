@@ -408,6 +408,24 @@ def api_get_session():
         }
     })
 
+@usuarios_bp.route('/api/usuario/actual', methods=['GET'])
+def api_usuario_actual():
+    """API: Obtener datos completos del usuario actual (incluye id_paciente)"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    return jsonify({
+        'id_usuario': session.get('usuario_id'),
+        'nombre': session.get('nombre_usuario'),
+        'correo': session.get('correo'),
+        'telefono': session.get('telefono'),
+        'tipo_usuario': session.get('tipo_usuario'),
+        'rol': session.get('rol'),
+        'id_rol': session.get('id_rol'),
+        'id_paciente': session.get('id_paciente'),
+        'id_empleado': session.get('id_empleado')
+    })
+
 @usuarios_bp.route('/api/register', methods=['POST'])
 def api_register():
     """API: Registrar nuevo paciente y crear su usuario"""

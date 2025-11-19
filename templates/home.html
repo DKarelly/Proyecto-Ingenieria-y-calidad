@@ -279,9 +279,12 @@
                             </div>
                         </div>
 
+                        <!-- Mensaje explicativo de autorización -->
+                        <div id="examen-status-message" class="mb-6"></div>
+
                         <!-- Botón Principal -->
                         <div>
-                            <a href="/reservas/paciente/nuevo-examen" class="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+                            <a href="/reservas/paciente/nuevo-examen" id="btn-agendar-examen" class="inline-flex items-center gap-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                     <polyline points="14 2 14 8 20 8"/>
@@ -526,6 +529,89 @@
                     .catch(() => location.reload());
             }
         };
+
+        // MEJORA: Verificar autorizaciones del paciente al cargar la página
+        // Implementación del punto 0.1 y 7.1 del documento CASOS_NO_CONTEMPLADOS_AUTORIZACIONES.md
+        {% if session.get('tipo_usuario') == 'paciente' %}
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Obtener id del paciente actual
+                const response = await fetch('/api/usuario/actual');
+                if (!response.ok) return;
+                
+                const userData = await response.json();
+                if (!userData || !userData.id_paciente) return;
+
+                // Verificar autorizaciones pendientes
+                const authResponse = await fetch(`/medico/api/verificar_autorizaciones/${userData.id_paciente}`);
+                if (!authResponse.ok) return;
+                
+                const authData = await authResponse.json();
+                const btnExamen = document.getElementById('btn-agendar-examen');
+                const statusMessage = document.getElementById('examen-status-message');
+
+                if (authData && statusMessage && btnExamen) {
+                    if (authData.tiene_autorizaciones) {
+                        // TIENE autorizaciones - botón habilitado
+                        if (authData.examen) {
+                            statusMessage.innerHTML = `
+                                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+                                    <div class="flex items-start gap-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600 flex-shrink-0">
+                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                        </svg>
+                                        <div>
+                                            <p class="font-semibold text-green-800">✓ Autorización Aprobada</p>
+                                            <p class="text-sm text-green-700 mt-1">Tienes autorización médica para realizar exámenes. Puedes agendar haciendo clic en el botón.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            statusMessage.innerHTML = `
+                                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                                    <div class="flex items-start gap-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0">
+                                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                                        </svg>
+                                        <div>
+                                            <p class="font-semibold text-blue-800">ℹ️ Información</p>
+                                            <p class="text-sm text-blue-700 mt-1">Actualmente no tienes autorización para exámenes. Agenda una cita con tu médico para obtener autorización.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            btnExamen.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                            btnExamen.setAttribute('title', 'Necesitas autorización médica para agendar exámenes');
+                        }
+                    } else {
+                        // NO tiene ninguna autorización pendiente
+                        statusMessage.innerHTML = `
+                            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+                                <div class="flex items-start gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600 flex-shrink-0">
+                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-green-800">✓ Sin Procedimientos Pendientes</p>
+                                        <p class="text-sm text-green-700 mt-1">
+                                            Tu diagnóstico está completo. No requieres exámenes adicionales en este momento. 
+                                            Si necesitas otros servicios, agenda una nueva consulta médica.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        btnExamen.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+                        btnExamen.setAttribute('title', 'No requiere exámenes según su diagnóstico actual');
+                    }
+                }
+            } catch (error) {
+                console.error('Error verificando autorizaciones:', error);
+                // En caso de error, dejar el botón habilitado
+            }
+        });
+        {% endif %}
     </script>
 
 </body>
