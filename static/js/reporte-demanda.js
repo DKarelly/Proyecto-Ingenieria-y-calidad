@@ -35,9 +35,22 @@ function busquedaDinamica() {
 async function cargarEspecialidades() {
     try {
         const response = await fetch('/reportes/api/demanda-preferencias/especialidades');
-        const especialidades = await response.json();
+        const data = await response.json();
+        
+        // Manejar caso cuando hay error o cuando la respuesta no es un array
+        let especialidades = [];
+        if (Array.isArray(data)) {
+            especialidades = data;
+        } else if (data.especialidades && Array.isArray(data.especialidades)) {
+            especialidades = data.especialidades;
+        } else if (data.error) {
+            console.warn('Error al cargar especialidades:', data.error);
+            return; // Salir silenciosamente si hay error
+        }
         
         const select = document.getElementById('especialidadFiltro');
+        if (!select) return;
+        
         especialidades.forEach(esp => {
             const option = document.createElement('option');
             option.value = esp.id_especialidad;
@@ -46,6 +59,7 @@ async function cargarEspecialidades() {
         });
     } catch (error) {
         console.error('Error al cargar especialidades:', error);
+        // No mostrar error al usuario, solo loguear
     }
 }
 
@@ -290,21 +304,51 @@ function actualizarGraficoTendencia(tendencia) {
     });
 }
 
-// Actualizar tabla de Top Médicos
+// Variables de paginación para médicos
+let todosLosMedicos = [];
+let paginaActualMedicos = 1;
+const medicosPorPagina = 15;
+
+// Actualizar tabla de Top Médicos con paginación
 function actualizarTablaTopMedicos(medicos) {
+    todosLosMedicos = medicos || [];
+    paginaActualMedicos = 1;
+    console.log(`📊 Total de médicos recibidos: ${todosLosMedicos.length}`);
+    renderizarTablaMedicos();
+    renderizarPaginacionMedicos();
+}
+
+function renderizarTablaMedicos() {
     const tbody = document.getElementById('tablaTopMedicos');
     
-    if (!medicos || medicos.length === 0) {
+    if (!todosLosMedicos || todosLosMedicos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-4 text-center text-gray-500">No hay datos disponibles</td></tr>';
         return;
     }
     
-    tbody.innerHTML = medicos.map((med, index) => {
+    // Calcular índices para la página actual
+    const inicio = (paginaActualMedicos - 1) * medicosPorPagina;
+    const fin = inicio + medicosPorPagina;
+    const medicosPagina = todosLosMedicos.slice(inicio, fin);
+    
+    // Actualizar información de paginación
+    const infoPaginacion = document.getElementById('infoPaginacionMedicos');
+    if (infoPaginacion) {
+        const total = todosLosMedicos.length;
+        const desde = total > 0 ? inicio + 1 : 0;
+        const hasta = Math.min(fin, total);
+        const totalPaginas = Math.ceil(total / medicosPorPagina);
+        infoPaginacion.textContent = `Mostrando ${desde}-${hasta} de ${total} médicos${totalPaginas > 1 ? ` (Página ${paginaActualMedicos} de ${totalPaginas})` : ''}`;
+    }
+    
+    tbody.innerHTML = medicosPagina.map((med, indexLocal) => {
+        // Calcular posición global (considerando la página actual)
+        const posicionGlobal = inicio + indexLocal;
         let badge = '';
-        if (index === 0) badge = '<span class="badge badge-gold">🥇 1°</span>';
-        else if (index === 1) badge = '<span class="badge badge-silver">🥈 2°</span>';
-        else if (index === 2) badge = '<span class="badge badge-bronze">🥉 3°</span>';
-        else badge = `<span class="text-gray-600 font-semibold">${index + 1}°</span>`;
+        if (posicionGlobal === 0) badge = '<span class="badge badge-gold">🥇 1°</span>';
+        else if (posicionGlobal === 1) badge = '<span class="badge badge-silver">🥈 2°</span>';
+        else if (posicionGlobal === 2) badge = '<span class="badge badge-bronze">🥉 3°</span>';
+        else badge = `<span class="text-gray-600 font-semibold">${posicionGlobal + 1}°</span>`;
         
         const tasaExitoClass = med.tasa_exito >= 80 ? 'text-green-600' : med.tasa_exito >= 60 ? 'text-yellow-600' : 'text-red-600';
         
@@ -321,6 +365,100 @@ function actualizarTablaTopMedicos(medicos) {
         `;
     }).join('');
 }
+
+function renderizarPaginacionMedicos() {
+    const contenedor = document.getElementById('paginacionMedicos');
+    if (!contenedor) return;
+    
+    const totalPaginas = Math.ceil(todosLosMedicos.length / medicosPorPagina);
+    console.log(`📄 Total de páginas: ${totalPaginas}, Página actual: ${paginaActualMedicos}, Total médicos: ${todosLosMedicos.length}`);
+    
+    // Siempre mostrar paginación si hay más de 15 médicos
+    if (todosLosMedicos.length <= medicosPorPagina) {
+        contenedor.innerHTML = '';
+        console.log('ℹ️ No se muestra paginación porque hay 15 o menos médicos');
+        return;
+    }
+    
+    let html = '';
+    
+    // Botón Anterior con flecha
+    html += `
+        <button 
+            onclick="cambiarPaginaMedicos(${paginaActualMedicos - 1})" 
+            ${paginaActualMedicos === 1 ? 'disabled' : ''}
+            class="px-4 py-2 rounded-lg border border-gray-300 ${paginaActualMedicos === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-cyan-500'} transition-colors flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m15 18-6-6 6-6"/>
+            </svg>
+            Anterior
+        </button>
+    `;
+    
+    // Números de página
+    const maxPaginasVisibles = 5;
+    let inicioPagina = Math.max(1, paginaActualMedicos - Math.floor(maxPaginasVisibles / 2));
+    let finPagina = Math.min(totalPaginas, inicioPagina + maxPaginasVisibles - 1);
+    
+    if (finPagina - inicioPagina < maxPaginasVisibles - 1) {
+        inicioPagina = Math.max(1, finPagina - maxPaginasVisibles + 1);
+    }
+    
+    if (inicioPagina > 1) {
+        html += `<button onclick="cambiarPaginaMedicos(1)" class="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-cyan-500 transition-colors">1</button>`;
+        if (inicioPagina > 2) {
+            html += `<span class="px-2 text-gray-400">...</span>`;
+        }
+    }
+    
+    for (let i = inicioPagina; i <= finPagina; i++) {
+        html += `
+            <button 
+                onclick="cambiarPaginaMedicos(${i})" 
+                class="px-3 py-2 rounded-lg border ${i === paginaActualMedicos ? 'bg-cyan-600 text-white border-cyan-600 font-bold' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-cyan-500'} transition-colors">
+                ${i}
+            </button>
+        `;
+    }
+    
+    if (finPagina < totalPaginas) {
+        if (finPagina < totalPaginas - 1) {
+            html += `<span class="px-2 text-gray-400">...</span>`;
+        }
+        html += `<button onclick="cambiarPaginaMedicos(${totalPaginas})" class="px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-cyan-500 transition-colors">${totalPaginas}</button>`;
+    }
+    
+    // Botón Siguiente con flecha
+    html += `
+        <button 
+            onclick="cambiarPaginaMedicos(${paginaActualMedicos + 1})" 
+            ${paginaActualMedicos === totalPaginas ? 'disabled' : ''}
+            class="px-4 py-2 rounded-lg border border-gray-300 ${paginaActualMedicos === totalPaginas ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 hover:border-cyan-500'} transition-colors flex items-center gap-2">
+            Siguiente
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6"/>
+            </svg>
+        </button>
+    `;
+    
+    contenedor.innerHTML = html;
+}
+
+// Función global para cambiar de página
+window.cambiarPaginaMedicos = function(nuevaPagina) {
+    const totalPaginas = Math.ceil(todosLosMedicos.length / medicosPorPagina);
+    if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
+    
+    paginaActualMedicos = nuevaPagina;
+    renderizarTablaMedicos();
+    renderizarPaginacionMedicos();
+    
+    // Scroll suave hacia arriba de la tabla
+    const tabla = document.getElementById('tablaTopMedicos');
+    if (tabla) {
+        tabla.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
 
 // Actualizar tabla de Detalle de Servicios
 function actualizarTablaDetalleServicios(servicios) {

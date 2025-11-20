@@ -59,6 +59,16 @@
     </div>
 
     <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Botón de regreso -->
+        <div class="mb-6 no-print">
+            <a href="/admin/" class="inline-flex items-center gap-2 text-cyan-700 hover:text-cyan-900 font-medium transition-colors bg-white px-4 py-2 rounded-lg shadow-sm hover:shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Volver al Panel
+            </a>
+        </div>
+        
         <!-- Título y Exportar -->
         <div class="flex justify-between items-center mb-6 no-print">
             <h1 class="text-3xl font-bold text-gray-800">📊 Reporte de Demanda y Preferencias</h1>
@@ -157,7 +167,10 @@
 
             <!-- Tabla de Top Médicos -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">⭐ Top 15 Médicos Más Recomendados</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">⭐ Top Médicos Más Recomendados</h3>
+                    <div id="infoPaginacionMedicos" class="text-sm text-gray-600"></div>
+                </div>
                 <div class="table-responsive">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50 sticky top-0">
@@ -175,6 +188,10 @@
                             <!-- Datos dinámicos -->
                         </tbody>
                     </table>
+                </div>
+                <!-- Controles de paginación -->
+                <div id="paginacionMedicos" class="mt-4 flex justify-center items-center gap-2">
+                    <!-- Los botones se generarán dinámicamente -->
                 </div>
             </div>
 

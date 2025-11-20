@@ -2100,6 +2100,7 @@ def demanda_preferencias():
 @reportes_bp.route("/api/demanda-preferencias/especialidades", methods=["GET"])
 def get_especialidades_demanda():
     """Obtiene lista de especialidades para el filtro"""
+    conexion = None
     try:
         conexion, cursor = obtener_conexion_dict()
         
@@ -2107,8 +2108,7 @@ def get_especialidades_demanda():
             SELECT DISTINCT esp.id_especialidad, esp.nombre
             FROM ESPECIALIDAD esp
             INNER JOIN EMPLEADO e ON esp.id_especialidad = e.id_especialidad
-            INNER JOIN HORARIO h ON e.id_empleado = h.id_empleado
-            WHERE h.estado = 'Activo'
+            WHERE e.estado = 'activo' AND e.id_rol = 2
             ORDER BY esp.nombre
         """
         cursor.execute(sql)
@@ -2121,7 +2121,11 @@ def get_especialidades_demanda():
         
     except Exception as e:
         print(f"Error al obtener especialidades: {e}")
-        return jsonify({"error": str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        if conexion:
+            conexion.close()
+        return jsonify({"error": str(e), "especialidades": []}), 500
 
 
 @reportes_bp.route("/api/demanda-preferencias", methods=["POST"])
@@ -2227,27 +2231,63 @@ def generar_reporte_demanda_preferencias():
             ex['servicios_asociados'] = int(ex['servicios_asociados'])
         
         # 4. Top Médicos más recomendados (con más reservas)
-        sql_top_medicos = f"""
-            SELECT 
-                CONCAT(e.nombres, ' ', e.apellidos) as medico,
-                esp.nombre as especialidad,
-                COUNT(r.id_reserva) as total_reservas,
-                SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) as completadas,
-                SUM(CASE WHEN r.estado = 'Cancelada' THEN 1 ELSE 0 END) as canceladas,
-                ROUND((SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) / COUNT(r.id_reserva) * 100), 1) as tasa_exito,
-                ROUND(AVG(DATEDIFF(p.fecha, r.fecha_registro)), 1) as demanda_anticipada
-            FROM RESERVA r
-            INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-            INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-            INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-            WHERE r.fecha_registro BETWEEN %s AND %s
-            {filtro_especialidad}
-            GROUP BY e.id_empleado, e.nombres, e.apellidos, esp.nombre
-            ORDER BY total_reservas DESC
-            LIMIT 15
-        """
-        cursor.execute(sql_top_medicos, params_especialidad)
+        # Incluir TODOS los médicos, incluso si no tienen reservas en el período
+        if id_especialidad and id_especialidad != "":
+            # Si hay filtro de especialidad, incluir solo médicos de esa especialidad
+            sql_top_medicos = f"""
+                SELECT 
+                    CONCAT(e.nombres, ' ', e.apellidos) as medico,
+                    esp.nombre as especialidad,
+                    COALESCE(COUNT(r.id_reserva), 0) as total_reservas,
+                    COALESCE(SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END), 0) as completadas,
+                    COALESCE(SUM(CASE WHEN r.estado = 'Cancelada' THEN 1 ELSE 0 END), 0) as canceladas,
+                    CASE 
+                        WHEN COUNT(r.id_reserva) > 0 THEN 
+                            ROUND((SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) / COUNT(r.id_reserva) * 100), 1)
+                        ELSE 0
+                    END as tasa_exito,
+                    COALESCE(ROUND(AVG(DATEDIFF(p.fecha, r.fecha_registro)), 1), 0) as demanda_anticipada
+                FROM EMPLEADO e
+                INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                LEFT JOIN HORARIO h ON e.id_empleado = h.id_empleado
+                LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario
+                LEFT JOIN RESERVA r ON p.id_programacion = r.id_programacion 
+                    AND r.fecha_registro BETWEEN %s AND %s
+                WHERE e.id_rol = 2 
+                    AND e.estado = 'activo'
+                    AND esp.id_especialidad = %s
+                GROUP BY e.id_empleado, e.nombres, e.apellidos, esp.nombre
+                ORDER BY total_reservas DESC, e.apellidos ASC, e.nombres ASC
+            """
+            params_medicos = [fecha_inicio, fecha_fin, id_especialidad]
+        else:
+            # Sin filtro de especialidad, incluir todos los médicos
+            sql_top_medicos = f"""
+                SELECT 
+                    CONCAT(e.nombres, ' ', e.apellidos) as medico,
+                    COALESCE(esp.nombre, 'Sin especialidad') as especialidad,
+                    COALESCE(COUNT(r.id_reserva), 0) as total_reservas,
+                    COALESCE(SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END), 0) as completadas,
+                    COALESCE(SUM(CASE WHEN r.estado = 'Cancelada' THEN 1 ELSE 0 END), 0) as canceladas,
+                    CASE 
+                        WHEN COUNT(r.id_reserva) > 0 THEN 
+                            ROUND((SUM(CASE WHEN r.estado = 'Completada' THEN 1 ELSE 0 END) / COUNT(r.id_reserva) * 100), 1)
+                        ELSE 0
+                    END as tasa_exito,
+                    COALESCE(ROUND(AVG(DATEDIFF(p.fecha, r.fecha_registro)), 1), 0) as demanda_anticipada
+                FROM EMPLEADO e
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                LEFT JOIN HORARIO h ON e.id_empleado = h.id_empleado
+                LEFT JOIN PROGRAMACION p ON h.id_horario = p.id_horario
+                LEFT JOIN RESERVA r ON p.id_programacion = r.id_programacion 
+                    AND r.fecha_registro BETWEEN %s AND %s
+                WHERE e.id_rol = 2 
+                    AND e.estado = 'activo'
+                GROUP BY e.id_empleado, e.nombres, e.apellidos, esp.nombre
+                ORDER BY total_reservas DESC, e.apellidos ASC, e.nombres ASC
+            """
+            params_medicos = [fecha_inicio, fecha_fin]
+        cursor.execute(sql_top_medicos, params_medicos)
         top_medicos = cursor.fetchall()
         
         for med in top_medicos:
