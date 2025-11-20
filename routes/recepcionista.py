@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, session, redirect, url_for, reques
 from functools import wraps
 from datetime import datetime, date
 from bd import obtener_conexion
+import pymysql.cursors
 
 # Crear el Blueprint
 recepcionista_bp = Blueprint('recepcionista', __name__, url_prefix='/recepcionista')
@@ -209,9 +210,11 @@ def panel():
     accion = request.args.get('accion')
 
     # Información del recepcionista desde la sesión
+    # Usar session.nombre_usuario como valor inicial (se establece en login)
+    nombre_usuario = session.get('nombre_usuario', 'Recepcionista')
     usuario = {
         'id': session.get('usuario_id'),
-        'nombre': 'Recepcionista',  # Valor por defecto
+        'nombre': nombre_usuario,  # Valor inicial desde sesión
         'email': session.get('email_usuario'),
         'rol': session.get('rol', 'Recepcionista'),
         'id_empleado': session.get('id_empleado')
@@ -231,20 +234,13 @@ def panel():
             empleado = cursor.fetchone()
             if empleado and empleado['nombre_completo'] and empleado['nombre_completo'].strip() and empleado['nombre_completo'].strip() != '0':
                 usuario['nombre'] = empleado['nombre_completo'].strip()
-            else:
-                # Si no se encuentra un nombre válido, mantener 'Recepcionista' y agregar mensaje de debug
-                usuario['mensaje_debug'] = 'No se pudo obtener el nombre del empleado. Verifica que el empleado tenga nombres y apellidos en la base de datos.'
+            # Si no se encuentra un nombre válido, ya tenemos el nombre_usuario de la sesión como respaldo
         except Exception as e:
             print(f"Error obteniendo nombre del empleado: {e}")
-            usuario['mensaje_debug'] = f'Error al consultar la base de datos: {str(e)}'
+            # Si hay error, mantener el nombre_usuario de la sesión
         finally:
             if 'conexion' in locals():
                 conexion.close()
-    else:
-        usuario['mensaje_debug'] = 'No hay id_empleado en la sesión. El usuario no está asociado a un empleado.'
-
-    # Temporal: Forzar mensaje de debug para testing
-    usuario['mensaje_debug'] = 'Mensaje de debug de prueba para verificar la visualización.'
 
     # Obtener estadísticas para el dashboard
     stats = obtener_estadisticas_recepcionista()
@@ -299,45 +295,84 @@ def api_pacientes_listar():
 @recepcionista_required
 def api_pacientes_buscar():
     """
-    API: Busca pacientes por nombre o DNI para autocompletado
+    API: Busca pacientes por nombre o DNI, devuelve datos completos para la tabla
     """
     try:
         query = request.args.get('q', '').strip()
 
-        if len(query) < 2:
-            return jsonify([])
-
         conexion = obtener_conexion()
-        cursor = conexion.cursor()
+        cursor = conexion.cursor(pymysql.cursors.DictCursor)
 
-        # Buscar pacientes que coincidan con el término de búsqueda
-        cursor.execute("""
-            SELECT
-                p.id_paciente,
-                p.nombres,
-                p.apellidos,
-                p.documento_identidad as dni
-            FROM PACIENTE p
-            INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
-            WHERE u.estado = 'activo'
-            AND (
-                CONCAT(p.nombres, ' ', p.apellidos) LIKE %s
-                OR p.documento_identidad LIKE %s
-            )
-            ORDER BY p.apellidos, p.nombres
-            LIMIT 10
-        """, (f'%{query}%', f'%{query}%'))
+        # Si hay query, buscar pacientes filtrados; si no, devolver todos
+        if query and len(query) >= 1:
+            # Buscar pacientes que coincidan con el término de búsqueda
+            # Optimizado: búsqueda más rápida usando índices si están disponibles
+            cursor.execute("""
+                SELECT
+                    p.id_paciente,
+                    p.nombres,
+                    p.apellidos,
+                    p.documento_identidad as dni,
+                    u.telefono,
+                    u.correo as email
+                FROM PACIENTE p
+                INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+                WHERE u.estado = 'activo'
+                AND (
+                    p.nombres LIKE %s
+                    OR p.apellidos LIKE %s
+                    OR CONCAT(p.nombres, ' ', p.apellidos) LIKE %s
+                    OR p.documento_identidad LIKE %s
+                )
+                ORDER BY p.apellidos, p.nombres
+                LIMIT 100
+            """, (f'%{query}%', f'%{query}%', f'%{query}%', f'%{query}%'))
+        else:
+            # Si no hay query o es muy corta, devolver todos los pacientes
+            cursor.execute("""
+                SELECT
+                    p.id_paciente,
+                    p.nombres,
+                    p.apellidos,
+                    p.documento_identidad as dni,
+                    u.telefono,
+                    u.correo as email
+                FROM PACIENTE p
+                INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+                WHERE u.estado = 'activo'
+                ORDER BY p.apellidos, p.nombres
+                LIMIT 100
+            """)
 
         pacientes = cursor.fetchall()
 
-        return jsonify(pacientes)
+        # Asegurar que todos los valores None se conviertan a None (JSON null)
+        # y que los campos estén presentes incluso si son None
+        pacientes_formateados = []
+        for paciente in pacientes:
+            paciente_dict = {
+                'id_paciente': paciente.get('id_paciente'),
+                'nombres': paciente.get('nombres') or '',
+                'apellidos': paciente.get('apellidos') or '',
+                'dni': paciente.get('dni') or '',
+                'telefono': paciente.get('telefono') or '',
+                'email': paciente.get('email') or ''
+            }
+            pacientes_formateados.append(paciente_dict)
+
+        return jsonify(pacientes_formateados)
 
     except Exception as e:
         print(f"Error al buscar pacientes: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': 'Error interno del servidor'}), 500
     finally:
         if 'conexion' in locals() and conexion:
-            conexion.close()
+            try:
+                conexion.close()
+            except Exception as e:
+                print(f"Error cerrando conexión: {e}")
 
 
 @recepcionista_bp.route('/pacientes/<int:id_paciente>')
@@ -393,30 +428,80 @@ def api_pacientes_registrar():
     API: Registra un nuevo paciente
     """
     try:
-        # Obtener datos del formulario
-        nombres = request.form.get('nombres')
-        apellidos = request.form.get('apellidos')
-        documento_identidad = request.form.get('dni')
-        fecha_nacimiento = request.form.get('fecha_nacimiento')
-        telefono = request.form.get('telefono')
-        email = request.form.get('email')
-        direccion = request.form.get('direccion')
+        # Obtener datos del formulario (usando los nombres correctos del formulario)
+        nombres = request.form.get('nombres', '').strip()
+        apellidos = request.form.get('apellidos', '').strip()
+        tipo_documento = request.form.get('tipo-documento', '').strip()
+        documento_identidad = request.form.get('documento-identidad', '').strip()
+        sexo = request.form.get('sexo', '').strip()
+        fecha_nacimiento = request.form.get('fecha-nacimiento', '').strip()
+        telefono = request.form.get('telefono', '').strip()
+        email = request.form.get('email', '').strip()
+        id_distrito = request.form.get('distrito', '').strip()
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm-password', '').strip()
 
-        # Validaciones básicas
-        if not all([nombres, apellidos, documento_identidad, fecha_nacimiento, telefono, email]):
-            return jsonify({'success': False, 'message': 'Todos los campos son requeridos'}), 400
+        # Validaciones básicas - verificar que todos los campos requeridos estén presentes
+        campos_requeridos = {
+            'nombres': nombres,
+            'apellidos': apellidos,
+            'tipo-documento': tipo_documento,
+            'documento-identidad': documento_identidad,
+            'sexo': sexo,
+            'fecha-nacimiento': fecha_nacimiento,
+            'telefono': telefono,
+            'email': email,
+            'distrito': id_distrito,
+            'password': password
+        }
 
-        # Obtener id_distrito (por defecto, asumimos uno genérico o el primero)
-        # En una implementación real, esto vendría de un select de ubicación
-        id_distrito = 1  # Valor por defecto
+        # Verificar campos faltantes
+        campos_faltantes = [campo for campo, valor in campos_requeridos.items() if not valor]
+        if campos_faltantes:
+            return jsonify({
+                'success': False, 
+                'message': f'Faltan campos requeridos: {", ".join(campos_faltantes)}'
+            }), 400
+
+        # Validar tipo de documento
+        tipos_validos = ['DNI', 'CE', 'PASAPORTE']
+        if tipo_documento not in tipos_validos:
+            return jsonify({'success': False, 'message': 'Tipo de documento inválido'}), 400
+
+        # Validar documento según tipo
+        if tipo_documento == 'DNI':
+            if len(documento_identidad) != 8 or not documento_identidad.isdigit():
+                return jsonify({'success': False, 'message': 'El DNI debe tener exactamente 8 dígitos'}), 400
+        elif tipo_documento == 'CE':
+            if len(documento_identidad) < 9 or len(documento_identidad) > 12 or not documento_identidad.isdigit():
+                return jsonify({'success': False, 'message': 'El Carnet de Extranjería debe tener entre 9 y 12 dígitos'}), 400
+        elif tipo_documento == 'PASAPORTE':
+            if len(documento_identidad) < 6 or len(documento_identidad) > 15:
+                return jsonify({'success': False, 'message': 'El Pasaporte debe tener entre 6 y 15 caracteres'}), 400
+            if not documento_identidad.replace(' ', '').replace('-', '').isalnum():
+                return jsonify({'success': False, 'message': 'El Pasaporte solo puede contener letras y números'}), 400
+
+        # Validar que las contraseñas coincidan
+        if password != confirm_password:
+            return jsonify({'success': False, 'message': 'Las contraseñas no coinciden'}), 400
+
+        # Validar longitud mínima de contraseña
+        if len(password) < 6:
+            return jsonify({'success': False, 'message': 'La contraseña debe tener al menos 6 caracteres'}), 400
+
+        # Validar que id_distrito sea un número válido
+        try:
+            id_distrito = int(id_distrito)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'message': 'Distrito inválido'}), 400
 
         # Importar modelos necesarios
         from models.paciente import Paciente
         from models.usuario import Usuario
 
-        # Crear usuario primero
+        # Crear usuario primero con la contraseña proporcionada
         resultado_usuario = Usuario.crear_usuario(
-            contrasena='123456',  # Contraseña temporal
+            contrasena=password,
             correo=email,
             telefono=telefono
         )
@@ -426,20 +511,37 @@ def api_pacientes_registrar():
 
         id_usuario = resultado_usuario['id_usuario']
 
+        # Convertir fecha de formato YYYY-MM-DD a formato necesario
+        # La fecha viene en formato YYYY-MM-DD del input type="date"
+        try:
+            from datetime import datetime
+            fecha_nacimiento_obj = datetime.strptime(fecha_nacimiento, '%Y-%m-%d')
+            fecha_nacimiento_formato = fecha_nacimiento_obj.strftime('%Y-%m-%d')
+        except ValueError:
+            # Si falla, intentar otros formatos comunes
+            try:
+                fecha_nacimiento_obj = datetime.strptime(fecha_nacimiento, '%d/%m/%Y')
+                fecha_nacimiento_formato = fecha_nacimiento_obj.strftime('%Y-%m-%d')
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Formato de fecha inválido'}), 400
+
         # Crear paciente
         resultado_paciente = Paciente.crear(
             nombres=nombres,
             apellidos=apellidos,
-            documento=documento_identidad,
-            sexo=request.form.get('sexo', 'M'),
-            fecha_nacimiento=fecha_nacimiento,
+            documento_identidad=documento_identidad,
+            sexo=sexo,
+            fecha_nacimiento=fecha_nacimiento_formato,
             id_usuario=id_usuario,
             id_distrito=id_distrito
         )
 
         if 'error' in resultado_paciente:
             # Si falla la creación del paciente, eliminar el usuario creado
-            Usuario.eliminar(id_usuario)
+            try:
+                Usuario.eliminar(id_usuario)
+            except:
+                pass
             return jsonify({'success': False, 'message': resultado_paciente['error']}), 400
 
         return jsonify({'success': True, 'message': 'Paciente registrado exitosamente'})
@@ -501,6 +603,9 @@ def api_incidencias_listar():
         elif id_paciente:
             try:
                 id_paciente_int = int(id_paciente)
+                if id_paciente_int <= 0:
+                    raise ValueError('ID de paciente debe ser mayor a 0')
+                    
                 conexion = obtener_conexion()
                 cursor = conexion.cursor(pymysql.cursors.DictCursor)
 
@@ -533,7 +638,8 @@ def api_incidencias_listar():
                         incidencia['paciente_nombre'] = 'No asignado'
 
                 conexion.close()
-            except ValueError:
+            except (ValueError, TypeError) as e:
+                print(f"Error al procesar ID de paciente: {e}")
                 return jsonify({'error': 'ID de paciente inválido'}), 400
         # Si no hay filtros, obtener todas las incidencias
         else:
