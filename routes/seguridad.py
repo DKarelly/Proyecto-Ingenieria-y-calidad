@@ -264,11 +264,11 @@ def api_estadisticas_actividad():
         cursor.execute("SELECT COUNT(*) as total FROM INCIDENCIA")
         estadisticas['total_incidencias'] = cursor.fetchone()['total']
 
-        # Incidencias por estado
+        # Incidencias por estado (usando estado directamente de INCIDENCIA)
         cursor.execute("""
-            SELECT aei.estado_historial, COUNT(*) as cantidad
-            FROM ASIGNAR_EMPLEADO_INCIDENCIA aei
-            GROUP BY aei.estado_historial
+            SELECT i.estado, COUNT(*) as cantidad
+            FROM INCIDENCIA i
+            GROUP BY i.estado
         """)
         estadisticas['por_estado'] = cursor.fetchall()
 
@@ -312,18 +312,17 @@ def api_actividad_reciente():
 
         limite = request.args.get('limite', 10, type=int)
 
-        # Obtener incidencias recientes
+        # Obtener incidencias recientes (usando estado directamente de INCIDENCIA)
         cursor.execute("""
-            SELECT 
+            SELECT
                 i.id_incidencia,
                 i.descripcion,
                 DATE_FORMAT(i.fecha_registro, '%d/%m/%Y %H:%i') as fecha,
                 CONCAT(p.nombres, ' ', p.apellidos) as paciente,
-                aei.estado_historial as estado,
+                i.estado,
                 'incidencia' as tipo
             FROM INCIDENCIA i
             LEFT JOIN PACIENTE p ON i.id_paciente = p.id_paciente
-            LEFT JOIN ASIGNAR_EMPLEADO_INCIDENCIA aei ON i.id_incidencia = aei.id_incidencia
             ORDER BY i.fecha_registro DESC
             LIMIT %s
         """, (limite,))

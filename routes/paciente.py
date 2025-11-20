@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
 from bd import obtener_conexion
 from models.paciente import Paciente
+from models.incidencia import Incidencia
 
 paciente_bp = Blueprint('paciente', __name__)
 
@@ -134,34 +135,20 @@ def api_crear_incidencia():
 
         id_paciente = paciente.get('id_paciente')
 
-        conexion = obtener_conexion()
-        with conexion.cursor() as cursor:
-            from datetime import datetime
-            fecha_actual = datetime.now().date()
+        # Usar el modelo Incidencia para crear la incidencia con estado='En progreso'
+        resultado = Incidencia.crear(descripcion, id_paciente, categoria, prioridad)
 
-            sql = """
-                INSERT INTO INCIDENCIA (descripcion, fecha_registro, id_paciente, categoria, prioridad)
-                VALUES (%s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql, (descripcion, fecha_actual, id_paciente, categoria, prioridad))
-            conexion.commit()
-            id_incidencia = cursor.lastrowid
-
-        return jsonify({
-            'success': True,
-            'id_incidencia': id_incidencia,
-            'message': 'Incidencia registrada exitosamente'
-        }), 201
+        if resultado['success']:
+            return jsonify({
+                'success': True,
+                'id_incidencia': resultado['id_incidencia'],
+                'message': 'Incidencia registrada exitosamente'
+            }), 201
+        else:
+            return jsonify({'error': resultado['message']}), 500
 
     except Exception as e:
-        if conexion:
-            conexion.rollback()
         return jsonify({'error': f'Error al crear incidencia: {str(e)}'}), 500
-    finally:
-        try:
-            conexion.close()
-        except:
-            pass
 
 
 @paciente_bp.route('/api/incidencias/mis-incidencias')
@@ -182,33 +169,24 @@ def api_mis_incidencias():
 
         id_paciente = paciente.get('id_paciente')
 
+        # Obtener incidencias del paciente usando el modelo
+        # Como eliminamos ASIGNAR_EMPLEADO_INCIDENCIA, necesitamos una consulta directa
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             sql = """
                 SELECT i.id_incidencia,
                        i.descripcion,
-                       i.fecha_registro,
+                       DATE_FORMAT(i.fecha_registro, '%%Y-%%m-%%d') as fecha_registro,
                        i.categoria,
                        i.prioridad,
-                       a.estado_historial as estado_resolucion,
-                       a.fecha_resolucion,
-                       a.observaciones as observaciones_resolucion,
-                       CONCAT(e.nombres, ' ', e.apellidos) as empleado_asignado
+                       i.estado,
+                       DATE_FORMAT(i.fecha_resolucion, '%%Y-%%m-%%d') as fecha_resolucion
                 FROM INCIDENCIA i
-                LEFT JOIN ASIGNAR_EMPLEADO_INCIDENCIA a ON i.id_incidencia = a.id_incidencia
-                LEFT JOIN EMPLEADO e ON a.id_empleado = e.id_empleado
                 WHERE i.id_paciente = %s
                 ORDER BY i.fecha_registro DESC
             """
             cursor.execute(sql, (id_paciente,))
             incidencias = cursor.fetchall()
-            
-            # Convertir fechas a string para serialización JSON
-            for incidencia in incidencias:
-                if incidencia.get('fecha_registro'):
-                    incidencia['fecha_registro'] = incidencia['fecha_registro'].strftime('%Y-%m-%d %H:%M:%S')
-                if incidencia.get('fecha_resolucion'):
-                    incidencia['fecha_resolucion'] = incidencia['fecha_resolucion'].strftime('%Y-%m-%d %H:%M:%S')
 
             return jsonify({'incidencias': incidencias})
 
