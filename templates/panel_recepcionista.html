@@ -176,8 +176,13 @@
                 {% if not subsistema %}
                 <!-- Dashboard Principal -->
                 <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Bienvenido, {{ session.get('nombre_usuario', 'Recepcionista') }}</h2>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Bienvenido, {{ session.nombre_usuario or 'Recepcionista' }}</h2>
                     <p class="text-gray-600">Aquí está tu resumen del día</p>
+                    {% if usuario.mensaje_debug %}
+                    <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-sm text-yellow-800">{{ usuario.mensaje_debug }}</p>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Estadísticas Rápidas -->
@@ -890,14 +895,11 @@
             // Configurar búsqueda de pacientes
             configurarBusquedaPacientes();
 
-            // Configurar filtrado de tabla de pacientes
-            configurarFiltradoTablaPacientes();
-
             // Configurar búsqueda de pacientes para incidencias
             configurarBusquedaPacientesIncidencia();
 
             // Configurar búsqueda de pacientes para generar incidencia
-            configurarBusquedaPacienteIncidencia();
+            configurarBusquedaPacientesIncidencia();
 
             // Configurar búsqueda de pacientes en el panel de incidencias
             configurarBusquedaPacientePanel();

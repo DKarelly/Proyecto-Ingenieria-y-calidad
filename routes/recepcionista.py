@@ -211,11 +211,40 @@ def panel():
     # Información del recepcionista desde la sesión
     usuario = {
         'id': session.get('usuario_id'),
-        'nombre': session.get('nombre_usuario'),
+        'nombre': 'Recepcionista',  # Valor por defecto
         'email': session.get('email_usuario'),
         'rol': session.get('rol', 'Recepcionista'),
         'id_empleado': session.get('id_empleado')
     }
+
+    # Si tenemos id_empleado, obtener el nombre completo del empleado
+    if usuario.get('id_empleado'):
+        try:
+            import pymysql.cursors
+            conexion = obtener_conexion()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("""
+                SELECT CONCAT(COALESCE(nombres, ''), ' ', COALESCE(apellidos, '')) as nombre_completo
+                FROM EMPLEADO
+                WHERE id_empleado = %s
+            """, (usuario['id_empleado'],))
+            empleado = cursor.fetchone()
+            if empleado and empleado['nombre_completo'] and empleado['nombre_completo'].strip() and empleado['nombre_completo'].strip() != '0':
+                usuario['nombre'] = empleado['nombre_completo'].strip()
+            else:
+                # Si no se encuentra un nombre válido, mantener 'Recepcionista' y agregar mensaje de debug
+                usuario['mensaje_debug'] = 'No se pudo obtener el nombre del empleado. Verifica que el empleado tenga nombres y apellidos en la base de datos.'
+        except Exception as e:
+            print(f"Error obteniendo nombre del empleado: {e}")
+            usuario['mensaje_debug'] = f'Error al consultar la base de datos: {str(e)}'
+        finally:
+            if 'conexion' in locals():
+                conexion.close()
+    else:
+        usuario['mensaje_debug'] = 'No hay id_empleado en la sesión. El usuario no está asociado a un empleado.'
+
+    # Temporal: Forzar mensaje de debug para testing
+    usuario['mensaje_debug'] = 'Mensaje de debug de prueba para verificar la visualización.'
 
     # Obtener estadísticas para el dashboard
     stats = obtener_estadisticas_recepcionista()
@@ -561,10 +590,11 @@ def api_incidencias_generar():
 def api_obtener_departamentos():
     """API: Obtiene todos los departamentos"""
     from bd import obtener_conexion
+    import pymysql.cursors
 
     conexion = obtener_conexion()
     try:
-        with conexion.cursor() as cursor:
+        with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("SELECT id_departamento, nombre FROM DEPARTAMENTO ORDER BY nombre")
             departamentos = cursor.fetchall()
             return jsonify(departamentos)
@@ -577,10 +607,11 @@ def api_obtener_departamentos():
 def api_obtener_provincias(id_departamento):
     """API: Obtiene provincias por departamento"""
     from bd import obtener_conexion
+    import pymysql.cursors
 
     conexion = obtener_conexion()
     try:
-        with conexion.cursor() as cursor:
+        with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute(
                 "SELECT id_provincia, nombre FROM PROVINCIA WHERE id_departamento = %s ORDER BY nombre",
                 (id_departamento,)
@@ -596,10 +627,11 @@ def api_obtener_provincias(id_departamento):
 def api_obtener_distritos(id_provincia):
     """API: Obtiene distritos por provincia"""
     from bd import obtener_conexion
+    import pymysql.cursors
 
     conexion = obtener_conexion()
     try:
-        with conexion.cursor() as cursor:
+        with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute(
                 "SELECT id_distrito, nombre FROM DISTRITO WHERE id_provincia = %s ORDER BY nombre",
                 (id_provincia,)
