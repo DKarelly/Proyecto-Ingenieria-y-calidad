@@ -757,15 +757,16 @@
                 {% else %}
                 <!-- Lista de Incidencias -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <!-- Barra de búsqueda -->
-                    <div class="mb-6">
+                    <!-- Buscador de Pacientes -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Buscar Paciente</h3>
                         <div class="relative">
-                            <input type="text" id="buscar-incidencia" placeholder="Buscar incidencia por nombre del paciente o DNI..."
+                            <input type="text" id="buscar-paciente" placeholder="Buscar por nombre o DNI..."
                                    class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
                         </div>
                         <!-- Resultados de búsqueda -->
-                        <div id="resultados-incidencia" class="mt-4 space-y-2 hidden">
+                        <div id="resultados-paciente" class="mt-4 space-y-2 hidden">
                             <!-- Los resultados se mostrarán aquí dinámicamente -->
                         </div>
                     </div>
@@ -808,6 +809,7 @@
             // Cargar estadísticas del dashboard
             if (!window.location.search.includes('subsistema')) {
                 cargarEstadisticas();
+                cargarIncidenciasRecientes();
             }
 
             // Cargar pacientes si estamos en cuentas
@@ -888,8 +890,17 @@
             // Configurar búsqueda de pacientes
             configurarBusquedaPacientes();
 
+            // Configurar filtrado de tabla de pacientes
+            configurarFiltradoTablaPacientes();
+
             // Configurar búsqueda de pacientes para incidencias
             configurarBusquedaPacientesIncidencia();
+
+            // Configurar búsqueda de pacientes para generar incidencia
+            configurarBusquedaPacienteIncidencia();
+
+            // Configurar búsqueda de pacientes en el panel de incidencias
+            configurarBusquedaPacientePanel();
 
             // Configurar búsqueda de incidencias
             configurarBusquedaIncidencias();
@@ -963,7 +974,15 @@
                         timeoutId = setTimeout(async () => {
                             try {
                                 const response = await fetch(`/recepcionista/pacientes/buscar?q=${encodeURIComponent(termino)}`);
-                                const pacientes = await response.json();
+                                const data = await response.json();
+
+                                if (!response.ok) {
+                                    resultadosDiv.innerHTML = `<div class="p-3 text-red-500 text-center">${data.error || 'Error al buscar pacientes'}</div>`;
+                                    resultadosDiv.classList.remove('hidden');
+                                    return;
+                                }
+
+                                const pacientes = data;
 
                                 if (pacientes.length > 0) {
                                     let html = '';
@@ -983,8 +1002,8 @@
                                     resultadosDiv.classList.remove('hidden');
                                 }
                             } catch (error) {
-                                console.error('Error buscando pacientes:', error);
-                                resultadosDiv.innerHTML = '<div class="p-3 text-red-500 text-center">Error al buscar pacientes</div>';
+                                console.error('Error de conexión buscando pacientes:', error);
+                                resultadosDiv.innerHTML = '<div class="p-3 text-red-500 text-center">Error de conexión al buscar pacientes</div>';
                                 resultadosDiv.classList.remove('hidden');
                             }
                         }, 300);
@@ -1037,7 +1056,7 @@
                                     pacientes.forEach(paciente => {
                                         html += `
                                             <div class="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                                                 onclick="seleccionarPacienteParaIncidencia('${paciente.nombres} ${paciente.apellidos}', '${paciente.dni}')">
+                                                 onclick="seleccionarPacienteParaIncidencia('${paciente.nombres} ${paciente.apellidos}', '${paciente.dni}', ${paciente.id_paciente})">
                                                 <div class="font-semibold text-gray-800">${paciente.nombres} ${paciente.apellidos}</div>
                                                 <div class="text-sm text-gray-600">DNI: ${paciente.dni}</div>
                                             </div>
@@ -1067,7 +1086,7 @@
             }
 
             // Búsqueda de incidencias
-            const buscarIncidenciaInput = document.getElementById('buscar-incidencia');
+            const buscarIncidenciaInput = document.getElementById('buscar-incidencia-simple');
             if (buscarIncidenciaInput) {
                 buscarIncidenciaInput.addEventListener('input', function(e) {
                     const termino = e.target.value.toLowerCase();
@@ -1077,31 +1096,37 @@
                     // Verificar si el término es un paciente seleccionado (formato: "Nombre Apellido (DNI: dni)")
                     const patientRegex = /^(.+?)\s*\(DNI:\s*(.+?)\)$/;
                     const patientMatch = termino.match(patientRegex);
+                    let isPatientSelected = false;
+                    let selectedName = '';
+                    let selectedDni = '';
 
                     if (patientMatch) {
-                        // Si es un paciente seleccionado, filtrar por DNI exacto
-                        const selectedDni = patientMatch[2].trim().toLowerCase();
-                        incidencias.forEach(incidencia => {
-                            const pacienteDni = (incidencia.dataset.pacienteDni || '').trim().toLowerCase();
-                            if (pacienteDni === selectedDni) {
-                                incidencia.style.display = '';
-                            } else {
-                                incidencia.style.display = 'none';
-                            }
-                        });
-                    } else {
-                        // Búsqueda normal por nombre o DNI
-                        incidencias.forEach(incidencia => {
-                            const pacienteNombre = (incidencia.dataset.pacienteNombre || '').toLowerCase();
-                            const pacienteDni = (incidencia.dataset.pacienteDni || '').toLowerCase();
-
-                            if (pacienteNombre.includes(termino) || pacienteDni.includes(termino)) {
-                                incidencia.style.display = '';
-                            } else {
-                                incidencia.style.display = 'none';
-                            }
-                        });
+                        isPatientSelected = true;
+                        selectedName = patientMatch[1].trim().toLowerCase();
+                        selectedDni = patientMatch[2].trim().toLowerCase();
                     }
+
+                    // Filtrar incidencias
+                    incidencias.forEach(incidencia => {
+                        const pacienteNombre = (incidencia.dataset.pacienteNombre || '').toLowerCase();
+                        const pacienteDni = (incidencia.dataset.pacienteDni || '').toLowerCase();
+
+                        let matches = false;
+
+                        if (isPatientSelected) {
+                            // Para paciente seleccionado, buscar por nombre (contiene) o DNI exacto
+                            matches = pacienteNombre.includes(selectedName) || pacienteDni === selectedDni;
+                        } else {
+                            // Búsqueda normal por nombre o DNI
+                            matches = pacienteNombre.includes(termino) || pacienteDni.includes(termino);
+                        }
+
+                        if (matches) {
+                            incidencia.style.display = '';
+                        } else {
+                            incidencia.style.display = 'none';
+                        }
+                    });
 
                     // Mostrar mensaje si no hay resultados visibles
                     const visibleIncidencias = Array.from(incidencias).filter(inc => inc.style.display !== 'none');
@@ -1436,7 +1461,7 @@
                 }).join('');
 
                 // After loading incidences, if there's a search term, apply the filter
-                const buscarIncidenciaInput = document.getElementById('buscar-incidencia');
+                const buscarIncidenciaInput = document.getElementById('buscar-incidencia-simple');
                 if (buscarIncidenciaInput && buscarIncidenciaInput.value.trim()) {
                     const event = new Event('input', { bubbles: true });
                     buscarIncidenciaInput.dispatchEvent(event);
@@ -1546,6 +1571,263 @@
                             resultadosDiv.classList.add('hidden');
                         }
                     });
+                }
+            }
+
+            // Función para configurar la búsqueda de pacientes en el panel de incidencias
+            function configurarBusquedaPacientePanel() {
+                const input = document.getElementById('buscarPaciente');
+                const resultadosDiv = document.getElementById('sugerenciasPaciente');
+                const pacienteInfoDiv = document.getElementById('paciente-info');
+                const idPacienteInput = document.getElementById('idPaciente');
+                let timeoutId;
+
+                if (input) {
+                    input.addEventListener('input', function(e) {
+                        const termino = e.target.value.trim();
+
+                        // Limpiar timeout anterior
+                        clearTimeout(timeoutId);
+
+                        // Limpiar selección anterior
+                        idPacienteInput.value = '';
+                        pacienteInfoDiv.innerHTML = `
+                            <p class="text-sm text-gray-500 text-center">
+                                <i class="fas fa-user-circle text-3xl text-gray-400 mb-2 block"></i>
+                                Busque un paciente por nombre o DNI
+                            </p>
+                        `;
+
+                        if (termino.length < 2) {
+                            resultadosDiv.classList.add('hidden');
+                            resultadosDiv.innerHTML = '';
+                            return;
+                        }
+
+                        // Debounce para evitar demasiadas peticiones
+                        timeoutId = setTimeout(async () => {
+                            try {
+                                const response = await fetch(`/recepcionista/pacientes/buscar?q=${encodeURIComponent(termino)}`);
+                                const pacientes = await response.json();
+
+                                if (pacientes.length > 0) {
+                                    let html = '';
+                                    pacientes.forEach(paciente => {
+                                        html += `
+                                            <div class="p-3 bg-white border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                                 onclick="seleccionarPacientePanel(${paciente.id_paciente}, '${paciente.nombres} ${paciente.apellidos}', '${paciente.dni}')">
+                                                <div class="font-semibold text-gray-800">${paciente.nombres} ${paciente.apellidos}</div>
+                                                <div class="text-sm text-gray-600">DNI: ${paciente.dni}</div>
+                                            </div>
+                                        `;
+                                    });
+                                    resultadosDiv.innerHTML = html;
+                                    resultadosDiv.classList.remove('hidden');
+                                } else {
+                                    resultadosDiv.innerHTML = '<div class="p-3 text-gray-500 text-center">No se encontraron pacientes</div>';
+                                    resultadosDiv.classList.remove('hidden');
+                                }
+                            } catch (error) {
+                                console.error('Error buscando pacientes:', error);
+                                resultadosDiv.innerHTML = '<div class="p-3 text-red-500 text-center">Error al buscar pacientes</div>';
+                                resultadosDiv.classList.remove('hidden');
+                            }
+                        }, 300);
+                    });
+
+                    // Ocultar resultados al hacer clic fuera
+                    document.addEventListener('click', function(e) {
+                        if (!input.contains(e.target) && !resultadosDiv.contains(e.target)) {
+                            resultadosDiv.classList.add('hidden');
+                        }
+                    });
+                }
+            }
+
+            // Función para seleccionar paciente en el panel de incidencias
+            window.seleccionarPacientePanel = async function(idPaciente, nombreCompleto, dni) {
+                const input = document.getElementById('buscarPaciente');
+                const resultadosDiv = document.getElementById('sugerenciasPaciente');
+                const pacienteInfoDiv = document.getElementById('paciente-info');
+                const idPacienteInput = document.getElementById('idPaciente');
+
+                // Actualizar input y hidden
+                input.value = nombreCompleto;
+                idPacienteInput.value = idPaciente;
+                resultadosDiv.classList.add('hidden');
+
+                // Cargar información del paciente
+                try {
+                    const response = await fetch(`/recepcionista/pacientes/${idPaciente}`);
+                    const paciente = await response.json();
+
+                    if (response.ok) {
+                        pacienteInfoDiv.innerHTML = `
+                            <div class="text-left">
+                                <h4 class="font-bold text-gray-800 mb-2">${paciente.nombres} ${paciente.apellidos}</h4>
+                                <div class="space-y-1 text-sm text-gray-600">
+                                    <p><strong>DNI:</strong> ${paciente.dni}</p>
+                                    <p><strong>Sexo:</strong> ${paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
+                                    <p><strong>Fecha Nacimiento:</strong> ${paciente.fecha_nacimiento}</p>
+                                    <p><strong>Teléfono:</strong> ${paciente.telefono}</p>
+                                    <p><strong>Email:</strong> ${paciente.email}</p>
+                                    ${paciente.departamento ? `<p><strong>Ubicación:</strong> ${paciente.distrito}, ${paciente.provincia}, ${paciente.departamento}</p>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        pacienteInfoDiv.innerHTML = `
+                            <p class="text-sm text-red-500 text-center">
+                                <i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2 block"></i>
+                                Error al cargar información del paciente
+                            </p>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error cargando información del paciente:', error);
+                    pacienteInfoDiv.innerHTML = `
+                        <p class="text-sm text-red-500 text-center">
+                            <i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2 block"></i>
+                            Error de conexión
+                        </p>
+                    `;
+                }
+
+                // Cargar incidencias del paciente
+                await cargarIncidenciasPaciente(idPaciente);
+            };
+
+            // Función para cargar incidencias de un paciente específico
+            async function cargarIncidenciasPaciente(idPaciente) {
+                try {
+                    const response = await fetch(`/recepcionista/incidencias/listar?id_paciente=${idPaciente}`);
+                    const data = await response.json();
+
+                    const container = document.getElementById('lista-incidencias');
+
+                    if (data.error) {
+                        console.error('Error al cargar incidencias:', data.error);
+                        container.innerHTML = `
+                            <div class="text-center py-8 text-gray-500">
+                                <span class="material-symbols-outlined text-5xl mb-2 block text-red-400">error</span>
+                                <p>Error al cargar incidencias</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const incidencias = data.incidencias || [];
+
+                    if (incidencias.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-8 text-gray-500">
+                                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">report_problem</span>
+                                <p>Este paciente no tiene incidencias registradas</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    container.innerHTML = incidencias.map((incidencia, index) => {
+                        const fecha = new Date(incidencia.fecha_registro);
+                        const fechaFormateada = isNaN(fecha.getTime()) ? 'Fecha no disponible' : fecha.toLocaleDateString('es-ES', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+
+                        // Determinar color del borde según prioridad
+                        let borderColor = 'border-gray-200';
+                        if (incidencia.prioridad === 'Alta') borderColor = 'border-red-200';
+                        else if (incidencia.prioridad === 'Media') borderColor = 'border-yellow-200';
+                        else if (incidencia.prioridad === 'Baja') borderColor = 'border-green-200';
+
+                        // Truncar descripción para el preview (primeras 100 caracteres)
+                        const descripcionPreview = incidencia.descripcion.length > 100
+                            ? incidencia.descripcion.substring(0, 100) + '...'
+                            : incidencia.descripcion;
+
+                        return `
+                            <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-l-4 ${borderColor}" data-estado="${incidencia.estado}" data-paciente-nombre="${incidencia.paciente_nombre || ''}" data-paciente-dni="${incidencia.dni || ''}">
+                                <!-- Header del Card -->
+                                <div class="bg-gradient-to-r from-cyan-50 to-cyan-100 p-6 border-b border-gray-100">
+                                    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-3 mb-2 flex-wrap">
+                                                <span class="bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                                    ID: #${incidencia.id_incidencia}
+                                                </span>
+                                                ${getPrioridadBadge(incidencia.prioridad)}
+                                                ${getCategoriaBadge(incidencia.categoria)}
+                                            </div>
+                                            <h3 class="text-lg font-bold text-gray-800 mb-1">${descripcionPreview}</h3>
+                                            <p class="text-sm text-gray-600">${fechaFormateada}</p>
+                                        </div>
+                                        <button onclick="toggleExpand(${index})" class="flex items-center gap-2 bg-white text-cyan-600 font-semibold py-2 px-4 rounded-lg hover:bg-cyan-50 transition-all duration-200 border border-cyan-200">
+                                            <span id="btnText-${index}">Ver Detalles</span>
+                                            <svg id="chevron-${index}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform transition-transform duration-200">
+                                                <path d="m6 9 6 6 6-6"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Información Básica (siempre visible) -->
+                                <div class="p-6">
+                                    <div class="mb-4">
+                                        <h4 class="text-sm font-semibold text-gray-500 mb-2">Paciente</h4>
+                                        <p class="text-gray-700">${incidencia.paciente_nombre || 'No asignado'}</p>
+                                    </div>
+
+                                    <!-- Contenido Expandible -->
+                                    <div id="content-${index}" class="expandable-content">
+                                        <div class="border-t border-gray-100 pt-4 mt-4">
+
+                                            ${incidencia.estado === 'Resuelta' || incidencia.estado === 'Cerrada' ? `
+                                            <!-- Información de Resolución -->
+                                            <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                                                <div class="flex items-start gap-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600 flex-shrink-0 mt-1">
+                                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                                                    </svg>
+                                                    <div class="flex-1">
+                                                        <h4 class="font-bold text-gray-800 mb-2">Estado de Resolución</h4>
+                                                        <p class="text-gray-700 mb-2"><span class="font-semibold">Estado:</span> ${incidencia.estado}</p>
+                                                        ${incidencia.fecha_resolucion ? `<p class="text-sm text-gray-600 mb-2"><span class="font-semibold">Fecha de resolución:</span> ${new Date(incidencia.fecha_resolucion).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            ` : `
+                                            <!-- Sin Resolución -->
+                                            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                                                <div class="flex items-start gap-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-yellow-600 flex-shrink-0 mt-1">
+                                                        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                                                    </svg>
+                                                    <div class="flex-1">
+                                                        <h4 class="font-bold text-gray-800 mb-1">En Espera de Atención</h4>
+                                                        <p class="text-gray-700">Esta incidencia está siendo procesada. Recibirás una notificación cuando sea atendida.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            `}
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                } catch (error) {
+                    console.error('Error cargando incidencias del paciente:', error);
+                    const container = document.getElementById('lista-incidencias');
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block text-red-400">error</span>
+                            <p>Error al cargar incidencias</p>
+                        </div>
+                    `;
                 }
             }
 

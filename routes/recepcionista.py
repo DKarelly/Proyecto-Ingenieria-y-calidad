@@ -33,7 +33,7 @@ def obtener_estadisticas_recepcionista():
 
         return {
             'reservas_hoy': result['reservas_hoy'] or 0,
-            'pacientes_registrados': result['pacientes_registrados'] or 0,
+            'pacientes_registrados': result['pacientes_totales'] or 0,
             'incidencias_pendientes': result['incidencias_pendientes'] or 0
         }
 
@@ -311,6 +311,52 @@ def api_pacientes_buscar():
             conexion.close()
 
 
+@recepcionista_bp.route('/pacientes/<int:id_paciente>')
+@recepcionista_required
+def api_paciente_detalles(id_paciente):
+    """
+    API: Obtiene detalles completos de un paciente por ID
+    """
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+
+        cursor.execute("""
+            SELECT
+                p.id_paciente,
+                p.nombres,
+                p.apellidos,
+                p.documento_identidad as dni,
+                p.sexo,
+                DATE_FORMAT(p.fecha_nacimiento, '%d/%m/%Y') as fecha_nacimiento,
+                u.telefono,
+                u.correo as email,
+                d.nombre as departamento,
+                pr.nombre as provincia,
+                di.nombre as distrito
+            FROM PACIENTE p
+            INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+            LEFT JOIN DISTRITO di ON p.id_distrito = di.id_distrito
+            LEFT JOIN PROVINCIA pr ON di.id_provincia = pr.id_provincia
+            LEFT JOIN DEPARTAMENTO d ON pr.id_departamento = d.id_departamento
+            WHERE p.id_paciente = %s AND u.estado = 'activo'
+        """, (id_paciente,))
+
+        paciente = cursor.fetchone()
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        return jsonify(paciente)
+
+    except Exception as e:
+        print(f"Error al obtener detalles del paciente: {e}")
+        return jsonify({'error': 'Error interno del servidor'}), 500
+    finally:
+        if 'conexion' in locals() and conexion:
+            conexion.close()
+
+
 @recepcionista_bp.route('/pacientes/registrar', methods=['POST'])
 @recepcionista_required
 def api_pacientes_registrar():
@@ -384,17 +430,85 @@ def api_incidencias_listar():
     API: Lista todas las incidencias, con filtro opcional por paciente
     """
     try:
-        q = request.args.get('q', '').strip().lower()
-        incidencias = obtener_incidencias()
+        q = request.args.get('q', '').strip()
+        id_paciente = request.args.get('id_paciente', '').strip()
 
+        # Si hay búsqueda por texto, hacer consulta filtrada en SQL
         if q:
-            filtered = []
-            for inc in incidencias:
-                paciente_nombre = (inc.get('paciente_nombre', '') or '').lower()
-                dni = (inc.get('dni', '') or '').lower()
-                if q in paciente_nombre or q in dni:
-                    filtered.append(inc)
-            incidencias = filtered
+            conexion = obtener_conexion()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+            cursor.execute("""
+                SELECT
+                    i.id_incidencia,
+                    i.descripcion,
+                    i.categoria,
+                    i.prioridad,
+                    i.estado,
+                    DATE_FORMAT(i.fecha_registro, '%Y-%m-%d %H:%i:%s') as fecha_registro,
+                    DATE_FORMAT(i.fecha_resolucion, '%Y-%m-%d') as fecha_resolucion,
+                    i.id_paciente,
+                    p.nombres,
+                    p.apellidos,
+                    p.documento_identidad as dni
+                FROM INCIDENCIA i
+                LEFT JOIN PACIENTE p ON i.id_paciente = p.id_paciente
+                WHERE CONCAT(COALESCE(p.nombres, ''), ' ', COALESCE(p.apellidos, '')) LIKE %s
+                   OR COALESCE(p.documento_identidad, '') LIKE %s
+                ORDER BY i.fecha_registro DESC
+            """, (f'%{q}%', f'%{q}%'))
+
+            incidencias = cursor.fetchall()
+
+            # Formatear los datos para incluir nombre completo del paciente
+            for incidencia in incidencias:
+                if incidencia['nombres'] and incidencia['apellidos']:
+                    incidencia['paciente_nombre'] = f"{incidencia['nombres']} {incidencia['apellidos']}"
+                else:
+                    incidencia['paciente_nombre'] = 'No asignado'
+
+            conexion.close()
+        # Si hay filtro por ID de paciente específico
+        elif id_paciente:
+            try:
+                id_paciente_int = int(id_paciente)
+                conexion = obtener_conexion()
+                cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+                cursor.execute("""
+                    SELECT
+                        i.id_incidencia,
+                        i.descripcion,
+                        i.categoria,
+                        i.prioridad,
+                        i.estado,
+                        DATE_FORMAT(i.fecha_registro, '%Y-%m-%d %H:%i:%s') as fecha_registro,
+                        DATE_FORMAT(i.fecha_resolucion, '%Y-%m-%d') as fecha_resolucion,
+                        i.id_paciente,
+                        p.nombres,
+                        p.apellidos,
+                        p.documento_identidad as dni
+                    FROM INCIDENCIA i
+                    LEFT JOIN PACIENTE p ON i.id_paciente = p.id_paciente
+                    WHERE i.id_paciente = %s
+                    ORDER BY i.fecha_registro DESC
+                """, (id_paciente_int,))
+
+                incidencias = cursor.fetchall()
+
+                # Formatear los datos para incluir nombre completo del paciente
+                for incidencia in incidencias:
+                    if incidencia['nombres'] and incidencia['apellidos']:
+                        incidencia['paciente_nombre'] = f"{incidencia['nombres']} {incidencia['apellidos']}"
+                    else:
+                        incidencia['paciente_nombre'] = 'No asignado'
+
+                conexion.close()
+            except ValueError:
+                return jsonify({'error': 'ID de paciente inválido'}), 400
+        # Si no hay filtros, obtener todas las incidencias
+        else:
+            incidencias = obtener_incidencias()
 
         return jsonify({'incidencias': incidencias})
     except Exception as e:
