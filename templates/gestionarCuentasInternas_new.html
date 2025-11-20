@@ -28,6 +28,9 @@
         <link rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
     </noscript>
+    
+    <!-- Font Awesome para iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -824,14 +827,29 @@
                     </div>
 
                     <div>
+                        <label for="emp-tipo-documento" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Tipo de Documento
+                        </label>
+                        <select id="emp-tipo-documento" name="tipo-documento"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all">
+                            <option value="">Seleccione... (Por defecto: DNI)</option>
+                            <option value="DNI">DNI</option>
+                            <option value="CE">Carnet de Extranjería</option>
+                            <option value="PASAPORTE">Pasaporte</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Si no selecciona, se asumirá DNI (8 dígitos)</p>
+                    </div>
+
+                    <div>
                         <label for="emp-documento" class="block text-sm font-semibold text-gray-700 mb-2">
                             Documento de Identidad <span class="text-red-500">*</span>
-                            <span class="text-xs text-gray-500 float-right"><span id="emp-documento-count">0</span>/8</span>
+                            <span class="text-xs text-gray-500 float-right"><span id="emp-documento-count">0</span>/<span id="emp-documento-max">8</span></span>
                         </label>
-                        <input type="text" id="emp-documento" name="documento" required minlength="8" maxlength="12"
+                        <input type="text" id="emp-documento" name="documento" required minlength="8" maxlength="8"
                             pattern="[0-9]+"
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
                             placeholder="Ej: 12345678">
+                        <p id="emp-documento-hint" class="text-xs text-gray-500 mt-1">Seleccione el tipo de documento primero</p>
                     </div>
 
                     <div>
@@ -888,6 +906,7 @@
                     <input type="email" id="emp-email" name="email" required maxlength="120"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
                         placeholder="Ej: empleado@clinica.com">
+                    <p id="emp-email-validation" class="text-sm mt-1"></p>
                     <p class="text-sm text-gray-500 mt-1">Este correo se usará para acceder al sistema</p>
                 </div>
 
@@ -904,19 +923,47 @@
                         <label for="emp-password" class="block text-sm font-semibold text-gray-700 mb-2">
                             Contraseña <span class="text-red-500">*</span>
                         </label>
-                        <input type="password" id="emp-password" name="password" required minlength="8" maxlength="64"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                            placeholder="Mínimo 8 caracteres">
+                        <div class="relative">
+                            <input type="password" id="emp-password" name="password" required minlength="8" maxlength="64"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                                placeholder="Mínimo 8 caracteres">
+                            <button type="button" id="toggle-emp-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cyan-600">
+                                <i class="fa-solid fa-eye" id="emp-password-eye-icon"></i>
+                            </button>
+                        </div>
+                        <div id="emp-password-strength" class="mt-2">
+                            <div class="flex gap-1 mb-1">
+                                <div class="h-1 flex-1 bg-gray-200 rounded" id="strength-bar-1"></div>
+                                <div class="h-1 flex-1 bg-gray-200 rounded" id="strength-bar-2"></div>
+                                <div class="h-1 flex-1 bg-gray-200 rounded" id="strength-bar-3"></div>
+                                <div class="h-1 flex-1 bg-gray-200 rounded" id="strength-bar-4"></div>
+                            </div>
+                            <p id="emp-password-requirements" class="text-xs text-gray-500 mt-1">
+                                Debe incluir: al menos 8 caracteres, una letra mayúscula, una letra y un número
+                            </p>
+                            <ul id="emp-password-checklist" class="text-xs mt-1 space-y-0.5">
+                                <li id="req-length" class="text-gray-400"><span class="mr-1">○</span>Mínimo 8 caracteres</li>
+                                <li id="req-uppercase" class="text-gray-400"><span class="mr-1">○</span>Al menos una mayúscula</li>
+                                <li id="req-letter" class="text-gray-400"><span class="mr-1">○</span>Al menos una letra</li>
+                                <li id="req-number" class="text-gray-400"><span class="mr-1">○</span>Al menos un número</li>
+                            </ul>
+                        </div>
                     </div>
 
                     <div>
                         <label for="emp-confirm-password" class="block text-sm font-semibold text-gray-700 mb-2">
                             Confirmar Contraseña <span class="text-red-500">*</span>
                         </label>
-                        <input type="password" id="emp-confirm-password" name="confirm_password" required minlength="8"
-                            maxlength="64"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
-                            placeholder="Repita la contraseña">
+                        <div class="relative">
+                            <input type="password" id="emp-confirm-password" name="confirm_password" required minlength="8"
+                                maxlength="64"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all"
+                                placeholder="Repita la contraseña">
+                            <button type="button" id="toggle-emp-confirm-password" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cyan-600">
+                                <i class="fa-solid fa-eye" id="emp-confirm-password-eye-icon"></i>
+                            </button>
+                        </div>
+                        <p id="emp-password-match" class="text-xs mt-1 hidden"></p>
                     </div>
                 </div>
 
@@ -1320,40 +1367,165 @@
             });
         }
 
-        // Validación de documento (solo números, exactamente 8 dígitos)
+        // ============================================
+        // VALIDACIÓN DINÁMICA DE DOCUMENTO DE IDENTIDAD
+        // ============================================
+        // Definir tipos de documento en scope global para uso en validación de submit
+        const tiposDocumentoEmpleado = {
+            'DNI': { min: 8, max: 8, pattern: /^[0-9]{8}$/, placeholder: '12345678', hint: 'Ingrese 8 dígitos', maxDisplay: '8' },
+            'CE': { min: 9, max: 12, pattern: /^[0-9]{9,12}$/, placeholder: '123456789', hint: 'Ingrese entre 9 y 12 dígitos', maxDisplay: '12' },
+            'PASAPORTE': { min: 6, max: 15, pattern: /^[A-Z0-9]{6,15}$/, placeholder: 'ABC123456', hint: 'Ingrese entre 6 y 15 caracteres (letras y números)', maxDisplay: '15' }
+        };
+
+        const tipoDocumentoSelect = document.getElementById('emp-tipo-documento');
         const documentoInput = document.getElementById('emp-documento');
-        if (documentoInput) {
-            documentoInput.addEventListener('input', function() {
-                const parent = this.parentElement;
-                const prevMsg = parent.querySelector('.validation-message');
-                if (prevMsg) prevMsg.remove();
-                
-                // Solo permitir números
-                if (!/^\d*$/.test(this.value)) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-red-500 mt-1';
-                    msg.textContent = 'Solo se permiten números';
-                    parent.appendChild(msg);
-                    this.classList.add('border-red-500');
-                    this.value = this.value.replace(/\D/g, '');
-                } else if (this.value.length > 0 && this.value.length < 8) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-orange-500 mt-1';
-                    msg.textContent = `${this.value.length}/8 dígitos - Debe tener exactamente 8 dígitos`;
-                    parent.appendChild(msg);
-                    this.classList.add('border-orange-500');
-                    this.classList.remove('border-red-500');
-                } else if (this.value.length === 8) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-green-500 mt-1';
-                    msg.textContent = '✓ Documento válido';
-                    parent.appendChild(msg);
-                    this.classList.remove('border-red-500', 'border-orange-500');
-                    this.classList.add('border-green-500');
+        const documentoHint = document.getElementById('emp-documento-hint');
+        const documentoCount = document.getElementById('emp-documento-count');
+        const documentoMax = document.getElementById('emp-documento-max');
+
+        function actualizarConfiguracionDocumentoEmpleado(tipo) {
+            if (!tipo || tipo === '') {
+                // Si no hay tipo, asumir DNI por defecto
+                tipo = 'DNI';
+            }
+
+            if (!tiposDocumentoEmpleado[tipo]) {
+                documentoInput.disabled = true;
+                documentoInput.placeholder = 'Seleccione el tipo de documento primero';
+                documentoHint.textContent = 'Seleccione el tipo de documento primero';
+                documentoHint.className = 'text-xs text-gray-500 mt-1';
+                documentoInput.value = '';
+                return;
+            }
+
+            const config = tiposDocumentoEmpleado[tipo];
+            documentoInput.disabled = false;
+            documentoInput.placeholder = config.placeholder;
+            documentoInput.minLength = config.min;
+            documentoInput.maxLength = config.max;
+            documentoMax.textContent = config.maxDisplay;
+            documentoHint.textContent = config.hint;
+            documentoHint.className = 'text-xs text-gray-500 mt-1';
+            documentoInput.value = '';
+            documentoCount.textContent = '0';
+            
+            // Actualizar pattern según tipo
+            if (tipo === 'PASAPORTE') {
+                documentoInput.removeAttribute('pattern');
+                documentoInput.setAttribute('inputmode', 'text');
+            } else {
+                documentoInput.setAttribute('pattern', '[0-9]+');
+                documentoInput.setAttribute('inputmode', 'numeric');
+            }
+        }
+
+        if (tipoDocumentoSelect && documentoInput) {
+            // Event listener para cambio de tipo de documento
+            tipoDocumentoSelect.addEventListener('change', function(e) {
+                const tipo = e.target.value || 'DNI';
+                actualizarConfiguracionDocumentoEmpleado(tipo);
+            });
+
+            // Event listener para input del documento
+            documentoInput.addEventListener('input', function(e) {
+                const tipo = tipoDocumentoSelect.value || 'DNI';
+                const config = tiposDocumentoEmpleado[tipo] || tiposDocumentoEmpleado['DNI'];
+                let valor = this.value;
+
+                // Filtrar caracteres permitidos
+                if (tipo === 'PASAPORTE') {
+                    valor = valor.toUpperCase().replace(/[^A-Z0-9]/g, '');
                 } else {
+                    valor = valor.replace(/[^0-9]/g, '');
+                }
+
+                // Limitar longitud máxima
+                if (valor.length > config.max) {
+                    valor = valor.substring(0, config.max);
+                }
+
+                this.value = valor;
+                documentoCount.textContent = valor.length;
+
+                // Actualizar hint con validación
+                const longitud = valor.length;
+                if (longitud === 0) {
+                    documentoHint.textContent = config.hint;
+                    documentoHint.className = 'text-xs text-gray-500 mt-1';
                     this.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+                } else if (tipo === 'DNI') {
+                    if (longitud === config.max && config.pattern.test(valor)) {
+                        documentoHint.textContent = `✓ ${longitud}/${config.max} dígitos - Completo`;
+                        documentoHint.className = 'text-xs text-green-600 mt-1';
+                        this.classList.remove('border-red-500', 'border-orange-500');
+                        this.classList.add('border-green-500');
+                    } else {
+                        documentoHint.textContent = `${longitud}/${config.max} dígitos`;
+                        documentoHint.className = 'text-xs text-orange-500 mt-1';
+                        this.classList.remove('border-red-500', 'border-green-500');
+                        this.classList.add('border-orange-500');
+                    }
+                } else if (tipo === 'CE') {
+                    if (longitud >= config.min && longitud <= config.max && config.pattern.test(valor)) {
+                        documentoHint.textContent = `✓ ${longitud} dígitos - Válido (entre ${config.min} y ${config.max})`;
+                        documentoHint.className = 'text-xs text-green-600 mt-1';
+                        this.classList.remove('border-red-500', 'border-orange-500');
+                        this.classList.add('border-green-500');
+                    } else if (longitud < config.min) {
+                        documentoHint.textContent = `${longitud} dígitos - Mínimo ${config.min} dígitos`;
+                        documentoHint.className = 'text-xs text-orange-500 mt-1';
+                        this.classList.remove('border-red-500', 'border-green-500');
+                        this.classList.add('border-orange-500');
+                    } else {
+                        documentoHint.textContent = `${longitud} dígitos - Máximo ${config.max} dígitos`;
+                        documentoHint.className = 'text-xs text-red-500 mt-1';
+                        this.classList.remove('border-orange-500', 'border-green-500');
+                        this.classList.add('border-red-500');
+                    }
+                } else if (tipo === 'PASAPORTE') {
+                    if (longitud >= config.min && longitud <= config.max && config.pattern.test(valor)) {
+                        documentoHint.textContent = `✓ ${longitud} caracteres - Válido (entre ${config.min} y ${config.max})`;
+                        documentoHint.className = 'text-xs text-green-600 mt-1';
+                        this.classList.remove('border-red-500', 'border-orange-500');
+                        this.classList.add('border-green-500');
+                    } else if (longitud < config.min) {
+                        documentoHint.textContent = `${longitud} caracteres - Mínimo ${config.min} caracteres`;
+                        documentoHint.className = 'text-xs text-orange-500 mt-1';
+                        this.classList.remove('border-red-500', 'border-green-500');
+                        this.classList.add('border-orange-500');
+                    } else {
+                        documentoHint.textContent = `${longitud} caracteres - Máximo ${config.max} caracteres`;
+                        documentoHint.className = 'text-xs text-red-500 mt-1';
+                        this.classList.remove('border-orange-500', 'border-green-500');
+                        this.classList.add('border-red-500');
+                    }
                 }
             });
+
+            // Prevenir pegar contenido inválido
+            documentoInput.addEventListener('paste', function(e) {
+                e.preventDefault();
+                const tipo = tipoDocumentoSelect.value || 'DNI';
+                const config = tiposDocumentoEmpleado[tipo] || tiposDocumentoEmpleado['DNI'];
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                let valor = pastedText;
+
+                if (tipo === 'PASAPORTE') {
+                    valor = valor.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                } else {
+                    valor = valor.replace(/[^0-9]/g, '');
+                }
+
+                if (valor.length > config.max) {
+                    valor = valor.substring(0, config.max);
+                }
+
+                this.value = valor;
+                this.dispatchEvent(new Event('input'));
+            });
+
+            // Inicializar con DNI por defecto
+            actualizarConfiguracionDocumentoEmpleado('DNI');
         }
 
         // Validación de teléfono (solo números, exactamente 9 dígitos)
@@ -1394,21 +1566,34 @@
 
         // Validación de email en tiempo real
         const emailInput = document.getElementById('emp-email');
-        if (emailInput) {
-            emailInput.addEventListener('blur', function() {
-                const parent = this.parentElement;
-                const prevMsg = parent.querySelector('.validation-message');
-                if (prevMsg) prevMsg.remove();
-                
+        const emailValidation = document.getElementById('emp-email-validation');
+        if (emailInput && emailValidation) {
+            emailInput.addEventListener('input', function() {
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (this.value && !emailRegex.test(this.value)) {
-                    const msg = document.createElement('p');
-                    msg.className = 'validation-message text-sm text-red-500 mt-1';
-                    msg.textContent = 'Formato de correo inválido';
-                    parent.appendChild(msg);
+                if (this.value.length === 0) {
+                    emailValidation.textContent = '';
+                    emailValidation.className = '';
+                    this.classList.remove('border-red-500', 'border-green-500');
+                } else if (!emailRegex.test(this.value)) {
+                    emailValidation.textContent = '✗ Formato de correo inválido';
+                    emailValidation.className = 'text-sm text-red-500 mt-1';
+                    this.classList.remove('border-green-500');
                     this.classList.add('border-red-500');
                 } else {
+                    emailValidation.textContent = '✓ Formato de correo válido';
+                    emailValidation.className = 'text-sm text-green-600 mt-1';
                     this.classList.remove('border-red-500');
+                    this.classList.add('border-green-500');
+                }
+            });
+
+            emailInput.addEventListener('blur', function() {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (this.value && !emailRegex.test(this.value)) {
+                    emailValidation.textContent = '✗ Formato de correo inválido';
+                    emailValidation.className = 'text-sm text-red-500 mt-1';
+                    this.classList.remove('border-green-500');
+                    this.classList.add('border-red-500');
                 }
             });
         }
@@ -1434,6 +1619,144 @@
                 } else {
                     this.classList.remove('border-red-500');
                 }
+            });
+        }
+
+        // ============================================
+        // VALIDACIÓN DE CONTRASEÑA CON INDICADOR VISUAL
+        // ============================================
+        const passwordInput = document.getElementById('emp-password');
+        const confirmPasswordInput = document.getElementById('emp-confirm-password');
+        const passwordMatch = document.getElementById('emp-password-match');
+
+        function actualizarFortalezaContraseña(password) {
+            const reqLength = document.getElementById('req-length');
+            const reqUppercase = document.getElementById('req-uppercase');
+            const reqLetter = document.getElementById('req-letter');
+            const reqNumber = document.getElementById('req-number');
+            const strengthBars = [
+                document.getElementById('strength-bar-1'),
+                document.getElementById('strength-bar-2'),
+                document.getElementById('strength-bar-3'),
+                document.getElementById('strength-bar-4')
+            ];
+
+            // Validar requisitos
+            const hasLength = password.length >= 8;
+            const hasUppercase = /[A-Z]/.test(password);
+            const hasLetter = /[a-zA-Z]/.test(password);
+            const hasNumber = /[0-9]/.test(password);
+
+            // Actualizar checklist
+            if (reqLength) {
+                reqLength.innerHTML = hasLength ? '<span class="mr-1 text-green-600">✓</span>Mínimo 8 caracteres' : '<span class="mr-1">○</span>Mínimo 8 caracteres';
+                reqLength.className = hasLength ? 'text-green-600' : 'text-gray-400';
+            }
+            if (reqUppercase) {
+                reqUppercase.innerHTML = hasUppercase ? '<span class="mr-1 text-green-600">✓</span>Al menos una mayúscula' : '<span class="mr-1">○</span>Al menos una mayúscula';
+                reqUppercase.className = hasUppercase ? 'text-green-600' : 'text-gray-400';
+            }
+            if (reqLetter) {
+                reqLetter.innerHTML = hasLetter ? '<span class="mr-1 text-green-600">✓</span>Al menos una letra' : '<span class="mr-1">○</span>Al menos una letra';
+                reqLetter.className = hasLetter ? 'text-green-600' : 'text-gray-400';
+            }
+            if (reqNumber) {
+                reqNumber.innerHTML = hasNumber ? '<span class="mr-1 text-green-600">✓</span>Al menos un número' : '<span class="mr-1">○</span>Al menos un número';
+                reqNumber.className = hasNumber ? 'text-green-600' : 'text-gray-400';
+            }
+
+            // Calcular fortaleza (0-4)
+            let strength = 0;
+            if (hasLength) strength++;
+            if (hasUppercase) strength++;
+            if (hasLetter) strength++;
+            if (hasNumber) strength++;
+
+            // Actualizar barras de fortaleza
+            strengthBars.forEach((bar, index) => {
+                if (bar) {
+                    if (index < strength) {
+                        if (strength <= 1) {
+                            bar.className = 'h-1 flex-1 bg-red-500 rounded';
+                        } else if (strength === 2) {
+                            bar.className = 'h-1 flex-1 bg-orange-500 rounded';
+                        } else if (strength === 3) {
+                            bar.className = 'h-1 flex-1 bg-yellow-500 rounded';
+                        } else {
+                            bar.className = 'h-1 flex-1 bg-green-500 rounded';
+                        }
+                    } else {
+                        bar.className = 'h-1 flex-1 bg-gray-200 rounded';
+                    }
+                }
+            });
+
+            // Actualizar borde del input
+            if (password.length === 0) {
+                passwordInput.classList.remove('border-red-500', 'border-orange-500', 'border-green-500');
+            } else if (strength === 4) {
+                passwordInput.classList.remove('border-red-500', 'border-orange-500');
+                passwordInput.classList.add('border-green-500');
+            } else if (strength >= 2) {
+                passwordInput.classList.remove('border-red-500', 'border-green-500');
+                passwordInput.classList.add('border-orange-500');
+            } else {
+                passwordInput.classList.remove('border-orange-500', 'border-green-500');
+                passwordInput.classList.add('border-red-500');
+            }
+        }
+
+        if (passwordInput) {
+            passwordInput.addEventListener('input', function() {
+                actualizarFortalezaContraseña(this.value);
+            });
+        }
+
+        // Validar coincidencia de contraseñas
+        if (confirmPasswordInput && passwordMatch) {
+            confirmPasswordInput.addEventListener('input', function() {
+                const password = passwordInput.value;
+                const confirmPassword = this.value;
+
+                if (confirmPassword.length === 0) {
+                    passwordMatch.textContent = '';
+                    passwordMatch.className = 'hidden';
+                    this.classList.remove('border-red-500', 'border-green-500');
+                } else if (password === confirmPassword) {
+                    passwordMatch.textContent = '✓ Las contraseñas coinciden';
+                    passwordMatch.className = 'text-xs text-green-600 mt-1';
+                    this.classList.remove('border-red-500');
+                    this.classList.add('border-green-500');
+                } else {
+                    passwordMatch.textContent = '✗ Las contraseñas no coinciden';
+                    passwordMatch.className = 'text-xs text-red-500 mt-1';
+                    this.classList.remove('border-green-500');
+                    this.classList.add('border-red-500');
+                }
+            });
+        }
+
+        // Toggle de visibilidad de contraseña
+        const togglePasswordBtn = document.getElementById('toggle-emp-password');
+        const toggleConfirmPasswordBtn = document.getElementById('toggle-emp-confirm-password');
+        const passwordEyeIcon = document.getElementById('emp-password-eye-icon');
+        const confirmPasswordEyeIcon = document.getElementById('emp-confirm-password-eye-icon');
+
+        if (togglePasswordBtn && passwordEyeIcon) {
+            togglePasswordBtn.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                passwordEyeIcon.classList.toggle('fa-eye');
+                passwordEyeIcon.classList.toggle('fa-eye-slash');
+            });
+        }
+
+        if (toggleConfirmPasswordBtn && confirmPasswordEyeIcon) {
+            toggleConfirmPasswordBtn.addEventListener('click', function() {
+                const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                confirmPasswordInput.setAttribute('type', type);
+                confirmPasswordEyeIcon.classList.toggle('fa-eye');
+                confirmPasswordEyeIcon.classList.toggle('fa-eye-slash');
             });
         }
 
@@ -1501,22 +1824,46 @@
                     return;
                 }
                 
-                if (password.length < 8) {
+                // Validar contraseña completa
+                const hasLength = password.length >= 8;
+                const hasUppercase = /[A-Z]/.test(password);
+                const hasLetter = /[a-zA-Z]/.test(password);
+                const hasNumber = /[0-9]/.test(password);
+
+                if (!hasLength || !hasUppercase || !hasLetter || !hasNumber) {
+                    let mensaje = 'La contraseña debe cumplir con todos los requisitos:\n';
+                    if (!hasLength) mensaje += '• Mínimo 8 caracteres\n';
+                    if (!hasUppercase) mensaje += '• Al menos una letra mayúscula\n';
+                    if (!hasLetter) mensaje += '• Al menos una letra\n';
+                    if (!hasNumber) mensaje += '• Al menos un número';
+                    
                     await mostrarConfirmacion({
                         titulo: 'Error de Validación',
-                        mensaje: 'La contraseña debe tener al menos 8 caracteres.',
+                        mensaje: mensaje,
                         tipo: 'warning',
                         textoAceptar: 'Entendido'
                     });
                     return;
                 }
                 
-                // Validar documento de identidad (solo números)
+                // Validar documento de identidad según tipo
+                const tipoDocumento = document.getElementById('emp-tipo-documento').value || 'DNI';
                 const documento = document.getElementById('emp-documento').value;
-                if (!/^\d{8}$/.test(documento)) {
+                const tiposDoc = tiposDocumentoEmpleado[tipoDocumento] || tiposDocumentoEmpleado['DNI'];
+                
+                if (!tiposDoc.pattern.test(documento)) {
+                    let mensajeError = 'Documento inválido.';
+                    if (tipoDocumento === 'DNI') {
+                        mensajeError = 'El DNI debe tener exactamente 8 dígitos.';
+                    } else if (tipoDocumento === 'CE') {
+                        mensajeError = 'El Carnet de Extranjería debe tener entre 9 y 12 dígitos.';
+                    } else if (tipoDocumento === 'PASAPORTE') {
+                        mensajeError = 'El Pasaporte debe tener entre 6 y 15 caracteres alfanuméricos.';
+                    }
+                    
                     await mostrarConfirmacion({
                         titulo: 'Error de Validación',
-                        mensaje: 'El documento de identidad debe contener exactamente 8 dígitos.',
+                        mensaje: mensajeError,
                         tipo: 'warning',
                         textoAceptar: 'Entendido'
                     });
@@ -1529,7 +1876,6 @@
                     await mostrarConfirmacion({
                         titulo: 'Error de Validación',
                         mensaje: 'El teléfono debe contener exactamente 9 dígitos.',
-                        mensaje: 'El teléfono debe contener solo números.',
                         tipo: 'warning',
                         textoAceptar: 'Entendido'
                     });
@@ -1553,10 +1899,12 @@
                 
                 // Preparar datos del formulario
                 const formData = new FormData(this);
+                const tipoDoc = document.getElementById('emp-tipo-documento').value || 'DNI';
                 const data = {
                     accion: 'crear_empleado',
                     nombres: formData.get('nombres'),
                     apellidos: formData.get('apellidos'),
+                    tipo_documento: tipoDoc,
                     documento_identidad: formData.get('documento'),
                     sexo: formData.get('sexo'),
                     telefono: formData.get('telefono'),
