@@ -226,11 +226,30 @@
                         </div>
 
                         <div class="space-y-4" id="incidencias-recientes">
-                            <!-- Las incidencias se cargarán dinámicamente -->
-                            <div class="text-center py-8 text-gray-500">
-                                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">report_problem</span>
-                                <p class="font-medium">Cargando incidencias...</p>
-                            </div>
+                            {% if incidencias_recientes %}
+                                {% for incidencia in incidencias_recientes %}
+                                    <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl hover:shadow-md transition-shadow">
+                                        <div class="flex-shrink-0">
+                                            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                !
+                                            </div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-gray-800">{{ incidencia.nombrepaciente or 'Sin paciente asignado' }}</h4>
+                                            <p class="text-sm text-gray-600">{{ incidencia.descripcion[:100] }}{% if incidencia.descripcion|length > 100 %}...{% endif %}</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="inline-block px-2 py-1 {% if incidencia.prioridad == 'Baja' %}bg-green-100 text-green-700{% elif incidencia.prioridad == 'Media' %}bg-yellow-100 text-yellow-700{% elif incidencia.prioridad == 'Alta' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-700{% endif %} text-xs font-semibold rounded-full mt-1">{{ incidencia.prioridad or 'Sin Prioridad' }}</span>
+                                            <p class="text-xs text-gray-500 mt-1">{{ incidencia.fecha_registro.strftime('%d/%m/%Y') if incidencia.fecha_registro else 'Fecha no disponible' }}</p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-8 text-gray-500">
+                                    <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">check_circle</span>
+                                    <p class="font-medium">No hay nuevas incidencias</p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -789,7 +808,6 @@
             // Cargar estadísticas del dashboard
             if (!window.location.search.includes('subsistema')) {
                 cargarEstadisticas();
-                cargarIncidenciasRecientes();
             }
 
             // Cargar pacientes si estamos en cuentas
@@ -876,14 +894,51 @@
             // Configurar búsqueda de incidencias
             configurarBusquedaIncidencias();
 
-            // Restringir input a números para documento de identidad y teléfono
-            document.getElementById('documento-identidad').addEventListener('input', function(e) {
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
+            // Restringir input a números para documento de identidad y teléfono (solo en formulario de registro)
+            const documentoInput = document.getElementById('documento-identidad');
+            if (documentoInput) {
+                documentoInput.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
 
-            document.getElementById('telefono').addEventListener('input', function(e) {
-                this.value = this.value.replace(/[^0-9]/g, '');
-            });
+            const telefonoInput = document.getElementById('telefono');
+            if (telefonoInput) {
+                telefonoInput.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+
+            // Cargar ubicaciones (departamentos, provincias, distritos) solo en formulario de registro
+            const departamentoSelect = document.getElementById('departamento');
+            if (departamentoSelect) {
+                cargarDepartamentos();
+
+                // Event listeners para cascada de ubicaciones
+                departamentoSelect.addEventListener('change', function(e) {
+                    const idDepartamento = e.target.value;
+                    if (idDepartamento) {
+                        cargarProvincias(idDepartamento);
+                        document.getElementById('provincia').disabled = false;
+                    } else {
+                        document.getElementById('provincia').innerHTML = '<option value="">Seleccione un departamento primero...</option>';
+                        document.getElementById('provincia').disabled = true;
+                        document.getElementById('distrito').innerHTML = '<option value="">Seleccione una provincia primero...</option>';
+                        document.getElementById('distrito').disabled = true;
+                    }
+                });
+
+                document.getElementById('provincia').addEventListener('change', function(e) {
+                    const idProvincia = e.target.value;
+                    if (idProvincia) {
+                        cargarDistritos(idProvincia);
+                        document.getElementById('distrito').disabled = false;
+                    } else {
+                        document.getElementById('distrito').innerHTML = '<option value="">Seleccione una provincia primero...</option>';
+                        document.getElementById('distrito').disabled = true;
+                    }
+                });
+            }
 
             // Función para configurar la búsqueda de pacientes
             function configurarBusquedaPacientes() {
@@ -1088,6 +1143,18 @@
         async function cargarIncidenciasRecientes() {
             try {
                 const response = await fetch('/recepcionista/incidencias/recientes');
+                if (!response.ok) {
+                    console.error('Error en la respuesta:', response.status, response.statusText);
+                    const container = document.getElementById('incidencias-recientes');
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block text-red-400">error</span>
+                            <p class="font-medium">Error al cargar incidencias</p>
+                            <p class="text-sm text-gray-400">Revisa la consola para más detalles</p>
+                        </div>
+                    `;
+                    return;
+                }
                 const incidencias = await response.json();
 
                 const container = document.getElementById('incidencias-recientes');
@@ -1104,12 +1171,24 @@
 
                 let html = '';
                 incidencias.forEach(incidencia => {
-                    const severidadClass = {
-                        'baja': 'bg-yellow-100 text-yellow-700',
-                        'media': 'bg-orange-100 text-orange-700',
-                        'alta': 'bg-red-100 text-red-700',
-                        'crítica': 'bg-red-100 text-red-700'
-                    }[incidencia.severidad] || 'bg-gray-100 text-gray-700';
+                    const prioridadClass = {
+                        'Baja': 'bg-green-100 text-green-700',
+                        'Media': 'bg-yellow-100 text-yellow-700',
+                        'Alta': 'bg-red-100 text-red-700'
+                    }[incidencia.prioridad] || 'bg-gray-100 text-gray-700';
+
+                    const descripcionPreview = incidencia.descripcion.length > 100
+                        ? incidencia.descripcion.substring(0, 100) + '...'
+                        : incidencia.descripcion;
+
+                    const fecha = new Date(incidencia.fecha_registro);
+                    const fechaFormateada = isNaN(fecha.getTime()) ? 'Fecha no disponible' : fecha.toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+
+                    const nombrePaciente = incidencia.nombrepaciente || 'Sin paciente asignado';
 
                     html += `
                         <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl hover:shadow-md transition-shadow">
@@ -1119,12 +1198,12 @@
                                 </div>
                             </div>
                             <div class="flex-1">
-                                <h4 class="font-semibold text-gray-800">${incidencia.titulo}</h4>
-                                <p class="text-sm text-gray-600">${incidencia.descripcion.substring(0, 100)}...</p>
+                                <h4 class="font-semibold text-gray-800">${nombrePaciente}</h4>
+                                <p class="text-sm text-gray-600">${descripcionPreview}</p>
                             </div>
                             <div class="text-right">
-                                <span class="inline-block px-2 py-1 ${severidadClass} text-xs font-semibold rounded-full mt-1">${incidencia.severidad}</span>
-                                <p class="text-xs text-gray-500 mt-1">${new Date(incidencia.fecha_creacion).toLocaleDateString()}</p>
+                                <span class="inline-block px-2 py-1 ${prioridadClass} text-xs font-semibold rounded-full mt-1">${incidencia.prioridad || 'Sin Prioridad'}</span>
+                                <p class="text-xs text-gray-500 mt-1">${fechaFormateada}</p>
                             </div>
                         </div>
                     `;
@@ -1133,6 +1212,14 @@
                 container.innerHTML = html;
             } catch (error) {
                 console.error('Error cargando incidencias recientes:', error);
+                const container = document.getElementById('incidencias-recientes');
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <span class="material-symbols-outlined text-5xl mb-2 block text-red-400">error</span>
+                        <p class="font-medium">Error de conexión</p>
+                        <p class="text-sm text-gray-400">No se pudo cargar las incidencias</p>
+                    </div>
+                `;
             }
         }
 
@@ -1287,6 +1374,11 @@
                                     <p class="text-gray-700 leading-relaxed">${incidencia.descripcion}</p>
                                 </div>
 
+                                <div class="mb-4">
+                                    <h4 class="text-sm font-semibold text-gray-500 mb-2">Paciente</h4>
+                                    <p class="text-gray-700">${incidencia.paciente_nombre || 'No asignado'}</p>
+                                </div>
+
                                 <!-- Contenido Expandible -->
                                 <div id="content-${index}" class="expandable-content">
                                     <div class="border-t border-gray-100 pt-4 mt-4">
@@ -1356,6 +1448,13 @@
                 }
             } catch (error) {
                 console.error('Error cargando incidencias:', error);
+                const container = document.getElementById('lista-incidencias');
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <span class="material-symbols-outlined text-5xl mb-2 block text-red-400">error</span>
+                        <p>Error al cargar incidencias</p>
+                    </div>
+                `;
             }
         }
 
@@ -1464,6 +1563,94 @@
                 hiddenInput.value = idPaciente;
                 document.getElementById('resultados-paciente-incidencia').classList.add('hidden');
             };
+
+            // Funciones para cargar ubicaciones
+            async function cargarDepartamentos() {
+                try {
+                    const response = await fetch('/recepcionista/api/departamentos');
+                    const departamentos = await response.json();
+
+                    const select = document.getElementById('departamento');
+                    select.innerHTML = '<option value="">Seleccione un departamento...</option>';
+
+                    departamentos.forEach(departamento => {
+                        const option = document.createElement('option');
+                        option.value = departamento.id_departamento;
+                        option.textContent = departamento.nombre;
+                        select.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error cargando departamentos:', error);
+                }
+            }
+
+            async function cargarProvincias(idDepartamento) {
+                try {
+                    const response = await fetch(`/recepcionista/api/provincias/${idDepartamento}`);
+                    const provincias = await response.json();
+
+                    const select = document.getElementById('provincia');
+                    select.innerHTML = '<option value="">Seleccione una provincia...</option>';
+
+                    provincias.forEach(provincia => {
+                        const option = document.createElement('option');
+                        option.value = provincia.id_provincia;
+                        option.textContent = provincia.nombre;
+                        select.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error cargando provincias:', error);
+                }
+            }
+
+            async function cargarDistritos(idProvincia) {
+                try {
+                    const response = await fetch(`/recepcionista/api/distritos/${idProvincia}`);
+                    const distritos = await response.json();
+
+                    const select = document.getElementById('distrito');
+                    select.innerHTML = '<option value="">Seleccione un distrito...</option>';
+
+                    distritos.forEach(distrito => {
+                        const option = document.createElement('option');
+                        option.value = distrito.id_distrito;
+                        option.textContent = distrito.nombre;
+                        select.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error cargando distritos:', error);
+                }
+            }
+
+            // Funciones para mostrar/ocultar contraseña
+            function togglePassword() {
+                const input = document.getElementById('password');
+                const icon = document.getElementById('password-toggle-icon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+
+            function toggleConfirmPassword() {
+                const input = document.getElementById('confirm-password');
+                const icon = document.getElementById('confirm-password-toggle-icon');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        ;
     </script>
 </body>
 </html>

@@ -24,9 +24,9 @@ def obtener_estadisticas_recepcionista():
         # Estadísticas básicas del recepcionista
         cursor.execute("""
             SELECT
-                (SELECT COUNT(*) FROM RESERVA WHERE DATE(fecha_creacion) = CURDATE()) as reservas_hoy,
-                (SELECT COUNT(*) FROM PACIENTE WHERE DATE(fecha_creacion) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)) as pacientes_registrados,
-                (SELECT COUNT(*) FROM INCIDENCIA WHERE estado = 'abierta') as incidencias_pendientes
+                (SELECT COUNT(*) FROM RESERVA WHERE DATE(fecha_registro) = CURDATE()) as reservas_hoy,
+                (SELECT COUNT(*) FROM PACIENTE) as pacientes_totales,
+                (SELECT COUNT(*) FROM INCIDENCIA WHERE estado = 'En progreso') as incidencias_pendientes
         """)
 
         result = cursor.fetchone()
@@ -60,24 +60,27 @@ def obtener_incidencias_recientes():
 
         cursor.execute("""
             SELECT
-                id_incidencia,
-                titulo,
-                descripcion,
-                severidad,
-                estado,
-                fecha_creacion
-            FROM INCIDENCIA
-            ORDER BY fecha_creacion DESC
-            LIMIT 5
+                i.id_incidencia,
+                i.descripcion,
+                i.categoria,
+                i.prioridad,
+                i.estado,
+                i.fecha_registro,
+                i.id_paciente,
+                CONCAT(p.nombres, ' ', p.apellidos) AS nombrepaciente
+            FROM INCIDENCIA i
+            LEFT JOIN PACIENTE p ON i.id_paciente = p.id_paciente
+            ORDER BY fecha_registro DESC
+            LIMIT 5;
         """)
 
         incidencias = cursor.fetchall()
 
         # Formatear fechas
         for incidencia in incidencias:
-            if isinstance(incidencia['fecha_creacion'], str):
-                incidencia['fecha_creacion'] = datetime.strptime(incidencia['fecha_creacion'], '%Y-%m-%d %H:%M:%S')
-            elif hasattr(incidencia['fecha_creacion'], 'strftime'):
+            if isinstance(incidencia['fecha_registro'], str):
+                incidencia['fecha_registro'] = datetime.strptime(incidencia['fecha_registro'], '%Y-%m-%d %H:%M:%S')
+            elif hasattr(incidencia['fecha_registro'], 'strftime'):
                 pass  # Ya es datetime
 
         return incidencias
@@ -131,8 +134,9 @@ def obtener_incidencias():
     """
     conexion = None
     try:
+        import pymysql.cursors
         conexion = obtener_conexion()
-        cursor = conexion.cursor()
+        cursor = conexion.cursor(pymysql.cursors.DictCursor)
 
         cursor.execute("""
             SELECT
@@ -141,7 +145,8 @@ def obtener_incidencias():
                 i.categoria,
                 i.prioridad,
                 i.estado,
-                i.fecha_registro,
+                DATE_FORMAT(i.fecha_registro, '%Y-%m-%d %H:%i:%s') as fecha_registro,
+                DATE_FORMAT(i.fecha_resolucion, '%Y-%m-%d') as fecha_resolucion,
                 i.id_paciente,
                 p.nombres,
                 p.apellidos,
@@ -164,6 +169,8 @@ def obtener_incidencias():
 
     except Exception as e:
         print(f"Error al obtener incidencias: {e}")
+        import traceback
+        traceback.print_exc()
         return []
     finally:
         if conexion:
@@ -213,11 +220,18 @@ def panel():
     # Obtener estadísticas para el dashboard
     stats = obtener_estadisticas_recepcionista()
 
+    # Obtener incidencias recientes para el dashboard si estamos en la vista principal
+    if not subsistema:
+        incidencias_recientes = obtener_incidencias_recientes()
+    else:
+        incidencias_recientes = []
+
     return render_template('panel_recepcionista.html',
                          subsistema=subsistema,
                          accion=accion,
                          usuario=usuario,
-                         stats=stats)
+                         stats=stats,
+                         incidencias_recientes=incidencias_recientes)
 
 
 # API Endpoints para el dashboard
@@ -425,6 +439,73 @@ def api_incidencias_generar():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error interno: {str(e)}'}), 500
+
+
+# API Endpoints para ubicaciones (departamentos, provincias, distritos)
+@recepcionista_bp.route('/api/departamentos', methods=['GET'])
+@recepcionista_required
+def api_obtener_departamentos():
+    """API: Obtiene todos los departamentos"""
+    from bd import obtener_conexion
+
+    conexion = obtener_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT id_departamento, nombre FROM DEPARTAMENTO ORDER BY nombre")
+            departamentos = cursor.fetchall()
+            return jsonify(departamentos)
+    finally:
+        conexion.close()
+
+
+@recepcionista_bp.route('/api/provincias/<int:id_departamento>', methods=['GET'])
+@recepcionista_required
+def api_obtener_provincias(id_departamento):
+    """API: Obtiene provincias por departamento"""
+    from bd import obtener_conexion
+
+    conexion = obtener_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute(
+                "SELECT id_provincia, nombre FROM PROVINCIA WHERE id_departamento = %s ORDER BY nombre",
+                (id_departamento,)
+            )
+            provincias = cursor.fetchall()
+            return jsonify(provincias)
+    finally:
+        conexion.close()
+
+
+@recepcionista_bp.route('/api/distritos/<int:id_provincia>', methods=['GET'])
+@recepcionista_required
+def api_obtener_distritos(id_provincia):
+    """API: Obtiene distritos por provincia"""
+    from bd import obtener_conexion
+
+    conexion = obtener_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute(
+                "SELECT id_distrito, nombre FROM DISTRITO WHERE id_provincia = %s ORDER BY nombre",
+                (id_provincia,)
+            )
+            distritos = cursor.fetchall()
+            return jsonify(distritos)
+    finally:
+        conexion.close()
+
+
+# API Endpoint de bienvenida con logging
+@recepcionista_bp.route('/api/welcome', methods=['GET'])
+@recepcionista_required
+def api_welcome():
+    """API: Endpoint de bienvenida que registra metadata de la solicitud"""
+    # Log de metadata de la solicitud
+    print(f"Request received: {request.method} {request.path}")
+
+    # Retornar mensaje de bienvenida
+    return jsonify({'message': 'Welcome to the Flask API Service!'})
 
 
 # Manejo de errores específico para el módulo recepcionista
