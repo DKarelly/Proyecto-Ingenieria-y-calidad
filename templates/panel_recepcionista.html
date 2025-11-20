@@ -124,6 +124,28 @@
 <body class="font-body bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark antialiased">
     {% include 'header_recepcionista.html' %}
 
+    <!-- Modal para mensajes (éxito/error) -->
+    <div id="modal-mensaje" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all scale-95 opacity-0" id="modal-content">
+            <div class="p-6">
+                <!-- Icono y título -->
+                <div class="text-center mb-4">
+                    <div id="modal-icon" class="mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                        <span id="modal-icon-symbol" class="material-symbols-outlined text-4xl"></span>
+                    </div>
+                    <h3 id="modal-titulo" class="text-2xl font-bold mb-2"></h3>
+                    <p id="modal-mensaje-texto" class="text-gray-600"></p>
+                </div>
+                <!-- Botón -->
+                <div class="mt-6">
+                    <button id="modal-btn-cerrar" class="w-full px-6 py-3 rounded-xl font-semibold transition-all shadow-md">
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="flex h-[calc(100vh-80px)]">
         <!-- Sidebar Recepcionista -->
         <aside class="w-[280px] flex-shrink-0 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex flex-col">
@@ -176,7 +198,7 @@
                 {% if not subsistema %}
                 <!-- Dashboard Principal -->
                 <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Bienvenido, {{ session.nombre_usuario or 'Recepcionista' }}</h2>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Bienvenido {{ usuario.nombre or session.nombre_usuario or 'Recepcionista' }}</h2>
                     <p class="text-gray-600">Aquí está tu resumen del día</p>
                     {% if usuario.mensaje_debug %}
                     <div class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -191,7 +213,7 @@
                     <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-6 text-white shadow-medical">
                         <div class="flex items-center justify-between mb-4">
                             <span class="material-symbols-outlined text-4xl opacity-80">event</span>
-                            <span class="text-3xl font-bold">{{ stats.reservas_hoy or 0 }}</span>
+                            <span id="stat-reservas-hoy" class="text-3xl font-bold">{{ stats.reservas_hoy or 0 }}</span>
                         </div>
                         <h3 class="text-sm font-medium opacity-90 mb-1">Reservas de Hoy</h3>
                         <p class="text-xs opacity-75">Reservas confirmadas</p>
@@ -201,7 +223,7 @@
                     <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white shadow-medical">
                         <div class="flex items-center justify-between mb-4">
                             <span class="material-symbols-outlined text-4xl opacity-80">groups</span>
-                            <span class="text-3xl font-bold">{{ stats.pacientes_registrados or 0 }}</span>
+                            <span id="stat-pacientes-registrados" class="text-3xl font-bold">{{ stats.pacientes_registrados or 0 }}</span>
                         </div>
                         <h3 class="text-sm font-medium opacity-90 mb-1">Pacientes Registrados</h3>
                         <p class="text-xs opacity-75">Esta semana</p>
@@ -211,7 +233,7 @@
                     <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-medical">
                         <div class="flex items-center justify-between mb-4">
                             <span class="material-symbols-outlined text-4xl opacity-80">report_problem</span>
-                            <span class="text-3xl font-bold">{{ stats.incidencias_pendientes or 0 }}</span>
+                            <span id="stat-incidencias-pendientes" class="text-3xl font-bold">{{ stats.incidencias_pendientes or 0 }}</span>
                         </div>
                         <h3 class="text-sm font-medium opacity-90 mb-1">Incidencias Pendientes</h3>
                         <p class="text-xs opacity-75">Requieren atención</p>
@@ -808,6 +830,14 @@
     </div>
 
     <script>
+        // Función para escapar HTML y prevenir XSS (disponible globalmente)
+        function escapeHtml(text) {
+            if (text == null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Panel Recepcionista cargado correctamente');
 
@@ -827,6 +857,86 @@
                 cargarIncidencias();
             }
 
+            // Función para mostrar modal de mensaje
+            function mostrarModal(tipo, titulo, mensaje, callback = null) {
+                const modal = document.getElementById('modal-mensaje');
+                const modalContent = document.getElementById('modal-content');
+                const modalIcon = document.getElementById('modal-icon');
+                const modalIconSymbol = document.getElementById('modal-icon-symbol');
+                const modalTitulo = document.getElementById('modal-titulo');
+                const modalMensajeTexto = document.getElementById('modal-mensaje-texto');
+                const modalBtnCerrar = document.getElementById('modal-btn-cerrar');
+
+                // Configurar según el tipo
+                if (tipo === 'success') {
+                    modalIcon.className = 'mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-green-100';
+                    modalIconSymbol.textContent = 'check_circle';
+                    modalIconSymbol.className = 'material-symbols-outlined text-4xl text-green-600';
+                    modalTitulo.textContent = titulo || '¡Éxito!';
+                    modalTitulo.className = 'text-2xl font-bold mb-2 text-green-700';
+                    modalBtnCerrar.className = 'w-full px-6 py-3 rounded-xl font-semibold transition-all shadow-md bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600';
+                } else if (tipo === 'error') {
+                    modalIcon.className = 'mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-red-100';
+                    modalIconSymbol.textContent = 'error';
+                    modalIconSymbol.className = 'material-symbols-outlined text-4xl text-red-600';
+                    modalTitulo.textContent = titulo || 'Error';
+                    modalTitulo.className = 'text-2xl font-bold mb-2 text-red-700';
+                    modalBtnCerrar.className = 'w-full px-6 py-3 rounded-xl font-semibold transition-all shadow-md bg-gradient-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600';
+                } else if (tipo === 'warning') {
+                    modalIcon.className = 'mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-yellow-100';
+                    modalIconSymbol.textContent = 'warning';
+                    modalIconSymbol.className = 'material-symbols-outlined text-4xl text-yellow-600';
+                    modalTitulo.textContent = titulo || 'Advertencia';
+                    modalTitulo.className = 'text-2xl font-bold mb-2 text-yellow-700';
+                    modalBtnCerrar.className = 'w-full px-6 py-3 rounded-xl font-semibold transition-all shadow-md bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600';
+                } else {
+                    modalIcon.className = 'mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-blue-100';
+                    modalIconSymbol.textContent = 'info';
+                    modalIconSymbol.className = 'material-symbols-outlined text-4xl text-blue-600';
+                    modalTitulo.textContent = titulo || 'Información';
+                    modalTitulo.className = 'text-2xl font-bold mb-2 text-blue-700';
+                    modalBtnCerrar.className = 'w-full px-6 py-3 rounded-xl font-semibold transition-all shadow-md bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600';
+                }
+
+                modalMensajeTexto.textContent = mensaje;
+
+                // Mostrar modal con animación
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    modal.classList.add('opacity-100');
+                    modalContent.classList.remove('scale-95', 'opacity-0');
+                    modalContent.classList.add('scale-100', 'opacity-100');
+                }, 10);
+
+                // Función para cerrar modal
+                const cerrarModal = () => {
+                    modalContent.classList.remove('scale-100', 'opacity-100');
+                    modalContent.classList.add('scale-95', 'opacity-0');
+                    modal.classList.remove('opacity-100');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        if (callback) callback();
+                    }, 200);
+                };
+
+                // Event listeners para cerrar
+                modalBtnCerrar.onclick = cerrarModal;
+                modal.onclick = function(e) {
+                    if (e.target === modal) {
+                        cerrarModal();
+                    }
+                };
+
+                // Cerrar con ESC
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        cerrarModal();
+                        document.removeEventListener('keydown', handleEsc);
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+            }
+
             // Formulario de registro de paciente
             const registroForm = document.getElementById('registro-paciente-form');
             if (registroForm) {
@@ -834,6 +944,12 @@
                     e.preventDefault();
 
                     const formData = new FormData(this);
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalButtonText = submitButton.innerHTML;
+                    
+                    // Deshabilitar botón y mostrar loading
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="material-symbols-outlined mr-2 animate-spin">sync</span> Registrando...';
 
                     try {
                         const response = await fetch('/recepcionista/pacientes/registrar', {
@@ -844,14 +960,21 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            alert('Paciente registrado exitosamente');
-                            window.location.href = '/recepcionista/panel?subsistema=cuentas';
+                            mostrarModal('success', '¡Éxito!', 'Paciente registrado exitosamente', () => {
+                                window.location.href = '/recepcionista/panel?subsistema=cuentas';
+                            });
                         } else {
-                            alert('Error: ' + result.message);
+                            mostrarModal('error', 'Error al registrar', result.message || 'Ocurrió un error al registrar el paciente');
+                            // Restaurar botón
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalButtonText;
                         }
                     } catch (error) {
                         console.error('Error:', error);
-                        alert('Error al registrar paciente');
+                        mostrarModal('error', 'Error de conexión', 'No se pudo conectar con el servidor. Por favor, intenta nuevamente.');
+                        // Restaurar botón
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalButtonText;
                     }
                 });
             }
@@ -863,6 +986,14 @@
                     e.preventDefault();
 
                     const formData = new FormData(this);
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalButtonText = submitButton ? submitButton.innerHTML : '';
+
+                    // Deshabilitar botón si existe
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.innerHTML = '<span class="material-symbols-outlined mr-2 animate-spin">sync</span> Generando...';
+                    }
 
                     try {
                         const response = await fetch('/recepcionista/incidencias/generar', {
@@ -873,46 +1004,211 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            // Mostrar mensaje de éxito
-                            const mensajeExito = document.getElementById('mensaje-exito');
-                            mensajeExito.classList.remove('hidden');
-                            // Limpiar el formulario
-                            incidenciaForm.reset();
-                            // Ocultar el mensaje después de 5 segundos
-                            setTimeout(() => {
-                                mensajeExito.classList.add('hidden');
-                            }, 5000);
+                            mostrarModal('success', '¡Éxito!', 'Incidencia generada exitosamente', () => {
+                                // Limpiar el formulario
+                                incidenciaForm.reset();
+                                // Mostrar mensaje de éxito en el formulario si existe
+                                const mensajeExito = document.getElementById('mensaje-exito');
+                                if (mensajeExito) {
+                                    mensajeExito.classList.remove('hidden');
+                                    setTimeout(() => {
+                                        mensajeExito.classList.add('hidden');
+                                    }, 5000);
+                                }
+                            });
+                            if (submitButton) {
+                                submitButton.disabled = false;
+                                submitButton.innerHTML = originalButtonText;
+                            }
                         } else {
-                            alert('Error: ' + result.message);
+                            mostrarModal('error', 'Error al generar incidencia', result.message || 'Ocurrió un error al generar la incidencia');
+                            if (submitButton) {
+                                submitButton.disabled = false;
+                                submitButton.innerHTML = originalButtonText;
+                            }
                         }
                     } catch (error) {
                         console.error('Error:', error);
-                        alert('Error al generar incidencia');
+                        mostrarModal('error', 'Error de conexión', 'No se pudo conectar con el servidor. Por favor, intenta nuevamente.');
+                        if (submitButton) {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalButtonText;
+                        }
                     }
                 });
             }
 
-            // Configurar búsqueda de pacientes
-            configurarBusquedaPacientes();
+            // Configurar búsqueda de pacientes (solo en sección de cuentas)
+            const tablaPacientes = document.getElementById('tabla-pacientes');
+            if (tablaPacientes) {
+                configurarBusquedaPacientes();
+            }
 
             // Configurar búsqueda de pacientes para incidencias
             configurarBusquedaPacientesIncidencia();
 
-            // Configurar búsqueda de pacientes para generar incidencia
-            configurarBusquedaPacientesIncidencia();
-
-            // Configurar búsqueda de pacientes en el panel de incidencias
-            configurarBusquedaPacientePanel();
+            // Configurar búsqueda de pacientes en el panel de incidencias (solo si existe el contenedor de incidencias)
+            const listaIncidencias = document.getElementById('lista-incidencias');
+            if (listaIncidencias) {
+                configurarBusquedaPacientePanel();
+            }
 
             // Configurar búsqueda de incidencias
             configurarBusquedaIncidencias();
 
-            // Restringir input a números para documento de identidad y teléfono (solo en formulario de registro)
+            // Configuración de tipos de documento con sus longitudes y patrones
+            const tiposDocumento = {
+                'DNI': { 
+                    min: 8, 
+                    max: 8, 
+                    pattern: /^[0-9]{0,8}$/, 
+                    placeholder: '12345678', 
+                    hint: 'Ingrese 8 dígitos',
+                    allowChars: /[0-9]/g
+                },
+                'CE': { 
+                    min: 9, 
+                    max: 12, 
+                    pattern: /^[0-9]{0,12}$/, 
+                    placeholder: '123456789', 
+                    hint: 'Ingrese entre 9 y 12 dígitos',
+                    allowChars: /[0-9]/g
+                },
+                'PASAPORTE': { 
+                    min: 6, 
+                    max: 15, 
+                    pattern: /^[A-Z0-9]{0,15}$/, 
+                    placeholder: 'ABC123456', 
+                    hint: 'Ingrese entre 6 y 15 caracteres (letras y números)',
+                    allowChars: /[A-Z0-9]/g
+                }
+            };
+
+            // Configurar validación dinámica del documento según tipo
+            const tipoDocumentoSelect = document.getElementById('tipo-documento');
             const documentoInput = document.getElementById('documento-identidad');
-            if (documentoInput) {
-                documentoInput.addEventListener('input', function(e) {
-                    this.value = this.value.replace(/[^0-9]/g, '');
+            const documentoHint = document.getElementById('documento-hint-text');
+
+            if (tipoDocumentoSelect && documentoInput && documentoHint) {
+                // Función para actualizar el input según el tipo de documento
+                function actualizarConfiguracionDocumento(tipo) {
+                    if (!tipo || !tiposDocumento[tipo]) {
+                        documentoInput.disabled = true;
+                        documentoInput.placeholder = 'Seleccione el tipo de documento primero';
+                        documentoInput.maxLength = 999;
+                        documentoHint.textContent = 'Seleccione el tipo de documento primero';
+                        documentoInput.value = '';
+                        return;
+                    }
+
+                    const config = tiposDocumento[tipo];
+                    documentoInput.disabled = false;
+                    documentoInput.placeholder = config.placeholder;
+                    documentoInput.maxLength = config.max;
+                    documentoHint.textContent = config.hint;
+                    documentoInput.value = ''; // Limpiar el valor al cambiar el tipo
+                }
+
+                // Event listener para cambio de tipo de documento
+                tipoDocumentoSelect.addEventListener('change', function(e) {
+                    const tipo = e.target.value;
+                    actualizarConfiguracionDocumento(tipo);
                 });
+
+                // Event listener para input del documento - validar y limitar caracteres
+                documentoInput.addEventListener('input', function(e) {
+                    const tipo = tipoDocumentoSelect.value;
+                    if (!tipo || !tiposDocumento[tipo]) {
+                        this.value = '';
+                        return;
+                    }
+
+                    const config = tiposDocumento[tipo];
+                    let valor = this.value;
+
+                    // Filtrar caracteres permitidos
+                    if (tipo === 'PASAPORTE') {
+                        // Para pasaporte: solo letras mayúsculas y números
+                        valor = valor.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    } else {
+                        // Para DNI y CE: solo números
+                        valor = valor.replace(/[^0-9]/g, '');
+                    }
+
+                    // Limitar longitud máxima
+                    if (valor.length > config.max) {
+                        valor = valor.substring(0, config.max);
+                    }
+
+                    this.value = valor;
+
+                    // Actualizar hint con contador
+                    const longitud = valor.length;
+                    if (longitud === 0) {
+                        documentoHint.textContent = config.hint;
+                    } else if (tipo === 'DNI') {
+                        if (longitud === config.max) {
+                            documentoHint.textContent = `✓ ${longitud}/${config.max} dígitos - Completo`;
+                            documentoHint.className = 'text-green-600';
+                        } else {
+                            documentoHint.textContent = `${longitud}/${config.max} dígitos`;
+                            documentoHint.className = 'text-gray-500';
+                        }
+                    } else if (tipo === 'CE') {
+                        if (longitud >= config.min && longitud <= config.max) {
+                            documentoHint.textContent = `✓ ${longitud} dígitos - Válido (entre ${config.min} y ${config.max})`;
+                            documentoHint.className = 'text-green-600';
+                        } else if (longitud < config.min) {
+                            documentoHint.textContent = `${longitud} dígitos - Mínimo ${config.min} dígitos`;
+                            documentoHint.className = 'text-orange-500';
+                        } else {
+                            documentoHint.textContent = `${longitud} dígitos - Máximo ${config.max} dígitos`;
+                            documentoHint.className = 'text-red-500';
+                        }
+                    } else if (tipo === 'PASAPORTE') {
+                        if (longitud >= config.min && longitud <= config.max) {
+                            documentoHint.textContent = `✓ ${longitud} caracteres - Válido (entre ${config.min} y ${config.max})`;
+                            documentoHint.className = 'text-green-600';
+                        } else if (longitud < config.min) {
+                            documentoHint.textContent = `${longitud} caracteres - Mínimo ${config.min} caracteres`;
+                            documentoHint.className = 'text-orange-500';
+                        } else {
+                            documentoHint.textContent = `${longitud} caracteres - Máximo ${config.max} caracteres`;
+                            documentoHint.className = 'text-red-500';
+                        }
+                    }
+                });
+
+                // Prevenir pegar contenido inválido
+                documentoInput.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const tipo = tipoDocumentoSelect.value;
+                    if (!tipo || !tiposDocumento[tipo]) {
+                        return;
+                    }
+
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    const config = tiposDocumento[tipo];
+                    let valor = pastedText;
+
+                    // Filtrar caracteres permitidos
+                    if (tipo === 'PASAPORTE') {
+                        valor = valor.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    } else {
+                        valor = valor.replace(/[^0-9]/g, '');
+                    }
+
+                    // Limitar longitud
+                    if (valor.length > config.max) {
+                        valor = valor.substring(0, config.max);
+                    }
+
+                    this.value = valor;
+                    this.dispatchEvent(new Event('input'));
+                });
+
+                // Inicializar estado
+                actualizarConfiguracionDocumento(tipoDocumentoSelect.value);
             }
 
             const telefonoInput = document.getElementById('telefono');
@@ -953,11 +1249,114 @@
                 });
             }
 
+
+            // Función para actualizar la tabla de pacientes
+            function actualizarTablaPacientes(pacientes) {
+                const tablaBody = document.getElementById('tabla-pacientes');
+                if (!tablaBody) return;
+
+                // Validar que pacientes sea un array
+                if (!Array.isArray(pacientes)) {
+                    tablaBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-red-500">
+                                Error: Formato de datos inválido
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                if (pacientes.length === 0) {
+                    tablaBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-gray-500">
+                                <span class="material-symbols-outlined text-4xl mb-2 block text-gray-400">search_off</span>
+                                No se encontraron pacientes
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                pacientes.forEach(paciente => {
+                    // Validar y obtener datos de forma segura
+                    const nombres = paciente.nombres || '';
+                    const apellidos = paciente.apellidos || '';
+                    const dni = paciente.dni || '';
+                    const telefono = paciente.telefono || '';
+                    const email = paciente.email || '';
+                    
+                    // Obtener iniciales para el avatar de forma segura
+                    const inicialNombres = nombres.trim().charAt(0) || '';
+                    const inicialApellidos = apellidos.trim().charAt(0) || '';
+                    const iniciales = (inicialNombres + inicialApellidos).toUpperCase() || '?';
+                    const nombreCompleto = `${nombres} ${apellidos}`.trim() || 'Sin nombre';
+                    
+                    // Escapar todos los valores para prevenir XSS
+                    html += `
+                        <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                            <td class="py-4 px-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center font-semibold text-sm">
+                                        ${escapeHtml(iniciales)}
+                                    </div>
+                                    <span class="font-medium text-gray-800">${escapeHtml(nombreCompleto)}</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-4 text-gray-700">${escapeHtml(dni) || 'N/A'}</td>
+                            <td class="py-4 px-4 text-gray-700">${escapeHtml(telefono) || 'N/A'}</td>
+                            <td class="py-4 px-4 text-gray-700">${escapeHtml(email) || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                tablaBody.innerHTML = html;
+            }
+
             // Función para configurar la búsqueda de pacientes
             function configurarBusquedaPacientes() {
                 const input = document.getElementById('buscar-paciente');
                 const resultadosDiv = document.getElementById('resultados-paciente');
                 let timeoutId;
+                let controller = null; // Para cancelar peticiones anteriores
+
+                // Ocultar el div de resultados de sugerencias
+                if (resultadosDiv) {
+                    resultadosDiv.classList.add('hidden');
+                }
+
+                // Cargar todos los pacientes al inicio
+                async function cargarTodosLosPacientes() {
+                    try {
+                        const response = await fetch('/recepcionista/pacientes/buscar');
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        const pacientes = await response.json();
+                        // Validar que la respuesta sea un array
+                        if (Array.isArray(pacientes)) {
+                            actualizarTablaPacientes(pacientes);
+                        } else {
+                            throw new Error('Respuesta inválida del servidor');
+                        }
+                    } catch (error) {
+                        console.error('Error cargando pacientes:', error);
+                        const tablaBody = document.getElementById('tabla-pacientes');
+                        if (tablaBody) {
+                            tablaBody.innerHTML = `
+                                <tr>
+                                    <td colspan="4" class="py-8 text-center text-red-500">
+                                        Error al cargar pacientes. Por favor, recarga la página.
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    }
+                }
+
+                // Cargar todos los pacientes al inicio
+                cargarTodosLosPacientes();
 
                 if (input) {
                     input.addEventListener('input', function(e) {
@@ -966,56 +1365,70 @@
                         // Limpiar timeout anterior
                         clearTimeout(timeoutId);
 
-                        if (termino.length < 2) {
-                            resultadosDiv.classList.add('hidden');
-                            resultadosDiv.innerHTML = '';
-                            return;
+                        // Cancelar petición anterior si existe
+                        if (controller) {
+                            controller.abort();
                         }
+                        controller = new AbortController();
 
-                        // Debounce para evitar demasiadas peticiones
+                        // Debounce reducido para respuesta más rápida (100ms)
                         timeoutId = setTimeout(async () => {
                             try {
-                                const response = await fetch(`/recepcionista/pacientes/buscar?q=${encodeURIComponent(termino)}`);
-                                const data = await response.json();
+                                const url = termino.length >= 1 
+                                    ? `/recepcionista/pacientes/buscar?q=${encodeURIComponent(termino)}`
+                                    : '/recepcionista/pacientes/buscar';
+                                
+                                const response = await fetch(url, {
+                                    signal: controller.signal
+                                });
 
                                 if (!response.ok) {
-                                    resultadosDiv.innerHTML = `<div class="p-3 text-red-500 text-center">${data.error || 'Error al buscar pacientes'}</div>`;
-                                    resultadosDiv.classList.remove('hidden');
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+
+                                const pacientes = await response.json();
+
+                                // Validar que la respuesta sea un array
+                                if (!Array.isArray(pacientes)) {
+                                    // Si hay un error en la respuesta
+                                    if (pacientes.error) {
+                                        const tablaBody = document.getElementById('tabla-pacientes');
+                                        if (tablaBody) {
+                                            tablaBody.innerHTML = `
+                                                <tr>
+                                                    <td colspan="4" class="py-8 text-center text-red-500">
+                                                        ${escapeHtml(pacientes.error)}
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }
+                                        return;
+                                    }
+                                    throw new Error('Respuesta inválida del servidor');
+                                }
+
+                                // Actualizar la tabla con los resultados usando requestAnimationFrame para mejor rendimiento
+                                requestAnimationFrame(() => {
+                                    actualizarTablaPacientes(pacientes);
+                                });
+                            } catch (error) {
+                                // Ignorar errores de cancelación
+                                if (error.name === 'AbortError') {
                                     return;
                                 }
-
-                                const pacientes = data;
-
-                                if (pacientes.length > 0) {
-                                    let html = '';
-                                    pacientes.forEach(paciente => {
-                                        html += `
-                                            <div class="p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                                                 onclick="seleccionarPaciente(${paciente.id_paciente}, '${paciente.nombres} ${paciente.apellidos}', '${paciente.dni}')">
-                                                <div class="font-semibold text-gray-800">${paciente.nombres} ${paciente.apellidos}</div>
-                                                <div class="text-sm text-gray-600">DNI: ${paciente.dni}</div>
-                                            </div>
-                                        `;
-                                    });
-                                    resultadosDiv.innerHTML = html;
-                                    resultadosDiv.classList.remove('hidden');
-                                } else {
-                                    resultadosDiv.innerHTML = '<div class="p-3 text-gray-500 text-center">No se encontraron pacientes</div>';
-                                    resultadosDiv.classList.remove('hidden');
-                                }
-                            } catch (error) {
                                 console.error('Error de conexión buscando pacientes:', error);
-                                resultadosDiv.innerHTML = '<div class="p-3 text-red-500 text-center">Error de conexión al buscar pacientes</div>';
-                                resultadosDiv.classList.remove('hidden');
+                                const tablaBody = document.getElementById('tabla-pacientes');
+                                if (tablaBody) {
+                                    tablaBody.innerHTML = `
+                                        <tr>
+                                            <td colspan="4" class="py-8 text-center text-red-500">
+                                                Error de conexión al buscar pacientes. Por favor, intenta nuevamente.
+                                            </td>
+                                        </tr>
+                                    `;
+                                }
                             }
-                        }, 300);
-                    });
-
-                    // Ocultar resultados al hacer clic fuera
-                    document.addEventListener('click', function(e) {
-                        if (!input.contains(e.target) && !resultadosDiv.contains(e.target)) {
-                            resultadosDiv.classList.add('hidden');
-                        }
+                        }, 100); // Reducido de 300ms a 100ms para respuesta más rápida
                     });
                 }
             }
@@ -1159,9 +1572,14 @@
                 const response = await fetch('/recepcionista/dashboard/stats');
                 const stats = await response.json();
 
-                // Actualizar estadísticas en el DOM
-                document.querySelector('.text-3xl.font-bold').textContent = stats.reservas_hoy || 0;
-                // Actualizar otros stats según sea necesario
+                // Actualizar estadísticas en el DOM usando IDs específicos
+                const reservasHoyEl = document.getElementById('stat-reservas-hoy');
+                const pacientesRegistradosEl = document.getElementById('stat-pacientes-registrados');
+                const incidenciasPendientesEl = document.getElementById('stat-incidencias-pendientes');
+                
+                if (reservasHoyEl) reservasHoyEl.textContent = stats.reservas_hoy || 0;
+                if (pacientesRegistradosEl) pacientesRegistradosEl.textContent = stats.pacientes_registrados || 0;
+                if (incidenciasPendientesEl) incidenciasPendientesEl.textContent = stats.incidencias_pendientes || 0;
             } catch (error) {
                 console.error('Error cargando estadísticas:', error);
             }
@@ -1370,7 +1788,7 @@
                         : incidencia.descripcion;
 
                     return `
-                        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-l-4 ${borderColor}" data-estado="${incidencia.estado}" data-paciente-nombre="${incidencia.paciente_nombre || ''}" data-paciente-dni="${incidencia.dni || ''}">
+                        <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-l-4 ${borderColor}" data-estado="${incidencia.estado}" data-paciente-nombre="${incidencia.paciente_nombre || ''}" data-paciente-dni="${incidencia.dni || ''}" data-paciente-id="${incidencia.id_paciente || ''}">
                             <!-- Header del Card -->
                             <div class="bg-gradient-to-r from-cyan-50 to-cyan-100 p-6 border-b border-gray-100">
                                 <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
@@ -1578,126 +1996,115 @@
 
             // Función para configurar la búsqueda de pacientes en el panel de incidencias
             function configurarBusquedaPacientePanel() {
-                const input = document.getElementById('buscarPaciente');
-                const resultadosDiv = document.getElementById('sugerenciasPaciente');
-                const pacienteInfoDiv = document.getElementById('paciente-info');
-                const idPacienteInput = document.getElementById('idPaciente');
+                const input = document.getElementById('buscar-paciente');
+                const resultadosDiv = document.getElementById('resultados-paciente');
+                const container = document.getElementById('lista-incidencias');
                 let timeoutId;
+                let idPacienteSeleccionado = null;
 
-                if (input) {
-                    input.addEventListener('input', function(e) {
-                        const termino = e.target.value.trim();
-
-                        // Limpiar timeout anterior
-                        clearTimeout(timeoutId);
-
-                        // Limpiar selección anterior
-                        idPacienteInput.value = '';
-                        pacienteInfoDiv.innerHTML = `
-                            <p class="text-sm text-gray-500 text-center">
-                                <i class="fas fa-user-circle text-3xl text-gray-400 mb-2 block"></i>
-                                Busque un paciente por nombre o DNI
-                            </p>
-                        `;
-
-                        if (termino.length < 2) {
-                            resultadosDiv.classList.add('hidden');
-                            resultadosDiv.innerHTML = '';
-                            return;
-                        }
-
-                        // Debounce para evitar demasiadas peticiones
-                        timeoutId = setTimeout(async () => {
-                            try {
-                                const response = await fetch(`/recepcionista/pacientes/buscar?q=${encodeURIComponent(termino)}`);
-                                const pacientes = await response.json();
-
-                                if (pacientes.length > 0) {
-                                    let html = '';
-                                    pacientes.forEach(paciente => {
-                                        html += `
-                                            <div class="p-3 bg-white border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-                                                 onclick="seleccionarPacientePanel(${paciente.id_paciente}, '${paciente.nombres} ${paciente.apellidos}', '${paciente.dni}')">
-                                                <div class="font-semibold text-gray-800">${paciente.nombres} ${paciente.apellidos}</div>
-                                                <div class="text-sm text-gray-600">DNI: ${paciente.dni}</div>
-                                            </div>
-                                        `;
-                                    });
-                                    resultadosDiv.innerHTML = html;
-                                    resultadosDiv.classList.remove('hidden');
-                                } else {
-                                    resultadosDiv.innerHTML = '<div class="p-3 text-gray-500 text-center">No se encontraron pacientes</div>';
-                                    resultadosDiv.classList.remove('hidden');
-                                }
-                            } catch (error) {
-                                console.error('Error buscando pacientes:', error);
-                                resultadosDiv.innerHTML = '<div class="p-3 text-red-500 text-center">Error al buscar pacientes</div>';
-                                resultadosDiv.classList.remove('hidden');
-                            }
-                        }, 300);
-                    });
-
-                    // Ocultar resultados al hacer clic fuera
-                    document.addEventListener('click', function(e) {
-                        if (!input.contains(e.target) && !resultadosDiv.contains(e.target)) {
-                            resultadosDiv.classList.add('hidden');
-                        }
-                    });
+                // Verificar que existan los elementos necesarios
+                if (!input || !container) {
+                    return; // No estamos en la sección de incidencias
                 }
-            }
 
-            // Función para seleccionar paciente en el panel de incidencias
-            window.seleccionarPacientePanel = async function(idPaciente, nombreCompleto, dni) {
-                const input = document.getElementById('buscarPaciente');
-                const resultadosDiv = document.getElementById('sugerenciasPaciente');
-                const pacienteInfoDiv = document.getElementById('paciente-info');
-                const idPacienteInput = document.getElementById('idPaciente');
+                // Ocultar el div de resultados de sugerencias
+                if (resultadosDiv) {
+                    resultadosDiv.classList.add('hidden');
+                }
 
-                // Actualizar input y hidden
-                input.value = nombreCompleto;
-                idPacienteInput.value = idPaciente;
-                resultadosDiv.classList.add('hidden');
+                // Función para filtrar incidencias por texto (nombre o DNI de paciente)
+                function filtrarIncidenciasPorTexto(termino) {
+                    const incidencias = document.querySelectorAll('#lista-incidencias > div:not(.text-center)');
 
-                // Cargar información del paciente
-                try {
-                    const response = await fetch(`/recepcionista/pacientes/${idPaciente}`);
-                    const paciente = await response.json();
+                    if (!container) return;
 
-                    if (response.ok) {
-                        pacienteInfoDiv.innerHTML = `
-                            <div class="text-left">
-                                <h4 class="font-bold text-gray-800 mb-2">${paciente.nombres} ${paciente.apellidos}</h4>
-                                <div class="space-y-1 text-sm text-gray-600">
-                                    <p><strong>DNI:</strong> ${paciente.dni}</p>
-                                    <p><strong>Sexo:</strong> ${paciente.sexo === 'M' ? 'Masculino' : 'Femenino'}</p>
-                                    <p><strong>Fecha Nacimiento:</strong> ${paciente.fecha_nacimiento}</p>
-                                    <p><strong>Teléfono:</strong> ${paciente.telefono}</p>
-                                    <p><strong>Email:</strong> ${paciente.email}</p>
-                                    ${paciente.departamento ? `<p><strong>Ubicación:</strong> ${paciente.distrito}, ${paciente.provincia}, ${paciente.departamento}</p>` : ''}
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        pacienteInfoDiv.innerHTML = `
-                            <p class="text-sm text-red-500 text-center">
-                                <i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2 block"></i>
-                                Error al cargar información del paciente
-                            </p>
-                        `;
+                    if (!termino || termino.trim().length === 0) {
+                        // Si no hay término, mostrar todas
+                        incidencias.forEach(incidencia => {
+                            incidencia.style.display = '';
+                        });
+                        const existingMessage = container.querySelector('.no-results-message');
+                        if (existingMessage) {
+                            existingMessage.remove();
+                        }
+                        return;
                     }
-                } catch (error) {
-                    console.error('Error cargando información del paciente:', error);
-                    pacienteInfoDiv.innerHTML = `
-                        <p class="text-sm text-red-500 text-center">
-                            <i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2 block"></i>
-                            Error de conexión
-                        </p>
-                    `;
+
+                    const terminoLower = termino.toLowerCase().trim();
+                    let visibleCount = 0;
+
+                    // Filtrar incidencias por nombre de paciente o DNI
+                    incidencias.forEach(incidencia => {
+                        const pacienteNombre = (incidencia.dataset.pacienteNombre || '').toLowerCase();
+                        const pacienteDni = (incidencia.dataset.pacienteDni || '').toLowerCase();
+                        
+                        const matches = pacienteNombre.includes(terminoLower) || pacienteDni.includes(terminoLower);
+                        
+                        if (matches) {
+                            incidencia.style.display = '';
+                            visibleCount++;
+                        } else {
+                            incidencia.style.display = 'none';
+                        }
+                    });
+
+                    // Mostrar mensaje si no hay resultados
+                    const existingMessage = container.querySelector('.no-results-message');
+                    if (visibleCount === 0 && incidencias.length > 0) {
+                        if (!existingMessage) {
+                            const messageDiv = document.createElement('div');
+                            messageDiv.className = 'no-results-message text-center py-8 text-gray-500';
+                            messageDiv.innerHTML = `
+                                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">search_off</span>
+                                <p>No se encontraron incidencias para "${escapeHtml(termino)}"</p>
+                            `;
+                            container.appendChild(messageDiv);
+                        }
+                    } else {
+                        if (existingMessage) {
+                            existingMessage.remove();
+                        }
+                    }
                 }
 
-                // Cargar incidencias del paciente
-                await cargarIncidenciasPaciente(idPaciente);
-            };
+                input.addEventListener('input', function(e) {
+                    const termino = e.target.value.trim();
+
+                    // Limpiar timeout anterior
+                    clearTimeout(timeoutId);
+
+                    // Verificar que el contenedor de incidencias exista
+                    if (!container) {
+                        return;
+                    }
+
+                    // Si el campo está vacío, recargar todas las incidencias
+                    if (termino.length === 0) {
+                        idPacienteSeleccionado = null;
+                        // Solo cargar incidencias si estamos en la sección de incidencias
+                        if (typeof cargarIncidencias === 'function') {
+                            cargarIncidencias();
+                        } else {
+                            // Si no existe la función, solo mostrar todas las incidencias visibles
+                            const incidencias = document.querySelectorAll('#lista-incidencias > div:not(.text-center)');
+                            incidencias.forEach(incidencia => {
+                                incidencia.style.display = '';
+                            });
+                            const existingMessage = container.querySelector('.no-results-message');
+                            if (existingMessage) {
+                                existingMessage.remove();
+                            }
+                        }
+                        return;
+                    }
+
+                    // Filtrar directamente por texto sin autocompletado
+                    // Usar debounce para mejor rendimiento
+                    timeoutId = setTimeout(() => {
+                        filtrarIncidenciasPorTexto(termino);
+                    }, 150);
+                });
+            }
 
             // Función para cargar incidencias de un paciente específico
             async function cargarIncidenciasPaciente(idPaciente) {
@@ -1750,7 +2157,7 @@
                             : incidencia.descripcion;
 
                         return `
-                            <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-l-4 ${borderColor}" data-estado="${incidencia.estado}" data-paciente-nombre="${incidencia.paciente_nombre || ''}" data-paciente-dni="${incidencia.dni || ''}">
+                            <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border-l-4 ${borderColor}" data-estado="${incidencia.estado}" data-paciente-nombre="${incidencia.paciente_nombre || ''}" data-paciente-dni="${incidencia.dni || ''}" data-paciente-id="${incidencia.id_paciente || ''}">
                                 <!-- Header del Card -->
                                 <div class="bg-gradient-to-r from-cyan-50 to-cyan-100 p-6 border-b border-gray-100">
                                     <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">

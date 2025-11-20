@@ -373,13 +373,26 @@ def ver_perfil_paciente(id_paciente):
     else:
         sexo_paciente = sexo_val
 
+    # Normalizar estado (asegurar que sea 'activo' o 'inactivo' en minúsculas)
+    estado_val = resultado.get('estado')
+    if estado_val:
+        # Convertir a string y luego a minúsculas
+        estado_str = str(estado_val).strip().lower()
+        # Verificar si es 'activo' (puede venir como 'Activo', 'ACTIVO', 'activo', etc.)
+        if estado_str == 'activo':
+            estado_normalizado = 'activo'
+        else:
+            estado_normalizado = 'inactivo'
+    else:
+        estado_normalizado = 'inactivo'
+
     usuario = {
         'tipo_usuario': 'paciente',
         'id_usuario': resultado['id_usuario'],
         'id_paciente': resultado['id_paciente'],
         'correo': resultado['correo'],
         'telefono': resultado['telefono'],
-        'estado': resultado['estado'],
+        'estado': estado_normalizado,
         'fecha_creacion': resultado['fecha_creacion'],
         'nombre_paciente': f"{resultado['nombres']} {resultado['apellidos']}",
         'documento_paciente': resultado['documento_identidad'],

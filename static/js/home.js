@@ -191,6 +191,28 @@ function initializeAuthModals() {
         if (event.target === forgotPasswordModal) closeModal(forgotPasswordModal);
     });
 
+    // Toggle mostrar/ocultar contraseña en login
+    const toggleLoginPassword = document.getElementById('toggle-login-password');
+    const loginPasswordInput = document.getElementById('login-password');
+    const loginPasswordEyeIcon = document.getElementById('login-password-eye-icon');
+    
+    if (toggleLoginPassword && loginPasswordInput && loginPasswordEyeIcon) {
+        toggleLoginPassword.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (loginPasswordInput.type === 'password') {
+                loginPasswordInput.type = 'text';
+                loginPasswordEyeIcon.classList.remove('fa-eye');
+                loginPasswordEyeIcon.classList.add('fa-eye-slash');
+            } else {
+                loginPasswordInput.type = 'password';
+                loginPasswordEyeIcon.classList.remove('fa-eye-slash');
+                loginPasswordEyeIcon.classList.add('fa-eye');
+            }
+        });
+    }
+
     // Manejo del formulario de login
     const loginForm = document.querySelector('#login-modal form');
     loginForm.addEventListener('submit', async (e) => {
