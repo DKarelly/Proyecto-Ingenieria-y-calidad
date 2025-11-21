@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
 import datetime
 from models.notificacion import Notificacion
 from bd import obtener_conexion
@@ -331,7 +331,7 @@ def api_marcar_todas_leidas():
 
 @notificaciones_bp.route('/historial')
 def historial():
-    """Vista del historial completo de notificaciones para pacientes"""
+    """Vista del historial completo de notificaciones para pacientes con paginación"""
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
 
@@ -353,14 +353,36 @@ def historial():
             except:
                 pass
 
+        # Paginación
+        pagina = int(request.args.get('pagina', 1))
+        por_pagina = 10
+        
         # Si aún no hay id_paciente, mostrar vacío
         if not id_paciente:
             notificaciones = []
+            total = 0
         else:
-            notificaciones = Notificacion.obtener_por_paciente(id_paciente)
+            # Obtener todas las notificaciones para contar
+            todas_notificaciones = Notificacion.obtener_por_paciente(id_paciente)
+            total = len(todas_notificaciones)
+            
+            # Aplicar paginación
+            inicio = (pagina - 1) * por_pagina
+            fin = inicio + por_pagina
+            notificaciones = todas_notificaciones[inicio:fin]
+            
+            # Calcular total de páginas
+            total_paginas = (total + por_pagina - 1) // por_pagina
 
     except Exception as e:
         print(f"Error cargando historial de notificaciones: {e}")
         notificaciones = []
+        total = 0
+        total_paginas = 0
+        pagina = 1
 
-    return render_template('HistorialNotificaciones.html', notificaciones=notificaciones)
+    return render_template('HistorialNotificaciones.html', 
+                         notificaciones=notificaciones,
+                         pagina_actual=pagina,
+                         total_paginas=total_paginas,
+                         total_notificaciones=total)

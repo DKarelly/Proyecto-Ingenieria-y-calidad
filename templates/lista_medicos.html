@@ -117,7 +117,9 @@
 
                         <!-- Botón de Acción -->
                         <a href="/reservas/generar-reserva?medico={{ medico.id_empleado }}&especialidad={{ especialidad.id_especialidad }}" 
-                           class="block w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-center py-2 rounded-lg font-semibold transition-all">
+                           class="block w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-center py-2 rounded-lg font-semibold transition-all btn-agendar-cita"
+                           data-medico="{{ medico.id_empleado }}"
+                           data-especialidad="{{ especialidad.id_especialidad }}">
                             <i class="fas fa-calendar-plus mr-2"></i>Agendar Cita
                         </a>
                     </div>
@@ -144,6 +146,10 @@
     </div>
 
     {% include 'footer.html' %}
+    {% include 'auth_modals.html' %}
+
+    <!-- Script para manejar modales y autenticación -->
+    <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 
     <script>
         // Smooth scroll para los enlaces de especialidades
@@ -157,6 +163,49 @@
                         block: 'start'
                     });
                 }
+            });
+        });
+
+        // Interceptar clics en botones "Agendar Cita" para usuarios no autenticados
+        document.addEventListener('DOMContentLoaded', async function() {
+            const btnAgendarCitas = document.querySelectorAll('.btn-agendar-cita');
+            
+            // Verificar si el usuario está autenticado
+            let usuarioAutenticado = false;
+            try {
+                const response = await fetch('/usuarios/api/session');
+                if (response.ok) {
+                    const data = await response.json();
+                    usuarioAutenticado = data.logged_in === true;
+                }
+            } catch (error) {
+                console.error('Error verificando sesión:', error);
+            }
+            
+            btnAgendarCitas.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    // Si el usuario NO está autenticado, interceptar el clic
+                    if (!usuarioAutenticado) {
+                        e.preventDefault();
+                        const loginModal = document.getElementById('login-modal');
+                        if (loginModal) {
+                            // Guardar la URL de destino para redirigir después del login
+                            const medico = this.getAttribute('data-medico');
+                            const especialidad = this.getAttribute('data-especialidad');
+                            const destino = `/reservas/generar-reserva?medico=${medico}&especialidad=${especialidad}`;
+                            sessionStorage.setItem('redirect_after_login', destino);
+                            
+                            // Abrir modal de login
+                            if (typeof openModal === 'function') {
+                                openModal(loginModal);
+                            } else {
+                                loginModal.classList.remove('hidden');
+                                loginModal.style.display = 'flex';
+                            }
+                        }
+                    }
+                    // Si está autenticado, dejar que el enlace funcione normalmente
+                });
             });
         });
     </script>

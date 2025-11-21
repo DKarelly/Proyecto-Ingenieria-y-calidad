@@ -104,11 +104,26 @@ function initializeAuthModals() {
     const backToLogin = document.getElementById('back-to-login');
 
     const openModal = (modal) => {
+        // Guardar posición del scroll antes de bloquear
+        const scrollY = window.scrollY;
+        document.body.dataset.scrollY = scrollY.toString();
+        
+        // Bloquear scroll del body y html
+        document.body.classList.add('modal-open');
+        document.documentElement.classList.add('modal-open');
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        
+        // Mostrar modal
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        
         // Focus first input
-        const firstInput = modal.querySelector('input:not([type="hidden"])');
-        if (firstInput) firstInput.focus();
+        const firstInput = modal.querySelector('input:not([type="hidden"]), select');
+        if (firstInput) {
+            setTimeout(() => firstInput.focus(), 100);
+        }
     };
 
     // --- Password strength meter helpers ---
@@ -152,8 +167,21 @@ function initializeAuthModals() {
         text.style.color = color;
     }
     const closeModal = (modal) => {
+        // Ocultar modal
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        
+        // Restaurar scroll del body y html
+        const scrollY = document.body.dataset.scrollY || '0';
+        document.body.classList.remove('modal-open');
+        document.documentElement.classList.remove('modal-open');
+        document.body.style.top = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        delete document.body.dataset.scrollY;
+        
+        // Restaurar posición del scroll
+        window.scrollTo(0, parseInt(scrollY));
     };
 
     // Función global para abrir modal
@@ -165,12 +193,16 @@ function initializeAuthModals() {
     closeForgotPasswordModal.addEventListener('click', () => closeModal(forgotPasswordModal));
 
     goToRegister.addEventListener('click', () => {
-        closeModal(loginModal);
+        // No cerrar completamente el modal, solo cambiar la visibilidad para mantener el scroll bloqueado
+        loginModal.classList.add('hidden');
+        loginModal.classList.remove('flex');
         openModal(registerModal);
     });
 
     goToLogin.addEventListener('click', () => {
-        closeModal(registerModal);
+        // No cerrar completamente el modal, solo cambiar la visibilidad para mantener el scroll bloqueado
+        registerModal.classList.add('hidden');
+        registerModal.classList.remove('flex');
         openModal(loginModal);
     });
 
@@ -189,6 +221,15 @@ function initializeAuthModals() {
         if (event.target === loginModal) closeModal(loginModal);
         if (event.target === registerModal) closeModal(registerModal);
         if (event.target === forgotPasswordModal) closeModal(forgotPasswordModal);
+    });
+
+    // Cerrar modal con tecla Escape
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' || event.keyCode === 27) {
+            if (!loginModal.classList.contains('hidden')) closeModal(loginModal);
+            if (!registerModal.classList.contains('hidden')) closeModal(registerModal);
+            if (!forgotPasswordModal.classList.contains('hidden')) closeModal(forgotPasswordModal);
+        }
     });
 
     // Toggle mostrar/ocultar contraseña en login
@@ -243,8 +284,15 @@ function initializeAuthModals() {
                     return;
                 }
                 
-                // Para pacientes: recargar página para actualizar UI desde sesión
-                window.location.reload();
+                // Para pacientes: verificar si hay una URL de redirección guardada
+                const redirectUrl = sessionStorage.getItem('redirect_after_login');
+                if (redirectUrl) {
+                    sessionStorage.removeItem('redirect_after_login');
+                    window.location.href = redirectUrl;
+                } else {
+                    // Recargar página para actualizar UI desde sesión
+                    window.location.reload();
+                }
             } else {
                 alert(data.error || 'Error al iniciar sesión');
             }
@@ -254,30 +302,169 @@ function initializeAuthModals() {
         }
     });
 
-    // Validación de solo números en documento y teléfono
-    document.getElementById('register-documento').addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+    // Configuración de tipos de documento
+    const tiposDocumento = {
+        'DNI': { min: 8, max: 8, pattern: /^[0-9]{8}$/, placeholder: '12345678', hint: 'Ingrese 8 dígitos', inputmode: 'numeric' },
+        'CE': { min: 9, max: 12, pattern: /^[0-9]{9,12}$/, placeholder: '123456789', hint: 'Ingrese entre 9 y 12 dígitos', inputmode: 'numeric' },
+        'PASAPORTE': { min: 6, max: 15, pattern: /^[A-Z0-9]{6,15}$/, placeholder: 'ABC123456', hint: 'Ingrese entre 6 y 15 caracteres (letras y números)', inputmode: 'text' }
+    };
+
+    // Configurar fecha máxima de nacimiento (18 años atrás)
+    const fechaNacimiento = document.getElementById('register-nacimiento');
+    if (fechaNacimiento) {
+        const today = new Date();
+        const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+        fechaNacimiento.max = maxDate.toISOString().split('T')[0];
+    }
+
+    // Manejar tipo de documento
+    const tipoDocumentoSelect = document.getElementById('register-tipo-documento');
+    const documentoInput = document.getElementById('register-documento');
+    const documentoHint = document.getElementById('register-documento-hint');
     
-    document.getElementById('register-telefono').addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+    if (tipoDocumentoSelect && documentoInput) {
+        tipoDocumentoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            documentoInput.value = '';
+            
+            if (tipo && tiposDocumento[tipo]) {
+                const config = tiposDocumento[tipo];
+                documentoInput.maxLength = config.max;
+                documentoInput.placeholder = config.placeholder;
+                if (documentoHint) documentoHint.textContent = config.hint;
+                documentoInput.disabled = false;
+                documentoInput.setAttribute('inputmode', config.inputmode);
+                documentoInput.classList.remove('border-red-500');
+                clearFieldError(documentoInput);
+            } else {
+                documentoInput.disabled = true;
+                documentoInput.placeholder = 'Seleccione tipo primero';
+                if (documentoHint) documentoHint.textContent = 'Seleccione el tipo de documento primero';
+            }
+        });
+    }
+
+    // Validación de documento según tipo
+    if (documentoInput) {
+        documentoInput.addEventListener('input', function(e) {
+            const tipo = tipoDocumentoSelect ? tipoDocumentoSelect.value : 'DNI';
+            if (tipo === 'PASAPORTE') {
+                // Solo mayúsculas y números para pasaporte
+                this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            } else {
+                // Solo números para DNI y CE
+                this.value = this.value.replace(/[^0-9]/g, '');
+            }
+        });
+    }
+    
+    // Validación de teléfono (solo números)
+    const telefonoInput = document.getElementById('register-telefono');
+    if (telefonoInput) {
+        telefonoInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+
+    // Toggle visibilidad de contraseña en registro
+    const toggleRegisterPassword = document.getElementById('toggle-register-password');
+    const registerPasswordInput = document.getElementById('register-password');
+    const registerPasswordEyeIcon = document.getElementById('register-password-eye-icon');
+    
+    if (toggleRegisterPassword && registerPasswordInput && registerPasswordEyeIcon) {
+        toggleRegisterPassword.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (registerPasswordInput.type === 'password') {
+                registerPasswordInput.type = 'text';
+                registerPasswordEyeIcon.classList.remove('fa-eye');
+                registerPasswordEyeIcon.classList.add('fa-eye-slash');
+            } else {
+                registerPasswordInput.type = 'password';
+                registerPasswordEyeIcon.classList.remove('fa-eye-slash');
+                registerPasswordEyeIcon.classList.add('fa-eye');
+            }
+        });
+    }
+
+    // Mejorar función updatePasswordStrength para mostrar indicador
+    const originalUpdatePasswordStrength = updatePasswordStrength;
+    updatePasswordStrength = function(pw) {
+        originalUpdatePasswordStrength(pw);
+        const strengthDiv = document.getElementById('password-strength');
+        const requirements = {
+            length: document.getElementById('req-length'),
+            letter: document.getElementById('req-letter'),
+            number: document.getElementById('req-number')
+        };
+        
+        if (!strengthDiv) return;
+        
+        if (!pw || pw.length === 0) {
+            strengthDiv.classList.add('hidden');
+            return;
+        }
+        
+        strengthDiv.classList.remove('hidden');
+        
+        // Validar requisitos
+        const hasLength = pw.length >= 6;
+        const hasLetter = /[A-Za-z]/.test(pw);
+        const hasNumber = /\d/.test(pw);
+        
+        // Actualizar indicadores
+        if (requirements.length) {
+            requirements.length.querySelector('span').textContent = hasLength ? '✓' : '✗';
+            requirements.length.querySelector('span').className = hasLength ? 'text-green-500' : 'text-red-500';
+        }
+        if (requirements.letter) {
+            requirements.letter.querySelector('span').textContent = hasLetter ? '✓' : '✗';
+            requirements.letter.querySelector('span').className = hasLetter ? 'text-green-500' : 'text-red-500';
+        }
+        if (requirements.number) {
+            requirements.number.querySelector('span').textContent = hasNumber ? '✓' : '✗';
+            requirements.number.querySelector('span').className = hasNumber ? 'text-green-500' : 'text-red-500';
+        }
+    };
 
     // Manejo del formulario de registro con validaciones cliente
     const registerForm = document.querySelector('#register-modal form');
     const showFieldError = (field, message) => {
         clearFieldError(field);
         field.classList.add('border-red-500');
-        const msg = document.createElement('p');
-        msg.className = 'input-error text-xs text-red-600 mt-1';
-        msg.textContent = message;
-        field.parentNode.appendChild(msg);
+        
+        // Buscar elemento de error específico por ID
+        const errorId = field.id + '-error';
+        const errorElement = document.getElementById(errorId);
+        
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        } else {
+            // Fallback: crear elemento de error si no existe
+            const msg = document.createElement('p');
+            msg.id = errorId;
+            msg.className = 'input-error text-xs text-red-600 mt-1';
+            msg.textContent = message;
+            field.parentNode.appendChild(msg);
+        }
     };
 
     const clearFieldError = (field) => {
         field.classList.remove('border-red-500');
-        const next = field.parentNode.querySelector('.input-error');
-        if (next) next.remove();
+        
+        // Limpiar elemento de error específico
+        const errorId = field.id + '-error';
+        const errorElement = document.getElementById(errorId);
+        if (errorElement) {
+            errorElement.classList.add('hidden');
+            errorElement.textContent = '';
+        }
+        
+        // Limpiar elementos de error antiguos
+        const oldError = field.parentNode.querySelector('.input-error');
+        if (oldError) oldError.remove();
     };
 
     const clearAllErrors = (form) => {
@@ -289,6 +476,7 @@ function initializeAuthModals() {
         clearAllErrors(registerForm);
         const nombres = document.getElementById('register-nombres');
         const apellidos = document.getElementById('register-apellidos');
+        const tipoDocumento = document.getElementById('register-tipo-documento');
         const documento = document.getElementById('register-documento');
         const sexo = document.getElementById('register-sexo');
         const telefono = document.getElementById('register-telefono');
@@ -299,23 +487,52 @@ function initializeAuthModals() {
         const distrito = document.getElementById('register-distrito');
         const password = document.getElementById('register-password');
 
-        // Validaciones simples
+        // Validar nombres
         if (!nombres.value || nombres.value.trim().length < 2) {
             showFieldError(nombres, 'Ingrese al menos 2 caracteres en nombres');
             nombres.focus();
             return false;
         }
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(nombres.value.trim())) {
+            showFieldError(nombres, 'Los nombres solo pueden contener letras y espacios');
+            nombres.focus();
+            return false;
+        }
 
+        // Validar apellidos
         if (!apellidos.value || apellidos.value.trim().length < 2) {
             showFieldError(apellidos, 'Ingrese al menos 2 caracteres en apellidos');
             apellidos.focus();
             return false;
         }
+        if (!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/.test(apellidos.value.trim())) {
+            showFieldError(apellidos, 'Los apellidos solo pueden contener letras y espacios');
+            apellidos.focus();
+            return false;
+        }
 
-        if (!/^\d{8}$/.test(documento.value)) {
-            showFieldError(documento, 'El DNI debe tener 8 dígitos');
+        // Validar tipo de documento
+        if (!tipoDocumento || !tipoDocumento.value) {
+            showFieldError(tipoDocumento, 'Seleccione un tipo de documento');
+            if (tipoDocumento) tipoDocumento.focus();
+            return false;
+        }
+
+        // Validar documento según tipo
+        if (!documento.value || documento.disabled) {
+            showFieldError(documento, 'Ingrese el número de documento');
             documento.focus();
             return false;
+        }
+        
+        const tipoDoc = tipoDocumento.value;
+        if (tiposDocumento[tipoDoc]) {
+            const config = tiposDocumento[tipoDoc];
+            if (!config.pattern.test(documento.value)) {
+                showFieldError(documento, config.hint);
+                documento.focus();
+                return false;
+            }
         }
 
         if (!sexo.value) {
@@ -370,8 +587,18 @@ function initializeAuthModals() {
             return false;
         }
 
+        // Validar contraseña
         if (!password.value || password.value.length < 6) {
             showFieldError(password, 'La contraseña debe tener al menos 6 caracteres');
+            password.focus();
+            return false;
+        }
+        
+        // Validar complejidad de contraseña
+        const hasLetter = /[A-Za-z]/.test(password.value);
+        const hasNumber = /\d/.test(password.value);
+        if (!hasLetter || !hasNumber) {
+            showFieldError(password, 'La contraseña debe incluir letras y números');
             password.focus();
             return false;
         }
@@ -402,15 +629,32 @@ function initializeAuthModals() {
                 if (!val || val.length < 2) {
                     if (touched[id]) showFieldError(field, 'Mínimo 2 caracteres');
                 } else clearFieldError(field);
-            } else if (id === 'register-documento') {
-                if (!/^\d{0,8}$/.test(val)) {
-                    if (touched[id]) showFieldError(field, 'Solo dígitos');
-                } else if (val.length > 0 && val.length < 8) {
-                    if (touched[id]) showFieldError(field, 'DNI incompleto');
-                } else if (val.length === 8) {
-                    clearFieldError(field);
+            } else if (id === 'register-tipo-documento') {
+                if (!val) {
+                    if (touched[id]) showFieldError(field, 'Seleccione un tipo de documento');
                 } else {
                     clearFieldError(field);
+                    // Habilitar campo de documento
+                    if (documentoInput && tiposDocumento[val]) {
+                        documentoInput.disabled = false;
+                        const config = tiposDocumento[val];
+                        documentoInput.maxLength = config.max;
+                        documentoInput.placeholder = config.placeholder;
+                        if (documentoHint) documentoHint.textContent = config.hint;
+                        documentoInput.setAttribute('inputmode', config.inputmode);
+                    }
+                }
+            } else if (id === 'register-documento') {
+                const tipoDoc = tipoDocumentoSelect ? tipoDocumentoSelect.value : '';
+                if (!tipoDoc) {
+                    if (touched[id]) showFieldError(field, 'Seleccione tipo de documento primero');
+                } else if (tiposDocumento[tipoDoc]) {
+                    const config = tiposDocumento[tipoDoc];
+                    if (!config.pattern.test(val)) {
+                        if (touched[id]) showFieldError(field, config.hint);
+                    } else {
+                        clearFieldError(field);
+                    }
                 }
             } else if (id === 'register-sexo') {
                 if (!val) {
@@ -468,6 +712,18 @@ function initializeAuthModals() {
     const realtimeFields = [
         'register-nombres','register-apellidos','register-documento','register-telefono','register-email','register-password'
     ];
+    
+    // Agregar validación en tiempo real para tipo de documento
+    if (tipoDocumentoSelect) {
+        tipoDocumentoSelect.addEventListener('change', () => {
+            touched['register-tipo-documento'] = true;
+            validateField(tipoDocumentoSelect);
+            if (documentoInput && !documentoInput.disabled) {
+                touched['register-documento'] = true;
+                validateField(documentoInput);
+            }
+        });
+    }
     realtimeFields.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -479,7 +735,7 @@ function initializeAuthModals() {
         }
     });
 
-    const changeFields = ['register-sexo','register-nacimiento','register-departamento','register-provincia','register-distrito'];
+    const changeFields = ['register-tipo-documento','register-sexo','register-nacimiento','register-departamento','register-provincia','register-distrito'];
     changeFields.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -502,6 +758,7 @@ function initializeAuthModals() {
         const formData = {
             nombres: document.getElementById('register-nombres').value.trim(),
             apellidos: document.getElementById('register-apellidos').value.trim(),
+            tipo_documento: document.getElementById('register-tipo-documento').value,
             documento_identidad: document.getElementById('register-documento').value.trim(),
             sexo: document.getElementById('register-sexo').value,
             telefono: document.getElementById('register-telefono').value.trim(),
