@@ -190,7 +190,10 @@ function initializeAuthModals() {
     // Cerrar modales
     closeLoginModal.addEventListener('click', () => closeModal(loginModal));
     closeRegisterModal.addEventListener('click', () => closeModal(registerModal));
-    closeForgotPasswordModal.addEventListener('click', () => closeModal(forgotPasswordModal));
+    closeForgotPasswordModal.addEventListener('click', () => {
+        resetForgotPasswordForm();
+        closeModal(forgotPasswordModal);
+    });
 
     goToRegister.addEventListener('click', () => {
         // No cerrar completamente el modal, solo cambiar la visibilidad para mantener el scroll bloqueado
@@ -212,6 +215,7 @@ function initializeAuthModals() {
     });
 
     backToLogin.addEventListener('click', () => {
+        resetForgotPasswordForm();
         closeModal(forgotPasswordModal);
         openModal(loginModal);
     });
@@ -220,7 +224,10 @@ function initializeAuthModals() {
     window.addEventListener('click', (event) => {
         if (event.target === loginModal) closeModal(loginModal);
         if (event.target === registerModal) closeModal(registerModal);
-        if (event.target === forgotPasswordModal) closeModal(forgotPasswordModal);
+        if (event.target === forgotPasswordModal) {
+            resetForgotPasswordForm();
+            closeModal(forgotPasswordModal);
+        }
     });
 
     // Cerrar modal con tecla Escape
@@ -228,7 +235,10 @@ function initializeAuthModals() {
         if (event.key === 'Escape' || event.keyCode === 27) {
             if (!loginModal.classList.contains('hidden')) closeModal(loginModal);
             if (!registerModal.classList.contains('hidden')) closeModal(registerModal);
-            if (!forgotPasswordModal.classList.contains('hidden')) closeModal(forgotPasswordModal);
+            if (!forgotPasswordModal.classList.contains('hidden')) {
+                resetForgotPasswordForm();
+                closeModal(forgotPasswordModal);
+            }
         }
     });
 
@@ -276,29 +286,62 @@ function initializeAuthModals() {
 
             const data = await response.json();
 
-            if (data.success) {
-                // Verificar si es empleado y redirigir al panel
-                if (data.usuario.tipo_usuario === 'empleado') {
-                    // Redirigir al panel de administración
-                    window.location.href = '/admin/';
+            if (data.success && data.usuario) {
+                // Verificar si es empleado y redirigir al panel según su rol
+                if (data.usuario.tipo_usuario === 'empleado' && data.usuario.id_rol) {
+                    const id_rol = data.usuario.id_rol;
+                    let redirectUrl = '/';
+                    
+                    // Redirigir según el rol del empleado
+                    if (id_rol === 1) {
+                        // Administrador
+                        redirectUrl = '/admin/panel';
+                    } else if (id_rol === 2) {
+                        // Médico
+                        redirectUrl = '/medico/panel';
+                    } else if (id_rol === 3) {
+                        // Recepcionista
+                        redirectUrl = '/recepcionista/panel';
+                    } else if (id_rol === 4) {
+                        // Farmacéutico
+                        redirectUrl = '/farmacia/panel';
+                    } else if (id_rol === 5) {
+                        // Laboratorista
+                        redirectUrl = '/trabajador/panel?subsistema=laboratorio';
+                    } else {
+                        // Otros empleados
+                        redirectUrl = '/trabajador/panel';
+                    }
+                    
+                    window.location.href = redirectUrl;
                     return;
                 }
                 
-                // Para pacientes: verificar si hay una URL de redirección guardada
-                const redirectUrl = sessionStorage.getItem('redirect_after_login');
-                if (redirectUrl) {
-                    sessionStorage.removeItem('redirect_after_login');
-                    window.location.href = redirectUrl;
-                } else {
-                    // Recargar página para actualizar UI desde sesión
-                    window.location.reload();
+                // Si es paciente
+                if (data.usuario.tipo_usuario === 'paciente') {
+                    const redirectUrl = sessionStorage.getItem('redirect_after_login');
+                    if (redirectUrl) {
+                        sessionStorage.removeItem('redirect_after_login');
+                        window.location.href = redirectUrl;
+                        return;
+                    }
                 }
+                
+                // Si no tiene tipo_usuario o id_rol, recargar la página
+                // El servidor debería manejar la redirección basándose en la sesión
+                window.location.reload();
             } else {
                 alert(data.error || 'Error al iniciar sesión');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('Error al conectar con el servidor');
+            // Si hay un error de red, mostrar alerta; si es otro tipo de error, recargar
+            if (error.message && error.message.includes('fetch')) {
+                alert('Error al conectar con el servidor');
+            } else {
+                // Recargar para que el servidor maneje la redirección
+                window.location.reload();
+            }
         }
     });
 
@@ -849,6 +892,40 @@ function initializeAuthModals() {
         }
     });
 
+    // Función para resetear el formulario de recuperación de contraseña
+    function resetForgotPasswordForm() {
+        const forgotPasswordForm = document.getElementById('forgot-password-form');
+        if (forgotPasswordForm) {
+            forgotPasswordForm.reset();
+            // Ocultar campos adicionales
+            const codeField = document.getElementById('code-field');
+            const passwordField = document.getElementById('password-field');
+            const confirmPasswordField = document.getElementById('confirm-password-field');
+            const resetPasswordBtn = document.getElementById('reset-password-btn');
+            const sendCodeBtn = document.getElementById('send-code-btn');
+            const emailInput = document.getElementById('forgot-email');
+            
+            if (codeField) codeField.style.display = 'none';
+            if (passwordField) passwordField.style.display = 'none';
+            if (confirmPasswordField) confirmPasswordField.style.display = 'none';
+            if (resetPasswordBtn) resetPasswordBtn.style.display = 'none';
+            if (sendCodeBtn) sendCodeBtn.textContent = 'Enviar';
+            if (emailInput) emailInput.disabled = false;
+            
+            // Limpiar mensajes
+            const emailMessage = document.getElementById('email-message');
+            const formMessage = document.getElementById('form-message');
+            if (emailMessage) {
+                emailMessage.className = 'text-sm mt-2 hidden';
+                emailMessage.textContent = '';
+            }
+            if (formMessage) {
+                formMessage.className = 'text-sm mt-3 text-center hidden';
+                formMessage.textContent = '';
+            }
+        }
+    }
+
     // Manejo del formulario de recuperación de contraseña
     const sendCodeBtn = document.getElementById('send-code-btn');
     const emailMessage = document.getElementById('email-message');
@@ -861,7 +938,8 @@ function initializeAuthModals() {
     // Enviar código de verificación
     sendCodeBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        const email = document.getElementById('forgot-email').value.trim();
+        const emailInput = document.getElementById('forgot-email');
+        const email = emailInput.value.trim();
 
         emailMessage.className = 'text-sm mt-2 hidden';
         emailMessage.textContent = '';
@@ -869,10 +947,21 @@ function initializeAuthModals() {
         if (!email) {
             emailMessage.textContent = 'Por favor ingrese su correo electrónico';
             emailMessage.className = 'text-sm mt-2 text-red-600';
+            emailInput.focus();
+            return;
+        }
+
+        // Validar formato de email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            emailMessage.textContent = 'Por favor ingrese un correo electrónico válido';
+            emailMessage.className = 'text-sm mt-2 text-red-600';
+            emailInput.focus();
             return;
         }
 
         sendCodeBtn.disabled = true;
+        const originalText = sendCodeBtn.textContent;
         sendCodeBtn.textContent = 'Enviando...';
 
         try {
@@ -882,26 +971,36 @@ function initializeAuthModals() {
                 body: JSON.stringify({ correo: email })
             });
 
+            const data = await response.json().catch(() => ({}));
+
             if (response.ok) {
                 emailMessage.textContent = 'Código enviado. Revisa tu correo electrónico';
                 emailMessage.className = 'text-sm mt-2 text-green-600';
                 sendCodeBtn.textContent = 'Reenviar';
+                
+                // Deshabilitar el campo de email para evitar cambios
+                emailInput.disabled = true;
                 
                 // Mostrar campos adicionales
                 codeField.style.display = 'block';
                 passwordField.style.display = 'block';
                 confirmPasswordField.style.display = 'block';
                 resetPasswordBtn.style.display = 'block';
+                
+                // Enfocar el campo de código
+                setTimeout(() => {
+                    document.getElementById('forgot-code').focus();
+                }, 100);
             } else {
-                const data = await response.json().catch(() => ({}));
                 emailMessage.textContent = data.error || 'No se pudo enviar el código. Intente nuevamente.';
                 emailMessage.className = 'text-sm mt-2 text-red-600';
-                sendCodeBtn.textContent = 'Enviar';
+                sendCodeBtn.textContent = originalText;
             }
         } catch (error) {
+            console.error('Error al enviar código:', error);
             emailMessage.textContent = 'Error de red. Intente nuevamente.';
             emailMessage.className = 'text-sm mt-2 text-red-600';
-            sendCodeBtn.textContent = 'Enviar';
+            sendCodeBtn.textContent = originalText;
         } finally {
             sendCodeBtn.disabled = false;
         }
@@ -975,6 +1074,8 @@ function initializeAuthModals() {
                     confirmPasswordField.style.display = 'none';
                     resetPasswordBtn.style.display = 'none';
                     sendCodeBtn.textContent = 'Enviar';
+                    // Habilitar el campo de email nuevamente
+                    document.getElementById('forgot-email').disabled = false;
                 }, 1500);
             } else {
                 formMessage.textContent = data.error || 'No se pudo actualizar la contraseña';

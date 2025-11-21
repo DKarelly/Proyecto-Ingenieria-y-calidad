@@ -49,7 +49,8 @@ def login():
         session['correo'] = usuario['correo']
         session['telefono'] = usuario['telefono']
         session['tipo_usuario'] = usuario['tipo_usuario']
-        session['nombre_usuario'] = usuario['nombre']
+        # Asegurar que nombre_usuario nunca sea None
+        session['nombre_usuario'] = usuario.get('nombre') or usuario.get('correo', 'Usuario')
         session['rol'] = usuario.get('rol')
         session['id_rol'] = usuario.get('id_rol')
         session['id_paciente'] = usuario.get('id_paciente')
@@ -104,7 +105,19 @@ def perfil():
     
     # Si es empleado, usar vista detallada (antes consultarperfil.html)
     if usuario and usuario.get('tipo_usuario') == 'empleado':
-        return render_template('perfil_empleado.html', usuario=usuario)
+        # Redirigir según el rol del empleado a su panel correspondiente después de ver el perfil
+        id_rol = usuario.get('id_rol')
+        if id_rol == 3:  # Recepcionista
+            # Mostrar perfil pero con opción de volver al panel
+            return render_template('perfil_empleado.html', usuario=usuario, volver_a='/recepcionista/panel')
+        elif id_rol == 2:  # Médico
+            return render_template('perfil_empleado.html', usuario=usuario, volver_a='/medico/panel')
+        elif id_rol == 1:  # Administrador
+            return render_template('perfil_empleado.html', usuario=usuario, volver_a='/admin/panel')
+        elif id_rol == 4:  # Farmacéutico
+            return render_template('perfil_empleado.html', usuario=usuario, volver_a='/farmacia/panel')
+        else:
+            return render_template('perfil_empleado.html', usuario=usuario)
     else:
         # Pacientes mantienen vista simple
         return render_template('perfil.html', usuario=usuario)
@@ -397,11 +410,15 @@ def api_login():
     session['correo'] = usuario['correo']
     session['telefono'] = usuario['telefono']
     session['tipo_usuario'] = usuario['tipo_usuario']
-    session['nombre_usuario'] = usuario['nombre']
+    # Asegurar que nombre_usuario nunca sea None
+    session['nombre_usuario'] = usuario.get('nombre') or usuario.get('correo', 'Usuario')
     session['rol'] = usuario.get('rol')
     session['id_rol'] = usuario.get('id_rol')
     session['id_paciente'] = usuario.get('id_paciente')
     session['id_empleado'] = usuario.get('id_empleado')
+    
+    # Debug: imprimir información del usuario
+    print(f"[DEBUG api_login] Usuario logueado - tipo: {usuario.get('tipo_usuario')}, id_rol: {usuario.get('id_rol')}, id_empleado: {usuario.get('id_empleado')}")
     
     return jsonify(resultado)
 
@@ -411,11 +428,14 @@ def api_get_session():
     if 'usuario_id' not in session:
         return jsonify({'logged_in': False})
     
+    # Asegurar que nombre nunca sea None
+    nombre = session.get('nombre_usuario') or session.get('correo', 'Usuario')
+    
     return jsonify({
         'logged_in': True,
         'usuario': {
             'id_usuario': session.get('usuario_id'),
-            'nombre': session.get('nombre_usuario'),
+            'nombre': nombre,
             'correo': session.get('correo'),
             'telefono': session.get('telefono'),
             'tipo_usuario': session.get('tipo_usuario'),
@@ -432,9 +452,12 @@ def api_usuario_actual():
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
     
+    # Asegurar que nombre nunca sea None
+    nombre = session.get('nombre_usuario') or session.get('correo', 'Usuario')
+    
     return jsonify({
         'id_usuario': session.get('usuario_id'),
-        'nombre': session.get('nombre_usuario'),
+        'nombre': nombre,
         'correo': session.get('correo'),
         'telefono': session.get('telefono'),
         'tipo_usuario': session.get('tipo_usuario'),
@@ -469,17 +492,34 @@ def api_register():
     conexion = obtener_conexion()
     try:
         with conexion.cursor() as cursor:
-            # Verificar si el documento ya existe
-            cursor.execute("SELECT id_paciente FROM PACIENTE WHERE documento_identidad = %s", 
-                         (data['documento_identidad'],))
-            if cursor.fetchone():
-                return jsonify({'error': 'El documento de identidad ya está registrado'}), 400
+            # VALIDACIONES DE UNICIDAD: Verificar que correo, teléfono y DNI no existan
             
-            # Verificar si el correo ya existe
+            # 1. Verificar si el correo ya existe
             cursor.execute("SELECT id_usuario FROM USUARIO WHERE correo = %s", 
                          (data['correo'],))
             if cursor.fetchone():
-                return jsonify({'error': 'El correo electrónico ya está registrado'}), 400
+                return jsonify({'error': f'El correo electrónico {data["correo"]} ya está registrado en el sistema'}), 400
+            
+            # 2. Verificar si el teléfono ya existe (si se proporciona)
+            telefono = data.get('telefono')
+            if telefono and telefono.strip():
+                cursor.execute("SELECT id_usuario FROM USUARIO WHERE telefono = %s AND telefono IS NOT NULL AND telefono != ''", 
+                             (telefono.strip(),))
+                if cursor.fetchone():
+                    return jsonify({'error': f'El teléfono {telefono} ya está registrado en el sistema'}), 400
+            
+            # 3. Verificar si el documento ya existe (en PACIENTE o EMPLEADO)
+            # Primero verificar en PACIENTE
+            cursor.execute("SELECT id_paciente FROM PACIENTE WHERE documento_identidad = %s", 
+                         (data['documento_identidad'],))
+            if cursor.fetchone():
+                return jsonify({'error': f'El documento de identidad {data["documento_identidad"]} ya está registrado en el sistema'}), 400
+            
+            # También verificar en EMPLEADO
+            from models.empleado import Empleado
+            empleado_existente = Empleado.obtener_por_documento(data['documento_identidad'])
+            if empleado_existente:
+                return jsonify({'error': f'El documento de identidad {data["documento_identidad"]} ya está registrado en el sistema'}), 400
             
             # Crear el usuario primero
             contrasena_hash = generate_password_hash(data['contrasena'])

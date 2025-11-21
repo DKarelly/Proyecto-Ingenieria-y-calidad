@@ -480,16 +480,47 @@ def registrar_cuenta_paciente():
             if len(password) < 6:
                 return error_response('La contraseña debe tener al menos 6 caracteres')
             
-            # Verificar si el correo ya existe
-            usuario_existente = Usuario.obtener_por_correo(email)
-            if usuario_existente:
-                return error_response('El correo electrónico ya está registrado')
-            
-            # Verificar si el documento ya existe
+            # VALIDACIONES DE UNICIDAD: Verificar que correo, teléfono y DNI no existan
             from models.paciente import Paciente
-            paciente_existente = Paciente.obtener_por_documento(documento)
-            if paciente_existente:
-                return error_response('El documento de identidad ya está registrado')
+            from bd import obtener_conexion
+            
+            conexion = obtener_conexion()
+            try:
+                cursor = conexion.cursor()
+                
+                # 1. Verificar si el correo ya existe
+                usuario_existente = Usuario.obtener_por_correo(email)
+                if usuario_existente:
+                    conexion.close()
+                    return error_response(f'El correo electrónico {email} ya está registrado en el sistema')
+                
+                # 2. Verificar si el teléfono ya existe (si se proporciona)
+                if telefono:
+                    cursor.execute("SELECT id_usuario FROM USUARIO WHERE telefono = %s AND telefono IS NOT NULL AND telefono != ''", (telefono,))
+                    if cursor.fetchone():
+                        conexion.close()
+                        return error_response(f'El teléfono {telefono} ya está registrado en el sistema')
+                
+                # 3. Verificar si el documento ya existe (en PACIENTE o EMPLEADO)
+                # Primero verificar en PACIENTE
+                paciente_existente = Paciente.obtener_por_documento(documento)
+                if paciente_existente:
+                    conexion.close()
+                    return error_response(f'El documento de identidad {documento} ya está registrado en el sistema')
+                
+                # También verificar en EMPLEADO
+                from models.empleado import Empleado
+                empleado_existente = Empleado.obtener_por_documento(documento)
+                if empleado_existente:
+                    conexion.close()
+                    return error_response(f'El documento de identidad {documento} ya está registrado en el sistema')
+                
+                conexion.close()
+            except Exception as e:
+                if conexion:
+                    conexion.close()
+                print(f"Error en validaciones de unicidad: {e}")
+                return error_response('Error al validar datos únicos')
             
             # Crear usuario primero
             resultado_usuario = Usuario.crear_usuario(
@@ -709,18 +740,50 @@ def gestionar_cuentas_internas():
             except ValueError:
                 return handle_error('Fecha de nacimiento no válida')
 
-            # Verificar si el correo ya existe
+            # VALIDACIONES DE UNICIDAD: Verificar que correo, teléfono y DNI no existan
             from models.usuario import Usuario
-            usuario_existente = Usuario.obtener_por_correo(email)
-            if usuario_existente:
-                print(f'[DEBUG] ERROR: Correo ya existe: {email}')
-                return handle_error('El correo electrónico ya está registrado')
-
-            # Verificar si el documento ya existe
-            empleado_existente = Empleado.obtener_por_documento(documento)
-            if empleado_existente:
-                print(f'[DEBUG] ERROR: Documento ya existe: {documento}')
-                return handle_error('El documento de identidad ya está registrado')
+            from bd import obtener_conexion
+            
+            conexion = obtener_conexion()
+            try:
+                cursor = conexion.cursor()
+                
+                # 1. Verificar si el correo ya existe
+                usuario_existente = Usuario.obtener_por_correo(email)
+                if usuario_existente:
+                    conexion.close()
+                    print(f'[DEBUG] ERROR: Correo ya existe: {email}')
+                    return handle_error(f'El correo electrónico {email} ya está registrado en el sistema')
+                
+                # 2. Verificar si el teléfono ya existe (si se proporciona)
+                if telefono:
+                    cursor.execute("SELECT id_usuario FROM USUARIO WHERE telefono = %s AND telefono IS NOT NULL AND telefono != ''", (telefono,))
+                    if cursor.fetchone():
+                        conexion.close()
+                        print(f'[DEBUG] ERROR: Teléfono ya existe: {telefono}')
+                        return handle_error(f'El teléfono {telefono} ya está registrado en el sistema')
+                
+                # 3. Verificar si el documento ya existe (en EMPLEADO o PACIENTE)
+                # Primero verificar en EMPLEADO
+                empleado_existente = Empleado.obtener_por_documento(documento)
+                if empleado_existente:
+                    conexion.close()
+                    print(f'[DEBUG] ERROR: Documento ya existe en empleados: {documento}')
+                    return handle_error(f'El documento de identidad {documento} ya está registrado en el sistema')
+                
+                # También verificar en PACIENTE
+                cursor.execute("SELECT id_paciente FROM PACIENTE WHERE documento_identidad = %s", (documento,))
+                if cursor.fetchone():
+                    conexion.close()
+                    print(f'[DEBUG] ERROR: Documento ya existe en pacientes: {documento}')
+                    return handle_error(f'El documento de identidad {documento} ya está registrado en el sistema')
+                
+                conexion.close()
+            except Exception as e:
+                if conexion:
+                    conexion.close()
+                print(f'[DEBUG] ERROR en validaciones de unicidad: {e}')
+                return handle_error('Error al validar datos únicos')
 
             print('[DEBUG] Validaciones pasadas, creando usuario...')
             # Crear usuario usando el método correcto

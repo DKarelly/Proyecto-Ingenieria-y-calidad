@@ -262,11 +262,41 @@ def recepcionista_required(f):
             flash('Debes iniciar sesión para acceder', 'warning')
             return redirect(url_for('usuarios.login'))
 
+        # Obtener id_rol de la sesión
+        id_rol = session.get('id_rol')
+        
+        # Debug: imprimir información de la sesión
+        print(f"🔍 [DEBUG recepcionista_required] id_rol en sesión: {id_rol}, tipo: {type(id_rol)}")
+        print(f"🔍 [DEBUG recepcionista_required] usuario_id: {session.get('usuario_id')}")
+        print(f"🔍 [DEBUG recepcionista_required] tipo_usuario: {session.get('tipo_usuario')}")
+        print(f"🔍 [DEBUG recepcionista_required] rol: {session.get('rol')}")
+        
+        # Si no hay id_rol en sesión, intentar obtenerlo de la base de datos
+        if id_rol is None:
+            try:
+                id_empleado = session.get('id_empleado')
+                if id_empleado:
+                    conexion = obtener_conexion()
+                    cursor = conexion.cursor()
+                    cursor.execute("SELECT id_rol FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+                    empleado = cursor.fetchone()
+                    if empleado:
+                        id_rol = empleado['id_rol']
+                        session['id_rol'] = id_rol
+                        print(f"🔍 [DEBUG recepcionista_required] id_rol obtenido de BD: {id_rol}")
+                    conexion.close()
+            except Exception as e:
+                print(f"❌ [DEBUG recepcionista_required] Error obteniendo id_rol: {e}")
+
         # Verificar si el usuario es recepcionista (id_rol = 3)
-        if session.get('id_rol') != 3:
+        # Convertir a int para comparación segura
+        id_rol_int = int(id_rol) if id_rol is not None else None
+        if id_rol_int != 3:
+            print(f"❌ [DEBUG recepcionista_required] Acceso denegado. id_rol: {id_rol_int}, esperado: 3")
             flash('No tienes permisos para acceder a esta sección', 'danger')
             return redirect(url_for('home'))
 
+        print(f"✅ [DEBUG recepcionista_required] Acceso permitido para recepcionista")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -566,6 +596,45 @@ def api_pacientes_registrar():
             id_distrito = int(id_distrito)
         except (ValueError, TypeError):
             return jsonify({'success': False, 'message': 'Distrito inválido'}), 400
+
+        # VALIDACIONES DE UNICIDAD: Verificar que correo, teléfono y DNI no existan
+        conexion = obtener_conexion()
+        try:
+            cursor = conexion.cursor()
+            
+            # 1. Validar que el correo no exista
+            cursor.execute("SELECT id_usuario FROM USUARIO WHERE correo = %s", (email,))
+            if cursor.fetchone():
+                conexion.close()
+                return jsonify({'success': False, 'message': f'El correo electrónico {email} ya está registrado en el sistema'}), 400
+            
+            # 2. Validar que el teléfono no exista (si se proporciona)
+            if telefono:
+                cursor.execute("SELECT id_usuario FROM USUARIO WHERE telefono = %s AND telefono IS NOT NULL AND telefono != ''", (telefono,))
+                if cursor.fetchone():
+                    conexion.close()
+                    return jsonify({'success': False, 'message': f'El teléfono {telefono} ya está registrado en el sistema'}), 400
+            
+            # 3. Validar que el DNI no exista (ni en PACIENTE ni en EMPLEADO)
+            # Primero verificar en PACIENTE
+            cursor.execute("SELECT id_paciente FROM PACIENTE WHERE documento_identidad = %s", (documento_identidad,))
+            if cursor.fetchone():
+                conexion.close()
+                return jsonify({'success': False, 'message': f'El documento de identidad {documento_identidad} ya está registrado en el sistema'}), 400
+            
+            # También verificar en EMPLEADO
+            from models.empleado import Empleado
+            empleado_existente = Empleado.obtener_por_documento(documento_identidad)
+            if empleado_existente:
+                conexion.close()
+                return jsonify({'success': False, 'message': f'El documento de identidad {documento_identidad} ya está registrado en el sistema'}), 400
+            
+            conexion.close()
+        except Exception as e:
+            if conexion:
+                conexion.close()
+            print(f"Error en validaciones de unicidad: {e}")
+            return jsonify({'success': False, 'message': 'Error al validar datos únicos'}), 500
 
         # Importar modelos necesarios
         from models.paciente import Paciente

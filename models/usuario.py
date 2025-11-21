@@ -143,7 +143,7 @@ class Usuario:
                            e.id_empleado,
                            CONCAT(e.nombres, ' ', e.apellidos) as nombre_empleado,
                            r.nombre as rol_empleado,
-                           r.id_rol,
+                           e.id_rol,
                            CASE 
                                WHEN p.id_paciente IS NOT NULL THEN 'paciente'
                                WHEN e.id_empleado IS NOT NULL THEN 'empleado'
@@ -156,7 +156,11 @@ class Usuario:
                     WHERE u.correo = %s
                 """
                 cursor.execute(sql, (correo,))
-                return cursor.fetchone()
+                resultado = cursor.fetchone()
+                # Debug: imprimir resultado
+                if resultado:
+                    print(f"🔍 [DEBUG obtener_por_correo] Usuario encontrado - tipo_usuario: {resultado.get('tipo_usuario')}, id_rol: {resultado.get('id_rol')}, id_empleado: {resultado.get('id_empleado')}")
+                return resultado
         finally:
             conexion.close()
 
@@ -304,14 +308,21 @@ class Usuario:
                 empleado = Empleado.obtener_por_id(usuario['id_empleado'])
                 if empleado:
                     nombre = f"{empleado['nombres']} {empleado['apellidos']}"
+        
+        # Si aún no hay nombre, usar el correo como fallback
+        if not nombre:
+            nombre = usuario.get('correo', 'Usuario')
 
+        # Debug: imprimir información antes de retornar
+        print(f"🔍 [DEBUG login] Preparando respuesta - tipo_usuario: {usuario.get('tipo_usuario')}, id_rol: {usuario.get('id_rol')}, id_empleado: {usuario.get('id_empleado')}")
+        
         return {
             'success': True,
             'usuario': {
                 'id_usuario': usuario['id_usuario'],
                 'correo': usuario['correo'],
                 'telefono': usuario['telefono'],
-                'tipo_usuario': usuario['tipo_usuario'],
+                'tipo_usuario': usuario.get('tipo_usuario'),
                 'nombre': nombre,
                 'rol': usuario.get('rol_empleado'),
                 'id_rol': usuario.get('id_rol'),
