@@ -423,6 +423,115 @@ def obtener_mis_pacientes(id_empleado):
             conexion.close()
 
 
+def obtener_notificaciones_medico(id_empleado):
+    """
+    Obtiene las notificaciones del médico desde su perspectiva
+    Incluye: nuevas citas asignadas, confirmaciones, cancelaciones, recordatorios
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener las citas del médico para generar notificaciones desde su perspectiva
+        cursor.execute("""
+            SELECT 
+                c.id_cita,
+                c.fecha_cita,
+                c.hora_inicio,
+                c.estado,
+                c.fecha_registro,
+                CONCAT(p.nombres, ' ', p.apellidos) as paciente_nombre,
+                s.nombre as servicio_nombre,
+                r.fecha_reserva
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            WHERE h.id_empleado = %s
+            AND c.fecha_registro >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            ORDER BY c.fecha_registro DESC
+            LIMIT 50
+        """, (id_empleado,))
+        
+        citas = cursor.fetchall()
+        
+        # Generar notificaciones desde la perspectiva del médico
+        notificaciones_formateadas = []
+        for cita in citas:
+            # Calcular tiempo transcurrido desde el registro de la cita
+            if isinstance(cita['fecha_registro'], str):
+                fecha_registro = datetime.strptime(cita['fecha_registro'], '%Y-%m-%d %H:%M:%S')
+            else:
+                fecha_registro = cita['fecha_registro']
+            
+            tiempo_transcurrido = datetime.now() - fecha_registro
+            
+            # Formatear tiempo de forma legible
+            if tiempo_transcurrido.days > 0:
+                tiempo_texto = f"Hace {tiempo_transcurrido.days} día{'s' if tiempo_transcurrido.days > 1 else ''}"
+            elif tiempo_transcurrido.seconds >= 3600:
+                horas = tiempo_transcurrido.seconds // 3600
+                tiempo_texto = f"Hace {horas} hora{'s' if horas > 1 else ''}"
+            elif tiempo_transcurrido.seconds >= 60:
+                minutos = tiempo_transcurrido.seconds // 60
+                tiempo_texto = f"Hace {minutos} minuto{'s' if minutos > 1 else ''}"
+            else:
+                tiempo_texto = "Hace unos segundos"
+            
+            # Formatear hora de la cita
+            if isinstance(cita['hora_inicio'], str):
+                hora_cita = datetime.strptime(cita['hora_inicio'], '%H:%M:%S').time()
+            elif isinstance(cita['hora_inicio'], timedelta):
+                hora_cita = (datetime.min + cita['hora_inicio']).time()
+            else:
+                hora_cita = cita['hora_inicio']
+            
+            hora_formateada = hora_cita.strftime('%H:%M')
+            fecha_formateada = cita['fecha_cita'].strftime('%d/%m/%Y')
+            
+            # Determinar tipo y mensaje según el estado de la cita
+            if cita['estado'] == 'Confirmada':
+                tipo = 'confirmacion'
+                titulo = 'Cita confirmada'
+                mensaje = f"El paciente {cita['paciente_nombre']} confirmó su cita para el {fecha_formateada} a las {hora_formateada}"
+            elif cita['estado'] == 'Cancelada':
+                tipo = 'cancelacion'
+                titulo = 'Cita cancelada'
+                mensaje = f"La cita con {cita['paciente_nombre']} del {fecha_formateada} a las {hora_formateada} fue cancelada"
+            else:
+                tipo = 'recordatorio'
+                titulo = 'Nueva cita asignada'
+                mensaje = f"Nueva cita programada con {cita['paciente_nombre']} para el {fecha_formateada} a las {hora_formateada}"
+                if cita['servicio_nombre']:
+                    mensaje += f" - {cita['servicio_nombre']}"
+            
+            notificaciones_formateadas.append({
+                'id': cita['id_cita'],
+                'titulo': titulo,
+                'mensaje': mensaje,
+                'tipo': tipo,
+                'paciente': cita['paciente_nombre'],
+                'leida': False,  # Por ahora todas como no leídas
+                'tiempo': tiempo_texto,
+                'fecha_envio': cita['fecha_registro'].date() if isinstance(cita['fecha_registro'], datetime) else cita['fecha_registro'],
+                'hora_envio': cita['fecha_registro'].time() if isinstance(cita['fecha_registro'], datetime) else None
+            })
+        
+        return notificaciones_formateadas
+        
+    except Exception as e:
+        print(f"Error al obtener notificaciones: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        if conexion:
+            conexion.close()
+
+
 def obtener_citas_pendientes_diagnostico(id_empleado):
     """
     Obtiene citas pendientes de diagnóstico (OPTIMIZADO)
@@ -608,13 +717,14 @@ def panel():
         citas_pendientes = obtener_citas_pendientes_diagnostico(id_empleado)
         
     elif subsistema == 'notificaciones':
-        # Solo notificaciones: estadísticas básicas
+        # Solo notificaciones: estadísticas básicas + notificaciones
         stats = obtener_estadisticas_medico(id_empleado)
         citas_hoy = []
         horarios_medico = []
         citas_semana = {}
         mis_pacientes = []
         citas_pendientes = []
+        notificaciones = obtener_notificaciones_medico(id_empleado)
         
     else:
         # Dashboard: estadísticas + citas hoy solamente
@@ -624,6 +734,30 @@ def panel():
         citas_semana = {}
         mis_pacientes = []
         citas_pendientes = []
+        notificaciones = []
+    
+    # Obtener contador de notificaciones no leídas para el badge
+    # Contamos las citas registradas en los últimos 7 días que aún no han pasado
+    notificaciones_no_leidas = 0
+    if subsistema != 'notificaciones':
+        try:
+            conexion = obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) as total
+                FROM CITA c
+                INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+                WHERE h.id_empleado = %s 
+                AND c.fecha_registro >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+                AND c.fecha_cita >= CURDATE()
+            """, (id_empleado,))
+            result = cursor.fetchone()
+            notificaciones_no_leidas = result['total'] if result else 0
+            conexion.close()
+        except:
+            notificaciones_no_leidas = 0
 
     return render_template(
         'panel_medico.html',
@@ -634,7 +768,9 @@ def panel():
         horarios_medico=horarios_medico,
         citas_semana=citas_semana,
         mis_pacientes=mis_pacientes,
-        citas_pendientes=citas_pendientes
+        citas_pendientes=citas_pendientes,
+        notificaciones=notificaciones if subsistema == 'notificaciones' else [],
+        notificaciones_no_leidas=notificaciones_no_leidas
     )
 
 
@@ -821,6 +957,9 @@ def guardar_diagnostico():
     """
     Guarda un diagnóstico para una cita y la marca como completada.
     También puede autorizar exámenes u operaciones si se solicita.
+    Validaciones:
+    - Solo se puede registrar a partir de la hora de inicio de la cita
+    - Fecha límite: hasta las 23:59:59 del mismo día de la cita
     """
     conexion = None
     try:
@@ -828,6 +967,7 @@ def guardar_diagnostico():
         id_paciente = request.form.get('id_paciente')
         diagnostico = request.form.get('diagnostico')
         observaciones = request.form.get('observaciones', '')
+        es_modificacion = request.form.get('es_modificacion') == 'true'
         
         # Datos de autorización de procedimientos
         autorizar_examen = request.form.get('autorizar_examen') == 'true'
@@ -838,6 +978,81 @@ def guardar_diagnostico():
         
         conexion = obtener_conexion()
         cursor = conexion.cursor()
+        
+        # Validación temporal: obtener fecha y hora de la cita
+        cursor.execute("""
+            SELECT fecha, hora, estado, diagnostico as diagnostico_existente
+            FROM CITA 
+            WHERE id_cita = %s
+        """, (id_cita,))
+        
+        cita = cursor.fetchone()
+        if not cita:
+            return jsonify({'success': False, 'message': 'Cita no encontrada'}), 404
+        
+        # Si la cita está cancelada, no permitir registro
+        if cita['estado'] == 'Cancelada':
+            return jsonify({'success': False, 'message': 'No se puede registrar diagnóstico para una cita cancelada'}), 400
+        
+        from datetime import datetime, time, timedelta
+        
+        # Combinar fecha y hora de la cita
+        fecha_cita = cita['fecha']
+        hora_cita = cita['hora']
+        
+        if isinstance(hora_cita, timedelta):
+            hora_inicio = (datetime.min + hora_cita).time()
+        elif isinstance(hora_cita, time):
+            hora_inicio = hora_cita
+        else:
+            hora_inicio = datetime.strptime(str(hora_cita), '%H:%M:%S').time()
+        
+        fecha_hora_cita = datetime.combine(fecha_cita, hora_inicio)
+        fecha_limite = datetime.combine(fecha_cita, time(23, 59, 59))
+        ahora = datetime.now()
+        
+        # VALIDACIÓN 1: Solo si es registro nuevo (no modificación)
+        if not es_modificacion:
+            # No permitir registro antes de que inicie la cita
+            if ahora < fecha_hora_cita:
+                hora_formatted = hora_inicio.strftime('%H:%M')
+                return jsonify({
+                    'success': False, 
+                    'message': f'Esta cita aún no ha iniciado. Podrá registrar el diagnóstico a partir de las {hora_formatted}'
+                }), 400
+            
+            # No permitir registro después de la fecha límite (medianoche del día de la cita)
+            if ahora > fecha_limite:
+                return jsonify({
+                    'success': False, 
+                    'message': 'El plazo para registrar el diagnóstico ha expirado. Solo se permite el mismo día de la cita.'
+                }), 400
+        
+        # VALIDACIÓN 2: Si es modificación, verificar que sea el mismo médico
+        if es_modificacion:
+            cursor.execute("""
+                SELECT id_empleado FROM CITA WHERE id_cita = %s
+            """, (id_cita,))
+            cita_medico = cursor.fetchone()
+            id_empleado_actual = session.get('id_empleado')
+            
+            if cita_medico and cita_medico['id_empleado'] != id_empleado_actual:
+                return jsonify({
+                    'success': False,
+                    'message': 'Solo el médico que registró el diagnóstico puede modificarlo'
+                }), 403
+        
+        # Si es modificación, guardar historial del diagnóstico anterior
+        if es_modificacion and cita['diagnostico_existente']:
+            try:
+                cursor.execute("""
+                    INSERT INTO historial_diagnosticos 
+                    (id_cita, diagnostico_anterior, observaciones_anterior, fecha_modificacion, id_medico_modifica)
+                    VALUES (%s, %s, %s, NOW(), %s)
+                """, (id_cita, cita['diagnostico_existente'], cita.get('observaciones'), session.get('id_empleado')))
+            except Exception as e:
+                # Si la tabla no existe, continuar sin guardar historial
+                print(f"Advertencia: No se pudo guardar en historial_diagnosticos: {e}")
         
         # Actualizar la cita con el diagnóstico y cambiar estado a Completada
         cursor.execute("""
@@ -929,7 +1144,11 @@ def guardar_diagnostico():
         
         conexion.commit()
         
-        mensaje = 'Diagnóstico guardado exitosamente. La cita ha sido marcada como completada.'
+        if es_modificacion:
+            mensaje = 'Diagnóstico modificado exitosamente. Los cambios han sido registrados.'
+        else:
+            mensaje = 'Diagnóstico guardado exitosamente. La cita ha sido marcada como completada.'
+        
         if autorizaciones_creadas:
             mensaje += f' Se autorizaron: {", ".join(autorizaciones_creadas)}.'
         
@@ -1020,6 +1239,46 @@ def notificaciones():
 
 
 # API Endpoints para consultas AJAX
+@medico_bp.route('/api/obtener_diagnostico/<int:id_cita>')
+@medico_required
+def api_obtener_diagnostico(id_cita):
+    """
+    Retorna el diagnóstico de una cita específica para permitir su modificación
+    """
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        cursor.execute("""
+            SELECT diagnostico, observaciones, estado, id_empleado
+            FROM CITA 
+            WHERE id_cita = %s
+        """, (id_cita,))
+        
+        cita = cursor.fetchone()
+        conexion.close()
+        
+        if not cita:
+            return jsonify({'success': False, 'message': 'Cita no encontrada'}), 404
+        
+        # Verificar que el médico que intenta modificar sea el mismo que registró
+        if cita['id_empleado'] != session.get('id_empleado'):
+            return jsonify({
+                'success': False, 
+                'message': 'Solo el médico que registró el diagnóstico puede modificarlo'
+            }), 403
+        
+        return jsonify({
+            'success': True,
+            'diagnostico': cita['diagnostico'],
+            'observaciones': cita['observaciones'],
+            'estado': cita['estado']
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener diagnóstico: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @medico_bp.route('/api/citas-hoy')
 @medico_required
 def api_citas_hoy():
@@ -1270,6 +1529,29 @@ def obtener_autorizaciones_cita(id_cita):
         
     except Exception as e:
         print(f"Error al obtener autorizaciones: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/notificaciones-recientes', methods=['GET'])
+@medico_required
+def api_notificaciones_recientes():
+    """
+    Obtiene las notificaciones más recientes del médico para mostrar en el header
+    """
+    try:
+        id_empleado = session.get('id_empleado')
+        notificaciones = obtener_notificaciones_medico(id_empleado)
+        
+        # Solo las 5 más recientes
+        notificaciones_recientes = notificaciones[:5] if notificaciones else []
+        
+        return jsonify({
+            'success': True,
+            'notificaciones': notificaciones_recientes
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener notificaciones recientes: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
