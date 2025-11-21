@@ -119,6 +119,10 @@
             input.dispatchEvent(event);
         };
     </script>
+    <script src="/static/js/consultar-disponibilidad.js"></script>
+    <!-- AlpineJS para interactividad del dropdown -->
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="{{ url_for('static', filename='js/consultar-servicio-medico.js') }}"></script>
 </head>
 
 <body class="font-body bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark antialiased">
@@ -188,10 +192,6 @@
                     <a href="/reservas/generar-reserva" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
                         <span class="material-symbols-outlined text-lg">add_circle</span>
                         <span>Generar Reserva</span>
-                    </a>
-                    <a href="/recepcionista/panel?subsistema=reserva&accion=reprogramar" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
-                        <span class="material-symbols-outlined text-lg">edit_calendar</span>
-                        <span>Reprogramar servicio medico</span>
                     </a>
                     {% endif %}
                 </div>
