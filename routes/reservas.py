@@ -736,7 +736,9 @@ def api_buscar_horarios_disponibles():
     - id_servicio: int
     - id_tipo_servicio: int (1=Cita, 4=Examen, etc.)
     - id_empleado: int  
-    - fecha: YYYY-MM-DD (si no se proporciona, muestra semana actual)
+    - fecha_inicio: YYYY-MM-DD (inicio del rango, si no se proporciona, muestra semana actual)
+    - fecha_fin: YYYY-MM-DD (fin del rango, si no se proporciona, muestra semana actual)
+    - fecha: YYYY-MM-DD (deprecated, usar fecha_inicio y fecha_fin)
     """
     from datetime import date, timedelta
     
@@ -746,7 +748,9 @@ def api_buscar_horarios_disponibles():
     id_servicio = request.args.get('id_servicio', '').strip()
     id_tipo_servicio = request.args.get('id_tipo_servicio', '').strip()
     id_empleado = request.args.get('id_empleado', '').strip()
-    fecha = request.args.get('fecha', '').strip()
+    fecha_inicio = request.args.get('fecha_inicio', '').strip()
+    fecha_fin = request.args.get('fecha_fin', '').strip()
+    fecha = request.args.get('fecha', '').strip()  # Mantener compatibilidad con versión anterior
     
     # Validar y limpiar parámetros - filtrar valores inválidos
     if id_servicio in ['', 'undefined', 'null', 'None']:
@@ -754,9 +758,11 @@ def api_buscar_horarios_disponibles():
     if id_tipo_servicio in ['', 'undefined', 'null', 'None']:
         id_tipo_servicio = None
     if id_empleado in ['', 'undefined', 'null', 'None']:
-        id_servicio = None
-    if id_empleado in ['', 'undefined', 'null', 'None']:
         id_empleado = None
+    if fecha_inicio in ['', 'undefined', 'null', 'None']:
+        fecha_inicio = None
+    if fecha_fin in ['', 'undefined', 'null', 'None']:
+        fecha_fin = None
     if fecha in ['', 'undefined', 'null', 'None']:
         fecha = None
     
@@ -767,10 +773,30 @@ def api_buscar_horarios_disponibles():
         conn = obtener_conexion()
         cursor = conn.cursor()
         
-        # Calcular rango de la semana (lunes a domingo)
+        # Calcular rango de fechas
         hoy = date.today()
-        inicio_semana = hoy - timedelta(days=hoy.weekday())  # Lunes de esta semana
-        fin_semana = inicio_semana + timedelta(days=6)  # Domingo de esta semana
+        
+        # Si se proporciona fecha (versión antigua), usar como fecha_inicio y fecha_fin
+        if fecha and not fecha_inicio and not fecha_fin:
+            fecha_inicio = fecha
+            fecha_fin = fecha
+        
+        # Si no se proporciona rango, usar semana actual (lunes a domingo)
+        if not fecha_inicio or not fecha_fin:
+            inicio_semana = hoy - timedelta(days=hoy.weekday())  # Lunes de esta semana
+            fin_semana = inicio_semana + timedelta(days=6)  # Domingo de esta semana
+            fecha_inicio = inicio_semana
+            fecha_fin = fin_semana
+        else:
+            # Convertir strings a objetos date
+            fecha_inicio = date.fromisoformat(fecha_inicio)
+            fecha_fin = date.fromisoformat(fecha_fin)
+            inicio_semana = fecha_inicio
+            fin_semana = fecha_fin
+        
+        # Validar que fecha_inicio <= fecha_fin
+        if fecha_inicio > fecha_fin:
+            return jsonify({'error': 'La fecha inicio debe ser menor o igual a la fecha fin', 'horarios': []}), 400
         
         # Query: buscar TODAS las PROGRAMACIONES (Disponible y Ocupado)
         query = """
@@ -796,34 +822,57 @@ def api_buscar_horarios_disponibles():
                 AND p.fecha <= %s
         """
         
-        params = [inicio_semana, fin_semana]
-        
-        # Filtro por servicio específico
-        if id_servicio:
-            query += " AND p.id_servicio = %s"
-            params.append(int(id_servicio))
+        params = [fecha_inicio, fecha_fin]
         
         # Filtro por tipo de servicio (1=Cita, 4=Examen, etc.)
+        # Nota: Si id_servicio es NULL en PROGRAMACION, s.id_tipo_servicio también será NULL
+        # Para citas generales (id_tipo_servicio=1), incluimos programaciones con id_servicio NULL
         if id_tipo_servicio:
-            query += " AND s.id_tipo_servicio = %s"
-            params.append(int(id_tipo_servicio))
+            id_tipo_servicio_int = int(id_tipo_servicio)
+            if id_tipo_servicio_int == 1:  # Cita general
+                # Para citas generales, NO filtramos por id_servicio específico
+                # porque las citas pueden tener id_servicio NULL o un servicio específico
+                query += " AND (s.id_tipo_servicio = %s OR p.id_servicio IS NULL)"
+                params.append(id_tipo_servicio_int)
+            else:  # Examen u otro tipo específico
+                query += " AND s.id_tipo_servicio = %s"
+                params.append(id_tipo_servicio_int)
+        
+        # Filtro por servicio específico (solo si NO es cita general)
+        # Si es cita general (id_tipo_servicio=1), ignoramos este filtro para incluir citas con id_servicio NULL
+        if id_servicio and (not id_tipo_servicio or int(id_tipo_servicio) != 1):
+            query += " AND p.id_servicio = %s"
+            params.append(int(id_servicio))
         
         # Filtro por empleado
         if id_empleado:
             query += " AND h.id_empleado = %s"
             params.append(int(id_empleado))
         
-        # Filtro por fecha específica (sobrescribe el rango semanal)
-        if fecha:
-            query = query.replace("AND p.fecha >= %s", "AND p.fecha = %s")
-            query = query.replace("AND p.fecha <= %s", "")
-            params = [fecha] + params[2:]  # Reemplazar los dos primeros parámetros
-        
         # Ordenar por fecha, hora y empleado
         query += " ORDER BY p.fecha ASC, p.hora_inicio ASC, e.nombres ASC"
         
+        # Log de depuración
+        print(f"\n[DEBUG api_buscar_horarios_disponibles]")
+        print(f"Parámetros recibidos del request: id_servicio={request.args.get('id_servicio')}, id_tipo_servicio={request.args.get('id_tipo_servicio')}, id_empleado={request.args.get('id_empleado')}")
+        print(f"Fechas recibidas del request: fecha_inicio={request.args.get('fecha_inicio')}, fecha_fin={request.args.get('fecha_fin')}")
+        print(f"Parámetros procesados: id_servicio={id_servicio}, id_tipo_servicio={id_tipo_servicio}, id_empleado={id_empleado}")
+        print(f"Rango de fechas procesado: {fecha_inicio} a {fecha_fin}")
+        print(f"Query SQL: {query}")
+        print(f"Params: {params}")
+        
         cursor.execute(query, params)
         horarios = cursor.fetchall()
+        
+        print(f"Resultados encontrados: {len(horarios)} programaciones")
+        if len(horarios) > 0:
+            print(f"Primera programación: {horarios[0]}")
+        else:
+            print(f"⚠ No se encontraron programaciones con los filtros aplicados")
+            print(f"   - Rango de fechas: {fecha_inicio} a {fecha_fin}")
+            print(f"   - id_empleado: {id_empleado}")
+            print(f"   - id_tipo_servicio: {id_tipo_servicio}")
+            print(f"   - id_servicio: {id_servicio}")
         
         # Convertir fechas a string y agregar info adicional
         for h in horarios:
@@ -838,6 +887,8 @@ def api_buscar_horarios_disponibles():
         
     except Exception as e:
         print(f"Error en búsqueda de horarios: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e), 'horarios': []}), 500
     finally:
         if cursor:
@@ -2330,6 +2381,55 @@ def api_empleados_todos():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e), 'empleados': []}), 500
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+
+@reservas_bp.route('/api/medicos-todos')
+def api_medicos_todos():
+    """Retorna todos los médicos activos con especialidad asignada"""
+    try:
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            sql = """
+                SELECT 
+                    e.id_empleado,
+                    e.nombres,
+                    e.apellidos,
+                    e.documento_identidad,
+                    e.sexo,
+                    e.estado,
+                    e.fotoPerfil,
+                    u.correo,
+                    u.telefono,
+                    esp.nombre as especialidad,
+                    e.id_especialidad,
+                    r.nombre as rol,
+                    e.id_rol
+                FROM EMPLEADO e
+                INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                LEFT JOIN ROL r ON e.id_rol = r.id_rol
+                WHERE e.id_rol = 2
+                  AND e.id_especialidad IS NOT NULL
+                  AND e.estado = 'Activo'
+                ORDER BY e.apellidos, e.nombres
+            """
+            cursor.execute(sql)
+            medicos = cursor.fetchall()
+            
+            return jsonify({
+                'medicos': medicos,
+                'total': len(medicos)
+            })
+    except Exception as e:
+        print(f"[API] Error al obtener médicos: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'medicos': []}), 500
     finally:
         try:
             conexion.close()
