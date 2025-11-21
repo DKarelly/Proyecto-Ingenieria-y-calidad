@@ -178,6 +178,78 @@ def obtener_incidencias():
             conexion.close()
 
 
+def obtener_reservas():
+    """
+    Obtiene todas las reservas con información del paciente y servicio
+    """
+    conexion = None
+    try:
+        import pymysql.cursors
+        conexion = obtener_conexion()
+        cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+        cursor.execute("""
+            SELECT
+                r.id_reserva,
+                r.fecha_reserva,
+                r.hora_reserva,
+                r.estado,
+                r.fecha_registro,
+                r.id_paciente,
+                p.nombres,
+                p.apellidos,
+                p.documento_identidad as dni,
+                s.nombre as servicio_nombre,
+                s.descripcion as servicio_descripcion,
+                m.nombres as medico_nombres,
+                m.apellidos as medico_apellidos,
+                e.nombre as especialidad
+            FROM RESERVA r
+            LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
+            LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
+            LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
+            LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+            ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+        """)
+
+        reservas = cursor.fetchall()
+
+        # Formatear los datos para incluir nombre completo del paciente y médico
+        for reserva in reservas:
+            if reserva['nombres'] and reserva['apellidos']:
+                reserva['paciente_nombre'] = f"{reserva['nombres']} {reserva['apellidos']}"
+            else:
+                reserva['paciente_nombre'] = 'No asignado'
+
+            if reserva['medico_nombres'] and reserva['medico_apellidos']:
+                reserva['medico_nombre'] = f"Dr. {reserva['medico_nombres']} {reserva['medico_apellidos']}"
+            else:
+                reserva['medico_nombre'] = 'Médico no asignado'
+
+            # Formatear fecha y hora
+            if reserva['fecha_reserva']:
+                reserva['fecha_formateada'] = datetime.strptime(str(reserva['fecha_reserva']), '%Y-%m-%d').strftime('%d/%m/%Y')
+            else:
+                reserva['fecha_formateada'] = 'Fecha no disponible'
+
+            if reserva['hora_reserva']:
+                reserva['hora_formateada'] = str(reserva['hora_reserva'])
+            else:
+                reserva['hora_formateada'] = 'Hora no disponible'
+
+        return reservas
+
+    except Exception as e:
+        print(f"Error al obtener reservas: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        if conexion:
+            conexion.close()
+
+
 # Decorador para verificar que sea recepcionista
 def recepcionista_required(f):
     """
@@ -688,6 +760,166 @@ def api_incidencias_generar():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error interno: {str(e)}'}), 500
+
+
+# Gestión de Reservas
+@recepcionista_bp.route('/reservas/listar')
+@recepcionista_required
+def api_reservas_listar():
+    """
+    API: Lista todas las reservas, con filtro opcional por paciente o estado
+    """
+    try:
+        q = request.args.get('q', '').strip()
+        estado = request.args.get('estado', '').strip()
+        id_paciente = request.args.get('id_paciente', '').strip()
+
+        # Si hay búsqueda por texto, hacer consulta filtrada en SQL
+        if q:
+            conexion = obtener_conexion()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+            cursor.execute("""
+                SELECT
+                    r.id_reserva,
+                    r.fecha_reserva,
+                    r.hora_reserva,
+                    r.estado,
+                    r.fecha_registro,
+                    r.id_paciente,
+                    p.nombres,
+                    p.apellidos,
+                    p.documento_identidad as dni,
+                    s.nombre as servicio_nombre,
+                    s.descripcion as servicio_descripcion,
+                    m.nombres as medico_nombres,
+                    m.apellidos as medico_apellidos,
+                    e.nombre as especialidad
+                FROM RESERVA r
+                LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+                LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
+                LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
+                LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
+                LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+                WHERE CONCAT(COALESCE(p.nombres, ''), ' ', COALESCE(p.apellidos, '')) LIKE %s
+                   OR COALESCE(p.documento_identidad, '') LIKE %s
+                   OR COALESCE(s.nombre, '') LIKE %s
+                ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+            """, (f'%{q}%', f'%{q}%', f'%{q}%'))
+
+            reservas = cursor.fetchall()
+            conexion.close()
+        # Si hay filtro por estado
+        elif estado:
+            estados_validos = ['pendiente', 'confirmada', 'cancelada', 'completada']
+            if estado not in estados_validos:
+                return jsonify({'error': 'Estado inválido'}), 400
+
+            conexion = obtener_conexion()
+            cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+            cursor.execute("""
+                SELECT
+                    r.id_reserva,
+                    r.fecha_reserva,
+                    r.hora_reserva,
+                    r.estado,
+                    r.fecha_registro,
+                    r.id_paciente,
+                    p.nombres,
+                    p.apellidos,
+                    p.documento_identidad as dni,
+                    s.nombre as servicio_nombre,
+                    s.descripcion as servicio_descripcion,
+                    m.nombres as medico_nombres,
+                    m.apellidos as medico_apellidos,
+                    e.nombre as especialidad
+                FROM RESERVA r
+                LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+                LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
+                LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
+                LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
+                LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+                WHERE r.estado = %s
+                ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+            """, (estado,))
+
+            reservas = cursor.fetchall()
+            conexion.close()
+        # Si hay filtro por ID de paciente específico
+        elif id_paciente:
+            try:
+                id_paciente_int = int(id_paciente)
+                if id_paciente_int <= 0:
+                    raise ValueError('ID de paciente debe ser mayor a 0')
+
+                conexion = obtener_conexion()
+                cursor = conexion.cursor(pymysql.cursors.DictCursor)
+
+                cursor.execute("""
+                    SELECT
+                        r.id_reserva,
+                        r.fecha_reserva,
+                        r.hora_reserva,
+                        r.estado,
+                        r.fecha_registro,
+                        r.id_paciente,
+                        p.nombres,
+                        p.apellidos,
+                        p.documento_identidad as dni,
+                        s.nombre as servicio_nombre,
+                        s.descripcion as servicio_descripcion,
+                        m.nombres as medico_nombres,
+                        m.apellidos as medico_apellidos,
+                        e.nombre as especialidad
+                    FROM RESERVA r
+                    LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+                    LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
+                    LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
+                    LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
+                    LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+                    WHERE r.id_paciente = %s
+                    ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+                """, (id_paciente_int,))
+
+                reservas = cursor.fetchall()
+                conexion.close()
+            except (ValueError, TypeError) as e:
+                print(f"Error al procesar ID de paciente: {e}")
+                return jsonify({'error': 'ID de paciente inválido'}), 400
+        # Si no hay filtros, obtener todas las reservas
+        else:
+            reservas = obtener_reservas()
+
+        # Formatear los datos para incluir nombre completo del paciente y médico
+        for reserva in reservas:
+            if reserva['nombres'] and reserva['apellidos']:
+                reserva['paciente_nombre'] = f"{reserva['nombres']} {reserva['apellidos']}"
+            else:
+                reserva['paciente_nombre'] = 'No asignado'
+
+            if reserva['medico_nombres'] and reserva['medico_apellidos']:
+                reserva['medico_nombre'] = f"Dr. {reserva['medico_nombres']} {reserva['medico_apellidos']}"
+            else:
+                reserva['medico_nombre'] = 'Médico no asignado'
+
+            # Formatear fecha y hora
+            if reserva['fecha_reserva']:
+                reserva['fecha_formateada'] = datetime.strptime(str(reserva['fecha_reserva']), '%Y-%m-%d').strftime('%d/%m/%Y')
+            else:
+                reserva['fecha_formateada'] = 'Fecha no disponible'
+
+            if reserva['hora_reserva']:
+                reserva['hora_formateada'] = str(reserva['hora_reserva'])
+            else:
+                reserva['hora_formateada'] = 'Hora no disponible'
+
+        return jsonify({'reservas': reservas})
+    except Exception as e:
+        print(f"Error al listar reservas: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Error interno del servidor al cargar reservas'}), 500
 
 
 # API Endpoints para ubicaciones (departamentos, provincias, distritos)

@@ -119,6 +119,10 @@
             input.dispatchEvent(event);
         };
     </script>
+    <script src="/static/js/consultar-disponibilidad.js"></script>
+    <!-- AlpineJS para interactividad del dropdown -->
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="{{ url_for('static', filename='js/consultar-servicio-medico.js') }}"></script>
 </head>
 
 <body class="font-body bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark antialiased">
@@ -171,10 +175,26 @@
                 </div>
 
                 <!-- Reserva -->
-                <a href="/recepcionista/panel?subsistema=reserva" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'reserva' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
-                    <span class="material-symbols-outlined text-xl {% if subsistema == 'reserva' %}filled{% endif %}">event_available</span>
-                    <span class="font-semibold">Reserva</span>
-                </a>
+                <div class="space-y-1">
+                    <a href="/recepcionista/panel?subsistema=reserva" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'reserva' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
+                        <span class="material-symbols-outlined text-xl {% if subsistema == 'reserva' %}filled{% endif %}">event_available</span>
+                        <span class="font-semibold">Reserva</span>
+                    </a>
+                    {% if subsistema == 'reserva' %}
+                    <a href="/recepcionista/panel?subsistema=reserva&accion=consultar_servicio" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
+                        <span class="material-symbols-outlined text-lg">search</span>
+                        <span>Consultar servicio por medico</span>
+                    </a>
+                    <a href="/recepcionista/panel?subsistema=reserva&accion=consultar_disponibilidad" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
+                        <span class="material-symbols-outlined text-lg">schedule</span>
+                        <span>Consultar disponibilidad</span>
+                    </a>
+                    <a href="/reservas/generar-reserva" class="flex items-center gap-4 px-8 py-2 text-sm font-medium rounded-lg text-cyan-600 hover:bg-cyan-50 transition-colors">
+                        <span class="material-symbols-outlined text-lg">add_circle</span>
+                        <span>Generar Reserva</span>
+                    </a>
+                    {% endif %}
+                </div>
 
                 <!-- Incidencia -->
                 <div class="space-y-1">
@@ -670,14 +690,387 @@
                     <p class="text-gray-600">Gestionar reservas de citas y servicios</p>
                 </div>
 
-                <!-- Aquí iría todo el contenido del sistema de reservas -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div class="text-center py-12">
-                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">event_available</span>
-                        <h3 class="text-xl font-bold text-gray-800 mb-2">Sistema de Reservas</h3>
-                        <p class="text-gray-600">Funcionalidad completa de reservas próximamente disponible</p>
+                {% if accion == 'listar' %}
+                <!-- Listar Reservas -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Buscar Paciente</h3>
+                    <div class="relative">
+                        <input type="text" id="buscar-paciente-reserva" placeholder="Buscar por nombre o DNI..."
+                               class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    </div>
+                    <!-- Resultados de búsqueda -->
+                    <div id="resultados-paciente-reserva" class="mt-4 space-y-2 hidden">
+                        <!-- Los resultados se mostrarán aquí dinámicamente -->
                     </div>
                 </div>
+
+                <!-- Filtros -->
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button onclick="filtrarReservas('todas')" class="filtro-reserva active px-4 py-2 rounded-lg text-sm font-medium">
+                        Todas
+                    </button>
+                    <button onclick="filtrarReservas('pendiente')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Pendientes
+                    </button>
+                    <button onclick="filtrarReservas('confirmada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Confirmadas
+                    </button>
+                    <button onclick="filtrarReservas('cancelada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Canceladas
+                    </button>
+                </div>
+
+                <!-- Lista de reservas -->
+                <div class="space-y-4" id="lista-reservas">
+                    <!-- Las reservas se cargarán dinámicamente -->
+                    <div class="text-center py-8 text-gray-500">
+                        <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">event_available</span>
+                        <p class="font-medium">Cargando reservas...</p>
+                    </div>
+                </div>
+                {% elif accion == 'consultar_servicio' %}
+                <!-- Consultar servicio por medico -->
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Consultar Servicios por Médico</h2>
+                    <p class="text-gray-600">Busca y consulta los servicios ofrecidos por cada médico</p>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-6 text-white shadow-medical">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="material-symbols-outlined text-4xl opacity-80">person</span>
+                            <span id="total-medicos" class="text-3xl font-bold">0</span>
+                        </div>
+                        <h3 class="text-sm font-medium opacity-90 mb-1">Total Médicos</h3>
+                        <p class="text-xs opacity-75">Médicos activos</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white shadow-medical">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="material-symbols-outlined text-4xl opacity-80">local_hospital</span>
+                            <span id="total-especialidades" class="text-3xl font-bold">0</span>
+                        </div>
+                        <h3 class="text-sm font-medium opacity-90 mb-1">Especialidades</h3>
+                        <p class="text-xs opacity-75">Especialidades médicas</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-medical">
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="material-symbols-outlined text-4xl opacity-80">list_alt</span>
+                            <span id="total-resultados" class="text-3xl font-bold">0</span>
+                        </div>
+                        <h3 class="text-sm font-medium opacity-90 mb-1">Resultados</h3>
+                        <p class="text-xs opacity-75">Médicos encontrados</p>
+                    </div>
+                </div>
+
+                <!-- Sección de búsqueda -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="search-employee" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">search</span>
+                                Buscar Médico
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="search-employee"
+                                    placeholder="Nombre, apellido o especialidad..."
+                                    class="w-full pl-4 pr-10 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300"
+                                >
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-4">
+                                    <span class="material-symbols-outlined text-gray-400">search</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="filtro-especialidad" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">filter_list</span>
+                                Filtrar por Especialidad
+                            </label>
+                            <select
+                                id="filtro-especialidad"
+                                class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer"
+                            >
+                                <option value="">Todas las especialidades</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de la tabla de médicos -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-200">
+                        <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-cyan-600">list</span>
+                            Listado de Médicos
+                        </h3>
+                        <button id="btn-limpiar" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
+                            <span class="material-symbols-outlined mr-2">clear</span>Limpiar Filtros
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Especialidad</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                                    <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200" id="medicos-table-body">
+                                <tr>
+                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                        <span class="material-symbols-outlined animate-spin mr-2">sync</span>
+                                        Cargando médicos...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% elif accion == 'consultar_disponibilidad' %}
+                <!-- Consultar disponibilidad -->
+                <div class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Consultar Disponibilidad</h2>
+                    <p class="text-gray-600">Búsqueda dinámica en tiempo real</p>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-2xl p-6 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-600 text-sm font-semibold uppercase tracking-wide">Empleados</p>
+                                <p class="text-3xl font-bold text-green-800 mt-2" id="total-empleados">0</p>
+                            </div>
+                            <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
+                                <span class="material-symbols-outlined text-green-600 text-2xl">groups</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 border-l-4 border-purple-500 rounded-2xl p-6 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-purple-600 text-sm font-semibold uppercase tracking-wide">Horarios Encontrados</p>
+                                <p class="text-3xl font-bold text-purple-800 mt-2" id="horarios-encontrados">0</p>
+                            </div>
+                            <div class="bg-purple-500 bg-opacity-20 rounded-full p-4">
+                                <span class="material-symbols-outlined text-purple-600 text-2xl">schedule</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros de Búsqueda -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <div class="flex items-center mb-4">
+                        <span class="material-symbols-outlined text-cyan-600 text-xl mr-3">filter_list</span>
+                        <h3 class="text-lg font-semibold text-gray-800">Filtros de Búsqueda</h3>
+                        <span class="ml-auto text-xs text-cyan-600 font-semibold">
+                            <span class="material-symbols-outlined mr-1">bolt</span>Búsqueda automática
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">person</span>
+                                Rol
+                            </label>
+                            <select id="rol-select" class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer">
+                                <option value="">Todos los roles</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2 relative">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">person</span>
+                                Empleado
+                            </label>
+                            <input type="text" id="empleado-input" placeholder="Escribir para buscar..." class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 placeholder-gray-400 bg-white rounded-xl transition-all hover:border-gray-300" autocomplete="off">
+                            <div id="empleado-list" class="autocomplete-list hidden"></div>
+                            <input type="hidden" id="empleado-id">
+                            <input type="hidden" id="empleado-rol">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">info</span>
+                                Estado
+                            </label>
+                            <select id="estado-select" class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300 appearance-none cursor-pointer">
+                                <option value="">Todos los estados</option>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Ocupado">Ocupado</option>
+                                <option value="Bloqueado">Bloqueado</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">calendar_today</span>
+                                Desde
+                            </label>
+                            <input type="date" id="fecha-desde-input" class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-cyan-600">calendar_today</span>
+                                Hasta
+                            </label>
+                            <input type="date" id="fecha-hasta-input" class="w-full px-4 py-3 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 text-gray-700 bg-white rounded-xl transition-all hover:border-gray-300">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button id="btn-limpiar" class="bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold py-3 px-6 transition-all shadow-sm">
+                            <span class="material-symbols-outlined mr-2">clear</span>Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Horarios Disponibles -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                        <div class="flex items-center">
+                            <span class="material-symbols-outlined text-cyan-600 text-2xl mr-3">calendar_month</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">Horarios Disponibles</h3>
+                                <p class="text-sm text-gray-500 mt-1" id="calendario-subtitulo">Actualización en tiempo real</p>
+                            </div>
+                        </div>
+                        <div id="loading-indicator" class="hidden">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-4 border-cyan-500"></div>
+                        </div>
+                    </div>
+                    <div id="placeholder-mensaje" class="text-center py-16">
+                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">hourglass_top</span>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">Cargando horarios...</h3>
+                        <p class="text-gray-500">Por favor espera un momento</p>
+                    </div>
+                    <div id="no-resultados" class="hidden text-center py-16">
+                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">event_busy</span>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">No hay horarios disponibles</h3>
+                        <p class="text-gray-500">No se encontraron horarios para los criterios seleccionados.</p>
+                    </div>
+                    <div id="horarios-container" class="hidden overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b-2 border-gray-200">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Empleado</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Especialidad</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Inicio</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Hora Fin</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Estado</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="horarios-tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                    <!-- Controles de Paginación -->
+                    <div id="paginacion-container" class="hidden border-t border-gray-200 px-6 py-4 bg-gray-50">
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                            <!-- Información de registros -->
+                            <div class="text-sm text-gray-600">
+                                Mostrando <span class="font-semibold text-gray-800" id="registros-inicio">0</span> a 
+                                <span class="font-semibold text-gray-800" id="registros-fin">0</span> de 
+                                <span class="font-semibold text-gray-800" id="total-registros">0</span> registros
+                            </div>
+                            
+                            <!-- Botones de paginación -->
+                            <div class="flex items-center gap-2">
+                                <button id="btn-primera-pagina" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <span class="material-symbols-outlined text-gray-600">first_page</span>
+                                </button>
+                                <button id="btn-pagina-anterior" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <span class="material-symbols-outlined text-gray-600">chevron_left</span>
+                                </button>
+                                
+                                <!-- Números de página -->
+                                <div id="numeros-pagina" class="flex items-center gap-1"></div>
+                                
+                                <button id="btn-pagina-siguiente" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <span class="material-symbols-outlined text-gray-600">chevron_right</span>
+                                </button>
+                                <button id="btn-ultima-pagina" class="px-3 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    <span class="material-symbols-outlined text-gray-600">last_page</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Selector de registros por página -->
+                            <div class="flex items-center gap-2">
+                                <label for="registros-por-pagina" class="text-sm text-gray-600">Mostrar:</label>
+                                <select id="registros-por-pagina" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white text-sm">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif accion == 'generar' %}
+                <!-- Generar Reserva -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">add_circle</span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Generar Nueva Reserva</h3>
+                        <p class="text-gray-600">Funcionalidad próximamente disponible</p>
+                    </div>
+                </div>
+                {% elif accion == 'reprogramar' %}
+                <!-- Reprogramar servicio medico -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                    <div class="text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">edit_calendar</span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">Reprogramar Servicio Médico</h3>
+                        <p class="text-gray-600">Funcionalidad próximamente disponible</p>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Vista por defecto: Listar todas las reservas -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Buscar Paciente</h3>
+                    <div class="relative">
+                        <input type="text" id="buscar-paciente-reserva" placeholder="Buscar por nombre o DNI..."
+                               class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                    </div>
+                    <!-- Resultados de búsqueda -->
+                    <div id="resultados-paciente-reserva" class="mt-4 space-y-2 hidden">
+                        <!-- Los resultados se mostrarán aquí dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button onclick="filtrarReservas('todas')" class="filtro-reserva active px-4 py-2 rounded-lg text-sm font-medium">
+                        Todas
+                    </button>
+                    <button onclick="filtrarReservas('pendiente')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Pendientes
+                    </button>
+                    <button onclick="filtrarReservas('confirmada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Confirmadas
+                    </button>
+                    <button onclick="filtrarReservas('cancelada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Canceladas
+                    </button>
+                </div>
+
+                <!-- Lista de reservas -->
+                <div class="space-y-4" id="lista-reservas">
+                    <!-- Las reservas se cargarán dinámicamente -->
+                    <div class="text-center py-8 text-gray-500">
+                        <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">event_available</span>
+                        <p class="font-medium">Cargando reservas...</p>
+                    </div>
+                </div>
+                {% endif %}
                 {% endif %}
 
                 {% if subsistema == 'incidencia' %}
