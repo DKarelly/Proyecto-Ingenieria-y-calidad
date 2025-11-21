@@ -879,6 +879,8 @@ def api_obtener_empleados():
         # Convertir a lista de diccionarios para JSON
         empleados_json = []
         for emp in empleados:
+            # Usar estado_usuario si está disponible, sino estado del empleado, sino 'activo' por defecto
+            estado_usuario = emp.get('estado_usuario') or emp.get('estado') or 'activo'
             empleados_json.append({
                 'id_empleado': emp.get('id_empleado'),
                 'nombres': emp.get('nombres'),
@@ -887,7 +889,8 @@ def api_obtener_empleados():
                 'correo': emp.get('correo'),
                 'telefono': emp.get('telefono'),
                 'rol': emp.get('rol'),
-                'estado': emp.get('estado', 'activo')
+                'estado': estado_usuario,
+                'estado_usuario': estado_usuario  # Incluir explícitamente para el filtro
             })
         
         return jsonify(empleados_json)
@@ -913,6 +916,8 @@ def api_obtener_pacientes():
         # Convertir a lista de diccionarios para JSON
         pacientes_json = []
         for pac in pacientes:
+            # Usar estado_usuario si está disponible, sino estado del paciente, sino 'activo' por defecto
+            estado = pac.get('estado_usuario') or pac.get('estado') or 'activo'
             pacientes_json.append({
                 'id_paciente': pac.get('id_paciente'),
                 'nombres': pac.get('nombres'),
@@ -920,7 +925,8 @@ def api_obtener_pacientes():
                 'documento_identidad': pac.get('documento_identidad'),
                 'correo': pac.get('correo'),
                 'telefono': pac.get('telefono'),
-                'estado': pac.get('estado', 'activo')
+                'estado': estado,
+                'estado_usuario': estado
             })
         
         return jsonify(pacientes_json)

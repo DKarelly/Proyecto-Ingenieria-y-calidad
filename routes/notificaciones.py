@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session, redirect, url_for, jsonify
+from flask import Blueprint, render_template, session, redirect, url_for, jsonify, request
 import datetime
 from models.notificacion import Notificacion
 from bd import obtener_conexion
@@ -329,9 +329,202 @@ def api_marcar_todas_leidas():
         return jsonify({'error': str(e)}), 500
 
 
+@notificaciones_bp.route('/api/recientes-medico')
+def api_recientes_medico():
+    """Retorna las notificaciones recientes del médico autenticado"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado', 'notificaciones': []}), 401
+
+    if session.get('tipo_usuario') != 'empleado':
+        return jsonify({'notificaciones': []})
+
+    try:
+        id_usuario = session.get('usuario_id')
+        print(f"🔍 [DEBUG api_recientes_medico] id_usuario de sesion: {id_usuario}")
+        
+        if not id_usuario:
+            print(f"⚠️ [DEBUG api_recientes_medico] No hay id_usuario en sesion")
+            return jsonify({'error': 'Usuario no encontrado en sesión', 'notificaciones': []}), 401
+        
+        notificaciones = Notificacion.obtener_por_usuario(id_usuario)
+        print(f"🔍 [DEBUG api_recientes_medico] Notificaciones obtenidas: {len(notificaciones) if notificaciones else 0}")
+        
+        # Si no hay notificaciones, verificar directamente en la BD
+        if not notificaciones:
+            print(f"🔍 [DEBUG api_recientes_medico] No hay notificaciones, verificando en BD directamente...")
+            conexion = obtener_conexion()
+            try:
+                with conexion.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT COUNT(*) as total
+                        FROM NOTIFICACION
+                        WHERE id_usuario = %s
+                    """, (id_usuario,))
+                    result = cursor.fetchone()
+                    total = result['total'] if result else 0
+                    print(f"🔍 [DEBUG api_recientes_medico] Total de notificaciones en BD para id_usuario {id_usuario}: {total}")
+                    
+                    if total > 0:
+                        # Obtener todas las notificaciones
+                        cursor.execute("""
+                            SELECT n.*, r.estado as estado_reserva
+                            FROM NOTIFICACION n
+                            LEFT JOIN RESERVA r ON n.id_reserva = r.id_reserva
+                            WHERE n.id_usuario = %s
+                            ORDER BY n.fecha_envio DESC, n.hora_envio DESC
+                        """, (id_usuario,))
+                        notificaciones = cursor.fetchall()
+                        print(f"🔍 [DEBUG api_recientes_medico] Notificaciones obtenidas directamente: {len(notificaciones)}")
+            except Exception as e:
+                print(f"❌ [DEBUG api_recientes_medico] Error verificando BD: {e}")
+                import traceback
+                traceback.print_exc()
+            finally:
+                conexion.close()
+        
+        if not notificaciones:
+            print(f"⚠️ [DEBUG api_recientes_medico] Retornando lista vacia")
+            return jsonify({'notificaciones': []})
+        
+        # Formatear notificaciones
+        notificaciones_formateadas = []
+        for n in notificaciones:
+            try:
+                fecha_envio = n.get('fecha_envio')
+                hora_envio = n.get('hora_envio')
+                
+                # Formatear fecha
+                fecha_str = None
+                if fecha_envio:
+                    if isinstance(fecha_envio, str):
+                        fecha_str = fecha_envio
+                    elif hasattr(fecha_envio, 'strftime'):
+                        fecha_str = fecha_envio.strftime('%Y-%m-%d')
+                    else:
+                        fecha_str = str(fecha_envio)
+                
+                # Formatear hora
+                hora_str = None
+                if hora_envio:
+                    if isinstance(hora_envio, str):
+                        hora_str = hora_envio[:5] if len(hora_envio) >= 5 else hora_envio
+                    elif isinstance(hora_envio, datetime.timedelta):
+                        total_seconds = int(hora_envio.total_seconds())
+                        hours = total_seconds // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        hora_str = f"{hours:02}:{minutes:02}"
+                    elif hasattr(hora_envio, 'strftime'):
+                        hora_str = hora_envio.strftime('%H:%M')
+                    else:
+                        hora_str = str(hora_envio)[:5]
+                
+                # Formatear fecha_leida de manera segura
+                fecha_leida_str = None
+                fecha_leida = n.get('fecha_leida')
+                if fecha_leida:
+                    try:
+                        if isinstance(fecha_leida, str):
+                            fecha_leida_str = fecha_leida
+                        elif hasattr(fecha_leida, 'strftime'):
+                            fecha_leida_str = fecha_leida.strftime('%Y-%m-%d %H:%M:%S')
+                        else:
+                            fecha_leida_str = str(fecha_leida)
+                    except Exception:
+                        fecha_leida_str = str(fecha_leida) if fecha_leida else None
+                
+                notificaciones_formateadas.append({
+                    'id_notificacion': n.get('id_notificacion'),
+                    'titulo': n.get('titulo'),
+                    'mensaje': n.get('mensaje'),
+                    'tipo': n.get('tipo'),
+                    'fecha_envio': fecha_str,
+                    'hora_envio': hora_str,
+                    'leida': bool(n.get('leida', False)),
+                    'fecha_leida': fecha_leida_str,
+                    'id_reserva': n.get('id_reserva'),
+                    'estado_reserva': n.get('estado_reserva')
+                })
+            except Exception as e:
+                print(f"⚠️ Error formateando notificación {n.get('id_notificacion')}: {e}")
+                continue
+        
+        return jsonify({'notificaciones': notificaciones_formateadas})
+    except Exception as e:
+        print(f"❌ Error en api_recientes_medico: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'notificaciones': []}), 500
+
+
+@notificaciones_bp.route('/api/marcar-leida-medico/<int:id_notificacion>', methods=['POST'])
+def api_marcar_leida_medico(id_notificacion):
+    """Marca una notificación del médico como leída"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 403
+
+    try:
+        id_usuario = session.get('usuario_id')
+        
+        # Verificar que la notificación pertenece al médico actual
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT id_usuario FROM NOTIFICACION WHERE id_notificacion = %s", (id_notificacion,))
+            notif = cursor.fetchone()
+            if not notif:
+                return jsonify({'error': 'Notificación no encontrada'}), 404
+            if notif['id_usuario'] != id_usuario:
+                return jsonify({'error': 'No autorizado'}), 403
+        conexion.close()
+
+        # Marcar como leída
+        resultado = Notificacion.marcar_como_leida(id_notificacion)
+        if 'error' in resultado:
+            return jsonify({'error': resultado['error']}), 500
+        
+        return jsonify({'success': True, 'message': 'Notificación marcada como leída'})
+
+    except Exception as e:
+        print(f"Error en api_marcar_leida_medico: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@notificaciones_bp.route('/api/marcar-todas-leidas-medico', methods=['POST'])
+def api_marcar_todas_leidas_medico():
+    """Marca todas las notificaciones del médico como leídas"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'empleado':
+        return jsonify({'error': 'No autorizado'}), 403
+
+    try:
+        id_usuario = session.get('usuario_id')
+        
+        # Marcar todas como leídas
+        resultado = Notificacion.marcar_todas_como_leidas_medico(id_usuario)
+        if 'error' in resultado:
+            return jsonify({'error': resultado['error']}), 500
+        
+        return jsonify({
+            'success': True, 
+            'message': f"{resultado.get('count', 0)} notificaciones marcadas como leídas"
+        })
+
+    except Exception as e:
+        print(f"Error en api_marcar_todas_leidas_medico: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @notificaciones_bp.route('/historial')
 def historial():
-    """Vista del historial completo de notificaciones para pacientes"""
+    """Vista del historial completo de notificaciones para pacientes con paginación"""
     if 'usuario_id' not in session:
         return redirect(url_for('home'))
 
@@ -353,14 +546,36 @@ def historial():
             except:
                 pass
 
+        # Paginación
+        pagina = int(request.args.get('pagina', 1))
+        por_pagina = 10
+        
         # Si aún no hay id_paciente, mostrar vacío
         if not id_paciente:
             notificaciones = []
+            total = 0
         else:
-            notificaciones = Notificacion.obtener_por_paciente(id_paciente)
+            # Obtener todas las notificaciones para contar
+            todas_notificaciones = Notificacion.obtener_por_paciente(id_paciente)
+            total = len(todas_notificaciones)
+            
+            # Aplicar paginación
+            inicio = (pagina - 1) * por_pagina
+            fin = inicio + por_pagina
+            notificaciones = todas_notificaciones[inicio:fin]
+            
+            # Calcular total de páginas
+            total_paginas = (total + por_pagina - 1) // por_pagina
 
     except Exception as e:
         print(f"Error cargando historial de notificaciones: {e}")
         notificaciones = []
+        total = 0
+        total_paginas = 0
+        pagina = 1
 
-    return render_template('HistorialNotificaciones.html', notificaciones=notificaciones)
+    return render_template('HistorialNotificaciones.html', 
+                         notificaciones=notificaciones,
+                         pagina_actual=pagina,
+                         total_paginas=total_paginas,
+                         total_notificaciones=total)

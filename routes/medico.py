@@ -10,6 +10,7 @@ from bd import obtener_conexion
 from models.autorizacion_procedimiento import AutorizacionProcedimiento
 from models.empleado import Empleado
 from models.servicio import Servicio
+from models.notificacion import Notificacion
 
 # Crear el Blueprint
 medico_bp = Blueprint('medico', __name__, url_prefix='/medico')
@@ -423,6 +424,88 @@ def obtener_mis_pacientes(id_empleado):
             conexion.close()
 
 
+def obtener_notificaciones_medico(id_empleado):
+    """
+    Obtiene las notificaciones del médico desde la tabla NOTIFICACION
+    """
+    try:
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] id_empleado: {id_empleado}")
+        
+        # Obtener id_usuario del empleado
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("SELECT id_usuario FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+        empleado = cursor.fetchone()
+        conexion.close()
+        
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] Empleado encontrado: {empleado}")
+        
+        if not empleado or not empleado.get('id_usuario'):
+            print(f"⚠️ [DEBUG obtener_notificaciones_medico] No se encontró id_usuario para empleado {id_empleado}")
+            return []
+        
+        id_usuario = empleado['id_usuario']
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] id_usuario: {id_usuario}")
+        
+        # Obtener notificaciones usando el modelo
+        notificaciones = Notificacion.obtener_por_usuario(id_usuario)
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] Notificaciones obtenidas: {len(notificaciones) if notificaciones else 0}")
+        
+        if notificaciones:
+            print(f"🔍 [DEBUG obtener_notificaciones_medico] Primera notificación: {notificaciones[0] if notificaciones else 'N/A'}")
+        
+        # Formatear notificaciones para el template
+        notificaciones_formateadas = []
+        for n in notificaciones:
+            fecha_envio = n.get('fecha_envio')
+            hora_envio = n.get('hora_envio')
+            
+            # Formatear fecha
+            if fecha_envio:
+                if isinstance(fecha_envio, str):
+                    fecha_str = fecha_envio
+                else:
+                    fecha_str = fecha_envio.strftime('%Y-%m-%d')
+            else:
+                fecha_str = None
+            
+            # Formatear hora
+            hora_str = None
+            if hora_envio:
+                if isinstance(hora_envio, str):
+                    hora_str = hora_envio[:5] if len(hora_envio) >= 5 else hora_envio
+                elif isinstance(hora_envio, timedelta):
+                    # Convertir timedelta a formato HH:MM
+                    total_seconds = int(hora_envio.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    hora_str = f"{hours:02d}:{minutes:02d}"
+                elif hasattr(hora_envio, 'strftime'):
+                    hora_str = hora_envio.strftime('%H:%M')
+                else:
+                    hora_str = str(hora_envio)[:5]
+            
+            notificaciones_formateadas.append({
+                'id_notificacion': n.get('id_notificacion'),
+                'titulo': n.get('titulo'),
+                'mensaje': n.get('mensaje'),
+                'tipo': n.get('tipo'),
+                'fecha_envio': fecha_str,
+                'hora_envio': hora_str,
+                'leida': bool(n.get('leida')),
+                'fecha_leida': n.get('fecha_leida').strftime('%Y-%m-%d %H:%M:%S') if n.get('fecha_leida') and hasattr(n.get('fecha_leida'), 'strftime') else (str(n.get('fecha_leida')) if n.get('fecha_leida') else None),
+                'id_reserva': n.get('id_reserva'),
+                'estado_reserva': n.get('estado_reserva')
+            })
+        
+        return notificaciones_formateadas
+    except Exception as e:
+        print(f"Error obteniendo notificaciones del médico: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+
+
 def obtener_citas_pendientes_diagnostico(id_empleado):
     """
     Obtiene citas pendientes de diagnóstico (OPTIMIZADO)
@@ -608,13 +691,16 @@ def panel():
         citas_pendientes = obtener_citas_pendientes_diagnostico(id_empleado)
         
     elif subsistema == 'notificaciones':
-        # Solo notificaciones: estadísticas básicas
+        # Solo notificaciones: estadísticas básicas + notificaciones
         stats = obtener_estadisticas_medico(id_empleado)
         citas_hoy = []
         horarios_medico = []
         citas_semana = {}
         mis_pacientes = []
         citas_pendientes = []
+        print(f"🔍 [DEBUG panel] Cargando notificaciones para subsistema 'notificaciones'")
+        notificaciones = obtener_notificaciones_medico(id_empleado)
+        print(f"🔍 [DEBUG panel] Notificaciones obtenidas: {len(notificaciones) if notificaciones else 0}")
         
     else:
         # Dashboard: estadísticas + citas hoy solamente
@@ -624,6 +710,47 @@ def panel():
         citas_semana = {}
         mis_pacientes = []
         citas_pendientes = []
+        notificaciones = []
+    
+            # Obtener contador de notificaciones no leídas para el badge
+    notificaciones_no_leidas = 0
+    if subsistema != 'notificaciones':
+        try:
+            # Obtener id_usuario del empleado
+            conexion = obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("SELECT id_usuario FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+            empleado = cursor.fetchone()
+            print(f"🔍 [DEBUG panel] Empleado para badge: {empleado}")
+            
+            if empleado and empleado.get('id_usuario'):
+                id_usuario = empleado['id_usuario']
+                print(f"🔍 [DEBUG panel] Contando notificaciones no leídas para id_usuario: {id_usuario}")
+                
+                try:
+                    cursor.execute("""
+                        SELECT COUNT(*) as total
+                        FROM NOTIFICACION
+                        WHERE id_usuario = %s AND (leida = FALSE OR leida = 0 OR leida IS NULL)
+                    """, (id_usuario,))
+                    result = cursor.fetchone()
+                    notificaciones_no_leidas = result['total'] if result else 0
+                    print(f"🔍 [DEBUG panel] Notificaciones no leídas: {notificaciones_no_leidas}")
+                except Exception as e:
+                    print(f"❌ [DEBUG panel] Error contando notificaciones: {e}")
+                    # Si falla porque no existe el campo, intentar verificar si existe
+                    error_str = str(e).lower()
+                    if 'id_usuario' in error_str or 'unknown column' in error_str:
+                        print(f"⚠️ Campo id_usuario no existe en NOTIFICACION")
+                    else:
+                        import traceback
+                        traceback.print_exc()
+            conexion.close()
+        except Exception as e:
+            print(f"❌ Error obteniendo contador de notificaciones: {e}")
+            import traceback
+            traceback.print_exc()
+            notificaciones_no_leidas = 0
 
     return render_template(
         'panel_medico.html',
@@ -634,7 +761,9 @@ def panel():
         horarios_medico=horarios_medico,
         citas_semana=citas_semana,
         mis_pacientes=mis_pacientes,
-        citas_pendientes=citas_pendientes
+        citas_pendientes=citas_pendientes,
+        notificaciones=notificaciones if subsistema == 'notificaciones' else [],
+        notificaciones_no_leidas=notificaciones_no_leidas
     )
 
 
@@ -821,6 +950,9 @@ def guardar_diagnostico():
     """
     Guarda un diagnóstico para una cita y la marca como completada.
     También puede autorizar exámenes u operaciones si se solicita.
+    Validaciones:
+    - Solo se puede registrar a partir de la hora de inicio de la cita
+    - Fecha límite: hasta las 23:59:59 del mismo día de la cita
     """
     conexion = None
     try:
@@ -828,6 +960,7 @@ def guardar_diagnostico():
         id_paciente = request.form.get('id_paciente')
         diagnostico = request.form.get('diagnostico')
         observaciones = request.form.get('observaciones', '')
+        es_modificacion = request.form.get('es_modificacion') == 'true'
         
         # Datos de autorización de procedimientos
         autorizar_examen = request.form.get('autorizar_examen') == 'true'
@@ -838,6 +971,81 @@ def guardar_diagnostico():
         
         conexion = obtener_conexion()
         cursor = conexion.cursor()
+        
+        # Validación temporal: obtener fecha y hora de la cita
+        cursor.execute("""
+            SELECT fecha, hora, estado, diagnostico as diagnostico_existente
+            FROM CITA 
+            WHERE id_cita = %s
+        """, (id_cita,))
+        
+        cita = cursor.fetchone()
+        if not cita:
+            return jsonify({'success': False, 'message': 'Cita no encontrada'}), 404
+        
+        # Si la cita está cancelada, no permitir registro
+        if cita['estado'] == 'Cancelada':
+            return jsonify({'success': False, 'message': 'No se puede registrar diagnóstico para una cita cancelada'}), 400
+        
+        from datetime import datetime, time, timedelta
+        
+        # Combinar fecha y hora de la cita
+        fecha_cita = cita['fecha']
+        hora_cita = cita['hora']
+        
+        if isinstance(hora_cita, timedelta):
+            hora_inicio = (datetime.min + hora_cita).time()
+        elif isinstance(hora_cita, time):
+            hora_inicio = hora_cita
+        else:
+            hora_inicio = datetime.strptime(str(hora_cita), '%H:%M:%S').time()
+        
+        fecha_hora_cita = datetime.combine(fecha_cita, hora_inicio)
+        fecha_limite = datetime.combine(fecha_cita, time(23, 59, 59))
+        ahora = datetime.now()
+        
+        # VALIDACIÓN 1: Solo si es registro nuevo (no modificación)
+        if not es_modificacion:
+            # No permitir registro antes de que inicie la cita
+            if ahora < fecha_hora_cita:
+                hora_formatted = hora_inicio.strftime('%H:%M')
+                return jsonify({
+                    'success': False, 
+                    'message': f'Esta cita aún no ha iniciado. Podrá registrar el diagnóstico a partir de las {hora_formatted}'
+                }), 400
+            
+            # No permitir registro después de la fecha límite (medianoche del día de la cita)
+            if ahora > fecha_limite:
+                return jsonify({
+                    'success': False, 
+                    'message': 'El plazo para registrar el diagnóstico ha expirado. Solo se permite el mismo día de la cita.'
+                }), 400
+        
+        # VALIDACIÓN 2: Si es modificación, verificar que sea el mismo médico
+        if es_modificacion:
+            cursor.execute("""
+                SELECT id_empleado FROM CITA WHERE id_cita = %s
+            """, (id_cita,))
+            cita_medico = cursor.fetchone()
+            id_empleado_actual = session.get('id_empleado')
+            
+            if cita_medico and cita_medico['id_empleado'] != id_empleado_actual:
+                return jsonify({
+                    'success': False,
+                    'message': 'Solo el médico que registró el diagnóstico puede modificarlo'
+                }), 403
+        
+        # Si es modificación, guardar historial del diagnóstico anterior
+        if es_modificacion and cita['diagnostico_existente']:
+            try:
+                cursor.execute("""
+                    INSERT INTO historial_diagnosticos 
+                    (id_cita, diagnostico_anterior, observaciones_anterior, fecha_modificacion, id_medico_modifica)
+                    VALUES (%s, %s, %s, NOW(), %s)
+                """, (id_cita, cita['diagnostico_existente'], cita.get('observaciones'), session.get('id_empleado')))
+            except Exception as e:
+                # Si la tabla no existe, continuar sin guardar historial
+                print(f"Advertencia: No se pudo guardar en historial_diagnosticos: {e}")
         
         # Actualizar la cita con el diagnóstico y cambiar estado a Completada
         cursor.execute("""
@@ -929,7 +1137,11 @@ def guardar_diagnostico():
         
         conexion.commit()
         
-        mensaje = 'Diagnóstico guardado exitosamente. La cita ha sido marcada como completada.'
+        if es_modificacion:
+            mensaje = 'Diagnóstico modificado exitosamente. Los cambios han sido registrados.'
+        else:
+            mensaje = 'Diagnóstico guardado exitosamente. La cita ha sido marcada como completada.'
+        
         if autorizaciones_creadas:
             mensaje += f' Se autorizaron: {", ".join(autorizaciones_creadas)}.'
         
@@ -1020,6 +1232,46 @@ def notificaciones():
 
 
 # API Endpoints para consultas AJAX
+@medico_bp.route('/api/obtener_diagnostico/<int:id_cita>')
+@medico_required
+def api_obtener_diagnostico(id_cita):
+    """
+    Retorna el diagnóstico de una cita específica para permitir su modificación
+    """
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        cursor.execute("""
+            SELECT diagnostico, observaciones, estado, id_empleado
+            FROM CITA 
+            WHERE id_cita = %s
+        """, (id_cita,))
+        
+        cita = cursor.fetchone()
+        conexion.close()
+        
+        if not cita:
+            return jsonify({'success': False, 'message': 'Cita no encontrada'}), 404
+        
+        # Verificar que el médico que intenta modificar sea el mismo que registró
+        if cita['id_empleado'] != session.get('id_empleado'):
+            return jsonify({
+                'success': False, 
+                'message': 'Solo el médico que registró el diagnóstico puede modificarlo'
+            }), 403
+        
+        return jsonify({
+            'success': True,
+            'diagnostico': cita['diagnostico'],
+            'observaciones': cita['observaciones'],
+            'estado': cita['estado']
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener diagnóstico: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @medico_bp.route('/api/citas-hoy')
 @medico_required
 def api_citas_hoy():
@@ -1270,6 +1522,29 @@ def obtener_autorizaciones_cita(id_cita):
         
     except Exception as e:
         print(f"Error al obtener autorizaciones: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@medico_bp.route('/api/notificaciones-recientes', methods=['GET'])
+@medico_required
+def api_notificaciones_recientes():
+    """
+    Obtiene las notificaciones más recientes del médico para mostrar en el header
+    """
+    try:
+        id_empleado = session.get('id_empleado')
+        notificaciones = obtener_notificaciones_medico(id_empleado)
+        
+        # Solo las 5 más recientes
+        notificaciones_recientes = notificaciones[:5] if notificaciones else []
+        
+        return jsonify({
+            'success': True,
+            'notificaciones': notificaciones_recientes
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener notificaciones recientes: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
 

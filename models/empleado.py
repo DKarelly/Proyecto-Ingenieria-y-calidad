@@ -47,7 +47,7 @@ class Empleado:
 
     @staticmethod
     def obtener_todos():
-        """Obtiene todos los empleados activos"""
+        """Obtiene todos los empleados (activos e inactivos)"""
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
@@ -66,7 +66,6 @@ class Empleado:
                     LEFT JOIN DISTRITO d ON e.id_distrito = d.id_distrito
                     LEFT JOIN PROVINCIA prov ON d.id_provincia = prov.id_provincia
                     LEFT JOIN DEPARTAMENTO dep ON prov.id_departamento = dep.id_departamento
-                    WHERE u.estado = 'activo'
                     ORDER BY e.apellidos, e.nombres
                 """
                 cursor.execute(sql)

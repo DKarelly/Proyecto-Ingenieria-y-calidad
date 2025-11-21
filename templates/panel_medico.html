@@ -12,77 +12,8 @@
     <!-- Tailwind CSS compilado -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     
-    <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20
-        }
-        .material-symbols-outlined.filled {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20
-        }
-        
-        /* Animación para el desglose de tiempo */
-        .time-breakdown {
-            animation: expandIn 0.2s ease-out;
-            transform-origin: top;
-        }
-        
-        @keyframes expandIn {
-            from {
-                opacity: 0;
-                transform: scaleY(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: scaleY(1);
-            }
-        }
-    </style>
-    <script>
-        // Configuración personalizada (si es necesaria)
-        const customConfig = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: {
-                            DEFAULT: '#06B6D4',
-                            light: '#E0F9FC',
-                            dark: '#0891B2'
-                        },
-                        medical: {
-                            cyan: '#06B6D4',
-                            teal: '#14B8A6',
-                            emerald: '#10B981'
-                        },
-                        "background-light": "#F8F9FC",
-                        "background-dark": "#0A0A0A",
-                        "surface-light": "#FFFFFF",
-                        "surface-dark": "#141414",
-                        "border-light": "#EFF1F4",
-                        "border-dark": "#2A2A2A",
-                        "text-primary-light": "#1F2937",
-                        "text-primary-dark": "#E5E7EB",
-                        "text-secondary-light": "#6B7280",
-                        "text-secondary-dark": "#9CA3AF",
-                    },
-                    fontFamily: {
-                        display: ["Sora", "sans-serif"],
-                        body: ["Inter", "sans-serif"],
-                    },
-                    borderRadius: {
-                        DEFAULT: "0.5rem",
-                        lg: "1rem",
-                        xl: "1.5rem"
-                    },
-                    boxShadow: {
-                        'subtle': '0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -2px rgba(0, 0, 0, 0.03)',
-                        'subtle-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
-                        'medical': '0 10px 25px -5px rgba(6, 182, 212, 0.15)'
-                    }
-                },
-            },
-        };
-    </script>
+    <!-- CSS personalizado del panel médico -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel_medico.css') }}">
 </head>
 
 <body class="font-body bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark antialiased">
@@ -120,8 +51,8 @@
                 <a href="/medico/panel?subsistema=notificaciones" class="flex items-center gap-4 px-4 py-3 text-sm font-medium rounded-xl {% if subsistema == 'notificaciones' %}bg-gradient-to-r from-cyan-50 to-teal-50 text-cyan-700 border border-cyan-200 shadow-sm{% else %}text-text-secondary-light dark:text-text-secondary-dark hover:bg-gray-50 dark:hover:bg-zinc-900/50 hover:text-text-primary-light dark:hover:text-text-primary-dark{% endif %} transition-all duration-300">
                     <span class="material-symbols-outlined text-xl {% if subsistema == 'notificaciones' %}filled{% endif %}">notifications</span>
                     <span class="font-semibold">Notificaciones</span>
-                    {% if subsistema != 'notificaciones' %}
-                    <span class="ml-auto w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+                    {% if notificaciones_no_leidas > 0 and subsistema != 'notificaciones' %}
+                    <span class="ml-auto w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">{{ notificaciones_no_leidas }}</span>
                     {% endif %}
                 </a>
             </nav>
@@ -475,8 +406,8 @@
                                     <td class="py-4 px-4 text-gray-600">{{ paciente.total_citas }}</td>
                                     <td class="py-4 px-4">
                                         <button onclick="verHistorialPaciente({{ paciente.id_paciente }})" 
-                                                class="text-cyan-600 hover:text-cyan-700 font-semibold text-sm flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-sm">folder_open</span>
+                                                class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-semibold text-sm rounded-lg shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200">
+                                            <span class="material-symbols-outlined text-base">folder_open</span>
                                             Ver Historial
                                         </button>
                                     </td>
@@ -495,18 +426,20 @@
                 </div>
 
                 <!-- Modal Historial -->
-                <div id="modal-historial" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-                        <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <div id="modal-historial" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full my-8 flex flex-col" style="max-height: calc(100vh - 4rem);">
+                        <!-- Header fijo -->
+                        <div class="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-teal-50 rounded-t-2xl flex-shrink-0">
                             <div>
                                 <h3 class="text-2xl font-bold text-gray-800" id="modal-paciente-nombre">Historial Médico</h3>
                                 <p class="text-sm text-gray-600 mt-1" id="modal-paciente-info">DNI: - | Edad: -</p>
                             </div>
-                            <button onclick="cerrarModalHistorial()" class="text-gray-400 hover:text-gray-600">
+                            <button onclick="cerrarModalHistorial()" class="text-gray-500 hover:text-gray-700 hover:bg-white rounded-full p-2 transition-all duration-200">
                                 <span class="material-symbols-outlined text-3xl">close</span>
                             </button>
                         </div>
-                        <div class="p-6 overflow-y-auto max-h-[calc(90vh-150px)]" id="modal-historial-contenido">
+                        <!-- Contenido con scroll -->
+                        <div class="p-6 overflow-y-auto flex-1" id="modal-historial-contenido" style="scrollbar-width: thin; scrollbar-color: rgb(6 182 212) rgb(243 244 246);">
                             <!-- El contenido se cargará dinámicamente -->
                         </div>
                     </div>
@@ -527,7 +460,10 @@
                     {% if citas_pendientes %}
                     <div class="space-y-3">
                         {% for cita in citas_pendientes %}
-                        <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl hover:shadow-md transition-shadow">
+                        <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl hover:shadow-md transition-shadow" 
+                             data-cita-id="{{ cita.id_cita }}"
+                             data-cita-fecha="{{ cita.fecha.strftime('%Y-%m-%d') if cita.fecha else '' }}"
+                             data-cita-hora="{{ cita.hora }}">
                             <div class="flex-shrink-0">
                                 <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold">
                                     {{ cita.paciente.split()[0][0] }}{{ cita.paciente.split()[1][0] if cita.paciente.split()|length > 1 else '' }}
@@ -536,13 +472,26 @@
                             <div class="flex-1">
                                 <h4 class="font-semibold text-gray-800">{{ cita.paciente }}</h4>
                                 <p class="text-sm text-gray-600">DNI: {{ cita.dni }} | Fecha: {{ cita.fecha.strftime('%d/%m/%Y') if cita.fecha else 'N/A' }} - {{ cita.hora }}</p>
+                                {% if cita.diagnostico %}
+                                <div class="mt-2 text-xs">
+                                    <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded">Diagnóstico registrado</span>
+                                </div>
+                                {% endif %}
                             </div>
-                            <div>
-                                <button onclick="abrirFormularioDiagnostico({{ cita.id_cita }}, '{{ cita.paciente }}', '{{ cita.dni }}', {{ cita.id_paciente }})" 
+                            <div class="flex gap-2">
+                                {% if cita.diagnostico %}
+                                <button onclick="abrirFormularioModificacion({{ cita.id_cita }}, '{{ cita.paciente }}', '{{ cita.dni }}', {{ cita.id_paciente }}, '{{ cita.fecha.strftime('%Y-%m-%d') if cita.fecha else '' }}', '{{ cita.hora }}')" 
+                                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all font-semibold text-sm flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">edit</span>
+                                    Modificar Diagnóstico
+                                </button>
+                                {% else %}
+                                <button onclick="abrirFormularioDiagnostico({{ cita.id_cita }}, '{{ cita.paciente }}', '{{ cita.dni }}', {{ cita.id_paciente }}, '{{ cita.fecha.strftime('%Y-%m-%d') if cita.fecha else '' }}', '{{ cita.hora }}')" 
                                         class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-lg hover:from-cyan-600 hover:to-teal-600 transition-all font-semibold text-sm flex items-center gap-2">
                                     <span class="material-symbols-outlined text-sm">edit_note</span>
                                     Registrar Diagnóstico
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -667,184 +616,125 @@
                 {% if subsistema == 'notificaciones' %}
                 <!-- Subsistema: Notificaciones -->
                 <div class="mb-6">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Notificaciones</h2>
-                    <p class="text-gray-600">Mantente al día con todas tus alertas y recordatorios</p>
-                </div>
-
-                <!-- Filtros de notificaciones -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-                    <div class="flex flex-wrap gap-3">
-                        <button onclick="filtrarNotificaciones('todas')" class="filtro-notificacion active px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                            Todas <span class="ml-2 px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-full text-xs">5</span>
-                        </button>
-                        <button onclick="filtrarNotificaciones('citas')" class="filtro-notificacion px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                            Citas <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs">2</span>
-                        </button>
-                        <button onclick="filtrarNotificaciones('resultados')" class="filtro-notificacion px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                            Resultados <span class="ml-2 px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-xs">1</span>
-                        </button>
-                        <button onclick="filtrarNotificaciones('recordatorios')" class="filtro-notificacion px-4 py-2 rounded-lg text-sm font-medium transition-all">
-                            Recordatorios <span class="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs">2</span>
-                        </button>
-                        <button onclick="marcarTodasLeidas()" class="ml-auto px-4 py-2 text-cyan-600 hover:text-cyan-700 text-sm font-semibold flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm">done_all</span>
-                            Marcar todas como leídas
-                        </button>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800 mb-2">Historial de Notificaciones</h2>
+                            <p class="text-gray-600">Aquí aparecen todas las notificaciones enviadas a tu cuenta.</p>
+                        </div>
+                        <div>
+                            <button id="btn-marcar-todas" onclick="marcarTodasComoLeidas()" 
+                                    class="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                Marcar todas como leídas
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Lista de notificaciones -->
-                <div class="space-y-4">
-                    <!-- Notificación 1: Nueva cita -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all notificacion-item" data-tipo="citas" data-leida="false">
-                        <div class="flex items-start gap-4 p-6">
+                {% if notificaciones and notificaciones|length > 0 %}
+                <div class="space-y-3" id="historialNotificaciones">
+                    {% for n in notificaciones %}
+                    <div class="notificacion-item bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-4 border border-gray-100 {% if n.leida %}opacity-70{% endif %}" 
+                         data-tipo="{{ n.tipo }}" 
+                         data-estado="{{ n.estado_reserva or '' }}"
+                         data-leida="{{ n.leida }}"
+                         data-id="{{ n.id_notificacion }}">
+                        <div class="flex gap-3">
+                            <!-- Icono dinámico -->
                             <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-md">
-                                    <span class="material-symbols-outlined text-white text-2xl">event</span>
+                                {% if n.tipo == 'nueva_cita' or n.tipo == 'confirmacion' %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">event_available</span>
                                 </div>
+                                {% elif n.tipo == 'operacion_asignada' %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">medical_services</span>
+                                </div>
+                                {% elif n.tipo == 'cancelacion' %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">event_busy</span>
+                                </div>
+                                {% else %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">info</span>
+                                </div>
+                                {% endif %}
                             </div>
+                            
+                            <!-- Contenido -->
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between mb-2">
-                                    <h4 class="font-bold text-gray-800 text-lg">Nueva cita asignada</h4>
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-2 h-2 bg-cyan-500 rounded-full"></span>
-                                        <span class="text-xs text-gray-500">Hace 5 minutos</span>
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h3 class="font-semibold text-gray-900">{{ n.titulo }}</h3>
+                                            {% if n.tipo == 'nueva_cita' %}
+                                            <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Nueva Cita</span>
+                                            {% elif n.tipo == 'operacion_asignada' %}
+                                            <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700">Operación</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-sm text-gray-600 leading-relaxed">{{ n.mensaje }}</p>
+                                    </div>
+                                    
+                                    <!-- Estado leída y botón marcar como leído -->
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        {% if n.leida %}
+                                        <div class="text-green-500" title="Leída">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                        </div>
+                                        {% else %}
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" title="No leída"></span>
+                                            <button onclick="marcarComoLeida({{ n.id_notificacion }})" 
+                                                    class="btn-marcar-leida text-xs px-3 py-1.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                Marcar como leída
+                                            </button>
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </div>
-                                <p class="text-gray-600 mb-3">
-                                    <span class="font-semibold">Paciente:</span> Juan Pérez García<br>
-                                    <span class="font-semibold">Hora:</span> Hoy a las 10:00 AM<br>
-                                    <span class="font-semibold">Tipo:</span> Consulta General
-                                </p>
-                                <div class="flex gap-2">
-                                    <button class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-teal-500 text-white rounded-lg hover:from-cyan-600 hover:to-teal-600 transition-all text-sm font-semibold shadow-sm">
-                                        Ver cita
-                                    </button>
-                                    <button onclick="marcarLeida(this)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
-                                        Marcar como leída
-                                    </button>
+                                
+                                <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                    <span class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        {{ n.fecha_envio }} {{ n.hora_envio }}
+                                    </span>
+                                    <span class="text-gray-400">•</span>
+                                    <span>ID: #{{ n.id_notificacion }}</span>
+                                    {% if n.leida and n.fecha_leida %}
+                                    <span class="text-gray-400">•</span>
+                                    <span class="text-green-600">Leída: {{ n.fecha_leida[:10] if n.fecha_leida else '—' }}</span>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Notificación 2: Resultado de laboratorio -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all notificacion-item" data-tipo="resultados" data-leida="false">
-                        <div class="flex items-start gap-4 p-6">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-md">
-                                    <span class="material-symbols-outlined text-white text-2xl">biotech</span>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between mb-2">
-                                    <h4 class="font-bold text-gray-800 text-lg">Resultado de laboratorio disponible</h4>
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-2 h-2 bg-teal-500 rounded-full"></span>
-                                        <span class="text-xs text-gray-500">Hace 1 hora</span>
-                                    </div>
-                                </div>
-                                <p class="text-gray-600 mb-3">
-                                    <span class="font-semibold">Paciente:</span> María García López<br>
-                                    <span class="font-semibold">Examen:</span> Análisis de sangre completo<br>
-                                    <span class="font-semibold">Estado:</span> <span class="text-green-600 font-semibold">Resultados normales</span>
-                                </p>
-                                <div class="flex gap-2">
-                                    <button class="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-lg hover:from-teal-600 hover:to-emerald-600 transition-all text-sm font-semibold shadow-sm">
-                                        Ver resultados
-                                    </button>
-                                    <button onclick="marcarLeida(this)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
-                                        Marcar como leída
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notificación 3: Recordatorio de cita -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all notificacion-item" data-tipo="recordatorios" data-leida="false">
-                        <div class="flex items-start gap-4 p-6">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center shadow-md">
-                                    <span class="material-symbols-outlined text-white text-2xl">alarm</span>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between mb-2">
-                                    <h4 class="font-bold text-gray-800 text-lg">Recordatorio de cita próxima</h4>
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                                        <span class="text-xs text-gray-500">Hace 2 horas</span>
-                                    </div>
-                                </div>
-                                <p class="text-gray-600 mb-3">
-                                    <span class="font-semibold">Paciente:</span> Carlos López Vega<br>
-                                    <span class="font-semibold">Hora:</span> Mañana a las 9:00 AM<br>
-                                    <span class="font-semibold">Tipo:</span> Control de seguimiento
-                                </p>
-                                <div class="flex gap-2">
-                                    <button class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-lg hover:from-emerald-600 hover:to-green-600 transition-all text-sm font-semibold shadow-sm">
-                                        Ver agenda
-                                    </button>
-                                    <button onclick="marcarLeida(this)" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-semibold">
-                                        Marcar como leída
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notificación 4: Cita confirmada (leída) -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden opacity-60 notificacion-item" data-tipo="citas" data-leida="true">
-                        <div class="flex items-start gap-4 p-6">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
-                                    <span class="material-symbols-outlined text-white text-2xl">check_circle</span>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between mb-2">
-                                    <h4 class="font-semibold text-gray-700 text-lg">Cita confirmada por paciente</h4>
-                                    <span class="text-xs text-gray-500">Hace 3 horas</span>
-                                </div>
-                                <p class="text-gray-600 mb-3">
-                                    <span class="font-semibold">Paciente:</span> Ana Sofía Martínez<br>
-                                    <span class="font-semibold">Hora:</span> 15 de Noviembre a las 2:00 PM
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Notificación 5: Recordatorio medicación (leída) -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden opacity-60 notificacion-item" data-tipo="recordatorios" data-leida="true">
-                        <div class="flex items-start gap-4 p-6">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
-                                    <span class="material-symbols-outlined text-white text-2xl">medication</span>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between mb-2">
-                                    <h4 class="font-semibold text-gray-700 text-lg">Recordatorio de receta médica</h4>
-                                    <span class="text-xs text-gray-500">Hace 1 día</span>
-                                </div>
-                                <p class="text-gray-600 mb-3">
-                                    <span class="font-semibold">Paciente:</span> Luis Miguel Rodríguez<br>
-                                    <span class="font-semibold">Acción:</span> Renovar receta de medicación crónica
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
-
-                <!-- Mensaje vacío (oculto por defecto) -->
-                <div id="no-notificaciones" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
+                {% else %}
+                <!-- Mensaje vacío -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
                     <div class="w-20 h-20 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                        <span class="material-symbols-outlined text-gray-400 text-4xl">notifications_off</span>
+                        <span class="material-symbols-outlined text-4xl text-gray-400">notifications_off</span>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 mb-2">No hay notificaciones</h3>
-                    <p class="text-gray-600">No tienes notificaciones en esta categoría</p>
+                    <p class="text-gray-600">No tienes notificaciones en este momento</p>
                 </div>
+                {% endif %}
                 {% endif %}
 
                 <!-- Modal Detalle de Cita -->
@@ -886,535 +776,210 @@
         </div>
     </div>
 
+    <!-- Script del panel médico -->
+    <script src="{{ url_for('static', filename='js/panel_medico.js') }}"></script>
+    
+    {% if subsistema == 'notificaciones' %}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Panel Médico cargado correctamente');
-
-            // Búsqueda de pacientes
-            const buscarInput = document.getElementById('buscar-paciente');
-            if (buscarInput) {
-                buscarInput.addEventListener('input', function(e) {
-                    const termino = e.target.value.toLowerCase();
-                    const filas = document.querySelectorAll('.paciente-row');
-
-                    filas.forEach(fila => {
-                        const nombre = fila.dataset.nombre.toLowerCase();
-                        const dni = fila.dataset.dni.toLowerCase();
-
-                        if (nombre.includes(termino) || dni.includes(termino)) {
-                            fila.style.display = '';
-                        } else {
-                            fila.style.display = 'none';
-                        }
-                    });
-                });
+        // Función para marcar notificación como leída (sin recargar página - optimizada)
+        async function marcarComoLeida(idNotificacion) {
+            const notificacionItem = document.querySelector(`.notificacion-item[data-id="${idNotificacion}"]`);
+            if (!notificacionItem) {
+                console.error('No se encontró la notificación con ID:', idNotificacion);
+                return;
             }
-
-            // Formulario de diagnóstico
-            const diagnosticoForm = document.getElementById('diagnostico-form');
-            if (diagnosticoForm) {
-                diagnosticoForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-
-                    const formData = new FormData(this);
-                    
-                    // Agregar flags de autorización
-                    const autorizarExamen = document.getElementById('check_autorizar_examen')?.checked || false;
-                    const autorizarOperacion = document.getElementById('check_autorizar_operacion')?.checked || false;
-                    
-                    formData.append('autorizar_examen', autorizarExamen);
-                    formData.append('autorizar_operacion', autorizarOperacion);
-
-                    try {
-                        const response = await fetch('/medico/diagnosticos/guardar', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            alert(result.message);
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + result.message);
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Error al guardar el diagnóstico');
-                    }
-                });
+            
+            if (notificacionItem.dataset.leida === 'True' || notificacionItem.dataset.leida === '1') {
+                return;
             }
-
-        });
-
-        // Funciones para diagnósticos
-        function abrirFormularioDiagnostico(idCita, nombrePaciente, dni, idPaciente) {
-            document.getElementById('form-diagnostico').classList.remove('hidden');
-            document.getElementById('id_cita').value = idCita;
-            document.getElementById('id_paciente').value = idPaciente || '';
-            document.getElementById('form-paciente-info').textContent = `Paciente: ${nombrePaciente} - DNI: ${dni}`;
-            document.getElementById('diagnostico').value = '';
-            document.getElementById('observaciones').value = '';
             
-            // Resetear checkboxes de autorización
-            document.getElementById('check_autorizar_examen').checked = false;
-            document.getElementById('check_autorizar_operacion').checked = false;
-            document.getElementById('fields_examen').classList.add('hidden');
-            document.getElementById('fields_operacion').classList.add('hidden');
-            document.getElementById('div_derivar_operacion').classList.add('hidden');
-            document.getElementById('div_medico_operacion').classList.add('hidden');
+            const boton = notificacionItem.querySelector('button.btn-marcar-leida');
+            if (!boton) return;
             
-            // Scroll al formulario
-            document.getElementById('form-diagnostico').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function cerrarFormularioDiagnostico() {
-            document.getElementById('form-diagnostico').classList.add('hidden');
-        }
-
-        // Funciones para historial de pacientes
-        async function verHistorialPaciente(idPaciente) {
+            const estadoDiv = boton.closest('.flex.items-center.gap-2');
+            if (!estadoDiv) return;
+            
+            const htmlOriginal = estadoDiv.innerHTML;
+            
+            // Actualizar visualmente INMEDIATAMENTE
+            estadoDiv.innerHTML = `
+                <div class="text-green-500" title="Leída">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+            `;
+            
+            notificacionItem.style.opacity = '0.7';
+            notificacionItem.dataset.leida = 'True';
+            
+            // Agregar fecha de leída si no existe
+            const fechaContainer = notificacionItem.querySelector('.flex.items-center.gap-4.mt-2');
+            if (fechaContainer) {
+                const yaTieneFechaLeida = fechaContainer.querySelector('.text-green-600');
+                if (!yaTieneFechaLeida) {
+                    const fechaActual = new Date().toLocaleDateString('es-ES');
+                    const separador = document.createElement('span');
+                    separador.className = 'text-gray-400';
+                    separador.textContent = '•';
+                    fechaContainer.appendChild(separador);
+                    
+                    const leidaSpan = document.createElement('span');
+                    leidaSpan.className = 'text-green-600';
+                    leidaSpan.textContent = `Leída: ${fechaActual}`;
+                    fechaContainer.appendChild(leidaSpan);
+                }
+            }
+            
+            // Hacer la petición en segundo plano
             try {
-                const response = await fetch(`/medico/historial_paciente/${idPaciente}`);
-                const result = await response.json();
+                const response = await fetch(`/notificaciones/api/marcar-leida-medico/${idNotificacion}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 
-                if (result.success) {
-                    mostrarModalHistorial(result.paciente, result.historial);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Actualizar badge en el header
+                    if (typeof window.cargarNotificacionesHeader === 'function') {
+                        window.cargarNotificacionesHeader();
+                    }
                 } else {
-                    alert('Error: ' + result.message);
+                    notificacionItem.style.opacity = '1';
+                    notificacionItem.dataset.leida = 'False';
+                    estadoDiv.innerHTML = htmlOriginal;
+                    alert('Error al marcar la notificación como leída: ' + (data.error || 'Error desconocido'));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error al cargar el historial');
+                notificacionItem.style.opacity = '1';
+                notificacionItem.dataset.leida = 'False';
+                estadoDiv.innerHTML = htmlOriginal;
+                alert('Error al marcar la notificación como leída');
             }
         }
 
-        function mostrarModalHistorial(paciente, historial) {
-            const modal = document.getElementById('modal-historial');
-            const nombreEl = document.getElementById('modal-paciente-nombre');
-            const infoEl = document.getElementById('modal-paciente-info');
-            const contenidoEl = document.getElementById('modal-historial-contenido');
+        // Función para marcar todas las notificaciones como leídas
+        async function marcarTodasComoLeidas() {
+            const boton = document.getElementById('btn-marcar-todas');
+            if (!boton) return;
             
-            nombreEl.textContent = `Historial Médico - ${paciente.nombre}`;
-            infoEl.textContent = `DNI: ${paciente.dni} | Edad: ${paciente.edad} años`;
+            const todasLasNotificaciones = document.querySelectorAll('.notificacion-item');
+            const notificacionesNoLeidas = Array.from(todasLasNotificaciones).filter(item => {
+                const btnIndividual = item.querySelector('button.btn-marcar-leida');
+                return btnIndividual !== null;
+            });
             
-            // Construir HTML del historial
-            let html = '<div class="space-y-4">';
+            if (notificacionesNoLeidas.length === 0) {
+                boton.style.display = 'none';
+                return;
+            }
             
-            if (historial.length === 0) {
-                html += `
-                    <div class="text-center py-8 text-gray-500">
-                        <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">folder_off</span>
-                        <p>No hay historial disponible</p>
+            const fechaActual = new Date().toLocaleDateString('es-ES');
+            const cambiosOriginales = [];
+            
+            // Actualizar visualmente INMEDIATAMENTE
+            notificacionesNoLeidas.forEach(item => {
+                const btnIndividual = item.querySelector('button.btn-marcar-leida');
+                if (!btnIndividual) return;
+                
+                const estadoDiv = btnIndividual.closest('.flex.items-center.gap-2');
+                if (!estadoDiv) return;
+                
+                cambiosOriginales.push({
+                    item: item,
+                    htmlOriginal: estadoDiv.innerHTML,
+                    fechaContainer: item.querySelector('.flex.items-center.gap-4.mt-2')
+                });
+                
+                estadoDiv.innerHTML = `
+                    <div class="text-green-500" title="Leída">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
                     </div>
                 `;
-            } else {
-                historial.forEach(cita => {
-                    const estadoClass = cita.estado === 'Completada' ? 'bg-emerald-100 text-emerald-700' : 
-                                       cita.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 
-                                       cita.estado === 'Confirmada' ? 'bg-blue-100 text-blue-700' :
-                                       'bg-gray-100 text-gray-700';
-                    
-                    html += `
-                        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-white to-gray-50">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center gap-3">
-                                    <span class="material-symbols-outlined text-cyan-600 text-2xl">event</span>
-                                    <div>
-                                        <p class="font-semibold text-gray-800">${cita.fecha}</p>
-                                        <p class="text-sm text-gray-600 flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-xs">schedule</span>
-                                            ${cita.hora}
-                                        </p>
-                                    </div>
-                                </div>
-                                <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm">
-                                    ${cita.estado}
-                                </span>
-                            </div>
-                            ${cita.diagnostico && cita.diagnostico.trim() !== '' ? `
-                                <div class="mt-3 pt-3 border-t border-gray-200">
-                                    <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm">clinical_notes</span>
-                                        Diagnóstico:
-                                    </p>
-                                    <p class="text-sm text-gray-600 pl-5">${cita.diagnostico}</p>
-                                </div>
-                            ` : ''}
-                            ${cita.observaciones && cita.observaciones.trim() !== '' ? `
-                                <div class="mt-2 ${cita.diagnostico && cita.diagnostico.trim() !== '' ? '' : 'pt-3 border-t border-gray-200'}">
-                                    <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm">note</span>
-                                        Observaciones:
-                                    </p>
-                                    <p class="text-sm text-gray-600 pl-5">${cita.observaciones}</p>
-                                </div>
-                            ` : ''}
-                        </div>
-                    `;
+                
+                item.style.opacity = '0.7';
+                item.dataset.leida = 'True';
+                
+                const fechaContainer = item.querySelector('.flex.items-center.gap-4.mt-2');
+                if (fechaContainer) {
+                    const yaTieneFechaLeida = fechaContainer.querySelector('.text-green-600');
+                    if (!yaTieneFechaLeida) {
+                        const separador = document.createElement('span');
+                        separador.className = 'text-gray-400';
+                        separador.textContent = '•';
+                        fechaContainer.appendChild(separador);
+                        
+                        const leidaSpan = document.createElement('span');
+                        leidaSpan.className = 'text-green-600';
+                        leidaSpan.textContent = `Leída: ${fechaActual}`;
+                        fechaContainer.appendChild(leidaSpan);
+                    }
+                }
+            });
+            
+            boton.style.display = 'none';
+            
+            // Hacer la petición en segundo plano
+            try {
+                const response = await fetch('/notificaciones/api/marcar-todas-leidas-medico', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
                 });
-            }
-            
-            html += '</div>';
-            contenidoEl.innerHTML = html;
-            
-            modal.classList.remove('hidden');
-        }
-
-        function cerrarModalHistorial() {
-            document.getElementById('modal-historial').classList.add('hidden');
-        }
-
-        // Cerrar modal al hacer clic fuera
-        document.addEventListener('click', function(e) {
-            const modal = document.getElementById('modal-historial');
-            if (modal && e.target === modal) {
-                cerrarModalHistorial();
-            }
-        });
-
-        // Funciones para navegación del calendario
-        function cambiarSemana(direccion) {
-            // Esta función se puede implementar para navegar entre semanas
-            console.log(`Cambiar semana: ${direccion > 0 ? 'siguiente' : 'anterior'}`);
-            // Aquí se puede hacer una petición al servidor para obtener las citas de otra semana
-            alert(`Navegación de semanas: Próximamente disponible. Se mostraría la semana ${direccion > 0 ? 'siguiente' : 'anterior'}.`);
-        }
-
-        function irHoy() {
-            console.log('Ir a la semana actual');
-            // Recargar la página para mostrar la semana actual
-            window.location.href = '/medico/panel?subsistema=agenda';
-        }
-
-        // Funciones para manejo de eventos en el calendario
-        function abrirFormularioEvento(dia, hora, minutos = 0) {
-            const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-            const horarioFormato = `${String(hora).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
-            console.log(`Crear evento para ${dias[dia]} a las ${horarioFormato}`);
-            alert(`Función para crear evento:\nDía: ${dias[dia]}\nHora: ${horarioFormato}\n\nPróximamente disponible.`);
-        }
-
-        function nuevoEvento() {
-            console.log('Crear nuevo evento');
-            alert('Función para crear un nuevo evento.\nPróximamente disponible.');
-        }
-
-        function verDetalleEvento(eventId) {
-            console.log(`Ver detalles del evento ${eventId}`);
-            alert(`Ver detalles del evento ${eventId}.\nPróximamente disponible.`);
-        }
-
-        function verDetalleCita(citaId) {
-            // Obtener información de la cita desde los datos del calendario
-            const citaElements = document.querySelectorAll('.cita-event');
-            let citaEncontrada = null;
-            let celda = null;
-            
-            citaElements.forEach(el => {
-                const onclick = el.getAttribute('onclick');
-                if (onclick && onclick.includes(`verDetalleCita(${citaId})`)) {
-                    citaEncontrada = {
-                        paciente: el.querySelector('.text-xs.font-bold') ? el.querySelector('.text-xs.font-bold').textContent : 'Paciente',
-                        tipo: el.querySelectorAll('.text-xs')[1] ? el.querySelectorAll('.text-xs')[1].textContent : 'Consulta',
-                        horario: el.querySelector('.text-xs.font-medium') ? el.querySelector('.text-xs.font-medium').textContent : ''
-                    };
-                    celda = el.closest('td');
-                }
-            });
-
-            if (citaEncontrada && celda) {
-                // Obtener el índice de la columna y el encabezado correspondiente
-                const columnIndex = Array.from(celda.parentElement.children).indexOf(celda);
-                const table = celda.closest('table');
-                let diaTexto = '';
-                let fechaTexto = '';
-
-                if (table) {
-                    const headerRow = table.querySelector('thead tr');
-                    if (headerRow && headerRow.children[columnIndex]) {
-                        const diaHeader = headerRow.children[columnIndex];
-                        // intentamos leer un div (nombre del día) y una etiqueta pequeña con la fecha
-                        diaTexto = diaHeader.querySelector('div')?.textContent.trim() || diaHeader.textContent.trim() || '';
-                        fechaTexto = diaHeader.querySelector('.text-xs')?.textContent.trim() || diaHeader.querySelector('time')?.textContent.trim() || '';
-                    }
-                }
-
-                // Mapear abreviaturas a nombres completos (es)
-                function diaCompleto(nombre) {
-                    if (!nombre) return '';
-                    const m = {
-                        'Lun': 'Lunes', 'Mar': 'Martes', 'Mie': 'Miércoles', 'Mié': 'Miércoles', 'Mié': 'Miércoles',
-                        'Jue': 'Jueves', 'Vie': 'Viernes', 'Sab': 'Sábado', 'Dom': 'Domingo',
-                        'Lunes':'Lunes','Martes':'Martes','Miércoles':'Miércoles','Jueves':'Jueves','Viernes':'Viernes','Sábado':'Sábado','Domingo':'Domingo'
-                    };
-                    // tomar la primera palabra si incluye la fecha junto al nombre
-                    const key = nombre.split(' ')[0];
-                    return m[key] || nombre;
-                }
-
-                // Evitar duplicar la fecha si ya está incluida en el encabezado
-                const dayToken = (diaTexto || '').split(/\s+/)[0];
-                const diaNombre = diaCompleto(dayToken);
-                const fechaFinal = fechaTexto ? `${diaNombre} ${fechaTexto}` : diaNombre || fechaTexto || '';
-
-                // Llenar el modal con la información
-                document.getElementById('modal-cita-titulo').textContent = citaEncontrada.paciente + ' - ' + citaEncontrada.tipo;
-                document.getElementById('modal-cita-fecha').textContent = fechaFinal;
-                document.getElementById('modal-cita-horario').textContent = citaEncontrada.horario;
-
-                // Mostrar modal (fondo tenue y posición alta)
-                const modal = document.getElementById('modal-detalle-cita');
-                modal.classList.remove('hidden');
-            } else {
-                console.log(`Ver detalles de la cita ${citaId}`);
-            }
-        }
-
-        function cerrarModalDetalleCita() {
-            document.getElementById('modal-detalle-cita').classList.add('hidden');
-        }
-
-        // Cerrar modal al hacer clic fuera
-        document.addEventListener('click', function(e) {
-            const modalCita = document.getElementById('modal-detalle-cita');
-            if (modalCita && e.target === modalCita) {
-                cerrarModalDetalleCita();
-            }
-        });
-
-        // Funciones para notificaciones
-        function filtrarNotificaciones(tipo) {
-            const notificaciones = document.querySelectorAll('.notificacion-item');
-            const noNotificaciones = document.getElementById('no-notificaciones');
-            const botones = document.querySelectorAll('.filtro-notificacion');
-            let visibles = 0;
-
-            // Actualizar botones activos
-            botones.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.toLowerCase().includes(tipo)) {
-                    btn.classList.add('active');
-                }
-            });
-
-            // Filtrar notificaciones
-            notificaciones.forEach(notif => {
-                if (tipo === 'todas') {
-                    notif.style.display = '';
-                    visibles++;
-                } else if (notif.dataset.tipo === tipo) {
-                    notif.style.display = '';
-                    visibles++;
-                } else {
-                    notif.style.display = 'none';
-                }
-            });
-
-            // Mostrar mensaje si no hay notificaciones
-            if (visibles === 0) {
-                noNotificaciones.classList.remove('hidden');
-            } else {
-                noNotificaciones.classList.add('hidden');
-            }
-        }
-
-        function marcarLeida(button) {
-            const notificacion = button.closest('.notificacion-item');
-            notificacion.dataset.leida = 'true';
-            notificacion.classList.add('opacity-60');
-            
-            // Ocultar indicador de nueva
-            const indicador = notificacion.querySelector('.w-2.h-2');
-            if (indicador) {
-                indicador.style.display = 'none';
-            }
-
-            // Ocultar botón de marcar como leída
-            button.style.display = 'none';
-
-            // Actualizar contador (simulado)
-            actualizarContadores();
-        }
-
-        function marcarTodasLeidas() {
-            const notificaciones = document.querySelectorAll('.notificacion-item[data-leida="false"]');
-            notificaciones.forEach(notif => {
-                notif.dataset.leida = 'true';
-                notif.classList.add('opacity-60');
                 
-                const indicador = notif.querySelector('.w-2.h-2');
-                if (indicador) {
-                    indicador.style.display = 'none';
-                }
-
-                const boton = notif.querySelector('button[onclick*="marcarLeida"]');
-                if (boton) {
-                    boton.style.display = 'none';
-                }
-            });
-
-            actualizarContadores();
-            alert('Todas las notificaciones han sido marcadas como leídas');
-        }
-
-        function actualizarContadores() {
-            // Esta función actualizaría los contadores en tiempo real
-            // Por ahora solo simula la actualización
-            console.log('Contadores actualizados');
-        }
-
-        // ========== FUNCIONES PARA AUTORIZACIONES DE PROCEDIMIENTOS ==========
-        
-        function toggleAutorizacionExamen() {
-            const checkbox = document.getElementById('check_autorizar_examen');
-            const fields = document.getElementById('fields_examen');
-            
-            if (checkbox.checked) {
-                fields.classList.remove('hidden');
-                cargarServiciosExamen();
-            } else {
-                fields.classList.add('hidden');
-            }
-        }
-
-        function toggleAutorizacionOperacion() {
-            const checkbox = document.getElementById('check_autorizar_operacion');
-            const fields = document.getElementById('fields_operacion');
-            
-            if (checkbox.checked) {
-                fields.classList.remove('hidden');
-                cargarServiciosOperacion();
-            } else {
-                fields.classList.add('hidden');
-                document.getElementById('div_derivar_operacion').classList.add('hidden');
-            }
-        }
-
-        async function cargarServiciosExamen() {
-            try {
-                const response = await fetch('/medico/api/obtener_servicios_examen');
-                const result = await response.json();
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
-                if (result.success) {
-                    const select = document.getElementById('servicio_examen');
-                    
-                    // Limpiar opciones excepto la primera
-                    while (select.options.length > 1) {
-                        select.remove(1);
-                    }
-                    
-                    // Agregar servicios
-                    result.servicios.forEach(servicio => {
-                        const option = document.createElement('option');
-                        option.value = servicio.id_servicio;
-                        option.textContent = servicio.nombre;
-                        if (servicio.nombre_especialidad) {
-                            option.textContent += ` (${servicio.nombre_especialidad})`;
-                        }
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error al cargar servicios de examen:', error);
-            }
-        }
-
-        async function cargarServiciosOperacion() {
-            try {
-                const response = await fetch('/medico/api/obtener_servicios_operacion');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const select = document.getElementById('servicio_operacion');
-                    
-                    // Limpiar opciones excepto la primera
-                    while (select.options.length > 1) {
-                        select.remove(1);
-                    }
-                    
-                    // Agregar servicios
-                    result.servicios.forEach(servicio => {
-                        const option = document.createElement('option');
-                        option.value = servicio.id_servicio;
-                        option.textContent = servicio.nombre;
-                        if (servicio.nombre_especialidad) {
-                            option.textContent += ` (${servicio.nombre_especialidad})`;
-                        }
-                        option.dataset.especialidad = servicio.id_especialidad || '';
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error al cargar servicios de operación:', error);
-            }
-        }
-
-        function onServicioOperacionChange() {
-            const select = document.getElementById('servicio_operacion');
-            const divDerivar = document.getElementById('div_derivar_operacion');
-            
-            if (select.value) {
-                divDerivar.classList.remove('hidden');
-                cargarMedicosMiEspecialidad();
-            } else {
-                divDerivar.classList.add('hidden');
-            }
-        }
-
-        async function cargarMedicosMiEspecialidad() {
-            const selectMedico = document.getElementById('medico_derivar_operacion');
-            
-            try {
-                const response = await fetch('/medico/api/obtener_medicos_mi_especialidad');
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Limpiar opciones excepto la primera
-                    while (selectMedico.options.length > 1) {
-                        selectMedico.remove(1);
-                    }
-                    
-                    // Agregar médicos de la misma especialidad
-                    if (result.medicos && result.medicos.length > 0) {
-                        result.medicos.forEach(medico => {
-                            const option = document.createElement('option');
-                            option.value = medico.id_empleado;
-                            option.textContent = medico.nombre_completo;
-                            selectMedico.appendChild(option);
-                        });
-                    } else {
-                        console.log('No hay otros médicos de esta especialidad disponibles');
+                const data = await response.json();
+                if (data.success) {
+                    // Actualizar badge en el header
+                    if (typeof window.cargarNotificacionesHeader === 'function') {
+                        window.cargarNotificacionesHeader();
                     }
                 } else {
-                    console.error('Error al cargar médicos:', result.message);
+                    cambiosOriginales.forEach(cambio => {
+                        cambio.item.style.opacity = '1';
+                        cambio.item.dataset.leida = 'False';
+                        const estadoDiv = cambio.item.querySelector('.flex.items-center.gap-2');
+                        if (estadoDiv) estadoDiv.innerHTML = cambio.htmlOriginal;
+                        if (cambio.fechaContainer) {
+                            const fechaLeida = cambio.fechaContainer.querySelector('.text-green-600');
+                            if (fechaLeida) {
+                                const separador = fechaLeida.previousElementSibling;
+                                if (separador && separador.classList.contains('text-gray-400')) separador.remove();
+                                fechaLeida.remove();
+                            }
+                        }
+                    });
+                    boton.style.display = 'inline-flex';
+                    alert('Error al marcar todas las notificaciones como leídas: ' + (data.error || 'Error desconocido'));
                 }
             } catch (error) {
-                console.error('Error al cargar médicos de mi especialidad:', error);
+                console.error('Error:', error);
+                cambiosOriginales.forEach(cambio => {
+                    cambio.item.style.opacity = '1';
+                    cambio.item.dataset.leida = 'False';
+                    const estadoDiv = cambio.item.querySelector('.flex.items-center.gap-2');
+                    if (estadoDiv) estadoDiv.innerHTML = cambio.htmlOriginal;
+                    if (cambio.fechaContainer) {
+                        const fechaLeida = cambio.fechaContainer.querySelector('.text-green-600');
+                        if (fechaLeida) {
+                            const separador = fechaLeida.previousElementSibling;
+                            if (separador && separador.classList.contains('text-gray-400')) separador.remove();
+                            fechaLeida.remove();
+                        }
+                    }
+                });
+                boton.style.display = 'inline-flex';
+                alert('Error al marcar todas las notificaciones como leídas');
             }
         }
-
-        // Agregar estilos para los botones de filtro
-        document.addEventListener('DOMContentLoaded', function() {
-            const style = document.createElement('style');
-            style.textContent = `
-                .filtro-notificacion {
-                    background-color: #f3f4f6;
-                    color: #6b7280;
-                }
-                .filtro-notificacion:hover {
-                    background-color: #e5e7eb;
-                    color: #374151;
-                }
-                .filtro-notificacion.active {
-                    background: linear-gradient(to right, #06b6d4, #14b8a6);
-                    color: white;
-                    box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.3);
-                }
-            `;
-            document.head.appendChild(style);
-        });
     </script>
+    {% endif %}
 </body>
 </html>

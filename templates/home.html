@@ -612,6 +612,26 @@
             }
         });
         {% endif %}
+
+        // Abrir modal de login si viene el parámetro show_login en la URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('show_login') === 'true') {
+                // Esperar a que el modal esté disponible
+                setTimeout(function() {
+                    const loginModal = document.getElementById('login-modal');
+                    if (loginModal && typeof openModal === 'function') {
+                        openModal(loginModal);
+                    } else if (loginModal) {
+                        loginModal.classList.remove('hidden');
+                        loginModal.style.display = 'flex';
+                    }
+                    // Limpiar el parámetro de la URL sin recargar
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                }, 300);
+            }
+        });
     </script>
 
 </body>

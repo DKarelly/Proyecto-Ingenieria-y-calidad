@@ -1174,7 +1174,8 @@ def api_servicios_por_tipo(id_tipo):
 def generar_reserva():
     """Generar Nueva Reserva - Para empleados y pacientes"""
     if 'usuario_id' not in session:
-        return redirect(url_for('home'))
+        # Redirigir al home con parámetro para mostrar modal de login
+        return redirect(url_for('home', show_login='true'))
 
     # Si es paciente, renderizar el formulario de paciente
     if session.get('tipo_usuario') == 'paciente':
@@ -1367,8 +1368,9 @@ def api_crear_reserva():
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
             cursor.execute("""
-                SELECT p.id_programacion, p.fecha, p.hora_inicio, p.hora_fin, p.estado
+                SELECT p.id_programacion, p.fecha, p.hora_inicio, p.hora_fin, p.estado, h.id_empleado
                 FROM PROGRAMACION p
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
                 WHERE p.id_programacion = %s
             """, (id_programacion,))
             programacion = cursor.fetchone()
@@ -1470,18 +1472,89 @@ def api_crear_reserva():
             except:
                 pass
         
-        # Crear notificaciones
+        # Crear notificaciones para el paciente
         try:
             # 1. Notificación de confirmación de creación
-            Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+            resultado = Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+            if resultado.get('error'):
+                print(f"❌ Error creando notificación de confirmación (API): {resultado['error']}")
+            else:
+                print(f"✅ Notificación de confirmación creada para paciente (ID: {id_paciente})")
         except Exception as e:
-            print(f"Error creando notificación de confirmación (API): {e}")
+            print(f"❌ Error creando notificación de confirmación (API): {e}")
+            import traceback
+            traceback.print_exc()
         
         try:
             # 2. Notificación del estado actual de la reserva
-            Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, estado_reserva)
+            resultado = Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, estado_reserva)
+            if resultado.get('error'):
+                print(f"❌ Error creando notificación de estado (API): {resultado['error']}")
+            else:
+                print(f"✅ Notificación de estado creada para paciente (ID: {id_paciente})")
         except Exception as e:
-            print(f"Error creando notificación de estado (API): {e}")
+            print(f"❌ Error creando notificación de estado (API): {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # 4. Crear notificación para el médico
+        try:
+            id_empleado = programacion.get('id_empleado')
+            print(f"🔍 [DEBUG] Intentando crear notificación para médico. id_empleado: {id_empleado}, id_reserva: {id_reserva}")
+            
+            if id_empleado:
+                # Obtener id_usuario del médico usando una nueva conexión
+                conexion_medico = obtener_conexion()
+                try:
+                    with conexion_medico.cursor() as cursor:
+                        cursor.execute("""
+                            SELECT id_usuario 
+                            FROM EMPLEADO 
+                            WHERE id_empleado = %s
+                        """, (id_empleado,))
+                        empleado = cursor.fetchone()
+                        print(f"🔍 [DEBUG] Empleado encontrado: {empleado}")
+                        
+                        if empleado and empleado.get('id_usuario'):
+                            id_usuario_medico = empleado['id_usuario']
+                            print(f"🔍 [DEBUG] id_usuario_medico: {id_usuario_medico}")
+                            
+                            # Obtener nombre del paciente
+                            cursor.execute("""
+                                SELECT CONCAT(nombres, ' ', apellidos) as nombre_paciente
+                                FROM PACIENTE
+                                WHERE id_paciente = %s
+                            """, (id_paciente,))
+                            paciente_data = cursor.fetchone()
+                            nombre_paciente = paciente_data.get('nombre_paciente', 'un paciente') if paciente_data else 'un paciente'
+                            
+                            # Formatear fecha y hora
+                            fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
+                            hora_str = str(hora_inicio)[:5] if hora_inicio else ''
+                            
+                            titulo = "Nueva Cita Asignada"
+                            mensaje = f"Tiene una nueva cita con {nombre_paciente} el {fecha_str} a las {hora_str}"
+                            
+                            print(f"🔍 [DEBUG] Creando notificación: titulo={titulo}, mensaje={mensaje}, id_usuario={id_usuario_medico}, id_reserva={id_reserva}")
+                            resultado = Notificacion.crear_para_medico(titulo, mensaje, 'nueva_cita', id_usuario_medico, id_reserva)
+                            print(f"🔍 [DEBUG] Resultado de crear_para_medico: {resultado}")
+                            
+                            if resultado.get('error'):
+                                print(f"❌ Error creando notificación para médico: {resultado['error']}")
+                                import traceback
+                                traceback.print_exc()
+                            else:
+                                print(f"✅ Notificación creada para médico (ID usuario: {id_usuario_medico}, ID reserva: {id_reserva})")
+                        else:
+                            print(f"⚠️ No se encontró id_usuario para el empleado {id_empleado}. Empleado: {empleado}")
+                finally:
+                    conexion_medico.close()
+            else:
+                print(f"⚠️ No se encontró id_empleado en la programación. Programación: {programacion}")
+        except Exception as e:
+            print(f"❌ Error creando notificación para médico (API): {e}")
+            import traceback
+            traceback.print_exc()
         
         try:
             # 3. Programar recordatorio para la fecha de la cita (se mostrará 24h antes)
@@ -2080,7 +2153,8 @@ def api_reservas_activas():
 def paciente_nueva_cita():
     """Vista para que pacientes registren nuevas citas"""
     if 'usuario_id' not in session:
-        return redirect(url_for('home'))
+        # Redirigir al home con parámetro para mostrar modal de login
+        return redirect(url_for('home', show_login='true'))
 
     if session.get('tipo_usuario') != 'paciente':
         return redirect(url_for('home'))
@@ -2759,24 +2833,97 @@ def paciente_crear_reserva():
         # Crear notificaciones para el paciente
         try:
             # 1. Notificación de confirmación de creación
-            Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+            resultado = Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+            if resultado.get('error'):
+                print(f"❌ Error creando notificación de confirmación: {resultado['error']}")
+            else:
+                print(f"✅ Notificación de confirmación creada para paciente (ID: {id_paciente})")
         except Exception as e:
-            print(f"Error creando notificación de confirmación: {e}")
+            print(f"❌ Error creando notificación de confirmación: {e}")
+            import traceback
+            traceback.print_exc()
         
         try:
             # 2. Notificación del estado actual de la reserva (Confirmada)
-            Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, 'Confirmada')
+            resultado = Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, 'Confirmada')
+            if resultado.get('error'):
+                print(f"❌ Error creando notificación de estado: {resultado['error']}")
+            else:
+                print(f"✅ Notificación de estado creada para paciente (ID: {id_paciente})")
         except Exception as e:
-            print(f"Error creando notificación de estado: {e}")
+            print(f"❌ Error creando notificación de estado: {e}")
+            import traceback
+            traceback.print_exc()
 
         # 3. Programar recordatorio para la fecha/hora de la cita
         try:
             # Obtener fecha y hora de la programación
             fecha_cita = programacion['fecha']
             hora_inicio_cita = programacion['hora_inicio']
-            Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha_cita, hora_inicio_cita)
+            resultado = Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha_cita, hora_inicio_cita)
+            if resultado.get('error'):
+                print(f"❌ Error programando recordatorio de cita: {resultado['error']}")
+            else:
+                print(f"✅ Recordatorio programado para paciente (ID: {id_paciente})")
         except Exception as e:
-            print(f"Error programando recordatorio de cita: {e}")
+            print(f"❌ Error programando recordatorio de cita: {e}")
+            import traceback
+            traceback.print_exc()
+
+        # 4. Crear notificación para el médico
+        try:
+            id_empleado = programacion.get('id_empleado')
+            print(f"🔍 [DEBUG paciente_crear_reserva] Intentando crear notificación para médico. id_empleado: {id_empleado}, id_reserva: {id_reserva}")
+            
+            if id_empleado:
+                # Obtener id_usuario del médico usando la conexión existente
+                with conexion.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT id_usuario 
+                        FROM EMPLEADO 
+                        WHERE id_empleado = %s
+                    """, (id_empleado,))
+                    empleado = cursor.fetchone()
+                    print(f"🔍 [DEBUG paciente_crear_reserva] Empleado encontrado: {empleado}")
+                    
+                    if empleado and empleado.get('id_usuario'):
+                        id_usuario_medico = empleado['id_usuario']
+                        print(f"🔍 [DEBUG paciente_crear_reserva] id_usuario_medico: {id_usuario_medico}")
+                        
+                        # Obtener nombre del paciente
+                        cursor.execute("""
+                            SELECT CONCAT(nombres, ' ', apellidos) as nombre_paciente
+                            FROM PACIENTE
+                            WHERE id_paciente = %s
+                        """, (id_paciente,))
+                        paciente_data = cursor.fetchone()
+                        nombre_paciente = paciente_data.get('nombre_paciente', 'un paciente') if paciente_data else 'un paciente'
+                        
+                        # Formatear fecha y hora
+                        fecha_str = fecha_prog.strftime('%d/%m/%Y') if hasattr(fecha_prog, 'strftime') else str(fecha_prog)
+                        hora_str = str(hora_inicio_prog)[:5] if hora_inicio_prog else ''
+                        
+                        titulo = "Nueva Cita Asignada"
+                        mensaje = f"Tiene una nueva cita con {nombre_paciente} el {fecha_str} a las {hora_str}"
+                        
+                        print(f"🔍 [DEBUG paciente_crear_reserva] Creando notificación: titulo={titulo}, mensaje={mensaje}, id_usuario={id_usuario_medico}, id_reserva={id_reserva}")
+                        resultado = Notificacion.crear_para_medico(titulo, mensaje, 'nueva_cita', id_usuario_medico, id_reserva)
+                        print(f"🔍 [DEBUG paciente_crear_reserva] Resultado de crear_para_medico: {resultado}")
+                        
+                        if resultado.get('error'):
+                            print(f"❌ Error creando notificación para médico: {resultado['error']}")
+                            import traceback
+                            traceback.print_exc()
+                        else:
+                            print(f"✅ Notificación creada para médico (ID usuario: {id_usuario_medico}, ID reserva: {id_reserva})")
+                    else:
+                        print(f"⚠️ No se encontró id_usuario para el empleado {id_empleado}. Empleado: {empleado}")
+            else:
+                print(f"⚠️ No se encontró id_empleado en la programación. Programación: {programacion}")
+        except Exception as e:
+            print(f"❌ Error creando notificación para médico: {e}")
+            import traceback
+            traceback.print_exc()
 
         return jsonify({
             'success': True,
@@ -3447,6 +3594,37 @@ def api_crear_operacion():
             conexion.commit()
             
             id_operacion = cursor.lastrowid
+
+            # Crear notificación para el médico cirujano asignado
+            try:
+                # Obtener id_usuario del médico
+                cursor.execute("""
+                    SELECT id_usuario 
+                    FROM EMPLEADO 
+                    WHERE id_empleado = %s
+                """, (id_empleado,))
+                empleado = cursor.fetchone()
+                if empleado and empleado.get('id_usuario'):
+                    id_usuario_medico = empleado['id_usuario']
+                    # Obtener nombre del paciente
+                    cursor.execute("""
+                        SELECT CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente
+                        FROM PACIENTE p
+                        INNER JOIN RESERVA r ON p.id_paciente = r.id_paciente
+                        WHERE r.id_reserva = %s
+                    """, (id_reserva,))
+                    paciente_data = cursor.fetchone()
+                    nombre_paciente = paciente_data.get('nombre_paciente', 'un paciente') if paciente_data else 'un paciente'
+                    
+                    # Formatear fecha y hora
+                    fecha_str = fecha_operacion.strftime('%d/%m/%Y') if hasattr(fecha_operacion, 'strftime') else str(fecha_operacion)
+                    hora_str = str(hora_inicio)[:5] if hora_inicio else ''
+                    
+                    titulo = "Operación Asignada"
+                    mensaje = f"Se le ha asignado una operación del paciente {nombre_paciente} para el {fecha_str} a las {hora_str}"
+                    Notificacion.crear_para_medico(titulo, mensaje, 'operacion_asignada', id_usuario_medico, id_reserva)
+            except Exception as e:
+                print(f"Error creando notificación para médico cirujano: {e}")
 
             return jsonify({
                 'success': True,
