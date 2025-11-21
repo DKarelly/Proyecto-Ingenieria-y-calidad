@@ -85,38 +85,60 @@ function abrirFormularioDiagnostico(idCita, nombrePaciente, dni, idPaciente, fec
         return;
     }
     
-    document.getElementById('form-diagnostico').classList.remove('hidden');
-    document.getElementById('id_cita').value = idCita;
-    document.getElementById('id_paciente').value = idPaciente || '';
-    document.getElementById('form-paciente-info').textContent = `Paciente: ${nombrePaciente} - DNI: ${dni}`;
-    document.getElementById('diagnostico').value = '';
-    document.getElementById('observaciones').value = '';
+    const formDiagnostico = document.getElementById('form-diagnostico');
+    const idCitaInput = document.getElementById('id_cita');
+    const idPacienteInput = document.getElementById('id_paciente');
+    const pacienteInfo = document.getElementById('form-paciente-info');
+    const diagnosticoInput = document.getElementById('diagnostico');
+    const observacionesInput = document.getElementById('observaciones');
+    
+    if (!formDiagnostico || !idCitaInput || !idPacienteInput) {
+        console.error('Elementos del formulario de diagnóstico no encontrados');
+        return;
+    }
+    
+    formDiagnostico.classList.remove('hidden');
+    idCitaInput.value = idCita;
+    idPacienteInput.value = idPaciente || '';
+    if (pacienteInfo) pacienteInfo.textContent = `Paciente: ${nombrePaciente} - DNI: ${dni}`;
+    if (diagnosticoInput) diagnosticoInput.value = '';
+    if (observacionesInput) observacionesInput.value = '';
     
     // Marcar como nuevo registro (no modificación)
-    if (!document.getElementById('es_modificacion')) {
+    const esModificacionField = document.getElementById('es_modificacion');
+    if (!esModificacionField) {
         const hiddenField = document.createElement('input');
         hiddenField.type = 'hidden';
         hiddenField.id = 'es_modificacion';
         hiddenField.name = 'es_modificacion';
         hiddenField.value = 'false';
-        document.getElementById('diagnostico-form').appendChild(hiddenField);
+        const diagnosticoForm = document.getElementById('diagnostico-form');
+        if (diagnosticoForm) diagnosticoForm.appendChild(hiddenField);
     } else {
-        document.getElementById('es_modificacion').value = 'false';
+        esModificacionField.value = 'false';
     }
     
     // Cambiar título del formulario
-    document.querySelector('#form-diagnostico h3').textContent = 'Registrar Diagnóstico';
+    const titulo = document.querySelector('#form-diagnostico h3');
+    if (titulo) titulo.textContent = 'Registrar Diagnóstico';
     
     // Resetear checkboxes de autorización
-    document.getElementById('check_autorizar_examen').checked = false;
-    document.getElementById('check_autorizar_operacion').checked = false;
-    document.getElementById('fields_examen').classList.add('hidden');
-    document.getElementById('fields_operacion').classList.add('hidden');
-    document.getElementById('div_derivar_operacion').classList.add('hidden');
-    document.getElementById('div_medico_operacion').classList.add('hidden');
+    const checkExamen = document.getElementById('check_autorizar_examen');
+    const checkOperacion = document.getElementById('check_autorizar_operacion');
+    const fieldsExamen = document.getElementById('fields_examen');
+    const fieldsOperacion = document.getElementById('fields_operacion');
+    const divDerivar = document.getElementById('div_derivar_operacion');
+    const divMedico = document.getElementById('div_medico_operacion');
+    
+    if (checkExamen) checkExamen.checked = false;
+    if (checkOperacion) checkOperacion.checked = false;
+    if (fieldsExamen) fieldsExamen.classList.add('hidden');
+    if (fieldsOperacion) fieldsOperacion.classList.add('hidden');
+    if (divDerivar) divDerivar.classList.add('hidden');
+    if (divMedico) divMedico.classList.add('hidden');
     
     // Scroll al formulario
-    document.getElementById('form-diagnostico').scrollIntoView({ behavior: 'smooth' });
+    formDiagnostico.scrollIntoView({ behavior: 'smooth' });
 }
 
 function abrirFormularioModificacion(idCita, nombrePaciente, dni, idPaciente, fechaCita, horaCita) {
