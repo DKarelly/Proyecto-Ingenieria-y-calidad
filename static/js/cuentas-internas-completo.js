@@ -69,6 +69,12 @@ function poblarTablaEmpleados(empleados) {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 transition-colors';
             
+            // Determinar estado del empleado (usar estado_usuario primero, que viene de la BD)
+            const estado = (empleado.estado_usuario || empleado.estado || '').toString().toLowerCase().trim();
+            const esActivo = estado === 'activo' || estado === '1' || estado === 'true';
+            const badgeClass = esActivo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+            const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
+            
             // HTML COMPLETO restaurado
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -91,8 +97,8 @@ function poblarTablaEmpleados(empleados) {
                     </span>
                 </td>
                 <td class="px-6 py-4">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Activo
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}">
+                        ${estadoTexto}
                     </span>
                 </td>
                 <td class="px-6 py-4 text-center">
@@ -236,6 +242,14 @@ function poblarTablaPacientes(pacientes) {
     pacientesPagina.forEach(paciente => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition-colors';
+        
+        // Determinar estado del paciente (usar estado_usuario si está disponible)
+        const estado = (paciente.estado_usuario || paciente.estado || '').toString().toLowerCase();
+        const esActivo = estado === 'activo' || estado === '1' || estado === 'true';
+        const badgeClass = esActivo ? 'admin-badge success' : 'admin-badge danger';
+        const iconClass = esActivo ? 'fa-circle-check' : 'fa-circle-xmark';
+        const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
+        
         tr.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-3">
@@ -254,14 +268,14 @@ function poblarTablaPacientes(pacientes) {
                 ${paciente.telefono || 'N/A'}
             </td>
             <td class="px-6 py-4">
-                <span class="admin-badge success inline-flex items-center">
-                    <i class="fa-solid fa-circle-check mr-1.5"></i>
-                    Activo
+                <span class="${badgeClass} inline-flex items-center">
+                    <i class="fa-solid ${iconClass} mr-1.5"></i>
+                    ${estadoTexto}
                 </span>
             </td>
             <td class="px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-2">
-                    <button onclick="verPerfilPaciente(${paciente.id_paciente}, '${paciente.nombres}', '${paciente.apellidos}', '${paciente.documento_identidad}', '${paciente.correo}', '${paciente.telefono}', '${paciente.fecha_nacimiento}', 'Activo')" 
+                    <button onclick="verPerfilPaciente(${paciente.id_paciente}, '${paciente.nombres}', '${paciente.apellidos}', '${paciente.documento_identidad}', '${paciente.correo}', '${paciente.telefono}', '${paciente.fecha_nacimiento}', '${estadoTexto}')" 
                        class="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-xs font-semibold"
                        title="Ver perfil del paciente">
                         <span class="material-symbols-outlined text-base">visibility</span>
@@ -389,7 +403,22 @@ async function cargarEmpleados() {
         const empleados = await response.json();
         console.log(`✅ Empleados cargados exitosamente: ${empleados.length} registros`);
         
-        poblarTablaEmpleados(empleados);
+        // Guardar en variable global pero NO poblar directamente
+        // Esperar a que se aplique el filtro desde el HTML
+        empleadosGlobal = empleados;
+        window.empleadosCompletosGlobal = empleados;
+        
+        // Si existe la función de filtrar, usarla para aplicar el filtro por defecto
+        if (typeof filtrarYMostrarEmpleados === 'function') {
+            filtrarYMostrarEmpleados('');
+        } else {
+            // Si no existe, aplicar filtro manualmente (solo activos)
+            const empleadosActivos = empleados.filter(empleado => {
+                const estado = (empleado.estado_usuario || empleado.estado || '').toString().toLowerCase();
+                return estado === 'activo' || estado === '1' || estado === 'true';
+            });
+            poblarTablaEmpleados(empleadosActivos);
+        }
     } catch (error) {
         console.error('❌ Error al cargar empleados:', error);
         
@@ -423,7 +452,22 @@ async function cargarPacientes() {
         const pacientes = await response.json();
         console.log(`✅ Pacientes cargados exitosamente: ${pacientes.length} registros`);
         
-        poblarTablaPacientes(pacientes);
+        // Guardar en variable global pero NO poblar directamente
+        // Esperar a que se aplique el filtro desde el HTML
+        pacientesGlobal = pacientes;
+        window.pacientesCompletosGlobal = pacientes;
+        
+        // Si existe la función de filtrar, usarla para aplicar el filtro por defecto
+        if (typeof filtrarYMostrarPacientes === 'function') {
+            filtrarYMostrarPacientes('');
+        } else {
+            // Si no existe, aplicar filtro manualmente (solo activos)
+            const pacientesActivos = pacientes.filter(paciente => {
+                const estado = (paciente.estado_usuario || paciente.estado || '').toString().toLowerCase();
+                return estado === 'activo' || estado === '1' || estado === 'true';
+            });
+            poblarTablaPacientes(pacientesActivos);
+        }
     } catch (error) {
         console.error('❌ Error al cargar pacientes:', error);
     }
@@ -451,7 +495,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof datosEmpleados !== 'undefined' && datosEmpleados) {
         console.log(`✅ Empleados encontrados: ${datosEmpleados.length} registros`);
         empleadosCompletosGlobal = datosEmpleados;
-        poblarTablaEmpleados(datosEmpleados);
+        // Guardar también en window para que esté disponible para el filtro
+        window.empleadosCompletosGlobal = datosEmpleados;
+        // No poblar directamente, esperar a que se aplique el filtro
     } else {
         console.log('🔄 Intentando cargar desde data-container...');
         const dataContainer = document.getElementById('data-container');
@@ -462,8 +508,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`✅ Datos parseados - Empleados: ${empleadosData.length}, Pacientes: ${pacientesData.length}`);
                 empleadosCompletosGlobal = empleadosData;
                 pacientesCompletosGlobal = pacientesData;
-                poblarTablaEmpleados(empleadosData);
-                poblarTablaPacientes(pacientesData);
+                // Guardar también en window para que esté disponible para el filtro
+                window.empleadosCompletosGlobal = empleadosData;
+                window.pacientesCompletosGlobal = pacientesData;
+                // No poblar directamente, esperar a que se aplique el filtro
             } catch (error) {
                 console.error('❌ Error al parsear datos del data-container:', error);
                 cargarEmpleados();
@@ -479,7 +527,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof datosPacientes !== 'undefined' && datosPacientes) {
         console.log(`✅ Pacientes encontrados: ${datosPacientes.length} registros`);
         pacientesCompletosGlobal = datosPacientes;
-        poblarTablaPacientes(datosPacientes);
+        // Guardar también en window para que esté disponible para el filtro
+        window.pacientesCompletosGlobal = datosPacientes;
+        // No poblar directamente, esperar a que se aplique el filtro
     }
 
     // Hacer disponibles globalmente para las funciones de búsqueda en el HTML

@@ -1174,7 +1174,8 @@ def api_servicios_por_tipo(id_tipo):
 def generar_reserva():
     """Generar Nueva Reserva - Para empleados y pacientes"""
     if 'usuario_id' not in session:
-        return redirect(url_for('home'))
+        # Redirigir al home con parámetro para mostrar modal de login
+        return redirect(url_for('home', show_login='true'))
 
     # Si es paciente, renderizar el formulario de paciente
     if session.get('tipo_usuario') == 'paciente':
@@ -2080,7 +2081,8 @@ def api_reservas_activas():
 def paciente_nueva_cita():
     """Vista para que pacientes registren nuevas citas"""
     if 'usuario_id' not in session:
-        return redirect(url_for('home'))
+        # Redirigir al home con parámetro para mostrar modal de login
+        return redirect(url_for('home', show_login='true'))
 
     if session.get('tipo_usuario') != 'paciente':
         return redirect(url_for('home'))

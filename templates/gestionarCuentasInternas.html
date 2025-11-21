@@ -112,6 +112,11 @@
             color: #065f46;
         }
 
+        .badge-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
         .badge-info {
             background-color: #dbeafe;
             color: #1e40af;
@@ -474,16 +479,28 @@
             <div id="tab-empleados" class="tab-content {% if tab_activo == 'empleados' %}active{% endif %} p-8">
                 <!-- Buscador Empleados -->
                 <div class="mb-6">
-                    <div class="relative">
-                        <span
-                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-                        <input type="search" id="search-empleado"
-                            placeholder="Buscar empleado por nombre, email o rol..."
-                            class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 rounded-xl transition-all">
-                        <button id="clear-search-empleado"
-                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex-1">
+                            <span
+                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                            <input type="text" id="search-empleado"
+                                placeholder="Buscar empleado por nombre, email o rol..."
+                                class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 rounded-xl transition-all">
+                            <button id="clear-search-empleado"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <!-- Switch para mostrar inactivos -->
+                        <div class="flex items-center gap-3 bg-gray-50 px-4 py-3 rounded-xl border border-gray-200">
+                            <label class="flex items-center cursor-pointer group">
+                                <input type="checkbox" id="toggle-inactivos-empleados" class="sr-only peer">
+                                <div class="relative w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                                <span id="label-toggle-empleados" class="ml-3 text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                                    Mostrar inactivos
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -524,16 +541,28 @@
             <div id="tab-pacientes" class="tab-content {% if tab_activo == 'pacientes' %}active{% endif %} p-8">
                 <!-- Buscador Pacientes -->
                 <div class="mb-6">
-                    <div class="relative">
-                        <span
-                            class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-                        <input type="search" id="search-paciente"
-                            placeholder="Buscar paciente por nombre, documento o correo..."
-                            class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl transition-all">
-                        <button id="clear-search-paciente"
-                            class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
-                            <span class="material-symbols-outlined">close</span>
-                        </button>
+                    <div class="flex items-center gap-4">
+                        <div class="relative flex-1">
+                            <span
+                                class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                            <input type="text" id="search-paciente"
+                                placeholder="Buscar paciente por nombre, documento o correo..."
+                                class="w-full pl-12 pr-12 py-4 border-2 border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl transition-all">
+                            <button id="clear-search-paciente"
+                                class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <!-- Switch para mostrar inactivos -->
+                        <div class="flex items-center gap-3 bg-gray-50 px-4 py-3 rounded-xl border border-gray-200">
+                            <label class="flex items-center cursor-pointer group">
+                                <input type="checkbox" id="toggle-inactivos-pacientes" class="sr-only peer">
+                                <div class="relative w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                                <span id="label-toggle-pacientes" class="ml-3 text-sm font-medium text-gray-700 group-hover:text-gray-900">
+                                    Mostrar inactivos
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -847,6 +876,47 @@
                     <p class="text-sm text-gray-500 mt-1">Este correo se usará para acceder al sistema</p>
                 </div>
 
+                <!-- Ubicación -->
+                <div class="border-l-4 border-cyan-500 pl-4 mb-6 mt-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined">location_on</span>
+                        Ubicación
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="emp-departamento" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Departamento <span class="text-red-500">*</span>
+                        </label>
+                        <select id="emp-departamento" name="departamento" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all">
+                            <option value="">Seleccione...</option>
+                        </select>
+                        <p id="emp-departamento-error" class="text-xs text-red-600 mt-1 hidden"></p>
+                    </div>
+                    <div>
+                        <label for="emp-provincia" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Provincia <span class="text-red-500">*</span>
+                        </label>
+                        <select id="emp-provincia" name="provincia" required disabled
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all bg-gray-50">
+                            <option value="">Seleccione departamento</option>
+                        </select>
+                        <p id="emp-provincia-error" class="text-xs text-red-600 mt-1 hidden"></p>
+                    </div>
+                    <div>
+                        <label for="emp-distrito" class="block text-sm font-semibold text-gray-700 mb-2">
+                            Distrito <span class="text-red-500">*</span>
+                        </label>
+                        <select id="emp-distrito" name="distrito" required disabled
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all bg-gray-50">
+                            <option value="">Seleccione provincia</option>
+                        </select>
+                        <p id="emp-distrito-error" class="text-xs text-red-600 mt-1 hidden"></p>
+                    </div>
+                </div>
+
                 <!-- Credenciales de Acceso -->
                 <div class="border-l-4 border-cyan-500 pl-4 mb-6 mt-8">
                     <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -1072,6 +1142,17 @@
             const url = new URL(window.location);
             url.searchParams.set('tab', tabName);
             window.history.pushState({}, '', url);
+            
+            // Aplicar filtros cuando se cambia de tab
+            setTimeout(() => {
+                if (tabName === 'empleados') {
+                    const searchTerm = document.getElementById('search-empleado')?.value || '';
+                    filtrarYMostrarEmpleados(searchTerm);
+                } else if (tabName === 'pacientes') {
+                    const searchTerm = document.getElementById('search-paciente')?.value || '';
+                    filtrarYMostrarPacientes(searchTerm);
+                }
+            }, 100);
         }
 
         // Función para ver perfil de empleado
@@ -1128,7 +1209,16 @@
                 document.getElementById('modal-paciente-nacimiento').textContent = 'No especificada';
             }
 
-            document.getElementById('modal-paciente-estado').textContent = estado;
+            // Actualizar estado con la clase correcta según sea activo o inactivo
+            const estadoElement = document.getElementById('modal-paciente-estado');
+            estadoElement.textContent = estado;
+            
+            // Cambiar clase del badge según el estado
+            if (estado.toLowerCase() === 'activo') {
+                estadoElement.className = 'badge badge-success';
+            } else {
+                estadoElement.className = 'badge badge-danger';
+            }
 
             // Configurar enlace de perfil completo
             document.getElementById('btn-ver-perfil-completo-paciente').href = `/cuentas/ver-perfil-paciente/${id}`;
@@ -1636,6 +1726,18 @@
                     return;
                 }
                 
+                // Validar ubicación
+                const idDistrito = document.getElementById('emp-distrito').value;
+                if (!idDistrito || idDistrito === '') {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'Debe seleccionar un distrito.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    return;
+                }
+                
                 // Preparar datos del formulario
                 const formData = new FormData(this);
                 const data = {
@@ -1650,7 +1752,8 @@
                     correo: formData.get('email'),
                     password: formData.get('password'),
                     id_rol: formData.get('rol'),
-                    id_especialidad: formData.get('especialidad') || null
+                    id_especialidad: formData.get('especialidad') || null,
+                    id_distrito: idDistrito
                 };
                 
                 console.log('📤 Datos a enviar:', data);
@@ -1818,24 +1921,61 @@
         function filtrarYMostrarEmpleados(termino) {
             const empleadosCompletos = obtenerDatosEmpleadosCompletos();
             
+            // Verificar si el switch de inactivos está activado
+            const toggleInactivos = document.getElementById('toggle-inactivos-empleados');
+            const mostrarInactivos = toggleInactivos ? toggleInactivos.checked : false;
+            
+            // Filtrar por estado: si está activado mostrar SOLO inactivos, si no mostrar SOLO activos
+            let empleadosFiltradosPorEstado = empleadosCompletos;
+            if (mostrarInactivos) {
+                // Mostrar SOLO inactivos
+                empleadosFiltradosPorEstado = empleadosCompletos.filter(empleado => {
+                    // Usar estado_usuario si está disponible, sino estado
+                    const estado = (empleado.estado_usuario || empleado.estado || '').toString().toLowerCase();
+                    return estado === 'inactivo' || estado === '0' || estado === 'false' || estado === '';
+                });
+            } else {
+                // Mostrar SOLO activos
+                empleadosFiltradosPorEstado = empleadosCompletos.filter(empleado => {
+                    // Usar estado_usuario si está disponible, sino estado
+                    const estado = (empleado.estado_usuario || empleado.estado || '').toString().toLowerCase().trim();
+                    // Debug para ver qué estado tiene cada empleado
+                    if (empleado.nombres === 'Super Administrador') {
+                        console.log('🔍 DEBUG Super Admin:', {
+                            empleado_completo: empleado,
+                            estado_usuario: empleado.estado_usuario,
+                            estado: empleado.estado,
+                            estado_final: estado,
+                            esActivo: estado === 'activo' || estado === '1' || estado === 'true'
+                        });
+                    }
+                    // Filtrar solo los que son explícitamente activos
+                    const esActivo = estado === 'activo' || estado === '1' || estado === 'true';
+                    return esActivo;
+                });
+            }
+            
             if (!termino || termino.trim() === '') {
-                // Si no hay término, mostrar todos
+                // Si no hay término, mostrar todos (ya filtrados por estado)
                 if (typeof poblarTablaEmpleados === 'function') {
                     paginaActual = 1;
-                    poblarTablaEmpleados(empleadosCompletos);
+                    poblarTablaEmpleados(empleadosFiltradosPorEstado);
                 }
                 return;
             }
 
             const terminoLower = termino.toLowerCase().trim();
             
-            if (empleadosCompletos.length === 0) {
+            if (empleadosFiltradosPorEstado.length === 0) {
                 console.warn('⚠️ No hay datos de empleados disponibles para buscar');
+                if (typeof poblarTablaEmpleados === 'function') {
+                    poblarTablaEmpleados([]);
+                }
                 return;
             }
 
-            // Filtrar empleados
-            const empleadosFiltrados = empleadosCompletos.filter(empleado => {
+            // Filtrar empleados por término de búsqueda
+            const empleadosFiltrados = empleadosFiltradosPorEstado.filter(empleado => {
                 const nombreCompleto = `${empleado.nombres || ''} ${empleado.apellidos || ''}`.toLowerCase();
                 const correo = (empleado.correo || '').toLowerCase();
                 const rol = (empleado.rol || '').toLowerCase();
@@ -1858,24 +1998,49 @@
         function filtrarYMostrarPacientes(termino) {
             const pacientesCompletos = obtenerDatosPacientesCompletos();
             
+            // Verificar si el switch de inactivos está activado
+            const toggleInactivos = document.getElementById('toggle-inactivos-pacientes');
+            const mostrarInactivos = toggleInactivos ? toggleInactivos.checked : false;
+            
+            // Filtrar por estado: si está activado mostrar SOLO inactivos, si no mostrar SOLO activos
+            let pacientesFiltradosPorEstado = pacientesCompletos;
+            if (mostrarInactivos) {
+                // Mostrar SOLO inactivos
+                pacientesFiltradosPorEstado = pacientesCompletos.filter(paciente => {
+                    // Usar estado_usuario si está disponible, sino estado
+                    const estado = (paciente.estado_usuario || paciente.estado || '').toString().toLowerCase();
+                    return estado === 'inactivo' || estado === '0' || estado === 'false' || estado === '';
+                });
+            } else {
+                // Mostrar SOLO activos
+                pacientesFiltradosPorEstado = pacientesCompletos.filter(paciente => {
+                    // Usar estado_usuario si está disponible, sino estado
+                    const estado = (paciente.estado_usuario || paciente.estado || '').toString().toLowerCase();
+                    return estado === 'activo' || estado === '1' || estado === 'true';
+                });
+            }
+            
             if (!termino || termino.trim() === '') {
-                // Si no hay término, mostrar todos
+                // Si no hay término, mostrar todos (ya filtrados por estado)
                 if (typeof poblarTablaPacientes === 'function') {
                     paginaActualPacientes = 1;
-                    poblarTablaPacientes(pacientesCompletos);
+                    poblarTablaPacientes(pacientesFiltradosPorEstado);
                 }
                 return;
             }
 
             const terminoLower = termino.toLowerCase().trim();
             
-            if (pacientesCompletos.length === 0) {
+            if (pacientesFiltradosPorEstado.length === 0) {
                 console.warn('⚠️ No hay datos de pacientes disponibles para buscar');
+                if (typeof poblarTablaPacientes === 'function') {
+                    poblarTablaPacientes([]);
+                }
                 return;
             }
 
-            // Filtrar pacientes
-            const pacientesFiltrados = pacientesCompletos.filter(paciente => {
+            // Filtrar pacientes por término de búsqueda
+            const pacientesFiltrados = pacientesFiltradosPorEstado.filter(paciente => {
                 const nombreCompleto = `${paciente.nombres || ''} ${paciente.apellidos || ''}`.toLowerCase();
                 const correo = (paciente.correo || '').toLowerCase();
                 const telefono = String(paciente.telefono || '').toLowerCase();
@@ -1892,6 +2057,91 @@
             if (typeof poblarTablaPacientes === 'function') {
                 poblarTablaPacientes(pacientesFiltrados);
             }
+        }
+
+        // Función para actualizar el texto del botón según el estado del switch
+        function actualizarTextoBoton(toggleId, labelId) {
+            const toggle = document.getElementById(toggleId);
+            const label = document.getElementById(labelId);
+            
+            if (toggle && label) {
+                // Si el switch está activado (checked), significa que está mostrando inactivos
+                // Entonces el botón debe decir "Mostrar activos"
+                // Si el switch está desactivado, significa que está mostrando activos
+                // Entonces el botón debe decir "Mostrar inactivos"
+                if (toggle.checked) {
+                    label.textContent = 'Mostrar activos';
+                } else {
+                    label.textContent = 'Mostrar inactivos';
+                }
+            }
+        }
+
+        // Inicializar filtros y event listeners cuando el DOM esté listo
+        function inicializarFiltros() {
+            // Event listeners para switches de inactivos
+            const toggleInactivosEmpleados = document.getElementById('toggle-inactivos-empleados');
+            if (toggleInactivosEmpleados) {
+                // Actualizar texto inicial
+                actualizarTextoBoton('toggle-inactivos-empleados', 'label-toggle-empleados');
+                
+                toggleInactivosEmpleados.addEventListener('change', function() {
+                    // Actualizar texto cuando cambia el switch
+                    actualizarTextoBoton('toggle-inactivos-empleados', 'label-toggle-empleados');
+                    const searchTerm = document.getElementById('search-empleado')?.value || '';
+                    filtrarYMostrarEmpleados(searchTerm);
+                });
+            }
+
+            const toggleInactivosPacientes = document.getElementById('toggle-inactivos-pacientes');
+            if (toggleInactivosPacientes) {
+                // Actualizar texto inicial
+                actualizarTextoBoton('toggle-inactivos-pacientes', 'label-toggle-pacientes');
+                
+                toggleInactivosPacientes.addEventListener('change', function() {
+                    // Actualizar texto cuando cambia el switch
+                    actualizarTextoBoton('toggle-inactivos-pacientes', 'label-toggle-pacientes');
+                    const searchTerm = document.getElementById('search-paciente')?.value || '';
+                    filtrarYMostrarPacientes(searchTerm);
+                });
+            }
+            
+            // Aplicar filtro inicial (solo activos por defecto)
+            // Esperar a que las funciones de poblar tablas estén disponibles
+            setTimeout(() => {
+                const tabEmpleados = document.getElementById('tab-empleados');
+                const tabPacientes = document.getElementById('tab-pacientes');
+                
+                // Asegurar que el switch esté desactivado (mostrando solo activos)
+                if (toggleInactivosEmpleados) {
+                    toggleInactivosEmpleados.checked = false;
+                    actualizarTextoBoton('toggle-inactivos-empleados', 'label-toggle-empleados');
+                }
+                
+                if (toggleInactivosPacientes) {
+                    toggleInactivosPacientes.checked = false;
+                    actualizarTextoBoton('toggle-inactivos-pacientes', 'label-toggle-pacientes');
+                }
+                
+                // SIEMPRE aplicar el filtro, incluso si no hay tab activo
+                // Esto asegura que solo se muestren activos por defecto
+                filtrarYMostrarEmpleados('');
+                
+                // Si hay tab de pacientes activo, también filtrar pacientes
+                if (tabPacientes && tabPacientes.classList.contains('active')) {
+                    filtrarYMostrarPacientes('');
+                } else {
+                    // Si no hay tab activo pero hay datos, aplicar filtro de todos modos
+                    filtrarYMostrarPacientes('');
+                }
+            }, 500);
+        }
+
+        // Ejecutar inicialización cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializarFiltros);
+        } else {
+            inicializarFiltros();
         }
 
         // Búsqueda empleados con debounce
@@ -2229,7 +2479,98 @@
         }
 
         // Esperar a que el DOM esté listo
+        // Cargar departamentos, provincias y distritos para el formulario de empleado
+        function inicializarUbicacionEmpleado() {
+            const empDepartamento = document.getElementById('emp-departamento');
+            const empProvincia = document.getElementById('emp-provincia');
+            const empDistrito = document.getElementById('emp-distrito');
+            
+            if (!empDepartamento || !empProvincia || !empDistrito) return;
+            
+            // Cargar departamentos
+            async function loadDepartamentosEmpleado() {
+                try {
+                    const response = await fetch('/usuarios/api/departamentos');
+                    const departamentos = await response.json();
+                    
+                    empDepartamento.innerHTML = '<option value="">Seleccione...</option>';
+                    departamentos.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id_departamento;
+                        option.textContent = dept.nombre;
+                        empDepartamento.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error('Error cargando departamentos:', error);
+                }
+            }
+            
+            // Cuando cambia el departamento, cargar provincias
+            empDepartamento.addEventListener('change', async (e) => {
+                const idDepartamento = e.target.value;
+                
+                empProvincia.innerHTML = '<option value="">Seleccione...</option>';
+                empDistrito.innerHTML = '<option value="">Seleccione provincia primero</option>';
+                empDistrito.disabled = true;
+                
+                if (!idDepartamento) {
+                    empProvincia.disabled = true;
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/usuarios/api/provincias/${idDepartamento}`);
+                    const provincias = await response.json();
+                    
+                    provincias.forEach(prov => {
+                        const option = document.createElement('option');
+                        option.value = prov.id_provincia;
+                        option.textContent = prov.nombre;
+                        empProvincia.appendChild(option);
+                    });
+                    
+                    empProvincia.disabled = false;
+                } catch (error) {
+                    console.error('Error cargando provincias:', error);
+                }
+            });
+            
+            // Cuando cambia la provincia, cargar distritos
+            empProvincia.addEventListener('change', async (e) => {
+                const idProvincia = e.target.value;
+                
+                empDistrito.innerHTML = '<option value="">Seleccione...</option>';
+                
+                if (!idProvincia) {
+                    empDistrito.disabled = true;
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/usuarios/api/distritos/${idProvincia}`);
+                    const distritos = await response.json();
+                    
+                    distritos.forEach(dist => {
+                        const option = document.createElement('option');
+                        option.value = dist.id_distrito;
+                        option.textContent = dist.nombre;
+                        empDistrito.appendChild(option);
+                    });
+                    
+                    empDistrito.disabled = false;
+                } catch (error) {
+                    console.error('Error cargando distritos:', error);
+                }
+            });
+            
+            // Cargar departamentos al inicializar
+            loadDepartamentosEmpleado();
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            // Inicializar ubicación para empleado
+            inicializarUbicacionEmpleado();
+            
             // Aplicar validaciones a campos del formulario de empleado
             const empleadoForm = document.querySelector('#form-registro-empleado');
 

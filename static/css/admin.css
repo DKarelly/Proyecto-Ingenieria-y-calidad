@@ -54,6 +54,7 @@
 
 .admin-badge { display:inline-block; padding: .25rem .5rem; border-radius: .5rem; font-weight:600; font-size:.75rem }
 .admin-badge.success { background: #ecfdf5; color: #065f46; }
+.admin-badge.danger { background: #fee2e2; color: #991b1b; }
 .admin-badge.warn { background: #fffbeb; color: #92400e; }
 .admin-badge.info { background: #eef2ff; color: #3730a3; }
 

@@ -26,9 +26,20 @@
                             <path d="M7 10l5 5 5-11"/>
                         </svg>
                     </div>
-                    <div>
+                    <div class="flex-1">
                         <h1 class="text-3xl font-bold text-gray-800"> Historial de Notificaciones</h1>
                         <p class="text-gray-600">Aquí aparecen todas las notificaciones enviadas a tu cuenta.</p>
+                    </div>
+                    <div>
+                        <button onclick="marcarTodasComoLeidas()" 
+                                id="btn-marcar-todas"
+                                class="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            Marcar todas como leídas
+                        </button>
                     </div>
                 </div>
 
@@ -39,7 +50,8 @@
                                 <div class="notificacion-item bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-4 border border-gray-100" 
                                      data-tipo="{{ n.tipo }}" 
                                      data-estado="{{ n.estado_reserva or '' }}"
-                                     data-leida="{{ n.leida }}">
+                                     data-leida="{{ n.leida }}"
+                                     data-id="{{ n.id_notificacion }}">
                                     <div class="flex gap-3">
                                         <!-- Icono dinámico -->
                                         <div class="icono-notificacion flex-shrink-0"></div>
@@ -55,19 +67,29 @@
                                                     <p class="text-sm text-gray-600 leading-relaxed">{{ n.mensaje }}</p>
                                                 </div>
                                                 
-                                                <!-- Estado leída -->
-                                                {% if n.leida %}
-                                                <div class="flex-shrink-0 text-green-500" title="Leída">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                                    </svg>
+                                                <!-- Estado leída y botón marcar como leído -->
+                                                <div class="flex items-center gap-2 flex-shrink-0">
+                                                    {% if n.leida %}
+                                                    <div class="text-green-500" title="Leída">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                        </svg>
+                                                    </div>
+                                                    {% else %}
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" title="No leída"></span>
+                                                        <button onclick="marcarComoLeida({{ n.id_notificacion }})" 
+                                                                class="btn-marcar-leida text-xs px-3 py-1.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center gap-1">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                            </svg>
+                                                            Marcar como leída
+                                                        </button>
+                                                    </div>
+                                                    {% endif %}
                                                 </div>
-                                                {% else %}
-                                                <div class="flex-shrink-0">
-                                                    <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                                                </div>
-                                                {% endif %}
                                             </div>
                                             
                                             <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
@@ -90,6 +112,45 @@
                                 </div>
                             {% endfor %}
                         </div>
+                        
+                        <!-- Paginación -->
+                        {% if total_paginas > 1 %}
+                        <div class="mt-6 flex items-center justify-between border-t border-gray-200 pt-6">
+                            <div class="text-sm text-gray-700">
+                                Mostrando <span class="font-medium">{{ ((pagina_actual - 1) * 10) + 1 }}</span> a 
+                                <span class="font-medium">{{ [pagina_actual * 10, total_notificaciones]|min }}</span> de 
+                                <span class="font-medium">{{ total_notificaciones }}</span> notificaciones
+                            </div>
+                            <div class="flex items-center gap-2">
+                                {% if pagina_actual > 1 %}
+                                <a href="?pagina={{ pagina_actual - 1 }}" 
+                                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Anterior
+                                </a>
+                                {% endif %}
+                                
+                                {% for p in range(1, total_paginas + 1) %}
+                                    {% if p == pagina_actual %}
+                                    <span class="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg">{{ p }}</span>
+                                    {% elif p <= 2 or p > total_paginas - 2 or (p >= pagina_actual - 1 and p <= pagina_actual + 1) %}
+                                    <a href="?pagina={{ p }}" 
+                                       class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                        {{ p }}
+                                    </a>
+                                    {% elif p == pagina_actual - 2 or p == pagina_actual + 2 %}
+                                    <span class="px-4 py-2 text-sm font-medium text-gray-500">...</span>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if pagina_actual < total_paginas %}
+                                <a href="?pagina={{ pagina_actual + 1 }}" 
+                                   class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Siguiente
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
                     {% else %}
                         <div class="text-center py-12">
                             <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-gray-300 mb-4">
@@ -192,6 +253,245 @@
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>`
             };
+        }
+
+        // Función para marcar notificación como leída (sin recargar página - optimizada)
+        async function marcarComoLeida(idNotificacion) {
+            // Buscar el elemento usando el atributo data-id
+            const notificacionItem = document.querySelector(`.notificacion-item[data-id="${idNotificacion}"]`);
+            if (!notificacionItem) {
+                console.error('No se encontró la notificación con ID:', idNotificacion);
+                return;
+            }
+            
+            // Verificar si ya está marcada como leída
+            if (notificacionItem.dataset.leida === 'True') {
+                console.log('La notificación ya está marcada como leída');
+                return;
+            }
+            
+            const boton = notificacionItem.querySelector('button.btn-marcar-leida');
+            if (!boton) {
+                console.log('No se encontró el botón, la notificación ya puede estar marcada');
+                return;
+            }
+            
+            // Buscar el contenedor padre del botón (más robusto)
+            const estadoDiv = boton.closest('.flex.items-center.gap-2');
+            if (!estadoDiv) {
+                console.error('No se encontró el contenedor del botón');
+                return;
+            }
+            
+            // Guardar referencia del HTML original para poder restaurarlo si falla
+            const htmlOriginal = estadoDiv.innerHTML;
+            
+            // Actualizar visualmente INMEDIATAMENTE (optimistic update)
+            estadoDiv.innerHTML = `
+                <div class="text-green-500" title="Leída">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+            `;
+            
+            // Actualizar opacidad
+            notificacionItem.style.opacity = '0.7';
+            notificacionItem.dataset.leida = 'True';
+            
+            // Agregar fecha de leída si no existe
+            const fechaContainer = notificacionItem.querySelector('.flex.items-center.gap-4.mt-2');
+            if (fechaContainer) {
+                const yaTieneFechaLeida = fechaContainer.querySelector('.text-green-600');
+                if (!yaTieneFechaLeida) {
+                    const fechaActual = new Date().toLocaleDateString('es-ES');
+                    const fechaSpan = document.createElement('span');
+                    fechaSpan.className = 'text-gray-400';
+                    fechaSpan.textContent = '•';
+                    fechaContainer.appendChild(fechaSpan);
+                    
+                    const leidaSpan = document.createElement('span');
+                    leidaSpan.className = 'text-green-600';
+                    leidaSpan.textContent = `Leída: ${fechaActual}`;
+                    fechaContainer.appendChild(leidaSpan);
+                }
+            }
+            
+            // Hacer la petición en segundo plano (sin bloquear la UI)
+            try {
+                const response = await fetch(`/notificaciones/api/marcar-leida/${idNotificacion}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    // Si falla, revertir cambios
+                    console.error('Error al marcar como leída:', data.error);
+                    notificacionItem.style.opacity = '1';
+                    notificacionItem.dataset.leida = 'False';
+                    estadoDiv.innerHTML = htmlOriginal;
+                    alert('Error al marcar la notificación como leída: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Revertir cambios si hay error
+                notificacionItem.style.opacity = '1';
+                notificacionItem.dataset.leida = 'False';
+                estadoDiv.innerHTML = htmlOriginal;
+                alert('Error al marcar la notificación como leída');
+            }
+        }
+
+        // Función para marcar todas las notificaciones como leídas (optimizada)
+        async function marcarTodasComoLeidas() {
+            const boton = document.getElementById('btn-marcar-todas');
+            if (!boton) return;
+            
+            const textoOriginal = boton.innerHTML;
+            
+            // Buscar todas las notificaciones que tienen un botón "Marcar como leída" (más confiable)
+            const todasLasNotificaciones = document.querySelectorAll('.notificacion-item');
+            const notificacionesNoLeidas = Array.from(todasLasNotificaciones).filter(item => {
+                const btnIndividual = item.querySelector('button.btn-marcar-leida');
+                return btnIndividual !== null; // Si tiene botón, no está leída
+            });
+            
+            if (notificacionesNoLeidas.length === 0) {
+                console.log('No hay notificaciones sin leer');
+                boton.style.display = 'none';
+                return;
+            }
+            
+            const fechaActual = new Date().toLocaleDateString('es-ES');
+            const cambiosOriginales = []; // Guardar estados originales para poder revertir
+            
+            // Actualizar visualmente INMEDIATAMENTE (optimistic update)
+            notificacionesNoLeidas.forEach(item => {
+                // Buscar el botón individual
+                const btnIndividual = item.querySelector('button.btn-marcar-leida');
+                if (!btnIndividual) return;
+                
+                // Buscar el contenedor del botón usando el mismo método robusto
+                const estadoDiv = btnIndividual.closest('.flex.items-center.gap-2');
+                if (!estadoDiv) return;
+                
+                // Guardar el HTML original para poder revertir si falla
+                cambiosOriginales.push({
+                    item: item,
+                    htmlOriginal: estadoDiv.innerHTML,
+                    fechaContainer: item.querySelector('.flex.items-center.gap-4.mt-2')
+                });
+                
+                // Actualizar el estado visual
+                estadoDiv.innerHTML = `
+                    <div class="text-green-500" title="Leída">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                `;
+                
+                // Actualizar opacidad
+                item.style.opacity = '0.7';
+                item.dataset.leida = 'True';
+                
+                // Agregar fecha de leída si no existe
+                const fechaContainer = item.querySelector('.flex.items-center.gap-4.mt-2');
+                if (fechaContainer) {
+                    const yaTieneFechaLeida = fechaContainer.querySelector('.text-green-600');
+                    if (!yaTieneFechaLeida) {
+                        const separador = document.createElement('span');
+                        separador.className = 'text-gray-400';
+                        separador.textContent = '•';
+                        fechaContainer.appendChild(separador);
+                        
+                        const leidaSpan = document.createElement('span');
+                        leidaSpan.className = 'text-green-600';
+                        leidaSpan.textContent = `Leída: ${fechaActual}`;
+                        fechaContainer.appendChild(leidaSpan);
+                    }
+                }
+            });
+            
+            // Ocultar botón general
+            boton.style.display = 'none';
+            
+            // Hacer la petición en segundo plano (sin bloquear la UI)
+            try {
+                const response = await fetch('/notificaciones/api/marcar-todas-leidas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    // Si falla, revertir cambios
+                    console.error('Error al marcar todas como leídas:', data.error);
+                    cambiosOriginales.forEach(cambio => {
+                        cambio.item.style.opacity = '1';
+                        cambio.item.dataset.leida = 'False';
+                        const estadoDiv = cambio.item.querySelector('.flex.items-center.gap-2');
+                        if (estadoDiv) {
+                            estadoDiv.innerHTML = cambio.htmlOriginal;
+                        }
+                        // Remover fecha de leída si se agregó
+                        if (cambio.fechaContainer) {
+                            const fechaLeida = cambio.fechaContainer.querySelector('.text-green-600');
+                            if (fechaLeida) {
+                                const separador = fechaLeida.previousElementSibling;
+                                if (separador && separador.classList.contains('text-gray-400')) {
+                                    separador.remove();
+                                }
+                                fechaLeida.remove();
+                            }
+                        }
+                    });
+                    boton.style.display = 'inline-flex';
+                    alert('Error al marcar todas las notificaciones como leídas: ' + (data.error || 'Error desconocido'));
+                } else {
+                    // Actualizar el badge de la campanita
+                    if (typeof cargarBovedaNotificaciones === 'function') {
+                        cargarBovedaNotificaciones();
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Revertir cambios si hay error
+                cambiosOriginales.forEach(cambio => {
+                    cambio.item.style.opacity = '1';
+                    cambio.item.dataset.leida = 'False';
+                    const estadoDiv = cambio.item.querySelector('.flex.items-center.gap-2');
+                    if (estadoDiv) {
+                        estadoDiv.innerHTML = cambio.htmlOriginal;
+                    }
+                    // Remover fecha de leída si se agregó
+                    if (cambio.fechaContainer) {
+                        const fechaLeida = cambio.fechaContainer.querySelector('.text-green-600');
+                        if (fechaLeida) {
+                            const separador = fechaLeida.previousElementSibling;
+                            if (separador && separador.classList.contains('text-gray-400')) {
+                                separador.remove();
+                            }
+                            fechaLeida.remove();
+                        }
+                    }
+                });
+                boton.style.display = 'inline-flex';
+                alert('Error al marcar todas las notificaciones como leídas');
+            }
         }
 
         // Aplicar estilos a todas las notificaciones al cargar

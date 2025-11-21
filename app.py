@@ -20,8 +20,13 @@ def serve_static(filename):
 # Ruta para favicon
 @app.route('/favicon.ico')
 def favicon():
-    """Servir el favicon"""
-    return send_from_directory('static', 'favicon.svg', mimetype='image/svg+xml')
+    """Servir el favicon con transparencia"""
+    response = send_from_directory('static/images', 'FaviconN.png', mimetype='image/png')
+    # Headers para asegurar que el navegador respete la transparencia y actualice el caché
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 # Inicializar pool de conexiones al arrancar la aplicación
 # Esto mejora el rendimiento al reutilizar conexiones
