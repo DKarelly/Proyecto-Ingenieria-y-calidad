@@ -481,13 +481,16 @@ def api_reservar_desde_autorizacion():
 
 @paciente_bp.route('/api/cita/<int:id_cita>/programaciones-procedimientos')
 def api_programaciones_procedimientos_cita(id_cita):
-    """API que retorna programaciones disponibles para procedimientos de una cita específica"""
+    """API que retorna programaciones disponibles para procedimientos de una cita específica
+    Basándose en las autorizaciones otorgadas por el médico en AUTORIZACION_PROCEDIMIENTO
+    """
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
     if session.get('tipo_usuario') != 'paciente':
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
+    conexion = None
     try:
         usuario_id = session.get('usuario_id')
         paciente = Paciente.obtener_por_usuario(usuario_id)
@@ -500,9 +503,9 @@ def api_programaciones_procedimientos_cita(id_cita):
 
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
-            # Verificar que la cita pertenece al paciente
+            # 1. Verificar que la cita pertenece al paciente y está completada
             cursor.execute("""
-                SELECT c.id_cita
+                SELECT c.id_cita, c.estado, c.diagnostico
                 FROM CITA c
                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
                 WHERE c.id_cita = %s AND r.id_paciente = %s
@@ -511,76 +514,159 @@ def api_programaciones_procedimientos_cita(id_cita):
             cita = cursor.fetchone()
             if not cita:
                 return jsonify({'error': 'Cita no encontrada'}), 404
-
-            # Obtener programaciones disponibles según el tipo de procedimiento
-            # Para exámenes: servicios de tipo EXAMEN
-            # Para operaciones: servicios de tipo OPERACION
-            id_tipo_servicio = 2 if tipo_procedimiento == 'EXAMEN' else 3
-
-            sql = """
-                SELECT 
-                    p.id_programacion,
-                    p.fecha,
-                    p.hora_inicio,
-                    p.hora_fin,
-                    p.estado,
-                    s.nombre as servicio_nombre,
-                    s.id_servicio,
-                    CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
-                    esp.nombre as especialidad,
-                    CASE 
-                        WHEN r.id_paciente = %s AND p.estado = 'Ocupado' THEN 1 
-                        ELSE 0 
-                    END as es_reserva_propia
-                FROM PROGRAMACION p
-                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-                INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
-                LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                LEFT JOIN RESERVA r ON p.id_programacion = r.id_programacion
-                WHERE s.id_tipo_servicio = %s
-                  AND p.fecha >= CURDATE()
-                  AND h.activo = 1
-                ORDER BY p.fecha, p.hora_inicio
-            """
             
-            cursor.execute(sql, (id_paciente, id_tipo_servicio))
+            if not cita.get('diagnostico'):
+                return jsonify({'error': 'La cita debe tener diagnóstico para solicitar procedimientos'}), 400
+
+            # 2. Determinar id_tipo_servicio según el tipo de procedimiento
+            # OPERACION = id_tipo_servicio 2 (servicios 16-31)
+            # EXAMEN = id_tipo_servicio 4 (servicios 37-83)
+            id_tipo_servicio = 2 if tipo_procedimiento == 'OPERACION' else 4
+
+            # 3. Obtener autorizaciones activas para este tipo de procedimiento con servicios y médicos específicos
+            cursor.execute("""
+                SELECT a.id_autorizacion,
+                       a.id_servicio,
+                       a.id_medico_asignado,
+                       a.id_especialidad_requerida,
+                       s.nombre as servicio_nombre
+                FROM AUTORIZACION_PROCEDIMIENTO a
+                INNER JOIN SERVICIO s ON a.id_servicio = s.id_servicio
+                WHERE a.id_cita = %s
+                  AND a.id_paciente = %s
+                  AND a.id_tipo_servicio = %s
+                  AND (a.fecha_vencimiento IS NULL OR a.fecha_vencimiento >= NOW())
+                  AND a.fecha_uso IS NULL
+            """, (id_cita, id_paciente, id_tipo_servicio))
+            
+            autorizaciones = cursor.fetchall()
+            if not autorizaciones or len(autorizaciones) == 0:
+                tipo_nombre = 'operaciones' if tipo_procedimiento == 'OPERACION' else 'exámenes'
+                return jsonify({
+                    'error': f'No tienes autorizaciones activas para {tipo_nombre} en esta cita',
+                    'programaciones': []
+                }), 200
+
+            # 4. Construir lista de servicios y médicos autorizados
+            servicios_autorizados = [a['id_servicio'] for a in autorizaciones]
+            medicos_asignados = [a['id_medico_asignado'] for a in autorizaciones if a.get('id_medico_asignado')]
+            
+            # 5. Obtener programaciones disponibles filtradas por servicios y médicos autorizados
+            # Si hay médicos asignados, filtrar por ellos. Si no, mostrar todos los médicos del servicio
+            if medicos_asignados:
+                placeholders_servicios = ','.join(['%s'] * len(servicios_autorizados))
+                placeholders_medicos = ','.join(['%s'] * len(medicos_asignados))
+                sql = f"""
+                    SELECT 
+                        p.id_programacion,
+                        p.fecha,
+                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                        p.estado as estado_programacion,
+                        s.nombre as servicio_nombre,
+                        s.descripcion as servicio_descripcion,
+                        s.id_servicio,
+                        s.id_tipo_servicio,
+                        CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                        e.nombres as medico_nombres,
+                        e.apellidos as medico_apellidos,
+                        e.id_empleado,
+                        esp.nombre as especialidad,
+                        esp.id_especialidad,
+                        1 as disponible
+                    FROM PROGRAMACION p
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    WHERE s.id_servicio IN ({placeholders_servicios})
+                      AND e.id_empleado IN ({placeholders_medicos})
+                      AND s.estado = 'Activo'
+                      AND p.fecha >= CURDATE()
+                      AND p.estado = 'Disponible'
+                      AND h.activo = 1
+                    ORDER BY p.fecha, p.hora_inicio
+                """
+                cursor.execute(sql, servicios_autorizados + medicos_asignados)
+            else:
+                # Si no hay médico asignado, mostrar todos los médicos que ofrecen esos servicios
+                placeholders_servicios = ','.join(['%s'] * len(servicios_autorizados))
+                sql = f"""
+                    SELECT 
+                        p.id_programacion,
+                        p.fecha,
+                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                        p.estado as estado_programacion,
+                        s.nombre as servicio_nombre,
+                        s.descripcion as servicio_descripcion,
+                        s.id_servicio,
+                        s.id_tipo_servicio,
+                        CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                        e.nombres as medico_nombres,
+                        e.apellidos as medico_apellidos,
+                        e.id_empleado,
+                        esp.nombre as especialidad,
+                        esp.id_especialidad,
+                        1 as disponible
+                    FROM PROGRAMACION p
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    WHERE s.id_servicio IN ({placeholders_servicios})
+                      AND s.estado = 'Activo'
+                      AND p.fecha >= CURDATE()
+                      AND p.estado = 'Disponible'
+                      AND h.activo = 1
+                    ORDER BY p.fecha, p.hora_inicio
+                """
+                cursor.execute(sql, servicios_autorizados)
             programaciones = cursor.fetchall()
 
-            # Convertir fechas
+            # 5. Convertir fechas y agregar información adicional
             for prog in programaciones:
                 if prog.get('fecha'):
                     if hasattr(prog['fecha'], 'strftime'):
                         prog['fecha'] = prog['fecha'].strftime('%Y-%m-%d')
-                if prog.get('hora_inicio'):
-                    if hasattr(prog['hora_inicio'], 'strftime'):
-                        prog['hora_inicio'] = str(prog['hora_inicio'])
-                if prog.get('hora_fin'):
-                    if hasattr(prog['hora_fin'], 'strftime'):
-                        prog['hora_fin'] = str(prog['hora_fin'])
+                # Las horas ya vienen formateadas por TIME_FORMAT
 
-            cursor.close()
-            conexion.close()
+            print(f"[API programaciones-procedimientos] Cita {id_cita}, Tipo: {tipo_procedimiento}, id_tipo_servicio: {id_tipo_servicio}")
+            print(f"[API programaciones-procedimientos] Programaciones encontradas: {len(programaciones)}")
 
             return jsonify({
                 'success': True,
                 'programaciones': programaciones,
-                'tipo_procedimiento': tipo_procedimiento
+                'tipo_procedimiento': tipo_procedimiento,
+                'id_tipo_servicio': id_tipo_servicio,
+                'total': len(programaciones)
             })
 
     except Exception as e:
+        print(f"[API programaciones-procedimientos] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Error al obtener programaciones: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
 
 
 @paciente_bp.route('/api/reservar-procedimiento-cita', methods=['POST'])
 def api_reservar_procedimiento_cita():
-    """API para reservar un procedimiento (examen u operación) desde una cita completada"""
+    """API para reservar un procedimiento (examen u operación) desde una cita completada
+    Consume una autorización de AUTORIZACION_PROCEDIMIENTO y crea la reserva correspondiente
+    """
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
     if session.get('tipo_usuario') != 'paciente':
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
+    conexion = None
     try:
         data = request.get_json()
         id_cita = data.get('id_cita')
@@ -600,9 +686,9 @@ def api_reservar_procedimiento_cita():
 
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
-            # Verificar que la cita pertenece al paciente
+            # 1. Verificar que la cita pertenece al paciente y está completada
             cursor.execute("""
-                SELECT c.id_cita
+                SELECT c.id_cita, c.estado, c.diagnostico, r.id_reserva as id_reserva_cita
                 FROM CITA c
                 INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
                 WHERE c.id_cita = %s AND r.id_paciente = %s
@@ -611,13 +697,17 @@ def api_reservar_procedimiento_cita():
             cita = cursor.fetchone()
             if not cita:
                 return jsonify({'error': 'Cita no encontrada'}), 404
+            
+            if not cita.get('diagnostico'):
+                return jsonify({'error': 'La cita debe tener diagnóstico para reservar procedimientos'}), 400
 
-            # Verificar que la programación existe y está disponible
+            # 2. Verificar que la programación existe y está disponible
             cursor.execute("""
                 SELECT p.id_programacion, p.fecha, p.hora_inicio, p.hora_fin, 
-                       p.estado, p.id_servicio, h.id_empleado
+                       p.estado, p.id_servicio, h.id_empleado, s.id_tipo_servicio
                 FROM PROGRAMACION p
                 INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
                 WHERE p.id_programacion = %s
             """, (id_programacion,))
             
@@ -630,6 +720,7 @@ def api_reservar_procedimiento_cita():
 
             # Extraer datos de la programación
             id_servicio_prog = programacion['id_servicio']
+            id_tipo_servicio_prog = programacion['id_tipo_servicio']
             id_empleado_prog = programacion['id_empleado']
             fecha_prog = programacion['fecha']
             hora_inicio_prog = programacion['hora_inicio']
@@ -637,35 +728,38 @@ def api_reservar_procedimiento_cita():
             
             # Convertir a string si es necesario
             if hasattr(fecha_prog, 'strftime'):
-                fecha_prog = fecha_prog.strftime('%Y-%m-%d')
+                fecha_prog_str = fecha_prog.strftime('%Y-%m-%d')
+            else:
+                fecha_prog_str = str(fecha_prog)
             if hasattr(hora_inicio_prog, 'strftime'):
                 hora_inicio_prog = str(hora_inicio_prog)
             if hasattr(hora_fin_prog, 'strftime'):
                 hora_fin_prog = str(hora_fin_prog)
 
-            # VALIDACIÓN 1: Verificar duplicados (mismo servicio, médico y día)
-            sql_check_duplicado = """
-                SELECT r.id_reserva
-                FROM RESERVA r
-                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-                WHERE r.id_paciente = %s
-                  AND p.id_servicio = %s
-                  AND h.id_empleado = %s
-                  AND p.fecha = %s
-                  AND r.estado IN ('Confirmada', 'Pendiente')
+            # 3. Verificar que existe autorización activa y consumirla
+            cursor.execute("""
+                SELECT id_autorizacion, id_servicio, id_medico_asignado
+                FROM AUTORIZACION_PROCEDIMIENTO
+                WHERE id_cita = %s
+                  AND id_paciente = %s
+                  AND id_tipo_servicio = %s
+                  AND (fecha_vencimiento IS NULL OR fecha_vencimiento >= NOW())
+                  AND fecha_uso IS NULL
+                ORDER BY fecha_autorizacion DESC
                 LIMIT 1
-            """
-            cursor.execute(sql_check_duplicado, (id_paciente, id_servicio_prog, id_empleado_prog, fecha_prog))
-            reserva_duplicada = cursor.fetchone()
+            """, (id_cita, id_paciente, id_tipo_servicio_prog))
             
-            if reserva_duplicada:
+            autorizacion = cursor.fetchone()
+            if not autorizacion:
+                tipo_nombre = 'operaciones' if tipo_procedimiento == 'OPERACION' else 'exámenes'
                 return jsonify({
-                    'error': 'Ya tienes una reserva para este mismo servicio y médico en esta fecha.'
-                }), 400
-            
-            # VALIDACIÓN 2: Verificar solapamiento de horarios
-            sql_check_solapamiento = """
+                    'error': f'No tienes autorización activa para {tipo_nombre}'
+                }), 403
+
+            id_autorizacion = autorizacion['id_autorizacion']
+
+            # 4. VALIDACIÓN: Verificar solapamiento de horarios en misma fecha
+            cursor.execute("""
                 SELECT r.id_reserva, 
                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin
@@ -680,8 +774,7 @@ def api_reservar_procedimiento_cita():
                       (p.hora_inicio >= %s AND p.hora_fin <= %s)
                   )
                 LIMIT 1
-            """
-            cursor.execute(sql_check_solapamiento, (
+            """, (
                 id_paciente, fecha_prog,
                 hora_fin_prog, hora_inicio_prog,
                 hora_fin_prog, hora_inicio_prog,
@@ -693,56 +786,72 @@ def api_reservar_procedimiento_cita():
                 hora_conflicto_inicio = reserva_solapada.get('hora_inicio')
                 hora_conflicto_fin = reserva_solapada.get('hora_fin')
                 return jsonify({
-                    'error': f'Ya tienes una reserva en este horario. Conflicto con la reserva de {hora_conflicto_inicio} a {hora_conflicto_fin}.'
+                    'error': f'Ya tienes una reserva en este horario ({hora_conflicto_inicio} a {hora_conflicto_fin}). Por favor, selecciona otro horario.'
                 }), 400
 
-            # Crear la reserva
+            # 5. Crear la reserva con el tipo correcto según el procedimiento
+            # tipo: 1 = CITA, 2 = OPERACION, 3 = EXAMEN
+            tipo_reserva = 2 if tipo_procedimiento == 'OPERACION' else 3
             cursor.execute("""
-                INSERT INTO RESERVA (id_programacion, id_paciente, fecha_reserva, estado)
-                VALUES (%s, %s, NOW(), 'Pendiente')
-            """, (id_programacion, id_paciente))
+                INSERT INTO RESERVA (id_programacion, id_paciente, fecha_registro, hora_registro, tipo, estado)
+                VALUES (%s, %s, CURDATE(), CURTIME(), %s, 'Confirmada')
+            """, (id_programacion, id_paciente, tipo_reserva))
             
             id_reserva = cursor.lastrowid
 
-            # Actualizar el estado de la programación
+            # 6. Actualizar el estado de la programación
             cursor.execute("""
                 UPDATE PROGRAMACION
                 SET estado = 'Ocupado'
                 WHERE id_programacion = %s
             """, (id_programacion,))
 
-            # Crear el registro correspondiente (EXAMEN u OPERACION)
+            # 7. Crear el registro correspondiente (EXAMEN u OPERACION)
             if tipo_procedimiento == 'EXAMEN':
-                # Crear registro de examen
                 cursor.execute("""
-                    INSERT INTO EXAMEN (id_reserva, fecha_examen, estado)
-                    VALUES (%s, %s, 'Pendiente')
-                """, (id_reserva, fecha_prog))
+                    INSERT INTO EXAMEN (id_reserva, fecha_examen, hora_inicio, hora_fin, estado, observacion)
+                    VALUES (%s, %s, %s, %s, 'Pendiente', NULL)
+                """, (id_reserva, fecha_prog, hora_inicio_prog, hora_fin_prog))
             else:  # OPERACION
-                # Crear registro de operación
                 cursor.execute("""
-                    INSERT INTO OPERACION (id_reserva, fecha_operacion, estado)
-                    VALUES (%s, %s, 'Programada')
-                """, (id_reserva, fecha_prog))
+                    INSERT INTO OPERACION (id_reserva, id_cita, id_empleado, fecha_operacion, hora_inicio, hora_fin, estado, observaciones)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'Pendiente', NULL)
+                """, (id_reserva, id_cita, id_empleado_prog, fecha_prog, hora_inicio_prog, hora_fin_prog))
+
+            # 8. Marcar la autorización como utilizada
+            cursor.execute("""
+                UPDATE AUTORIZACION_PROCEDIMIENTO
+                SET fecha_uso = NOW(),
+                    id_reserva_generada = %s
+                WHERE id_autorizacion = %s
+            """, (id_reserva, id_autorizacion))
 
             conexion.commit()
-            cursor.close()
-            conexion.close()
+
+            print(f"[API reservar-procedimiento] Reserva creada: ID={id_reserva}, Tipo={tipo_procedimiento}, Autorización={id_autorizacion}")
 
             return jsonify({
                 'success': True,
                 'id_reserva': id_reserva,
-                'message': f'{tipo_procedimiento.capitalize()} agendado exitosamente'
+                'message': f'{tipo_procedimiento.capitalize()} agendado exitosamente para el {fecha_prog_str} a las {hora_inicio_prog}'
             })
 
     except Exception as e:
-        if 'conexion' in locals():
+        if conexion:
             try:
                 conexion.rollback()
+            except:
+                pass
+        print(f"[API reservar-procedimiento] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al crear la reserva: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
                 conexion.close()
             except:
                 pass
-        return jsonify({'error': f'Error al crear la reserva: {str(e)}'}), 500
 
 
 # ========== INCIDENCIAS ==========
