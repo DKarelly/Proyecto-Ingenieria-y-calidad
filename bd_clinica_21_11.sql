@@ -75,8 +75,6 @@ CREATE TABLE `AUTORIZACION_PROCEDIMIENTO` (
   `fecha_vencimiento` datetime DEFAULT NULL COMMENT 'Fecha de vencimiento de la autorización (7 días desde emisión)',
   `fecha_uso` datetime DEFAULT NULL COMMENT 'Fecha en que se utilizó/consumió la autorización',
   `id_reserva_generada` int DEFAULT NULL COMMENT 'ID de la reserva/procedimiento generado con esta autorización',
-  `descripcion` text COMMENT 'Descripción detallada de la autorización',
-  `prioridad` enum('BAJA','MEDIA','ALTA','URGENTE') DEFAULT 'MEDIA' COMMENT 'Prioridad del procedimiento autorizado',
   PRIMARY KEY (`id_autorizacion`),
   KEY `idx_cita` (`id_cita`),
   KEY `idx_paciente` (`id_paciente`),

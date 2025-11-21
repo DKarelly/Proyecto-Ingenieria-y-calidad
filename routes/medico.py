@@ -1065,20 +1065,29 @@ def guardar_diagnostico():
         
         if autorizar_examen:
             id_servicio_examen = request.form.get('id_servicio_examen')
+            print(f"🔍 [DEBUG] Autorizar examen: {autorizar_examen}, ID servicio: {id_servicio_examen}")
             
             if id_servicio_examen:
-                resultado = AutorizacionProcedimiento.crear({
-                    'id_cita': id_cita,
-                    'id_paciente': id_paciente,
-                    'id_medico_autoriza': id_empleado,
+                # Para exámenes, el médico que autoriza es el mismo que lo realiza
+                datos_examen = {
+                    'id_cita': int(id_cita),
+                    'id_paciente': int(id_paciente),
+                    'id_medico_autoriza': int(id_empleado),
                     'tipo_procedimiento': 'EXAMEN',
                     'id_servicio': int(id_servicio_examen),
                     'id_especialidad_requerida': None,
-                    'id_medico_asignado': None
-                })
+                    'id_medico_asignado': int(id_empleado)  # El mismo médico realiza el examen
+                }
+                print(f"🔍 [DEBUG] Datos para crear autorización de examen: {datos_examen}")
+                
+                resultado = AutorizacionProcedimiento.crear(datos_examen, cursor_externo=cursor)
+                print(f"🔍 [DEBUG] Resultado crear examen: {resultado}")
                 
                 if resultado.get('success'):
                     autorizaciones_creadas.append('examen')
+                    print(f"✅ [DEBUG] Autorización de examen creada con ID: {resultado.get('id_autorizacion')}")
+                else:
+                    print(f"❌ Error al crear autorización de examen: {resultado.get('error')}")
         
         if autorizar_operacion:
             id_servicio_operacion = request.form.get('id_servicio_operacion')
@@ -1090,24 +1099,38 @@ def guardar_diagnostico():
             if id_servicio_operacion:
                 # Validación: Si NO se deriva, el médico logueado DEBE poder operar
                 if not id_medico_derivar:
-                    # Obtener servicios que puede realizar el médico logueado
+                    # Verificar que el médico tenga la especialidad requerida para el servicio
                     cursor.execute("""
-                        SELECT COUNT(*) as puede_operar
+                        SELECT s.id_especialidad as especialidad_servicio,
+                               e.id_especialidad as especialidad_medico
                         FROM SERVICIO s
-                        INNER JOIN EMPLEADO_SERVICIO es ON s.id_servicio = es.id_servicio
+                        INNER JOIN EMPLEADO e ON e.id_empleado = %s
                         WHERE s.id_servicio = %s 
-                        AND es.id_empleado = %s
                         AND s.id_tipo_servicio = 2
-                    """, (id_servicio_operacion, id_empleado))
+                    """, (id_empleado, id_servicio_operacion))
                     
                     resultado_validacion = cursor.fetchone()
-                    puede_operar = resultado_validacion['puede_operar'] if resultado_validacion else 0
                     
-                    if not puede_operar:
+                    if not resultado_validacion:
+                        # Hacer commit antes de cerrar para guardar el diagnóstico
+                        conexion.commit()
                         conexion.close()
                         return jsonify({
                             'success': False, 
-                            'message': 'Usted no está autorizado para realizar esta operación. Debe derivar a otro médico.'
+                            'message': 'Servicio de operación no encontrado.'
+                        }), 404
+                    
+                    # Verificar que las especialidades coincidan
+                    puede_operar = (resultado_validacion['especialidad_servicio'] == 
+                                   resultado_validacion['especialidad_medico'])
+                    
+                    if not puede_operar:
+                        # Hacer commit antes de cerrar para guardar el diagnóstico
+                        conexion.commit()
+                        conexion.close()
+                        return jsonify({
+                            'success': False, 
+                            'message': 'Usted no está autorizado para realizar esta operación. Debe derivar a otro médico de la especialidad requerida.'
                         }), 403
                     
                     # Si puede operar, asignarla a sí mismo
@@ -1124,18 +1147,25 @@ def guardar_diagnostico():
                 servicio_result = cursor.fetchone()
                 id_especialidad_req = servicio_result['id_especialidad'] if servicio_result else None
                 
-                resultado = AutorizacionProcedimiento.crear({
-                    'id_cita': id_cita,
-                    'id_paciente': id_paciente,
-                    'id_medico_autoriza': id_empleado,
+                datos_operacion = {
+                    'id_cita': int(id_cita),
+                    'id_paciente': int(id_paciente),
+                    'id_medico_autoriza': int(id_empleado),
                     'tipo_procedimiento': 'OPERACION',
                     'id_servicio': int(id_servicio_operacion),
-                    'id_especialidad_requerida': id_especialidad_req,
-                    'id_medico_asignado': id_medico_asignado
-                })
+                    'id_especialidad_requerida': int(id_especialidad_req) if id_especialidad_req else None,
+                    'id_medico_asignado': int(id_medico_asignado) if id_medico_asignado else None
+                }
+                print(f"🔍 [DEBUG] Datos para crear autorización de operación: {datos_operacion}")
+                
+                resultado = AutorizacionProcedimiento.crear(datos_operacion, cursor_externo=cursor)
+                print(f"🔍 [DEBUG] Resultado crear operación: {resultado}")
                 
                 if resultado.get('success'):
                     autorizaciones_creadas.append('operación')
+                    print(f"✅ [DEBUG] Autorización de operación creada con ID: {resultado.get('id_autorizacion')}")
+                else:
+                    print(f"❌ Error al crear autorización de operación: {resultado.get('error')}")
         
         conexion.commit()
         
