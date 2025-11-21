@@ -1,3 +1,8 @@
+// ========== VARIABLES GLOBALES DE PAGINACIÓN ==========
+let paginaActualPacientes = 1;
+let paginaActualDiagnosticos = 1;
+const itemsPorPagina = 10;
+
 // ========== EVENTOS INICIALES ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Panel Médico cargado correctamente');
@@ -7,19 +12,31 @@ document.addEventListener('DOMContentLoaded', function() {
     if (buscarInput) {
         buscarInput.addEventListener('input', function(e) {
             const termino = e.target.value.toLowerCase();
-            const filas = document.querySelectorAll('.paciente-row');
-
-            filas.forEach(fila => {
-                const nombre = fila.dataset.nombre.toLowerCase();
-                const dni = fila.dataset.dni.toLowerCase();
-
-                if (nombre.includes(termino) || dni.includes(termino)) {
-                    fila.style.display = '';
-                } else {
-                    fila.style.display = 'none';
-                }
-            });
+            paginaActualPacientes = 1; // Resetear a primera página al buscar
+            filtrarYPaginarPacientes(termino);
         });
+        
+        // Inicializar paginación de pacientes si hay filas
+        const filasPacientes = document.querySelectorAll('.paciente-row');
+        if (filasPacientes.length > 0) {
+            filtrarYPaginarPacientes('');
+        }
+    }
+
+    // Búsqueda de diagnósticos
+    const buscarDiagnosticoInput = document.getElementById('buscar-diagnostico');
+    if (buscarDiagnosticoInput) {
+        buscarDiagnosticoInput.addEventListener('input', function(e) {
+            const termino = e.target.value.toLowerCase();
+            paginaActualDiagnosticos = 1; // Resetear a primera página al buscar
+            filtrarYPaginarDiagnosticos(termino);
+        });
+        
+        // Inicializar paginación de diagnósticos si hay filas
+        const filasDiagnosticos = document.querySelectorAll('.diagnostico-row');
+        if (filasDiagnosticos.length > 0) {
+            filtrarYPaginarDiagnosticos('');
+        }
     }
 
     // Formulario de diagnóstico
@@ -62,7 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ========== FUNCIONES PARA DIAGNÓSTICOS ==========
 function abrirFormularioDiagnostico(idCita, nombrePaciente, dni, idPaciente, fechaCita, horaCita) {
-    // Validar horario antes de abrir el formulario
+    // RESTRICCIÓN ACTIVA: Solo permitir registrar diagnósticos dentro del día y horario permitido
+    // Si la hora actual es antes de la hora de inicio o ya pasó la medianoche del día de la cita, se bloquea.
     if (!validarHorarioCita(fechaCita, horaCita)) {
         return;
     }
@@ -149,6 +167,34 @@ function abrirFormularioModificacion(idCita, nombrePaciente, dni, idPaciente, fe
         });
 }
 
+/**
+ * FUNCIÓN DE VALIDACIÓN DE HORARIO PARA DIAGNÓSTICOS
+ * ====================================================
+ * 
+ * RESTRICCIÓN TEMPORAL DESACTIVADA
+ * 
+ * Esta función implementa una restricción de tiempo para el registro de diagnósticos:
+ * 
+ * 1. RESTRICCIÓN ANTES DE LA CITA:
+ *    - No permite registrar diagnósticos antes de que inicie la hora de la cita
+ *    - Ejemplo: Si la cita es a las 14:00, no se puede registrar a las 13:55
+ *    - Mensaje: "Esta cita aún no ha iniciado. Podrá registrar el diagnóstico a partir de las HH:MM"
+ * 
+ * 2. RESTRICCIÓN DESPUÉS DE MEDIANOCHE:
+ *    - No permite registrar diagnósticos después de las 23:59:59 del día de la cita
+ *    - Ejemplo: Si la cita fue el 21/11/2025, no se puede registrar el 22/11/2025
+ *    - Mensaje: "El plazo para registrar el diagnóstico ha expirado. Solo se permite registrar el mismo día de la cita."
+ * 
+ * 3. VENTANA PERMITIDA:
+ *    - El diagnóstico SOLO puede registrarse desde la hora de inicio de la cita hasta las 23:59:59 del mismo día
+ *    - Ejemplo: Cita a las 10:00 del 21/11/2025 → Puede registrarse entre 10:00 y 23:59:59 del 21/11/2025
+ * 
+ * RAZÓN DE LA DESACTIVACIÓN:
+ * - Actualmente comentada para permitir flexibilidad en el registro de diagnósticos
+ * - Para reactivarla, descomentar las llamadas a esta función en:
+ *   * abrirFormularioDiagnostico() (línea ~83)
+ *   * abrirFormularioModificacion() (si se requiere)
+ */
 function validarHorarioCita(fechaCita, horaCita) {
     if (!fechaCita || !horaCita) {
         return true; // Si no hay datos, permitir (compatibilidad con citas antiguas)
@@ -283,11 +329,16 @@ function cerrarModalHistorial() {
     document.getElementById('modal-historial').classList.add('hidden');
 }
 
-// Cerrar modal al hacer clic fuera
+// Cerrar modales al hacer clic fuera
 document.addEventListener('click', function(e) {
-    const modal = document.getElementById('modal-historial');
-    if (modal && e.target === modal) {
+    const modalHistorial = document.getElementById('modal-historial');
+    if (modalHistorial && e.target === modalHistorial) {
         cerrarModalHistorial();
+    }
+    
+    const modalDiagnostico = document.getElementById('form-diagnostico');
+    if (modalDiagnostico && e.target === modalDiagnostico) {
+        cerrarFormularioDiagnostico();
     }
 });
 
@@ -611,3 +662,184 @@ async function cargarMedicosMiEspecialidad() {
         console.error('Error al cargar médicos de mi especialidad:', error);
     }
 }
+
+// ========== FUNCIONES DE BÚSQUEDA Y PAGINACIÓN ==========
+
+/**
+ * Filtra y pagina la lista de pacientes
+ */
+function filtrarYPaginarPacientes(termino) {
+    const filas = document.querySelectorAll('.paciente-row');
+    let filasFiltradas = [];
+    
+    console.log(`Filtrando pacientes con término: "${termino}", Total filas: ${filas.length}`);
+    
+    // Filtrar filas
+    filas.forEach(fila => {
+        const nombre = fila.dataset.nombre.toLowerCase();
+        const dni = fila.dataset.dni.toLowerCase();
+        
+        if (nombre.includes(termino) || dni.includes(termino)) {
+            filasFiltradas.push(fila);
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+    
+    // Calcular paginación
+    const totalPaginas = Math.ceil(filasFiltradas.length / itemsPorPagina);
+    const inicio = (paginaActualPacientes - 1) * itemsPorPagina;
+    const fin = inicio + itemsPorPagina;
+    
+    console.log(`Pacientes filtrados: ${filasFiltradas.length}, Total páginas: ${totalPaginas}, Página actual: ${paginaActualPacientes}`);
+    
+    // Mostrar solo items de la página actual
+    filasFiltradas.forEach((fila, index) => {
+        if (index >= inicio && index < fin) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+    
+    // Generar controles de paginación
+    generarPaginacion('paginacion-pacientes', totalPaginas, paginaActualPacientes, cambiarPaginaPacientes);
+}
+
+/**
+ * Filtra y pagina la lista de diagnósticos pendientes
+ */
+function filtrarYPaginarDiagnosticos(termino) {
+    const filas = document.querySelectorAll('.diagnostico-row');
+    let filasFiltradas = [];
+    
+    console.log(`Filtrando diagnósticos con término: "${termino}", Total filas: ${filas.length}`);
+    
+    // Filtrar filas
+    filas.forEach(fila => {
+        const paciente = fila.dataset.paciente.toLowerCase();
+        const dni = fila.dataset.dni.toLowerCase();
+        
+        if (paciente.includes(termino) || dni.includes(termino)) {
+            filasFiltradas.push(fila);
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+    
+    // Calcular paginación
+    const totalPaginas = Math.ceil(filasFiltradas.length / itemsPorPagina);
+    const inicio = (paginaActualDiagnosticos - 1) * itemsPorPagina;
+    const fin = inicio + itemsPorPagina;
+    
+    console.log(`Diagnósticos filtrados: ${filasFiltradas.length}, Total páginas: ${totalPaginas}, Página actual: ${paginaActualDiagnosticos}`);
+    
+    // Mostrar solo items de la página actual
+    filasFiltradas.forEach((fila, index) => {
+        if (index >= inicio && index < fin) {
+            fila.style.display = '';
+        } else {
+            fila.style.display = 'none';
+        }
+    });
+    
+    // Generar controles de paginación
+    generarPaginacion('paginacion-diagnosticos', totalPaginas, paginaActualDiagnosticos, cambiarPaginaDiagnosticos);
+}
+
+/**
+ * Genera los controles de paginación
+ */
+function generarPaginacion(contenedorId, totalPaginas, paginaActual, callbackCambiarPagina) {
+    const contenedor = document.getElementById(contenedorId);
+    if (!contenedor) return;
+    
+    // Si no hay páginas o solo una, ocultar paginación
+    if (totalPaginas <= 1) {
+        contenedor.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    // Botón anterior
+    html += `
+        <button onclick="${callbackCambiarPagina.name}(${paginaActual - 1})" 
+                ${paginaActual === 1 ? 'disabled' : ''}
+                class="px-3 py-2 rounded-lg border ${paginaActual === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-cyan-600 hover:bg-cyan-50 border-cyan-200'} transition-colors">
+            <span class="material-symbols-outlined text-sm">chevron_left</span>
+        </button>
+    `;
+    
+    // Números de página
+    const maxBotones = 5;
+    let inicio = Math.max(1, paginaActual - Math.floor(maxBotones / 2));
+    let fin = Math.min(totalPaginas, inicio + maxBotones - 1);
+    
+    if (fin - inicio < maxBotones - 1) {
+        inicio = Math.max(1, fin - maxBotones + 1);
+    }
+    
+    if (inicio > 1) {
+        html += `
+            <button onclick="${callbackCambiarPagina.name}(1)" 
+                    class="px-4 py-2 rounded-lg border bg-white text-gray-700 hover:bg-cyan-50 border-gray-200 transition-colors">
+                1
+            </button>
+        `;
+        if (inicio > 2) {
+            html += '<span class="px-2 text-gray-500">...</span>';
+        }
+    }
+    
+    for (let i = inicio; i <= fin; i++) {
+        html += `
+            <button onclick="${callbackCambiarPagina.name}(${i})" 
+                    class="px-4 py-2 rounded-lg border ${i === paginaActual ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-white text-gray-700 hover:bg-cyan-50 border-gray-200'} transition-colors font-semibold">
+                ${i}
+            </button>
+        `;
+    }
+    
+    if (fin < totalPaginas) {
+        if (fin < totalPaginas - 1) {
+            html += '<span class="px-2 text-gray-500">...</span>';
+        }
+        html += `
+            <button onclick="${callbackCambiarPagina.name}(${totalPaginas})" 
+                    class="px-4 py-2 rounded-lg border bg-white text-gray-700 hover:bg-cyan-50 border-gray-200 transition-colors">
+                ${totalPaginas}
+            </button>
+        `;
+    }
+    
+    // Botón siguiente
+    html += `
+        <button onclick="${callbackCambiarPagina.name}(${paginaActual + 1})" 
+                ${paginaActual === totalPaginas ? 'disabled' : ''}
+                class="px-3 py-2 rounded-lg border ${paginaActual === totalPaginas ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-cyan-600 hover:bg-cyan-50 border-cyan-200'} transition-colors">
+            <span class="material-symbols-outlined text-sm">chevron_right</span>
+        </button>
+    `;
+    
+    contenedor.innerHTML = html;
+}
+
+/**
+ * Cambia la página actual de pacientes
+ */
+function cambiarPaginaPacientes(nuevaPagina) {
+    paginaActualPacientes = nuevaPagina;
+    const termino = document.getElementById('buscar-paciente')?.value.toLowerCase() || '';
+    filtrarYPaginarPacientes(termino);
+}
+
+/**
+ * Cambia la página actual de diagnósticos
+ */
+function cambiarPaginaDiagnosticos(nuevaPagina) {
+    paginaActualDiagnosticos = nuevaPagina;
+    const termino = document.getElementById('buscar-diagnostico')?.value.toLowerCase() || '';
+    filtrarYPaginarDiagnosticos(termino);
+}
+

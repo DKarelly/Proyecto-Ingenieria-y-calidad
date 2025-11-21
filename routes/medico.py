@@ -972,9 +972,11 @@ def guardar_diagnostico():
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # Validación temporal: obtener fecha y hora de la cita
+        # Validación temporal: obtener fecha y hora de la cita (usar nombres correctos de columnas)
+        # La tabla CITA tiene: fecha_cita, hora_inicio, hora_fin
+        # Se usan alias para mantener el resto del código sin cambios
         cursor.execute("""
-            SELECT fecha, hora, estado, diagnostico as diagnostico_existente
+            SELECT fecha_cita AS fecha, hora_inicio AS hora, estado, diagnostico AS diagnostico_existente
             FROM CITA 
             WHERE id_cita = %s
         """, (id_cita,))
