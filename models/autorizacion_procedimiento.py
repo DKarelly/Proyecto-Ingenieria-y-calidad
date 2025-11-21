@@ -212,6 +212,11 @@ class AutorizacionProcedimiento:
         """
         Obtiene autorizaciones pendientes y activas de un paciente para habilitar botones
         Excluye autorizaciones vencidas o ya utilizadas
+        
+        Una autorización está pendiente si:
+        - No tiene fecha_uso (no ha sido utilizada)
+        - No tiene id_reserva_generada (no se ha generado reserva)
+        - No está vencida (fecha_vencimiento es NULL o es futura)
         """
         conexion = obtener_conexion()
         try:
@@ -221,7 +226,7 @@ class AutorizacionProcedimiento:
                            MIN(fecha_vencimiento) as proxima_vencimiento
                     FROM AUTORIZACION_PROCEDIMIENTO
                     WHERE id_paciente = %s 
-                    AND estado = 'PENDIENTE'
+                    AND fecha_uso IS NULL
                     AND (fecha_vencimiento IS NULL OR fecha_vencimiento > NOW())
                     AND id_reserva_generada IS NULL
                     GROUP BY tipo_procedimiento

@@ -536,7 +536,7 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 // Obtener id del paciente actual
-                const response = await fetch('/api/usuario/actual');
+                const response = await fetch('/usuarios/api/usuario/actual');
                 if (!response.ok) return;
                 
                 const userData = await response.json();
