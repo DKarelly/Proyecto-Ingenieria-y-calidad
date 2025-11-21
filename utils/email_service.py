@@ -243,14 +243,17 @@ def enviar_email_reserva_creada(paciente_email, paciente_nombre, fecha, hora_ini
         Su reserva ha sido registrada exitosamente en nuestro sistema.
     </p>
     
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid #0891b2; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: #0891b2;">#{id_reserva}</span>
+        </div>
+    </div>
+    
     <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de su Reserva</h3>
         
         <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>N° Reserva:</strong></td>
-                <td style="padding: 8px 0; color: #111827; font-size: 14px;">#{id_reserva}</td>
-            </tr>
             <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
                 <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
@@ -298,14 +301,17 @@ def enviar_email_reserva_creada_medico(medico_email, medico_nombre, paciente_nom
         Se ha registrado una nueva reserva médica en su agenda.
     </p>
     
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid #0891b2; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: #0891b2;">#{id_reserva}</span>
+        </div>
+    </div>
+    
     <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de la Reserva</h3>
         
         <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>N° Reserva:</strong></td>
-                <td style="padding: 8px 0; color: #111827; font-size: 14px;">#{id_reserva}</td>
-            </tr>
             <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👤 Paciente:</strong></td>
                 <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
@@ -330,6 +336,178 @@ def enviar_email_reserva_creada_medico(medico_email, medico_nombre, paciente_nom
     return email_service.enviar_notificacion_email(
         medico_email, medico_nombre, titulo, mensaje, tipo='informacion'
     )
+
+
+def enviar_email_cambio_estado_reserva(paciente_email, paciente_nombre, medico_email, medico_nombre,
+                                       id_reserva, estado_anterior, estado_nuevo, fecha, hora_inicio, hora_fin,
+                                       servicio, motivo=None):
+    """
+    Envía emails tanto al paciente como al médico cuando cambia el estado de una reserva
+    """
+    resultados = {'paciente': None, 'medico': None}
+    
+    # Determinar colores y mensajes según el estado
+    estados_info = {
+        'Confirmada': {
+            'color': '#22c55e',
+            'icono': '✅',
+            'titulo_paciente': 'Reserva Confirmada',
+            'titulo_medico': 'Reserva Confirmada',
+            'mensaje_paciente': 'Su reserva ha sido confirmada exitosamente.',
+            'mensaje_medico': 'La reserva ha sido confirmada.'
+        },
+        'Cancelada': {
+            'color': '#ef4444',
+            'icono': '❌',
+            'titulo_paciente': 'Reserva Cancelada',
+            'titulo_medico': 'Reserva Cancelada',
+            'mensaje_paciente': 'Su reserva ha sido cancelada.',
+            'mensaje_medico': 'Una reserva ha sido cancelada.'
+        },
+        'Completada': {
+            'color': '#3b82f6',
+            'icono': '✓',
+            'titulo_paciente': 'Reserva Completada',
+            'titulo_medico': 'Reserva Completada',
+            'mensaje_paciente': 'Su cita médica ha sido completada.',
+            'mensaje_medico': 'La cita médica ha sido completada.'
+        },
+        'Inasistida': {
+            'color': '#f59e0b',
+            'icono': '⚠️',
+            'titulo_paciente': 'Reserva Marcada como Inasistida',
+            'titulo_medico': 'Reserva Marcada como Inasistida',
+            'mensaje_paciente': 'Su reserva ha sido marcada como inasistida.',
+            'mensaje_medico': 'Una reserva ha sido marcada como inasistida.'
+        },
+        'Pendiente': {
+            'color': '#6366f1',
+            'icono': '⏳',
+            'titulo_paciente': 'Reserva Pendiente',
+            'titulo_medico': 'Reserva Pendiente',
+            'mensaje_paciente': 'Su reserva está pendiente de confirmación.',
+            'mensaje_medico': 'Una reserva está pendiente de confirmación.'
+        }
+    }
+    
+    info = estados_info.get(estado_nuevo, {
+        'color': '#0891b2',
+        'icono': 'ℹ️',
+        'titulo_paciente': f'Estado de Reserva Actualizado',
+        'titulo_medico': f'Estado de Reserva Actualizado',
+        'mensaje_paciente': f'El estado de su reserva ha cambiado a: {estado_nuevo}',
+        'mensaje_medico': f'El estado de la reserva ha cambiado a: {estado_nuevo}'
+    })
+    
+    # Email al paciente
+    if paciente_email:
+        mensaje_paciente = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        {info['mensaje_paciente']}
+    </p>
+    
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid {info['color']}; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: {info['color']};">#{id_reserva}</span>
+        </div>
+    </div>
+    
+    <div style="background-color: #ffffff; border: 2px solid {info['color']}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: {info['color']}; font-size: 18px;">{info['icono']} Detalles de la Reserva</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Estado:</strong></td>
+                <td style="padding: 8px 0; color: {info['color']}; font-size: 14px; font-weight: 600;">{estado_nuevo}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+"""
+        if motivo:
+            mensaje_paciente += f"""
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>📝 Motivo:</strong> {motivo}
+        </p>
+    </div>
+"""
+        mensaje_paciente += "</div>"
+        
+        resultados['paciente'] = email_service.enviar_notificacion_email(
+            paciente_email, paciente_nombre, info['titulo_paciente'], mensaje_paciente, tipo='estado'
+        )
+    
+    # Email al médico
+    if medico_email and medico_nombre:
+        mensaje_medico = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        {info['mensaje_medico']}
+    </p>
+    
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid {info['color']}; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: {info['color']};">#{id_reserva}</span>
+        </div>
+    </div>
+    
+    <div style="background-color: #ffffff; border: 2px solid {info['color']}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: {info['color']}; font-size: 18px;">{info['icono']} Detalles de la Reserva</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Estado:</strong></td>
+                <td style="padding: 8px 0; color: {info['color']}; font-size: 14px; font-weight: 600;">{estado_nuevo}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👤 Paciente:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+"""
+        if motivo:
+            mensaje_medico += f"""
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>📝 Motivo:</strong> {motivo}
+        </p>
+    </div>
+"""
+        mensaje_medico += "</div>"
+        
+        resultados['medico'] = email_service.enviar_notificacion_email(
+            medico_email, medico_nombre, info['titulo_medico'], mensaje_medico, tipo='informacion'
+        )
+    
+    return resultados
 
 
 def enviar_email_cancelacion_aprobada(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin,
