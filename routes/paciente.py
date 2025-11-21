@@ -105,6 +105,70 @@ def api_historial_clinico():
                             aut['fecha_vencimiento'] = aut['fecha_vencimiento'].strftime('%Y-%m-%d')
                 
                 cita['autorizaciones'] = autorizaciones
+                
+                # Obtener EXÁMENES asociados a esta cita
+                sql_examenes = """
+                    SELECT e.id_examen,
+                           e.fecha_examen,
+                           e.observacion,
+                           e.estado,
+                           p.fecha as fecha_programacion,
+                           TIME_FORMAT(p.hora_inicio, '%H:%i') as hora_inicio,
+                           TIME_FORMAT(p.hora_fin, '%H:%i') as hora_fin,
+                           s.nombre as tipo_examen,
+                           emp.nombres as medico_nombres,
+                           emp.apellidos as medico_apellidos
+                    FROM EXAMEN e
+                    INNER JOIN PROGRAMACION p ON e.id_programacion = p.id_programacion
+                    INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                    LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                    WHERE e.id_cita = %s
+                    ORDER BY e.fecha_examen DESC
+                """
+                cursor.execute(sql_examenes, (id_cita,))
+                examenes = cursor.fetchall()
+                
+                # Convertir fechas de exámenes
+                for examen in examenes:
+                    if examen.get('fecha_examen') and hasattr(examen['fecha_examen'], 'strftime'):
+                        examen['fecha_examen'] = examen['fecha_examen'].strftime('%Y-%m-%d')
+                    if examen.get('fecha_programacion') and hasattr(examen['fecha_programacion'], 'strftime'):
+                        examen['fecha_programacion'] = examen['fecha_programacion'].strftime('%Y-%m-%d')
+                
+                cita['examenes'] = examenes
+                
+                # Obtener OPERACIONES asociadas a esta cita
+                sql_operaciones = """
+                    SELECT o.id_operacion,
+                           o.fecha_operacion,
+                           o.observacion,
+                           o.estado,
+                           p.fecha as fecha_programacion,
+                           TIME_FORMAT(p.hora_inicio, '%H:%i') as hora_inicio,
+                           TIME_FORMAT(p.hora_fin, '%H:%i') as hora_fin,
+                           s.nombre as tipo_operacion,
+                           emp.nombres as medico_nombres,
+                           emp.apellidos as medico_apellidos
+                    FROM OPERACION o
+                    INNER JOIN PROGRAMACION p ON o.id_programacion = p.id_programacion
+                    INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
+                    LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                    WHERE o.id_cita = %s
+                    ORDER BY o.fecha_operacion DESC
+                """
+                cursor.execute(sql_operaciones, (id_cita,))
+                operaciones = cursor.fetchall()
+                
+                # Convertir fechas de operaciones
+                for operacion in operaciones:
+                    if operacion.get('fecha_operacion') and hasattr(operacion['fecha_operacion'], 'strftime'):
+                        operacion['fecha_operacion'] = operacion['fecha_operacion'].strftime('%Y-%m-%d')
+                    if operacion.get('fecha_programacion') and hasattr(operacion['fecha_programacion'], 'strftime'):
+                        operacion['fecha_programacion'] = operacion['fecha_programacion'].strftime('%Y-%m-%d')
+                
+                cita['operaciones'] = operaciones
 
             return jsonify({'historial': historial})
 

@@ -3328,24 +3328,33 @@ def api_paciente_historial_clinico():
                     else:
                         cita['fecha_cita'] = str(cita['fecha_cita'])
                 
-                # Obtener detalles de exámenes asociados
+                # Obtener detalles de exámenes asociados (EXAMEN tiene id_reserva relacionado con la reserva de la cita)
                 id_reserva = cita.get('id_reserva')
+                id_cita = cita.get('id_cita')
+                
                 if id_reserva:
+                    # Buscar exámenes por id_reserva o id_reservaServicio
                     sql_examenes = """
                         SELECT e.id_examen,
                                e.fecha_examen,
+                               TIME_FORMAT(e.hora_inicio, '%%H:%%i') as hora_inicio,
+                               TIME_FORMAT(e.hora_fin, '%%H:%%i') as hora_fin,
                                e.observacion,
                                e.estado,
-                               'Examen Médico' as tipo_examen,
-                               TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
-                               TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin
+                               prog.fecha as fecha_programacion,
+                               s.nombre as tipo_examen,
+                               emp.nombres as medico_nombres,
+                               emp.apellidos as medico_apellidos
                         FROM EXAMEN e
                         LEFT JOIN RESERVA r ON e.id_reserva = r.id_reserva
-                        LEFT JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
-                        WHERE e.id_reserva = %s
-                        ORDER BY e.fecha_examen DESC
+                        LEFT JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                        LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                        LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                        LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                        WHERE e.id_reserva = %s OR e.id_reservaServicio = %s
+                        ORDER BY e.fecha_examen DESC, e.hora_inicio DESC
                     """
-                    cursor.execute(sql_examenes, (id_reserva,))
+                    cursor.execute(sql_examenes, (id_reserva, id_reserva))
                     examenes = cursor.fetchall()
                     
                     # Convertir fechas de exámenes
@@ -3355,23 +3364,43 @@ def api_paciente_historial_clinico():
                                 examen['fecha_examen'] = examen['fecha_examen'].strftime('%Y-%m-%d')
                             else:
                                 examen['fecha_examen'] = str(examen['fecha_examen'])
+                        if examen.get('fecha_programacion'):
+                            if hasattr(examen['fecha_programacion'], 'strftime'):
+                                examen['fecha_programacion'] = examen['fecha_programacion'].strftime('%Y-%m-%d')
+                            else:
+                                examen['fecha_programacion'] = str(examen['fecha_programacion'])
                     
                     cita['examenes'] = examenes
-                    
-                    # Obtener operaciones asociadas (si la tabla OPERACION existe)
+                else:
+                    cita['examenes'] = []
+                
+                # Obtener operaciones asociadas (OPERACION tiene relación directa con id_cita)
+                if id_cita:
                     try:
                         sql_operaciones = """
                             SELECT o.id_operacion,
                                    o.fecha_operacion,
-                                   TIME_FORMAT(o.hora_operacion, '%%H:%%i') as hora_operacion,
-                                   o.descripcion,
+                                   TIME_FORMAT(o.hora_inicio, '%%H:%%i') as hora_inicio,
+                                   TIME_FORMAT(o.hora_fin, '%%H:%%i') as hora_fin,
+                                   o.observaciones,
                                    o.estado,
-                                   o.tipo_operacion
+                                   prog.fecha as fecha_programacion,
+                                   s.nombre as tipo_servicio,
+                                   emp.nombres as medico_nombres,
+                                   emp.apellidos as medico_apellidos,
+                                   emp2.nombres as operador_nombres,
+                                   emp2.apellidos as operador_apellidos
                             FROM OPERACION o
-                            WHERE o.id_reserva = %s
-                            ORDER BY o.fecha_operacion DESC, o.hora_operacion DESC
+                            LEFT JOIN EMPLEADO emp2 ON o.id_empleado = emp2.id_empleado
+                            LEFT JOIN RESERVA r ON o.id_reserva = r.id_reserva
+                            LEFT JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                            LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                            LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                            WHERE o.id_cita = %s
+                            ORDER BY o.fecha_operacion DESC, o.hora_inicio DESC
                         """
-                        cursor.execute(sql_operaciones, (id_reserva,))
+                        cursor.execute(sql_operaciones, (id_cita,))
                         operaciones = cursor.fetchall()
                         
                         # Convertir fechas de operaciones
@@ -3381,13 +3410,19 @@ def api_paciente_historial_clinico():
                                     operacion['fecha_operacion'] = operacion['fecha_operacion'].strftime('%Y-%m-%d')
                                 else:
                                     operacion['fecha_operacion'] = str(operacion['fecha_operacion'])
+                            if operacion.get('fecha_programacion'):
+                                if hasattr(operacion['fecha_programacion'], 'strftime'):
+                                    operacion['fecha_programacion'] = operacion['fecha_programacion'].strftime('%Y-%m-%d')
+                                else:
+                                    operacion['fecha_programacion'] = str(operacion['fecha_programacion'])
                         
                         cita['operaciones'] = operaciones
-                    except:
-                        # Si la tabla OPERACION no existe, devolver lista vacía
+                    except Exception as op_error:
+                        print(f"[API historial-clinico] Error al obtener operaciones: {str(op_error)}")
+                        import traceback
+                        traceback.print_exc()
                         cita['operaciones'] = []
                 else:
-                    cita['examenes'] = []
                     cita['operaciones'] = []
 
             return jsonify({'historial': historial})
