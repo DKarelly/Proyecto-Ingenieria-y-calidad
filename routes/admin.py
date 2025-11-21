@@ -511,7 +511,7 @@ def api_buscar_empleados_agenda():
         return jsonify({'error': 'No autorizado'}), 401
 
     empleados = Empleado.obtener_todos()
-    empleados_activos = [e for e in empleados if e.get('estado', '').lower() == 'activo']
+    empleados_activos = [e for e in empleados if e.get('estado', '') == 'Activo']
     return jsonify(empleados_activos)
 
 @admin_bp.route('/api/servicios/buscar-agenda', methods=['GET'])
@@ -521,7 +521,7 @@ def api_buscar_servicios_agenda():
         return jsonify({'error': 'No autorizado'}), 401
 
     servicios = Servicio.obtener_todos()
-    servicios_activos = [s for s in servicios if s.get('estado', '').lower() == 'activo']
+    servicios_activos = [s for s in servicios if s.get('estado', '') == 'Activo']
     return jsonify(servicios_activos)
 
 @admin_bp.route('/api/agenda/consultar', methods=['POST'])

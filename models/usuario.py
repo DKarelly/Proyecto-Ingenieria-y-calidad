@@ -205,7 +205,7 @@ class Usuario:
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                sql = "UPDATE USUARIO SET estado = 'inactivo' WHERE id_usuario = %s"
+                sql = "UPDATE USUARIO SET estado = 'Inactivo' WHERE id_usuario = %s"
                 cursor.execute(sql, (id_usuario,))
                 conexion.commit()
                 return {'success': True}
@@ -278,8 +278,8 @@ class Usuario:
         if not usuario:
             return {'error': 'Usuario no encontrado'}
         
-        # Aceptar variantes de mayúsculas/minúsculas en el campo estado
-        if not usuario['estado'] or usuario['estado'].lower() != 'activo':
+        # Verificar que el usuario esté activo (normalizado a 'Activo')
+        if not usuario['estado'] or usuario['estado'] != 'Activo':
             return {'error': 'Usuario inactivo'}
         
         if not Usuario.verificar_contrasena(usuario['contrasena'], contrasena):

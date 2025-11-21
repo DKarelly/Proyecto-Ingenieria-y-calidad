@@ -11,6 +11,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- FullCalendar CSS -->
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -143,68 +146,84 @@
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 3: Selecciona Fecha y Horario</h2>
 
                     <div class="mb-6">
-                        <!-- Buscador de rango de fechas -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <div class="flex flex-wrap items-end gap-3">
-                                <div class="flex-1 min-w-[200px]">
-                                    <label for="fechaInicio" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Fecha inicio:
-                                    </label>
-                                    <input 
-                                        type="date" 
-                                        id="fechaInicio" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    >
+                        <!-- Info del médico seleccionado -->
+                        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-center gap-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                <div>
+                                    <p class="text-sm text-gray-600">Médico seleccionado:</p>
+                                    <p id="medicoNombreHorario" class="font-semibold text-gray-800"></p>
                                 </div>
-                                <div class="flex-1 min-w-[200px]">
-                                    <label for="fechaFin" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Fecha fin:
-                                    </label>
-                                    <input 
-                                        type="date" 
-                                        id="fechaFin" 
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    >
-                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Navegación de semana -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
+                            <div class="flex items-center justify-between">
                                 <button 
                                     type="button" 
-                                    id="btnBuscarFecha" 
-                                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2"
+                                    id="btnSemanaAnterior" 
+                                    class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                        <path d="m15 18-6-6 6-6"/>
                                     </svg>
-                                    Buscar
+                                    Anterior
                                 </button>
+                                
+                                <button 
+                                    type="button"
+                                    onclick="abrirModalSelectorMes()"
+                                    class="text-center hover:bg-gray-50 rounded-lg px-4 py-2 transition-colors cursor-pointer"
+                                >
+                                    <p class="text-sm text-gray-600">Semana actual</p>
+                                    <p id="rangoSemana" class="text-lg font-semibold text-gray-800"></p>
+                                    <p class="text-xs text-cyan-600 mt-1">▼ Click para cambiar</p>
+                                </button>
+                                
                                 <button 
                                     type="button" 
-                                    id="btnLimpiarFecha" 
-                                    class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors duration-200 flex items-center gap-2"
+                                    id="btnSemanaSiguiente" 
+                                    class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
                                 >
+                                    Siguiente
                                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                                        <path d="m9 18 6-6-6-6"/>
                                     </svg>
-                                    Limpiar
                                 </button>
                             </div>
-                            <p class="text-sm text-gray-600 mt-2">
-                                Mostrando horarios del rango: <span id="rangoFechas" class="font-semibold text-blue-600"></span>
-                            </p>
                         </div>
-                        
-                        <label class="block text-gray-700 font-semibold mb-3">Horarios disponibles</label>
-                        <p class="text-sm text-gray-600 mb-4">Médico: <span id="medicoNombreHorario" class="font-semibold"></span></p>
-                        
-                        <div id="horariosSemanales" class="space-y-4">
-                            <!-- Los horarios agrupados por día se cargarán aquí -->
+
+                        <!-- Calendario FullCalendar -->
+                        <div id="calendarContainer" class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                            <div id="calendar"></div>
                         </div>
-                        
-                        <div id="noHorarios" class="hidden text-center py-8 text-gray-500">
+
+                        <!-- Leyenda -->
+                        <div class="mt-4 flex flex-wrap items-center gap-4 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-green-500 rounded"></div>
+                                <span class="text-gray-600">Disponible</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-red-500 rounded"></div>
+                                <span class="text-gray-600">Ocupado</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-cyan-500 rounded"></div>
+                                <span class="text-gray-600">Seleccionado</span>
+                            </div>
+                        </div>
+
+                        <!-- Mensaje cuando no hay horarios -->
+                        <div id="noHorarios" class="hidden text-center py-8 text-gray-500 mt-4">
                             <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-gray-400 mb-3">
                                 <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                             </svg>
-                            <p>No hay horarios disponibles para este médico en las fechas seleccionadas.</p>
-                            <p class="text-sm mt-2">Por favor, intenta con otra fecha o selecciona otro médico.</p>
+                            <p>No hay horarios disponibles para este médico en la semana seleccionada.</p>
+                            <p class="text-sm mt-2">Por favor, intenta con otra semana o selecciona otro médico.</p>
                         </div>
                     </div>
 
@@ -309,6 +328,110 @@
                     <a href="/" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
                         Volver al Inicio
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Detalle de Programación -->
+        <div id="modalDetalleProgramacion" onclick="cerrarModalDetalleClick(event)" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div onclick="event.stopPropagation()" class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform scale-95 transition-transform">
+                <div class="bg-gradient-to-r from-cyan-500 to-blue-500 p-6 rounded-t-2xl">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-2xl font-bold text-white">Detalle de Programación</h3>
+                        <button onclick="cerrarModalDetalle()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"/>
+                                    <path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-500">Fecha</p>
+                                <p id="detalleFecha" class="text-lg font-semibold text-gray-800"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-500">Horario</p>
+                                <p id="detalleHorario" class="text-lg font-semibold text-gray-800"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-500">Estado</p>
+                                <p id="detalleEstado" class="text-lg font-semibold"></p>
+                            </div>
+                        </div>
+
+                        <div id="detalleInfoAdicional" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="modalDetalleFooter" class="bg-gray-50 p-6 rounded-b-2xl flex gap-3">
+                    <!-- Los botones se generan dinámicamente según disponibilidad -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Selector de Mes -->
+        <div id="modalSelectorMes" onclick="cerrarModalSelectorMesClick(event)" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div onclick="event.stopPropagation()" class="bg-white rounded-lg shadow-2xl w-[440px] transform scale-95 transition-transform">
+                <div class="p-6">
+                    <!-- Navegación de mes -->
+                    <div class="flex items-center justify-between mb-6">
+                        <button id="btnMesAnterior" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m15 18-6-6 6-6"/>
+                            </svg>
+                        </button>
+                        <h4 id="nombreMesSelector" class="text-xl font-bold text-gray-800"></h4>
+                        <button id="btnMesSiguiente" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m9 18 6-6-6-6"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Calendario mensual -->
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;" class="mb-4">
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">L</div>
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">M</div>
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">X</div>
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">J</div>
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">V</div>
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">S</div>
+                        <div class="text-center text-sm font-semibold text-gray-600 py-2">D</div>
+                    </div>
+                    <div id="diasMesSelector" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;"></div>
                 </div>
             </div>
         </div>
@@ -437,6 +560,11 @@
                     if (fechaFinEl) {
                         fechaFinEl.value = '';
                     }
+                    
+                    // Reiniciar a la semana actual
+                    semanaActual = new Date();
+                    actualizarRangoSemana();
+                    
                     console.log('[Paso3] Regresando a la semana actual');
                     await cargarHorariosSemanales();
                 });
@@ -460,6 +588,13 @@
             if (btnStep2Next) {
                 btnStep2Next.addEventListener('click', async () => {
                     goToStep(3);
+                    
+                    // Inicializar el calendario si no existe
+                    if (!calendar) {
+                        inicializarCalendario();
+                    }
+                    
+                    // Cargar horarios de la semana actual
                     await cargarHorariosSemanales();
                 });
             }
@@ -534,6 +669,39 @@
                     }
                 });
             }
+            
+            // Event listeners para navegación de semanas
+            const btnSemanaAnterior = document.getElementById('btnSemanaAnterior');
+            if (btnSemanaAnterior) {
+                btnSemanaAnterior.addEventListener('click', () => {
+                    navegarSemanaAnterior();
+                });
+            }
+
+            const btnSemanaSiguiente = document.getElementById('btnSemanaSiguiente');
+            if (btnSemanaSiguiente) {
+                btnSemanaSiguiente.addEventListener('click', () => {
+                    navegarSemanaSiguiente();
+                });
+            }
+
+            // Event listeners para modal de selector de mes
+            const btnMesAnterior = document.getElementById('btnMesAnterior');
+            if (btnMesAnterior) {
+                btnMesAnterior.addEventListener('click', () => {
+                    cambiarMesSelector(-1);
+                });
+            }
+
+            const btnMesSiguiente = document.getElementById('btnMesSiguiente');
+            if (btnMesSiguiente) {
+                btnMesSiguiente.addEventListener('click', () => {
+                    cambiarMesSelector(1);
+                });
+            }
+
+            // Validar estado inicial de botón anterior
+            validarBotonSemanaAnterior();
         });
 
         // PASO 1: Cargar especialidades desde la BD
@@ -707,183 +875,168 @@
             document.getElementById('btn-step2-next').disabled = false;
         }
 
-        // PASO 3: Cargar horarios del rango de fechas del médico seleccionado
-        async function cargarHorariosSemanales(fechaInicio = null, fechaFin = null) {
-            try {
-                // Si no se proporcionan fechas, intentar leerlas de los inputs
-                if (!fechaInicio || !fechaFin) {
-                    const fechaInicioInput = document.getElementById('fechaInicio');
-                    const fechaFinInput = document.getElementById('fechaFin');
-                    if (fechaInicioInput && fechaInicioInput.value) {
-                        fechaInicio = fechaInicioInput.value;
-                    }
-                    if (fechaFinInput && fechaFinInput.value) {
-                        fechaFin = fechaFinInput.value;
-                    }
+        // PASO 3: Variables globales para el calendario
+        let calendar = null;
+        let semanaActual = new Date();
+        let horarioSeleccionado = null;
+
+        // Inicializar FullCalendar
+        function inicializarCalendario() {
+            const calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                locale: 'es',
+                headerToolbar: false, // Ocultamos el header por defecto, usaremos nuestro propio control
+                allDaySlot: false,
+                slotMinTime: '07:00:00',
+                slotMaxTime: '20:00:00',
+                slotDuration: '00:30:00',
+                slotLabelInterval: '01:00',
+                height: 'auto',
+                contentHeight: 'auto',
+                aspectRatio: 1.8,
+                expandRows: true,
+                stickyHeaderDates: true,
+                firstDay: 1, // Lunes
+                weekends: true,
+                nowIndicator: true,
+                selectable: false,
+                eventClick: function(info) {
+                    mostrarDetallePrograma(info.event);
+                },
+                eventContent: function(arg) {
+                    const disponible = arg.event.extendedProps.disponible;
+                    const horaInicio = arg.event.extendedProps.hora_inicio;
+                    const horaFin = arg.event.extendedProps.hora_fin;
+                    
+                    return {
+                        html: `
+                            <div class="fc-event-main-frame px-1 py-1">
+                                <div class="fc-event-title-container">
+                                    <div class="fc-event-title fc-sticky text-xs font-semibold">
+                                        ${horaInicio}
+                                        ${disponible ? '<span class="ml-1">✓</span>' : '<span class="ml-1">✕</span>'}
+                                    </div>
+                                    <div class="text-xs opacity-90 mt-0.5">
+                                        ${disponible ? 'Disponible' : 'Ocupado'}
+                                    </div>
+                                </div>
+                            </div>
+                        `
+                    };
                 }
+            });
+
+            calendar.render();
+            actualizarRangoSemana();
+        }
+
+        // Actualizar el texto del rango de semana
+        function actualizarRangoSemana() {
+            const inicioSemana = obtenerInicioSemana(semanaActual);
+            const finSemana = obtenerFinSemana(semanaActual);
+            
+            const inicioStr = inicioSemana.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+            const finStr = finSemana.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            document.getElementById('rangoSemana').textContent = `${inicioStr} - ${finStr}`;
+        }
+
+        // Obtener inicio de semana (lunes)
+        function obtenerInicioSemana(fecha) {
+            const d = new Date(fecha);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        // Obtener fin de semana (domingo)
+        function obtenerFinSemana(fecha) {
+            const inicio = obtenerInicioSemana(fecha);
+            return new Date(inicio.getTime() + 6 * 24 * 60 * 60 * 1000);
+        }
+
+        // Cargar horarios en el calendario
+        async function cargarHorariosSemanales() {
+            try {
+                const inicioSemana = obtenerInicioSemana(semanaActual);
+                const finSemana = obtenerFinSemana(semanaActual);
                 
-                console.log('[Paso3] Cargando horarios para servicio ID:', formData.id_servicio, 'y empleado ID:', formData.id_empleado, 'desde:', fechaInicio || 'semana actual', 'hasta:', fechaFin || 'semana actual');
-                console.log('[Paso3] Fechas recibidas - fechaInicio:', fechaInicio, 'fechaFin:', fechaFin);
+                const fechaInicio = inicioSemana.toISOString().split('T')[0];
+                const fechaFin = finSemana.toISOString().split('T')[0];
+
+                console.log('[Paso3] Cargando horarios para médico ID:', formData.id_empleado, 'desde:', fechaInicio, 'hasta:', fechaFin);
                 
                 document.getElementById('medicoNombreHorario').textContent = formData.empleado_nombre;
                 
-                // Construir URL con el nuevo endpoint /api/buscar-horarios-disponibles
-                // FILTRAR SOLO CITAS (id_tipo_servicio=1)
+                // Construir URL
                 let url = `/reservas/api/buscar-horarios-disponibles?`;
-                
-                const params = ['id_tipo_servicio=1']; // Solo citas
-                // Para citas generales (id_tipo_servicio=1), NO incluimos id_servicio
-                // porque las citas pueden tener id_servicio NULL o un servicio específico
-                // Solo incluimos id_servicio si NO es cita general (por ejemplo, para exámenes)
-                // if (formData.id_servicio && formData.id_tipo_servicio && formData.id_tipo_servicio != 1) {
-                //     params.push(`id_servicio=${formData.id_servicio}`);
-                // }
-                if (formData.id_empleado) {
-                    params.push(`id_empleado=${formData.id_empleado}`);
-                }
-                if (fechaInicio && fechaFin) {
-                    params.push(`fecha_inicio=${fechaInicio}`);
-                    params.push(`fecha_fin=${fechaFin}`);
-                } else if (fechaInicio) {
-                    // Si solo hay fecha inicio, usar fecha fin igual a fecha inicio
-                    params.push(`fecha_inicio=${fechaInicio}`);
-                    params.push(`fecha_fin=${fechaInicio}`);
-                }
-                
+                const params = [
+                    'id_tipo_servicio=1',
+                    `id_empleado=${formData.id_empleado}`,
+                    `fecha_inicio=${fechaInicio}`,
+                    `fecha_fin=${fechaFin}`
+                ];
                 url += params.join('&');
                 
-                console.log('[Paso3] URL completa:', url);
+                console.log('[Paso3] URL:', url);
                 const response = await fetch(url);
                 const data = await response.json();
-                console.log('[Paso3] Respuesta del servidor:', data);
                 console.log('[Paso3] Horarios recibidos:', data.horarios ? data.horarios.length : 0);
-                console.log('[Paso3] Rango devuelto por servidor - inicio_semana:', data.inicio_semana, 'fin_semana:', data.fin_semana);
                 
-                // Actualizar el rango de fechas mostrado
-                const rangoFechasSpan = document.getElementById('rangoFechas');
-                if (rangoFechasSpan) {
-                    // Priorizar las fechas proporcionadas, luego las del servidor
-                    let fechaInicioMostrar = fechaInicio || data.inicio_semana;
-                    let fechaFinMostrar = fechaFin || data.fin_semana;
-                    
-                    if (fechaInicioMostrar && fechaFinMostrar) {
-                        // Mostrar el rango (personalizado o de la semana actual)
-                        const inicio = new Date(fechaInicioMostrar + 'T00:00:00');
-                        const fin = new Date(fechaFinMostrar + 'T00:00:00');
-                        const inicioFormateado = inicio.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-                        const finFormateado = fin.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-                        rangoFechasSpan.textContent = `${inicioFormateado} - ${finFormateado}`;
-                        console.log('[Paso3] Rango mostrado:', `${inicioFormateado} - ${finFormateado}`, 'desde fechas:', fechaInicioMostrar, 'a', fechaFinMostrar);
-                    }
-                }
+                // Limpiar eventos anteriores
+                calendar.removeAllEvents();
+                horarioSeleccionado = null;
+                document.getElementById('btn-step3-next').disabled = true;
 
-                const container = document.getElementById('horariosSemanales');
                 const noHorarios = document.getElementById('noHorarios');
                 
-                container.innerHTML = '';
-
+                // Siempre mostrar el calendario
+                document.getElementById('calendarContainer').classList.remove('hidden');
+                
                 if (data.horarios && data.horarios.length > 0) {
                     noHorarios.classList.add('hidden');
                     
-                    // Agrupar horarios por fecha
-                    const horariosPorFecha = {};
-                    data.horarios.forEach(h => {
-                        if (!horariosPorFecha[h.fecha]) {
-                            horariosPorFecha[h.fecha] = [];
-                        }
-                        horariosPorFecha[h.fecha].push(h);
-                    });
-
-                    // Crear cards por día
-                    Object.keys(horariosPorFecha).sort().forEach(fecha => {
-                        const horariosDelDia = horariosPorFecha[fecha];
-                        const fechaObj = new Date(fecha + 'T00:00:00');
+                    // Convertir horarios a eventos de FullCalendar
+                    const eventos = data.horarios.map(horario => {
+                        // El backend envía 'estado_programacion' como string: 'Disponible' o 'Ocupado'
+                        const disponible = horario.estado_programacion === 'Disponible';
                         
-                        const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-                        const diaSemana = diasSemana[fechaObj.getDay()];
-                        
-                        const fechaFormateada = fechaObj.toLocaleDateString('es-ES', { 
-                            day: '2-digit', 
-                            month: 'long', 
-                            year: 'numeric' 
-                        });
-                        
-                        const diaCard = document.createElement('div');
-                        diaCard.className = 'border rounded-lg p-4 bg-gray-50';
-                        diaCard.innerHTML = `
-                            <h4 class="font-semibold text-gray-800 mb-3">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2 text-cyan-600">
-                                    <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
-                                </svg>
-                                ${diaSemana}, ${fechaFormateada}
-                            </h4>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2" data-fecha="${fecha}">
-                            </div>
-                        `;
-                        
-                        const horariosGrid = diaCard.querySelector('[data-fecha]');
-                        
-                        horariosDelDia.forEach(h => {
-                            const esDisponible = h.estado_programacion === 'Disponible';
-                            
-                            const horarioBtn = document.createElement('button');
-                            horarioBtn.type = 'button';
-                            
-                            if (esDisponible) {
-                                horarioBtn.className = 'border-2 border-gray-300 bg-white rounded-lg p-2 text-sm hover:border-cyan-500 hover:bg-cyan-50 transition-all';
-                                horarioBtn.onclick = () => seleccionarHorario(h.id_programacion, fecha, h.hora_inicio, h.hora_fin, diaSemana, horarioBtn);
-                            } else {
-                                horarioBtn.className = 'border-2 border-gray-200 bg-gray-100 rounded-lg p-2 text-sm text-gray-400 cursor-not-allowed';
-                                horarioBtn.disabled = true;
+                        return {
+                            id: horario.id_programacion,
+                            title: disponible ? 'Disponible' : 'Ocupado',
+                            start: `${horario.fecha}T${horario.hora_inicio}`,
+                            end: `${horario.fecha}T${horario.hora_fin}`,
+                            backgroundColor: disponible ? '#10b981' : '#ef4444', // Verde o Rojo
+                            borderColor: disponible ? '#059669' : '#dc2626',
+                            textColor: '#ffffff',
+                            extendedProps: {
+                                id_programacion: horario.id_programacion,
+                                fecha: horario.fecha,
+                                hora_inicio: horario.hora_inicio,
+                                hora_fin: horario.hora_fin,
+                                disponible: disponible,
+                                seleccionado: false
                             }
-                            
-                            horarioBtn.innerHTML = `
-                                <div class="font-semibold">${h.hora_inicio} - ${h.hora_fin}</div>
-                                <div class="text-xs ${esDisponible ? 'text-green-600' : 'text-red-500'}">
-                                    ${esDisponible ? '✓ Disponible' : '✗ Ocupado'}
-                                </div>
-                            `;
-                            
-                            horariosGrid.appendChild(horarioBtn);
-                        });
-                        
-                        container.appendChild(diaCard);
+                        };
                     });
                     
-                    const disponibles = data.horarios.filter(h => h.estado_programacion === 'Disponible').length;
-                    const ocupados = data.horarios.length - disponibles;
-                    console.log('[Paso3] Cargados', data.horarios.length, 'horarios:', disponibles, 'disponibles,', ocupados, 'ocupados');
+                    // Agregar eventos al calendario
+                    calendar.addEventSource(eventos);
+                    
+                    // Navegar a la fecha de inicio de la semana
+                    calendar.gotoDate(inicioSemana);
                 } else {
+                    // Mostrar mensaje pero mantener calendario visible
                     noHorarios.classList.remove('hidden');
-                    console.log('[Paso3] No hay horarios disponibles');
+                    // Navegar a la fecha de inicio de la semana aunque no haya eventos
+                    calendar.gotoDate(inicioSemana);
                 }
             } catch (error) {
                 console.error('[Paso3] Error al cargar horarios:', error);
                 alert('Error al cargar los horarios. Por favor, intenta nuevamente.');
             }
-        }
-
-        function seleccionarHorario(id_programacion, fecha, horaInicio, horaFin, diaSemana, elemento) {
-            // Remover selección previa en todos los horarios
-            document.querySelectorAll('#horariosSemanales button').forEach(btn => {
-                if (!btn.disabled) {
-                    btn.classList.remove('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-300');
-                    btn.classList.add('border-gray-300', 'bg-white');
-                }
-            });
-
-            // Marcar como seleccionado
-            elemento.classList.add('border-cyan-500', 'bg-cyan-50', 'ring-2', 'ring-cyan-300');
-            elemento.classList.remove('border-gray-300', 'bg-white');
-
-            formData.id_programacion = id_programacion;
-            formData.fecha = fecha;
-            formData.hora_inicio = horaInicio;
-            formData.hora_fin = horaFin;
-            formData.dia_semana = diaSemana;
-
-            console.log('[Paso3] Programación seleccionada:', id_programacion, diaSemana, fecha, horaInicio, '-', horaFin);
-            document.getElementById('btn-step3-next').disabled = false;
         }
 
         function goToStep(step) {
@@ -1008,6 +1161,11 @@
                     // Ir directamente al paso 3
                     goToStep(3);
                     
+                    // Inicializar el calendario si no existe
+                    if (!calendar) {
+                        inicializarCalendario();
+                    }
+                    
                     // Cargar horarios del médico
                     await cargarHorariosSemanales();
                     
@@ -1070,7 +1228,358 @@
                 console.error('Error al preseleccionar médico:', error);
             }
         }
+
+        // ============================================
+        // FUNCIONES PARA MODAL DE DETALLE DE PROGRAMACIÓN
+        // ============================================
+        
+        function mostrarDetallePrograma(event) {
+            const disponible = event.extendedProps.disponible;
+            const fecha = event.extendedProps.fecha;
+            const horaInicio = event.extendedProps.hora_inicio;
+            const horaFin = event.extendedProps.hora_fin;
+            
+            // Formatear fecha
+            const fechaObj = new Date(fecha + 'T00:00:00');
+            const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const diaSemana = diasSemana[fechaObj.getDay()];
+            const fechaFormateada = fechaObj.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            // Llenar modal con información
+            document.getElementById('detalleFecha').textContent = `${diaSemana}, ${fechaFormateada}`;
+            document.getElementById('detalleHorario').textContent = `${horaInicio} - ${horaFin}`;
+            
+            const estadoElement = document.getElementById('detalleEstado');
+            if (disponible) {
+                estadoElement.textContent = '✓ Disponible';
+                estadoElement.className = 'text-lg font-semibold text-green-600';
+            } else {
+                estadoElement.textContent = '✗ Ocupado';
+                estadoElement.className = 'text-lg font-semibold text-red-600';
+            }
+            
+            // Si está disponible, agregar botón de selección
+            const modal = document.getElementById('modalDetalleProgramacion');
+            const footer = document.getElementById('modalDetalleFooter');
+            
+            if (disponible) {
+                footer.innerHTML = `
+                    <button onclick="cerrarModalDetalle()" class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="seleccionarHorarioDesdeModal(${event.extendedProps.id_programacion}, '${fecha}', '${horaInicio}', '${horaFin}')" 
+                        class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300 shadow-md hover:shadow-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline mr-2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Seleccionar Horario
+                    </button>
+                `;
+            } else {
+                footer.innerHTML = `
+                    <button onclick="cerrarModalDetalle()" class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cerrar
+                    </button>
+                `;
+            }
+            
+            // Mostrar modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.querySelector('.transform').classList.remove('scale-95');
+                modal.querySelector('.transform').classList.add('scale-100');
+            }, 10);
+        }
+
+        function cerrarModalDetalle() {
+            const modal = document.getElementById('modalDetalleProgramacion');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function cerrarModalDetalleClick(event) {
+            // Cerrar solo si se hace clic en el fondo oscuro (no en el contenido del modal)
+            if (event.target === event.currentTarget) {
+                cerrarModalDetalle();
+            }
+        }
+
+        function seleccionarHorarioDesdeModal(id_programacion, fecha, horaInicio, horaFin) {
+            // Remover selección anterior en el calendario
+            calendar.getEvents().forEach(event => {
+                if (event.extendedProps.seleccionado) {
+                    event.setExtendedProp('seleccionado', false);
+                    event.setProp('backgroundColor', '#10b981');
+                    event.setProp('borderColor', '#059669');
+                }
+            });
+
+            // Buscar y marcar el evento seleccionado
+            const eventos = calendar.getEvents();
+            const eventoSeleccionado = eventos.find(e => e.extendedProps.id_programacion === id_programacion);
+            
+            if (eventoSeleccionado) {
+                eventoSeleccionado.setExtendedProp('seleccionado', true);
+                eventoSeleccionado.setProp('backgroundColor', '#06b6d4');
+                eventoSeleccionado.setProp('borderColor', '#0891b2');
+            }
+
+            // Guardar selección
+            const fechaObj = new Date(fecha + 'T00:00:00');
+            const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const diaSemana = diasSemana[fechaObj.getDay()];
+            
+            horarioSeleccionado = {
+                id_programacion: id_programacion,
+                fecha: fecha,
+                hora_inicio: horaInicio,
+                hora_fin: horaFin
+            };
+
+            formData.id_programacion = id_programacion;
+            formData.fecha = fecha;
+            formData.hora_inicio = horaInicio;
+            formData.hora_fin = horaFin;
+            formData.dia_semana = diaSemana;
+
+            console.log('[Paso3] Horario seleccionado:', horarioSeleccionado);
+            
+            // Habilitar botón siguiente con animación
+            const btnSiguiente = document.getElementById('btn-step3-next');
+            btnSiguiente.disabled = false;
+            btnSiguiente.classList.add('animate-pulse');
+            setTimeout(() => {
+                btnSiguiente.classList.remove('animate-pulse');
+            }, 1000);
+            
+            // Cerrar modal
+            cerrarModalDetalle();
+        }
+
+        // ============================================
+        // FUNCIONES PARA NAVEGACIÓN DE SEMANAS
+        // ============================================
+        
+        function navegarSemanaAnterior() {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            const inicioSemanaActual = obtenerInicioSemana(semanaActual);
+            const inicioSemanaNueva = new Date(inicioSemanaActual);
+            inicioSemanaNueva.setDate(inicioSemanaNueva.getDate() - 7);
+            
+            // Validar que no retroceda a semanas pasadas
+            const inicioSemanaHoy = obtenerInicioSemana(hoy);
+            
+            if (inicioSemanaNueva >= inicioSemanaHoy) {
+                semanaActual.setDate(semanaActual.getDate() - 7);
+                actualizarRangoSemana();
+                cargarHorariosSemanales();
+                validarBotonSemanaAnterior();
+            } else {
+                console.log('[Navegación] No se puede retroceder a semanas anteriores a la actual');
+            }
+        }
+
+        function navegarSemanaSiguiente() {
+            semanaActual.setDate(semanaActual.getDate() + 7);
+            actualizarRangoSemana();
+            cargarHorariosSemanales();
+            validarBotonSemanaAnterior();
+        }
+
+        function validarBotonSemanaAnterior() {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            const inicioSemanaActual = obtenerInicioSemana(semanaActual);
+            const inicioSemanaHoy = obtenerInicioSemana(hoy);
+            
+            const btnAnterior = document.getElementById('btnSemanaAnterior');
+            if (btnAnterior) {
+                if (inicioSemanaActual <= inicioSemanaHoy) {
+                    btnAnterior.disabled = true;
+                    btnAnterior.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btnAnterior.disabled = false;
+                    btnAnterior.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        // ============================================
+        // FUNCIONES PARA MODAL DE SELECTOR DE MES
+        // ============================================
+        
+        let mesActualSelector = new Date();
+        let ocupacionPorDia = {};
+
+        async function abrirModalSelectorMes() {
+            mesActualSelector = new Date(semanaActual);
+            await cargarOcupacionMes();
+            renderizarCalendarioMensual();
+            
+            const modal = document.getElementById('modalSelectorMes');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.querySelector('.transform').classList.remove('scale-95');
+                modal.querySelector('.transform').classList.add('scale-100');
+            }, 10);
+        }
+
+        function cerrarModalSelectorMes() {
+            const modal = document.getElementById('modalSelectorMes');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function cerrarModalSelectorMesClick(event) {
+            // Cerrar solo si se hace clic en el fondo oscuro (no en el contenido del modal)
+            if (event.target === event.currentTarget) {
+                cerrarModalSelectorMes();
+            }
+        }
+
+        async function cargarOcupacionMes() {
+            try {
+                const primerDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth(), 1);
+                const ultimoDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth() + 1, 0);
+                
+                const fechaInicio = primerDia.toISOString().split('T')[0];
+                const fechaFin = ultimoDia.toISOString().split('T')[0];
+                
+                const url = `/reservas/api/buscar-horarios-disponibles?id_tipo_servicio=1&id_empleado=${formData.id_empleado}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                ocupacionPorDia = {};
+                
+                if (data.horarios && data.horarios.length > 0) {
+                    data.horarios.forEach(h => {
+                        if (!ocupacionPorDia[h.fecha]) {
+                            ocupacionPorDia[h.fecha] = { total: 0, ocupados: 0 };
+                        }
+                        ocupacionPorDia[h.fecha].total++;
+                        // El backend envía 'estado_programacion' como 'Disponible' o 'Ocupado'
+                        if (h.estado_programacion === 'Ocupado') {
+                            ocupacionPorDia[h.fecha].ocupados++;
+                        }
+                    });
+                }
+                
+                console.log('[SelectorMes] Ocupación cargada:', ocupacionPorDia);
+            } catch (error) {
+                console.error('[SelectorMes] Error al cargar ocupación:', error);
+            }
+        }
+
+        function renderizarCalendarioMensual() {
+            const nombreMes = mesActualSelector.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            document.getElementById('nombreMesSelector').textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+            
+            const primerDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth(), 1);
+            const ultimoDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth() + 1, 0);
+            let primerDiaSemana = primerDia.getDay();
+            // Ajustar para que lunes sea 0 (0=Lun, 1=Mar, ..., 6=Dom)
+            primerDiaSemana = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
+            
+            const container = document.getElementById('diasMesSelector');
+            container.innerHTML = '';
+            
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            // Días vacíos antes del primer día
+            for (let i = 0; i < primerDiaSemana; i++) {
+                const diaVacio = document.createElement('div');
+                diaVacio.className = 'aspect-square';
+                container.appendChild(diaVacio);
+            }
+            
+            // Días del mes
+            for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
+                const fecha = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth(), dia);
+                const fechaStr = fecha.toISOString().split('T')[0];
+                const esPasado = fecha < hoy;
+                const esHoy = fecha.toDateString() === hoy.toDateString();
+                
+                const diaBtn = document.createElement('button');
+                diaBtn.type = 'button';
+                diaBtn.className = 'w-full aspect-square flex items-center justify-center rounded-full text-base font-semibold transition-all hover:scale-105';
+                diaBtn.textContent = dia;
+                
+                if (esPasado) {
+                    diaBtn.className += ' text-gray-300 cursor-not-allowed';
+                    diaBtn.disabled = true;
+                } else if (esHoy) {
+                    // Día actual - círculo azul
+                    diaBtn.className += ' bg-blue-500 text-white font-semibold cursor-pointer hover:bg-blue-600';
+                    diaBtn.onclick = () => seleccionarFechaDesdeModal(fecha);
+                } else {
+                    // Calcular color según ocupación
+                    let colorClass = 'text-gray-700 hover:bg-gray-100';
+                    
+                    if (ocupacionPorDia[fechaStr]) {
+                        const porcentaje = (ocupacionPorDia[fechaStr].ocupados / ocupacionPorDia[fechaStr].total) * 100;
+                        if (porcentaje < 30) {
+                            colorClass = 'bg-green-100 text-green-700 hover:bg-green-200';
+                        } else if (porcentaje < 70) {
+                            colorClass = 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200';
+                        } else {
+                            colorClass = 'bg-red-100 text-red-700 hover:bg-red-200';
+                        }
+                    }
+                    
+                    diaBtn.className += ` ${colorClass} cursor-pointer font-medium`;
+                    diaBtn.onclick = () => seleccionarFechaDesdeModal(fecha);
+                }
+                
+                container.appendChild(diaBtn);
+            }
+        }
+
+        function cambiarMesSelector(direccion) {
+            mesActualSelector.setMonth(mesActualSelector.getMonth() + direccion);
+            cargarOcupacionMes().then(() => {
+                renderizarCalendarioMensual();
+            });
+        }
+
+        function seleccionarFechaDesdeModal(fecha) {
+            // Validar que no sea una fecha pasada
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            
+            if (fecha < hoy) {
+                alert('No puedes seleccionar fechas pasadas.');
+                return;
+            }
+            
+            // Actualizar semana actual a la semana de la fecha seleccionada
+            semanaActual = new Date(fecha);
+            actualizarRangoSemana();
+            cargarHorariosSemanales();
+            validarBotonSemanaAnterior();
+            
+            // Cerrar modal
+            cerrarModalSelectorMes();
+        }
     </script>
+
+    <!-- FullCalendar JS -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/locales/es.global.min.js'></script>
 
 </body>
 </html>

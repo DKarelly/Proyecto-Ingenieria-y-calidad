@@ -279,7 +279,7 @@ class Empleado:
                              (id_empleado,))
                 
                 # Desactivar el usuario
-                cursor.execute("UPDATE USUARIO SET estado = 'inactivo' WHERE id_usuario = %s", 
+                cursor.execute("UPDATE USUARIO SET estado = 'Inactivo' WHERE id_usuario = %s", 
                              (empleado['id_usuario'],))
                 
                 conexion.commit()

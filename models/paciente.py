@@ -195,7 +195,7 @@ class Paciente:
                 id_usuario = resultado['id_usuario']
                 
                 # Desactivar el usuario
-                cursor.execute("UPDATE USUARIO SET estado = 'inactivo' WHERE id_usuario = %s", 
+                cursor.execute("UPDATE USUARIO SET estado = 'Inactivo' WHERE id_usuario = %s", 
                              (id_usuario,))
                 
                 conexion.commit()

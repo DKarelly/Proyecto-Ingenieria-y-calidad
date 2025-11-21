@@ -365,12 +365,30 @@ def api_login():
     correo = data.get('correo')
     contrasena = data.get('contrasena')
     
+    # Log para debugging (solo en desarrollo)
+    print(f"\n[DEBUG LOGIN] Intento de login para: {correo}")
+    print(f"[DEBUG LOGIN] Contraseña recibida: {len(contrasena) if contrasena else 0} caracteres")
+    
     if not correo or not contrasena:
+        print(f"[DEBUG LOGIN] Error: Campos incompletos")
         return jsonify({'error': 'Debe completar todos los campos'}), 400
+    
+    # Obtener usuario para debugging
+    from models.usuario import Usuario
+    usuario_test = Usuario.obtener_por_correo(correo)
+    if usuario_test:
+        print(f"[DEBUG LOGIN] Usuario encontrado - Estado: {usuario_test.get('estado')}")
+        print(f"[DEBUG LOGIN] Hash en BD: {usuario_test.get('contrasena')[:50]}...")
+        
+        # Verificar contraseña manualmente
+        from werkzeug.security import check_password_hash
+        match = check_password_hash(usuario_test['contrasena'], contrasena)
+        print(f"[DEBUG LOGIN] Verificación de contraseña: {'✓ MATCH' if match else '✗ NO MATCH'}")
     
     resultado = Usuario.login(correo, contrasena)
     
     if 'error' in resultado:
+        print(f"[DEBUG LOGIN] Error: {resultado['error']}")
         return jsonify({'error': resultado['error']}), 401
     
     # Guardar en sesión también
@@ -474,7 +492,7 @@ def api_register():
                 data['correo'],
                 contrasena_hash,
                 data.get('telefono'),
-                'activo',
+                'Activo',
                 date.today()
             ))
             

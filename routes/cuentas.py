@@ -379,7 +379,7 @@ def ver_perfil_paciente(id_paciente):
         # Convertir a string y luego a minúsculas
         estado_str = str(estado_val).strip().lower()
         # Verificar si es 'activo' (puede venir como 'Activo', 'ACTIVO', 'activo', etc.)
-        if estado_str == 'activo':
+        if estado_str == 'Activo':
             estado_normalizado = 'activo'
         else:
             estado_normalizado = 'inactivo'
