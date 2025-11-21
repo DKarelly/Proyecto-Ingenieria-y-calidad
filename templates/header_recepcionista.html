@@ -28,7 +28,7 @@
         <div class="flex justify-between items-center">
             <!-- Logo y Título -->
             <div class="flex items-center gap-6">
-                <a href="/" class="group flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 rounded-lg">
+                <a href="/recepcionista/panel" class="group flex items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 rounded-lg">
                     <div class="bg-gray-50 p-2 rounded-xl group-hover:bg-cyan-50 transition-all duration-300 border border-gray-200">
                         <img src="{{ url_for('static', filename='images/logo1.png') }}" alt="Clínica Unión" class="h-10 w-auto" loading="lazy" decoding="async" fetchpriority="high">
                     </div>
@@ -88,6 +88,18 @@
                                 </div>
                             </a>
 
+                            <a href="/recepcionista/panel" class="flex items-center gap-4 px-5 py-3 text-gray-700 hover:bg-cyan-50 transition-colors group">
+                                <div class="w-10 h-10 rounded-xl bg-cyan-100 flex items-center justify-center group-hover:bg-cyan-200 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-sm">Mi Dashboard</p>
+                                    <p class="text-xs text-gray-500">Panel de recepcionista</p>
+                                </div>
+                            </a>
+
                             <a href="/cuentas/cambiar-contrasena" class="flex items-center gap-4 px-5 py-3 text-gray-700 hover:bg-blue-50 transition-colors group">
                                 <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -97,18 +109,6 @@
                                 <div>
                                     <p class="font-semibold text-sm">Seguridad</p>
                                     <p class="text-xs text-gray-500">Cambiar contraseña</p>
-                                </div>
-                            </a>
-
-                            <a href="/" class="flex items-center gap-4 px-5 py-3 text-gray-700 hover:bg-green-50 transition-colors group">
-                                <div class="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-sm">Ir al Inicio</p>
-                                    <p class="text-xs text-gray-500">Página principal pública</p>
                                 </div>
                             </a>
                         </div>
