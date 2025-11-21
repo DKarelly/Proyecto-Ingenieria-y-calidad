@@ -1492,9 +1492,10 @@ def api_crear_reserva():
             except:
                 pass
         
-        # Obtener datos completos para enviar emails
-        conexion_email = obtener_conexion()
+        # Obtener datos completos para enviar emails (no crítico - si falla, la reserva ya está creada)
+        conexion_email = None
         try:
+            conexion_email = obtener_conexion()
             with conexion_email.cursor() as cursor:
                 # Obtener datos del paciente
                 cursor.execute("""
@@ -1574,11 +1575,16 @@ def api_crear_reserva():
                         import traceback
                         traceback.print_exc()
         except Exception as e:
-            print(f"❌ Error obteniendo datos para emails: {e}")
+            print(f"⚠️ Error obteniendo datos para emails (no crítico): {e}")
             import traceback
             traceback.print_exc()
+            # No fallar la creación de reserva si falla el email
         finally:
-            conexion_email.close()
+            if conexion_email:
+                try:
+                    conexion_email.close()
+                except:
+                    pass
         
         # Crear notificaciones para el paciente
         try:
@@ -1670,15 +1676,50 @@ def api_crear_reserva():
         except Exception as e:
             print(f"Error programando recordatorio de cita (API): {e}")
         
-        return jsonify({'success': True, 'id_reserva': id_reserva}), 201
+        # La reserva se creó exitosamente, devolver éxito
+        # Los errores de email/notificaciones no deben afectar la respuesta
+        return jsonify({
+            'success': True, 
+            'id_reserva': id_reserva,
+            'message': 'Reserva creada exitosamente'
+        }), 201
 
     except Exception as e:
+        print(f"❌ [API crear-reserva] Error crítico: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Asegurar que siempre devolvemos JSON, nunca HTML
         if conexion:
-            conexion.rollback()
-        return jsonify({'error': str(e)}), 500
+            try:
+                conexion.rollback()
+                # Si la reserva se creó pero hubo error después, intentar revertir
+                if 'id_reserva' in locals():
+                    try:
+                        with conexion.cursor() as cursor:
+                            cursor.execute("DELETE FROM RESERVA WHERE id_reserva = %s", (id_reserva,))
+                            cursor.execute("""
+                                UPDATE PROGRAMACION 
+                                SET estado = 'Disponible' 
+                                WHERE id_programacion = %s
+                            """, (id_programacion,))
+                            conexion.commit()
+                    except:
+                        pass
+            except:
+                pass
+        
+        # Siempre devolver JSON, nunca HTML
+        return jsonify({
+            'error': 'Error al crear la reserva',
+            'message': str(e)
+        }), 500
     finally:
         if conexion:
-            conexion.close()
+            try:
+                conexion.close()
+            except:
+                pass
 
 @reservas_bp.route('/reporte-servicios')
 def reporte_servicios():
@@ -3093,6 +3134,8 @@ def paciente_crear_reserva():
             import traceback
             traceback.print_exc()
 
+        # La reserva se creó exitosamente, devolver éxito
+        # Los errores de notificaciones/emails NO deben afectar la respuesta
         return jsonify({
             'success': True,
             'id_reserva': id_reserva,
@@ -3101,9 +3144,22 @@ def paciente_crear_reserva():
         }), 201
 
     except Exception as e:
+        print(f"❌ [paciente_crear_reserva] Error crítico: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Asegurar que siempre devolvemos JSON, nunca HTML
         if conexion:
-            conexion.rollback()
-        return jsonify({'error': f'Error al crear reserva: {str(e)}'}), 500
+            try:
+                conexion.rollback()
+            except:
+                pass
+        
+        # Siempre devolver JSON, nunca HTML
+        return jsonify({
+            'error': 'Error al crear la reserva',
+            'message': str(e)
+        }), 500
     finally:
         try:
             conexion.close()

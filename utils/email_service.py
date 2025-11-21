@@ -21,6 +21,18 @@ class EmailService:
         self.sender_email = os.getenv('SMTP_EMAIL')
         self.sender_password = os.getenv('SMTP_PASSWORD')
         self.sender_name = os.getenv('SMTP_SENDER_NAME', 'Clínica Unión')
+        # URL del frontend para enlaces en emails
+        self.frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5000')
+        # Asegurar que la URL no termine con /
+        if self.frontend_url.endswith('/'):
+            self.frontend_url = self.frontend_url.rstrip('/')
+        
+        # Log de configuración (sin mostrar contraseña)
+        if self.sender_email and self.sender_password:
+            print(f"📧✅ EmailService inicializado: {self.sender_email} en {self.smtp_server}:{self.smtp_port}")
+            print(f"📧✅ Frontend URL configurada: {self.frontend_url}")
+        else:
+            print(f"⚠️ EmailService: Credenciales SMTP no configuradas (SMTP_EMAIL o SMTP_PASSWORD faltantes)")
     
     def enviar_notificacion_email(self, destinatario_email, destinatario_nombre, titulo, mensaje, tipo='informacion'):
         """
@@ -39,12 +51,24 @@ class EmailService:
         
         # Verificar que las credenciales estén configuradas
         if not self.sender_email or not self.sender_password:
+            error_msg = 'Credenciales de email no configuradas. Verifica SMTP_EMAIL y SMTP_PASSWORD en .env'
+            print(f"📧❌ {error_msg}")
             return {
                 'success': False,
-                'message': 'Credenciales de email no configuradas'
+                'message': error_msg
+            }
+        
+        # Verificar que el email del destinatario sea válido
+        if not destinatario_email or not destinatario_email.strip():
+            error_msg = f'Email del destinatario inválido: {destinatario_email}'
+            print(f"📧❌ {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
             }
         
         try:
+            print(f"📧 Enviando email a {destinatario_email}...")
             # Crear el mensaje
             msg = MIMEMultipart('alternative')
             msg['From'] = f"{self.sender_name} <{self.sender_email}>"
@@ -82,30 +106,52 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
             msg.attach(part2)
             
             # Enviar el correo
-            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
+            print(f"📧 Conectando a {self.smtp_server}:{self.smtp_port}...")
+            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30) as server:
+                print(f"📧 Iniciando TLS...")
                 server.starttls()
+                print(f"📧 Autenticando con {self.sender_email}...")
                 server.login(self.sender_email, self.sender_password)
+                print(f"📧 Enviando mensaje a {destinatario_email}...")
                 server.send_message(msg)
+                print(f"📧✅ Email enviado exitosamente a {destinatario_email}")
             
             return {
                 'success': True,
                 'message': f'Email enviado exitosamente a {destinatario_email}'
             }
             
-        except smtplib.SMTPAuthenticationError:
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = f'Error de autenticación SMTP. Verifica las credenciales de email. Detalle: {str(e)}'
+            print(f"📧❌ {error_msg}")
             return {
                 'success': False,
-                'message': 'Error de autenticación. Verifica las credenciales de email.'
+                'message': error_msg
+            }
+        except (smtplib.SMTPConnectError, ConnectionError, OSError) as e:
+            error_msg = f'Error conectando al servidor SMTP {self.smtp_server}:{self.smtp_port}. Detalle: {str(e)}'
+            print(f"📧❌ {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
             }
         except smtplib.SMTPException as e:
+            error_msg = f'Error SMTP: {str(e)}'
+            print(f"📧❌ {error_msg}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
-                'message': f'Error SMTP: {str(e)}'
+                'message': error_msg
             }
         except Exception as e:
+            error_msg = f'Error inesperado al enviar email: {str(e)}'
+            print(f"📧❌ {error_msg}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
-                'message': f'Error al enviar email: {str(e)}'
+                'message': error_msg
             }
     
     def _get_emoji_tipo(self, tipo):
@@ -135,6 +181,9 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
         color = self._get_color_tipo(tipo)
         emoji = self._get_emoji_tipo(tipo)
         fecha_actual = datetime.now().strftime('%d de %B de %Y a las %H:%M')
+        
+        # Generar URL del login con parámetro para mostrar el modal
+        login_url = f"{self.frontend_url}/?show_login=true"
         
         html = f"""
 <!DOCTYPE html>
@@ -188,7 +237,7 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
                             
                             <!-- CTA Button -->
                             <div style="text-align: center; margin: 30px 0;">
-                                <a href="#" style="display: inline-block; background: linear-gradient(135deg, {color} 0%, {color}dd 100%); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: transform 0.2s;">
+                                <a href="{login_url}" style="display: inline-block; background: linear-gradient(135deg, {color} 0%, {color}dd 100%); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: transform 0.2s;">
                                     Ver en el Sistema
                                 </a>
                             </div>
