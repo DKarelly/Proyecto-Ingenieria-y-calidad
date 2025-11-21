@@ -58,7 +58,11 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 group-hover:text-cyan-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                         </svg>
-                        <span class="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                        {% if notificaciones_no_leidas and notificaciones_no_leidas > 0 %}
+                        <span id="notificacionesBadgeMedico" class="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                        {% else %}
+                        <span id="notificacionesBadgeMedico" class="hidden absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>
+                        {% endif %}
                     </button>
 
                     <!-- Dropdown de Notificaciones -->
@@ -251,12 +255,26 @@
         function cargarNotificacionesHeader() {
             const listContainer = document.getElementById('header-notif-list');
             const countContainer = document.getElementById('header-notif-count');
+            const badge = document.getElementById('notificacionesBadgeMedico');
             
-            fetch('/medico/api/notificaciones-recientes')
+            fetch('/notificaciones/api/recientes-medico')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success && data.notificaciones) {
-                        const notificaciones = data.notificaciones.slice(0, 3); // Solo las 3 más recientes
+                    if (data.notificaciones) {
+                        // Filtrar solo las no leídas
+                        const notificacionesNoLeidas = data.notificaciones.filter(n => !n.leida);
+                        const notificaciones = notificacionesNoLeidas.slice(0, 3); // Solo las 3 más recientes
+                        
+                        // Actualizar badge
+                        if (badge) {
+                            if (notificacionesNoLeidas.length > 0) {
+                                badge.classList.remove('hidden');
+                                badge.classList.add('animate-pulse');
+                            } else {
+                                badge.classList.add('hidden');
+                                badge.classList.remove('animate-pulse');
+                            }
+                        }
                         
                         if (notificaciones.length === 0) {
                             countContainer.textContent = 'No hay notificaciones nuevas';
@@ -271,35 +289,50 @@
                             return;
                         }
                         
-                        countContainer.textContent = `Tienes ${notificaciones.length} notificación${notificaciones.length > 1 ? 'es' : ''} nueva${notificaciones.length > 1 ? 's' : ''}`;
+                        countContainer.textContent = `Tienes ${notificacionesNoLeidas.length} notificación${notificacionesNoLeidas.length > 1 ? 'es' : ''} nueva${notificacionesNoLeidas.length > 1 ? 's' : ''}`;
                         
                         listContainer.innerHTML = notificaciones.map((notif, index) => {
-                            const colorDot = notif.tipo === 'confirmacion' ? 'bg-blue-500' : 
+                            const colorDot = notif.tipo === 'nueva_cita' || notif.tipo === 'confirmacion' ? 'bg-blue-500' : 
+                                           notif.tipo === 'operacion_asignada' ? 'bg-purple-500' :
                                            notif.tipo === 'cancelacion' ? 'bg-red-500' : 'bg-cyan-500';
                             const borderClass = index < notificaciones.length - 1 ? 'border-b border-gray-100' : '';
+                            
+                            // Formatear fecha
+                            const fechaStr = notif.fecha_envio ? notif.fecha_envio : '';
+                            const horaStr = notif.hora_envio ? notif.hora_envio : '';
                             
                             return `
                                 <a href="/medico/panel?subsistema=notificaciones" class="flex items-start gap-3 px-5 py-3 hover:bg-cyan-50 transition-colors ${borderClass}">
                                     <div class="w-2 h-2 ${colorDot} rounded-full mt-2"></div>
                                     <div class="flex-1">
-                                        <p class="text-sm font-semibold text-gray-800">${notif.titulo}</p>
-                                        <p class="text-xs text-gray-600 mt-1">${notif.paciente ? 'Paciente: ' + notif.paciente : notif.mensaje}</p>
-                                        <p class="text-xs text-gray-400 mt-1">${notif.tiempo}</p>
+                                        <p class="text-sm font-semibold text-gray-800">${notif.titulo || 'Notificación'}</p>
+                                        <p class="text-xs text-gray-600 mt-1">${notif.mensaje || ''}</p>
+                                        <p class="text-xs text-gray-400 mt-1">${fechaStr} ${horaStr}</p>
                                     </div>
                                 </a>
                             `;
                         }).join('');
                     } else {
-                        countContainer.textContent = 'Error al cargar';
+                        // Si no hay notificaciones, ocultar badge
+                        if (badge) {
+                            badge.classList.add('hidden');
+                        }
+                        countContainer.textContent = 'No hay notificaciones nuevas';
                         listContainer.innerHTML = `
-                            <div class="flex items-center justify-center py-8 text-gray-500">
-                                <p class="text-sm">Error al cargar notificaciones</p>
+                            <div class="flex flex-col items-center justify-center py-8 text-gray-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                </svg>
+                                <p class="text-sm">Sin notificaciones</p>
                             </div>
                         `;
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    if (badge) {
+                        badge.classList.add('hidden');
+                    }
                     countContainer.textContent = 'Error al cargar';
                     listContainer.innerHTML = `
                         <div class="flex items-center justify-center py-8 text-gray-500">
@@ -308,6 +341,12 @@
                     `;
                 });
         }
+        
+        // Cargar notificaciones al iniciar para actualizar el badge
+        cargarNotificacionesHeader();
+        
+        // Exponer la función globalmente para que pueda ser llamada desde otros scripts
+        window.cargarNotificacionesHeader = cargarNotificacionesHeader;
 
         // Sombra del header en scroll
         const applyMedicoShadow = () => {

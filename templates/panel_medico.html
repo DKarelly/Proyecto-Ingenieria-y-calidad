@@ -616,55 +616,108 @@
                 {% if subsistema == 'notificaciones' %}
                 <!-- Subsistema: Notificaciones -->
                 <div class="mb-6">
-                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Notificaciones</h2>
-                    <p class="text-gray-600">Mantente al día con todas tus alertas y recordatorios</p>
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 class="text-3xl font-bold text-gray-800 mb-2">Historial de Notificaciones</h2>
+                            <p class="text-gray-600">Aquí aparecen todas las notificaciones enviadas a tu cuenta.</p>
+                        </div>
+                        <div>
+                            <button id="btn-marcar-todas" onclick="marcarTodasComoLeidas()" 
+                                    class="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                Marcar todas como leídas
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Lista de notificaciones -->
-                {% if notificaciones %}
-                <div class="space-y-4">
-                    {% for notif in notificaciones %}
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all {% if notif.leida %}opacity-60{% endif %}">
-                        <div class="p-6">
-                            <div class="flex items-start gap-4">
-                                <!-- Icono según tipo -->
-                                <div class="flex-shrink-0">
-                                    {% if notif.tipo == 'confirmacion' %}
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                                        <span class="material-symbols-outlined text-white text-xl">event_available</span>
+                {% if notificaciones and notificaciones|length > 0 %}
+                <div class="space-y-3" id="historialNotificaciones">
+                    {% for n in notificaciones %}
+                    <div class="notificacion-item bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-4 border border-gray-100 {% if n.leida %}opacity-70{% endif %}" 
+                         data-tipo="{{ n.tipo }}" 
+                         data-estado="{{ n.estado_reserva or '' }}"
+                         data-leida="{{ n.leida }}"
+                         data-id="{{ n.id_notificacion }}">
+                        <div class="flex gap-3">
+                            <!-- Icono dinámico -->
+                            <div class="flex-shrink-0">
+                                {% if n.tipo == 'nueva_cita' or n.tipo == 'confirmacion' %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">event_available</span>
+                                </div>
+                                {% elif n.tipo == 'operacion_asignada' %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">medical_services</span>
+                                </div>
+                                {% elif n.tipo == 'cancelacion' %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">event_busy</span>
+                                </div>
+                                {% else %}
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">info</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Contenido -->
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h3 class="font-semibold text-gray-900">{{ n.titulo }}</h3>
+                                            {% if n.tipo == 'nueva_cita' %}
+                                            <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Nueva Cita</span>
+                                            {% elif n.tipo == 'operacion_asignada' %}
+                                            <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700">Operación</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-sm text-gray-600 leading-relaxed">{{ n.mensaje }}</p>
                                     </div>
-                                    {% elif notif.tipo == 'recordatorio' %}
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                                        <span class="material-symbols-outlined text-white text-xl">schedule</span>
+                                    
+                                    <!-- Estado leída y botón marcar como leído -->
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        {% if n.leida %}
+                                        <div class="text-green-500" title="Leída">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg>
+                                        </div>
+                                        {% else %}
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" title="No leída"></span>
+                                            <button onclick="marcarComoLeida({{ n.id_notificacion }})" 
+                                                    class="btn-marcar-leida text-xs px-3 py-1.5 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors font-medium flex items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                                Marcar como leída
+                                            </button>
+                                        </div>
+                                        {% endif %}
                                     </div>
-                                    {% elif notif.tipo == 'cancelacion' %}
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-                                        <span class="material-symbols-outlined text-white text-xl">event_busy</span>
-                                    </div>
-                                    {% else %}
-                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-                                        <span class="material-symbols-outlined text-white text-xl">info</span>
-                                    </div>
-                                    {% endif %}
                                 </div>
                                 
-                                <!-- Contenido -->
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-start justify-between gap-4 mb-2">
-                                        <h3 class="text-lg font-bold text-gray-800">{{ notif.titulo }}</h3>
-                                        <span class="text-sm text-gray-500 whitespace-nowrap flex items-center gap-1">
-                                            <span class="w-2 h-2 rounded-full {% if not notif.leida %}bg-cyan-500{% else %}bg-gray-400{% endif %}"></span>
-                                            {{ notif.tiempo }}
-                                        </span>
-                                    </div>
-                                    
-                                    <p class="text-gray-600 mb-3">{{ notif.mensaje }}</p>
-                                    
-                                    {% if notif.paciente %}
-                                    <div class="flex items-center gap-2 text-sm text-gray-500">
-                                        <span class="material-symbols-outlined text-base">person</span>
-                                        <span>Paciente: {{ notif.paciente }}</span>
-                                    </div>
+                                <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                    <span class="flex items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                        </svg>
+                                        {{ n.fecha_envio }} {{ n.hora_envio }}
+                                    </span>
+                                    <span class="text-gray-400">•</span>
+                                    <span>ID: #{{ n.id_notificacion }}</span>
+                                    {% if n.leida and n.fecha_leida %}
+                                    <span class="text-gray-400">•</span>
+                                    <span class="text-green-600">Leída: {{ n.fecha_leida[:10] if n.fecha_leida else '—' }}</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -725,5 +778,208 @@
 
     <!-- Script del panel médico -->
     <script src="{{ url_for('static', filename='js/panel_medico.js') }}"></script>
+    
+    {% if subsistema == 'notificaciones' %}
+    <script>
+        // Función para marcar notificación como leída (sin recargar página - optimizada)
+        async function marcarComoLeida(idNotificacion) {
+            const notificacionItem = document.querySelector(`.notificacion-item[data-id="${idNotificacion}"]`);
+            if (!notificacionItem) {
+                console.error('No se encontró la notificación con ID:', idNotificacion);
+                return;
+            }
+            
+            if (notificacionItem.dataset.leida === 'True' || notificacionItem.dataset.leida === '1') {
+                return;
+            }
+            
+            const boton = notificacionItem.querySelector('button.btn-marcar-leida');
+            if (!boton) return;
+            
+            const estadoDiv = boton.closest('.flex.items-center.gap-2');
+            if (!estadoDiv) return;
+            
+            const htmlOriginal = estadoDiv.innerHTML;
+            
+            // Actualizar visualmente INMEDIATAMENTE
+            estadoDiv.innerHTML = `
+                <div class="text-green-500" title="Leída">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+            `;
+            
+            notificacionItem.style.opacity = '0.7';
+            notificacionItem.dataset.leida = 'True';
+            
+            // Agregar fecha de leída si no existe
+            const fechaContainer = notificacionItem.querySelector('.flex.items-center.gap-4.mt-2');
+            if (fechaContainer) {
+                const yaTieneFechaLeida = fechaContainer.querySelector('.text-green-600');
+                if (!yaTieneFechaLeida) {
+                    const fechaActual = new Date().toLocaleDateString('es-ES');
+                    const separador = document.createElement('span');
+                    separador.className = 'text-gray-400';
+                    separador.textContent = '•';
+                    fechaContainer.appendChild(separador);
+                    
+                    const leidaSpan = document.createElement('span');
+                    leidaSpan.className = 'text-green-600';
+                    leidaSpan.textContent = `Leída: ${fechaActual}`;
+                    fechaContainer.appendChild(leidaSpan);
+                }
+            }
+            
+            // Hacer la petición en segundo plano
+            try {
+                const response = await fetch(`/notificaciones/api/marcar-leida-medico/${idNotificacion}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Actualizar badge en el header
+                    if (typeof window.cargarNotificacionesHeader === 'function') {
+                        window.cargarNotificacionesHeader();
+                    }
+                } else {
+                    notificacionItem.style.opacity = '1';
+                    notificacionItem.dataset.leida = 'False';
+                    estadoDiv.innerHTML = htmlOriginal;
+                    alert('Error al marcar la notificación como leída: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                notificacionItem.style.opacity = '1';
+                notificacionItem.dataset.leida = 'False';
+                estadoDiv.innerHTML = htmlOriginal;
+                alert('Error al marcar la notificación como leída');
+            }
+        }
+
+        // Función para marcar todas las notificaciones como leídas
+        async function marcarTodasComoLeidas() {
+            const boton = document.getElementById('btn-marcar-todas');
+            if (!boton) return;
+            
+            const todasLasNotificaciones = document.querySelectorAll('.notificacion-item');
+            const notificacionesNoLeidas = Array.from(todasLasNotificaciones).filter(item => {
+                const btnIndividual = item.querySelector('button.btn-marcar-leida');
+                return btnIndividual !== null;
+            });
+            
+            if (notificacionesNoLeidas.length === 0) {
+                boton.style.display = 'none';
+                return;
+            }
+            
+            const fechaActual = new Date().toLocaleDateString('es-ES');
+            const cambiosOriginales = [];
+            
+            // Actualizar visualmente INMEDIATAMENTE
+            notificacionesNoLeidas.forEach(item => {
+                const btnIndividual = item.querySelector('button.btn-marcar-leida');
+                if (!btnIndividual) return;
+                
+                const estadoDiv = btnIndividual.closest('.flex.items-center.gap-2');
+                if (!estadoDiv) return;
+                
+                cambiosOriginales.push({
+                    item: item,
+                    htmlOriginal: estadoDiv.innerHTML,
+                    fechaContainer: item.querySelector('.flex.items-center.gap-4.mt-2')
+                });
+                
+                estadoDiv.innerHTML = `
+                    <div class="text-green-500" title="Leída">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                `;
+                
+                item.style.opacity = '0.7';
+                item.dataset.leida = 'True';
+                
+                const fechaContainer = item.querySelector('.flex.items-center.gap-4.mt-2');
+                if (fechaContainer) {
+                    const yaTieneFechaLeida = fechaContainer.querySelector('.text-green-600');
+                    if (!yaTieneFechaLeida) {
+                        const separador = document.createElement('span');
+                        separador.className = 'text-gray-400';
+                        separador.textContent = '•';
+                        fechaContainer.appendChild(separador);
+                        
+                        const leidaSpan = document.createElement('span');
+                        leidaSpan.className = 'text-green-600';
+                        leidaSpan.textContent = `Leída: ${fechaActual}`;
+                        fechaContainer.appendChild(leidaSpan);
+                    }
+                }
+            });
+            
+            boton.style.display = 'none';
+            
+            // Hacer la petición en segundo plano
+            try {
+                const response = await fetch('/notificaciones/api/marcar-todas-leidas-medico', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                if (data.success) {
+                    // Actualizar badge en el header
+                    if (typeof window.cargarNotificacionesHeader === 'function') {
+                        window.cargarNotificacionesHeader();
+                    }
+                } else {
+                    cambiosOriginales.forEach(cambio => {
+                        cambio.item.style.opacity = '1';
+                        cambio.item.dataset.leida = 'False';
+                        const estadoDiv = cambio.item.querySelector('.flex.items-center.gap-2');
+                        if (estadoDiv) estadoDiv.innerHTML = cambio.htmlOriginal;
+                        if (cambio.fechaContainer) {
+                            const fechaLeida = cambio.fechaContainer.querySelector('.text-green-600');
+                            if (fechaLeida) {
+                                const separador = fechaLeida.previousElementSibling;
+                                if (separador && separador.classList.contains('text-gray-400')) separador.remove();
+                                fechaLeida.remove();
+                            }
+                        }
+                    });
+                    boton.style.display = 'inline-flex';
+                    alert('Error al marcar todas las notificaciones como leídas: ' + (data.error || 'Error desconocido'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                cambiosOriginales.forEach(cambio => {
+                    cambio.item.style.opacity = '1';
+                    cambio.item.dataset.leida = 'False';
+                    const estadoDiv = cambio.item.querySelector('.flex.items-center.gap-2');
+                    if (estadoDiv) estadoDiv.innerHTML = cambio.htmlOriginal;
+                    if (cambio.fechaContainer) {
+                        const fechaLeida = cambio.fechaContainer.querySelector('.text-green-600');
+                        if (fechaLeida) {
+                            const separador = fechaLeida.previousElementSibling;
+                            if (separador && separador.classList.contains('text-gray-400')) separador.remove();
+                            fechaLeida.remove();
+                        }
+                    }
+                });
+                boton.style.display = 'inline-flex';
+                alert('Error al marcar todas las notificaciones como leídas');
+            }
+        }
+    </script>
+    {% endif %}
 </body>
 </html>
