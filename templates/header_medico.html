@@ -65,33 +65,12 @@
                     <div id="notificationsDropdown" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl overflow-hidden z-50 border border-gray-200 animate-fade-in">
                         <div class="bg-gradient-to-r from-cyan-50 to-teal-50 px-5 py-4 border-b border-gray-200">
                             <h3 class="font-bold text-gray-800">Notificaciones</h3>
-                            <p class="text-xs text-gray-600 mt-1">Tienes 3 notificaciones nuevas</p>
+                            <p class="text-xs text-gray-600 mt-1" id="header-notif-count">Cargando...</p>
                         </div>
-                        <div class="max-h-96 overflow-y-auto">
-                            <a href="#" class="flex items-start gap-3 px-5 py-3 hover:bg-cyan-50 transition-colors border-b border-gray-100">
-                                <div class="w-2 h-2 bg-cyan-500 rounded-full mt-2"></div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-800">Nueva cita asignada</p>
-                                    <p class="text-xs text-gray-600 mt-1">Paciente: Juan Pérez - 10:00 AM</p>
-                                    <p class="text-xs text-gray-400 mt-1">Hace 5 minutos</p>
-                                </div>
-                            </a>
-                            <a href="#" class="flex items-start gap-3 px-5 py-3 hover:bg-cyan-50 transition-colors border-b border-gray-100">
-                                <div class="w-2 h-2 bg-teal-500 rounded-full mt-2"></div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-800">Resultado de laboratorio</p>
-                                    <p class="text-xs text-gray-600 mt-1">María García - Examen de sangre</p>
-                                    <p class="text-xs text-gray-400 mt-1">Hace 1 hora</p>
-                                </div>
-                            </a>
-                            <a href="#" class="flex items-start gap-3 px-5 py-3 hover:bg-cyan-50 transition-colors">
-                                <div class="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-800">Recordatorio de cita</p>
-                                    <p class="text-xs text-gray-600 mt-1">Carlos López - Mañana 9:00 AM</p>
-                                    <p class="text-xs text-gray-400 mt-1">Hace 2 horas</p>
-                                </div>
-                            </a>
+                        <div class="max-h-96 overflow-y-auto" id="header-notif-list">
+                            <div class="flex items-center justify-center py-8">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500"></div>
+                            </div>
                         </div>
                         <div class="bg-gray-50 px-5 py-3 text-center">
                             <a href="/medico/panel?subsistema=notificaciones" class="text-sm text-cyan-600 hover:text-cyan-700 font-semibold">Ver todas las notificaciones</a>
@@ -251,9 +230,14 @@
         if (notificationsButton && notificationsDropdown) {
             notificationsButton.addEventListener('click', function(e) {
                 e.stopPropagation();
-                notificationsDropdown.classList.toggle('hidden');
+                const isHidden = notificationsDropdown.classList.toggle('hidden');
                 // Cerrar menú de usuario si está abierto
                 userMenuDropdown.classList.add('hidden');
+                
+                // Cargar notificaciones cuando se abre el dropdown
+                if (!isHidden) {
+                    cargarNotificacionesHeader();
+                }
             });
 
             document.addEventListener('click', function(e) {
@@ -261,6 +245,68 @@
                     notificationsDropdown.classList.add('hidden');
                 }
             });
+        }
+        
+        // Función para cargar notificaciones en el header
+        function cargarNotificacionesHeader() {
+            const listContainer = document.getElementById('header-notif-list');
+            const countContainer = document.getElementById('header-notif-count');
+            
+            fetch('/medico/api/notificaciones-recientes')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.notificaciones) {
+                        const notificaciones = data.notificaciones.slice(0, 3); // Solo las 3 más recientes
+                        
+                        if (notificaciones.length === 0) {
+                            countContainer.textContent = 'No hay notificaciones nuevas';
+                            listContainer.innerHTML = `
+                                <div class="flex flex-col items-center justify-center py-8 text-gray-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                    </svg>
+                                    <p class="text-sm">Sin notificaciones</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        countContainer.textContent = `Tienes ${notificaciones.length} notificación${notificaciones.length > 1 ? 'es' : ''} nueva${notificaciones.length > 1 ? 's' : ''}`;
+                        
+                        listContainer.innerHTML = notificaciones.map((notif, index) => {
+                            const colorDot = notif.tipo === 'confirmacion' ? 'bg-blue-500' : 
+                                           notif.tipo === 'cancelacion' ? 'bg-red-500' : 'bg-cyan-500';
+                            const borderClass = index < notificaciones.length - 1 ? 'border-b border-gray-100' : '';
+                            
+                            return `
+                                <a href="/medico/panel?subsistema=notificaciones" class="flex items-start gap-3 px-5 py-3 hover:bg-cyan-50 transition-colors ${borderClass}">
+                                    <div class="w-2 h-2 ${colorDot} rounded-full mt-2"></div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-semibold text-gray-800">${notif.titulo}</p>
+                                        <p class="text-xs text-gray-600 mt-1">${notif.paciente ? 'Paciente: ' + notif.paciente : notif.mensaje}</p>
+                                        <p class="text-xs text-gray-400 mt-1">${notif.tiempo}</p>
+                                    </div>
+                                </a>
+                            `;
+                        }).join('');
+                    } else {
+                        countContainer.textContent = 'Error al cargar';
+                        listContainer.innerHTML = `
+                            <div class="flex items-center justify-center py-8 text-gray-500">
+                                <p class="text-sm">Error al cargar notificaciones</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    countContainer.textContent = 'Error al cargar';
+                    listContainer.innerHTML = `
+                        <div class="flex items-center justify-center py-8 text-gray-500">
+                            <p class="text-sm">Error al cargar notificaciones</p>
+                        </div>
+                    `;
+                });
         }
 
         // Sombra del header en scroll
