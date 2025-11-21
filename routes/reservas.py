@@ -4085,21 +4085,29 @@ def api_reprogramar_reserva_legacy():
 @reservas_bp.route('/api/solicitar-cancelacion', methods=['POST'])
 def api_solicitar_cancelacion():
     """API para solicitar la cancelación de una reserva"""
+    print(f"[API solicitar-cancelacion] Inicio de solicitud")
+    
     if 'usuario_id' not in session:
+        print(f"[API solicitar-cancelacion] ERROR: No autenticado")
         return jsonify({'error': 'No autenticado'}), 401
 
     if session.get('tipo_usuario') != 'paciente':
+        print(f"[API solicitar-cancelacion] ERROR: No es paciente")
         return jsonify({'error': 'Acceso no autorizado'}), 403
 
     data = request.get_json() or {}
     id_reserva = data.get('id_reserva')
     motivo = data.get('motivo', '')
+    
+    print(f"[API solicitar-cancelacion] Datos recibidos: id_reserva={id_reserva}, motivo_length={len(motivo) if motivo else 0}")
 
     if not id_reserva:
+        print(f"[API solicitar-cancelacion] ERROR: Falta id_reserva")
         return jsonify({'error': 'ID de reserva es requerido'}), 400
 
-    if not motivo or len(motivo.strip()) < 10:
-        return jsonify({'error': 'Debe proporcionar un motivo válido (mínimo 10 caracteres)'}), 400
+    if not motivo or len(motivo.strip()) < 20:
+        print(f"[API solicitar-cancelacion] ERROR: Motivo muy corto ({len(motivo.strip()) if motivo else 0} caracteres)")
+        return jsonify({'error': 'Debe proporcionar un motivo válido (mínimo 20 caracteres)'}), 400
 
     conexion = None
     try:
@@ -4866,9 +4874,9 @@ def api_solicitar_reprogramacion_paciente():
                 pass
 
 
-@reservas_bp.route('/api/solicitar-cancelacion', methods=['POST'])
+@reservas_bp.route('/api/solicitar-cancelacion-legacy', methods=['POST'])
 def api_solicitar_cancelacion_paciente():
-    """API para que los pacientes soliciten cancelación de una reserva"""
+    """API LEGACY para que los pacientes soliciten cancelación de una reserva"""
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
     
