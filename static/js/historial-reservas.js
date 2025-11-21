@@ -9,6 +9,13 @@ let reservaDestacada = null; // ID de la reserva a destacar
 // Cargar reservas al iniciar
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📋 Inicializando historial de reservas...');
+    
+    // Establecer fecha actual como valor por defecto en "Desde"
+    const hoy = new Date();
+    const fechaHoy = hoy.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    document.getElementById('filtroFechaDesde').value = fechaHoy;
+    console.log('📅 Filtro "Desde" establecido a:', fechaHoy);
+    
     // Obtener parámetro de reserva de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const reservaId = urlParams.get('reserva');
@@ -162,6 +169,8 @@ function generarTarjetaCita(reserva) {
     
     const tieneExamenesOOperaciones = (reserva.examenes && reserva.examenes.length > 0) || (reserva.operaciones && reserva.operaciones.length > 0);
     const esCitaCompletada = reserva.estado_reserva === 'Completada';
+    const esCitaInasistida = reserva.estado_reserva === 'Inasistida';
+    const esCitaCancelada = reserva.estado_reserva === 'Cancelada';
     
     // Verificar si esta es la reserva destacada
     const esDestacada = reservaDestacada && reserva.id_reserva === reservaDestacada;
@@ -265,8 +274,8 @@ function generarTarjetaCita(reserva) {
         `;
     }
 
-    // Botones de acción (solo si NO es completada y NO tiene cancelación)
-    if (!esCitaCompletada && estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada') {
+    // Botones de acción (NO mostrar si es Completada, Inasistida o Cancelada)
+    if (!esCitaCompletada && !esCitaInasistida && !esCitaCancelada && estadoCancelacion === 'Ninguna') {
         // Calcular días hasta la cita
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
@@ -299,8 +308,43 @@ function generarTarjetaCita(reserva) {
             `;
         }
         
+        // Determinar estado de reprogramación y cancelación
+        const tieneReprogramacionAprobada = reserva.tiene_reprogramacion_aprobada > 0;
+        const tieneSolicitudReprogramacion = reserva.tiene_solicitud_reprogramacion > 0;
+        const tieneSolicitudCancelacion = reserva.tiene_solicitud_cancelacion > 0;
+        
         html += `
                         <div class="grid md:grid-cols-2 gap-3">
+        `;
+        
+        // BOTÓN DE REPROGRAMACIÓN (condicional según estado)
+        if (tieneReprogramacionAprobada) {
+            // Si tiene reprogramación aprobada, mostrar botón verde para EJECUTAR la reprogramación
+            html += `
+                            <button onclick="abrirModalReprogramar(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                    class="group relative overflow-hidden bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3.5 px-5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-[1.02]">
+                                <div class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="relative z-10">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                                    <circle cx="12" cy="12" r="2"/>
+                                </svg>
+                                <span class="relative z-10">✓ Reprogramar Ahora</span>
+                            </button>
+            `;
+        } else if (tieneSolicitudReprogramacion) {
+            // Si tiene solicitud de reprogramación pendiente, mostrar botón deshabilitado
+            html += `
+                            <button disabled 
+                                    class="group relative overflow-hidden bg-gray-400 opacity-70 cursor-not-allowed text-white font-semibold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span>Reprogramación Pendiente...</span>
+                            </button>
+            `;
+        } else {
+            // Si no tiene ninguna solicitud, mostrar botón azul para SOLICITAR reprogramación
+            html += `
                             <button ${!puedeModificar ? 'disabled' : ''} 
                                     onclick="${puedeModificar ? `solicitarReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')` : 'return false;'}" 
                                     class="group relative overflow-hidden bg-gradient-to-r from-blue-500 to-blue-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'} text-white font-semibold py-3.5 px-5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg ${puedeModificar ? 'hover:shadow-xl hover:scale-[1.02]' : ''}">
@@ -310,7 +354,24 @@ function generarTarjetaCita(reserva) {
                                 </svg>
                                 <span class="relative z-10">Solicitar Reprogramación</span>
                             </button>
-                            
+            `;
+        }
+        
+        // BOTÓN DE CANCELACIÓN (condicional según estado)
+        if (tieneSolicitudCancelacion) {
+            // Si tiene solicitud de cancelación pendiente, mostrar botón deshabilitado
+            html += `
+                            <button disabled 
+                                    class="group relative overflow-hidden bg-gray-400 opacity-70 cursor-not-allowed text-white font-semibold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span>Cancelación Pendiente...</span>
+                            </button>
+            `;
+        } else {
+            // Botón normal de solicitar cancelación
+            html += `
                             <button ${!puedeModificar ? 'disabled' : ''} 
                                     onclick="${puedeModificar ? `solicitarCancelacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')` : 'return false;'}" 
                                     class="group relative overflow-hidden bg-gradient-to-r from-red-500 to-red-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-red-600 hover:to-red-700'} text-white font-semibold py-3.5 px-5 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg ${puedeModificar ? 'hover:shadow-xl hover:scale-[1.02]' : ''}">
@@ -320,6 +381,8 @@ function generarTarjetaCita(reserva) {
                                 </svg>
                                 <span class="relative z-10">Solicitar Cancelación</span>
                             </button>
+            `;
+        }
                         </div>
                     </div>
                 </div>
@@ -704,7 +767,10 @@ function aplicarFiltros() {
 // Función para limpiar filtros
 function limpiarFiltros() {
     document.getElementById('filtroEstado').value = '';
-    document.getElementById('filtroFechaDesde').value = '';
+    // Restablecer "Desde" a la fecha actual
+    const hoy = new Date();
+    const fechaHoy = hoy.toISOString().split('T')[0];
+    document.getElementById('filtroFechaDesde').value = fechaHoy;
     document.getElementById('filtroFechaHasta').value = '';
     aplicarFiltros(); // Aplica filtros con la pestaña activa
 }
@@ -1230,6 +1296,297 @@ async function confirmarSolicitudReprogramacion(idReserva) {
     } catch (error) {
         console.error('Error:', error);
         alert('❌ Error al enviar la solicitud. Intenta nuevamente.');
+    }
+}
+
+// Función para solicitar reprogramación
+async function solicitarReprogramacion(idReserva, nombreServicio, fechaActual) {
+    console.log('🔄 Solicitando reprogramación para reserva:', idReserva);
+    const modalHTML = `
+        <div id="modalSolicitudReprogramacion" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl transform animate-slideIn">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6 rounded-t-2xl">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <span class="text-3xl">🔄</span>
+                            Solicitar Reprogramación
+                        </h2>
+                        <button onclick="cerrarModalSolicitudReprogramacion()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
+                        <div class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0 mt-0.5">
+                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-semibold text-blue-900 mb-1">Solicitud en revisión</p>
+                                <p class="text-xs text-blue-800">
+                                    Tu solicitud será evaluada por nuestro personal. Una vez aprobada, podrás seleccionar una nueva fecha.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            Detalles de tu Reserva
+                        </h3>
+                        <div class="space-y-2 text-sm">
+                            <p class="text-gray-600"><span class="font-semibold">Servicio:</span> ${nombreServicio}</p>
+                            <p class="text-gray-600"><span class="font-semibold">Fecha actual:</span> ${new Date(fechaActual + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block font-semibold text-gray-700 mb-2" for="motivoReprogramacion">
+                            Motivo de la reprogramación <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="motivoReprogramacion" 
+                            rows="4" 
+                            class="w-full border-2 border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
+                            placeholder="Por favor, explica por qué necesitas reprogramar tu cita..."></textarea>
+                        <p class="text-xs text-gray-500 mt-2">Mínimo 10 caracteres</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button 
+                            onclick="cerrarModalSolicitudReprogramacion()" 
+                            class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl transition-all duration-200">
+                            Cancelar
+                        </button>
+                        <button 
+                            onclick="confirmarSolicitudReprogramacion(${idReserva})" 
+                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                            Enviar Solicitud
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function cerrarModalSolicitudReprogramacion() {
+    const modal = document.getElementById('modalSolicitudReprogramacion');
+    if (modal) {
+        modal.classList.add('animate-fadeOut');
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+async function confirmarSolicitudReprogramacion(idReserva) {
+    const motivo = document.getElementById('motivoReprogramacion').value.trim();
+    
+    if (!motivo || motivo.length < 10) {
+        mostrarNotificacion('Por favor, proporciona un motivo detallado (mínimo 10 caracteres)', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/solicitar-reprogramacion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_reserva: idReserva, motivo: motivo })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cerrarModalSolicitudReprogramacion();
+            mostrarNotificacion('✅ Solicitud enviada correctamente. Te notificaremos cuando sea revisada.', 'success');
+            cargarHistorialReservas(); // Recargar para actualizar el estado del botón
+        } else {
+            mostrarNotificacion('❌ ' + (data.error || 'Error al enviar la solicitud'), 'error');
+        }
+    } catch (error) {
+        console.error('Error al solicitar reprogramación:', error);
+        mostrarNotificacion('❌ Error de conexión al enviar la solicitud', 'error');
+    }
+}
+
+// Función para abrir el modal de reprogramación (cuando ya está aprobada)
+async function abrirModalReprogramar(idReserva, nombreServicio, fechaActual) {
+    console.log('📅 Abriendo calendario de reprogramación para reserva:', idReserva);
+    
+    // Guardar datos en variables globales
+    window.reservaReprogramar = {
+        id: idReserva,
+        servicio: nombreServicio,
+        fechaActual: fechaActual
+    };
+    
+    const modalHTML = `
+        <div id="modalReprogramar" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl transform animate-slideIn">
+                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 rounded-t-2xl sticky top-0 z-10">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <span class="text-3xl">📅</span>
+                            Reprogramar Cita
+                        </h2>
+                        <button onclick="cerrarModalReprogramar()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg">
+                        <div class="flex items-start gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600 flex-shrink-0 mt-0.5">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            <div>
+                                <p class="text-sm font-semibold text-green-900 mb-1">✓ Solicitud Aprobada</p>
+                                <p class="text-xs text-green-800">
+                                    Tu solicitud de reprogramación fue aprobada. Selecciona una nueva fecha en el calendario.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4 bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-gray-700 mb-2">📋 Reserva Actual</h3>
+                        <div class="space-y-1 text-sm">
+                            <p class="text-gray-600"><span class="font-semibold">Servicio:</span> ${nombreServicio}</p>
+                            <p class="text-gray-600"><span class="font-semibold">Fecha actual:</span> ${new Date(fechaActual + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        </div>
+                    </div>
+                    
+                    <div id="calendarioReprogramar"></div>
+                    
+                    <div id="detalleSeleccionReprogramar" class="mt-4 hidden">
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                            <p class="text-sm font-semibold text-blue-900 mb-2">Nueva fecha seleccionada:</p>
+                            <p id="textoSeleccionReprogramar" class="text-sm text-blue-800"></p>
+                            <button 
+                                onclick="confirmarReprogramacion()" 
+                                class="mt-3 w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                                ✓ Confirmar Reprogramación
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Inicializar el calendario con horarios disponibles (reutilizando lógica de nueva-cita)
+    await inicializarCalendarioReprogramar(idReserva);
+}
+
+function cerrarModalReprogramar() {
+    const modal = document.getElementById('modalReprogramar');
+    if (modal) {
+        modal.classList.add('animate-fadeOut');
+        setTimeout(() => modal.remove(), 300);
+    }
+    window.reservaReprogramar = null;
+    window.calendarioReprogramar = null;
+}
+
+async function inicializarCalendarioReprogramar(idReserva) {
+    try {
+        // Obtener horarios disponibles del mismo servicio
+        const response = await fetch(`/reservas/api/horarios-disponibles-reserva/${idReserva}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            mostrarNotificacion('❌ ' + (data.error || 'Error al cargar horarios'), 'error');
+            return;
+        }
+        
+        const eventos = data.horarios.map(horario => ({
+            id: horario.id_programacion,
+            title: horario.hora_inicio + ' - ' + horario.hora_fin,
+            start: horario.fecha + 'T' + horario.hora_inicio,
+            end: horario.fecha + 'T' + horario.hora_fin,
+            extendedProps: {
+                id_horario: horario.id_horario,
+                id_servicio: horario.id_servicio,
+                estado: horario.estado
+            },
+            backgroundColor: '#10b981',
+            borderColor: '#059669'
+        }));
+        
+        const calendarEl = document.getElementById('calendarioReprogramar');
+        window.calendarioReprogramar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek'
+            },
+            events: eventos,
+            eventClick: function(info) {
+                window.programacionSeleccionadaReprogramar = info.event.id;
+                const fechaHora = new Date(info.event.start);
+                document.getElementById('textoSeleccionReprogramar').textContent = 
+                    fechaHora.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) +
+                    ' a las ' + fechaHora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('detalleSeleccionReprogramar').classList.remove('hidden');
+            },
+            eventContent: function(arg) {
+                return { html: `<div class="text-xs font-semibold">${arg.event.title}</div>` };
+            }
+        });
+        
+        window.calendarioReprogramar.render();
+        
+    } catch (error) {
+        console.error('Error al inicializar calendario de reprogramación:', error);
+        mostrarNotificacion('❌ Error al cargar el calendario', 'error');
+    }
+}
+
+async function confirmarReprogramacion() {
+    if (!window.programacionSeleccionadaReprogramar || !window.reservaReprogramar) {
+        mostrarNotificacion('❌ Selecciona un horario primero', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/reprogramar-reserva', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_reserva: window.reservaReprogramar.id,
+                nueva_programacion: window.programacionSeleccionadaReprogramar
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            cerrarModalReprogramar();
+            mostrarNotificacion('✅ ¡Cita reprogramada exitosamente!', 'success');
+            cargarHistorialReservas(); // Recargar historial
+        } else {
+            mostrarNotificacion('❌ ' + (data.error || 'Error al reprogramar'), 'error');
+        }
+    } catch (error) {
+        console.error('Error al confirmar reprogramación:', error);
+        mostrarNotificacion('❌ Error de conexión', 'error');
     }
 }
 

@@ -88,7 +88,70 @@
 
     </div>
 
+    <!-- Modal de Reserva de Procedimiento con Calendario -->
+    <div id="modalReservaProcedimiento" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="sticky top-0 bg-gradient-to-r from-cyan-500 to-blue-500 p-6 rounded-t-2xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 id="modalTituloProcedimiento" class="text-2xl font-bold text-white">Agendar Procedimiento</h2>
+                        <p id="modalSubtituloProcedimiento" class="text-cyan-50">Seleccione fecha y hora disponible</p>
+                    </div>
+                    <button onclick="cerrarModalReservaProcedimiento()" class="text-white hover:text-cyan-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendario Content -->
+            <div class="p-6">
+                <!-- Loading -->
+                <div id="loadingProgramaciones" class="text-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Cargando programaciones disponibles...</p>
+                </div>
+
+                <!-- Calendario -->
+                <div id="calendarioProcedimiento" class="hidden">
+                    <div id="calendar"></div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyProgramaciones" class="hidden text-center py-12">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-gray-300 mb-4">
+                        <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/>
+                        <path d="M3 10h18"/>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">No hay horarios disponibles</h3>
+                    <p class="text-gray-600">No se encontraron programaciones disponibles para este procedimiento.</p>
+                </div>
+            </div>
+
+            <!-- Footer con botón confirmar -->
+            <div id="footerReserva" class="hidden sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200">
+                <div id="resumenSeleccion" class="mb-4 p-4 bg-cyan-50 border-l-4 border-cyan-500 rounded">
+                    <p class="text-sm font-semibold text-gray-700">Selección:</p>
+                    <p id="textoSeleccion" class="text-gray-800"></p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="cerrarModalReservaProcedimiento()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                        Cancelar
+                    </button>
+                    <button id="btnConfirmarReserva" onclick="confirmarReservaProcedimiento()" class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300">
+                        Confirmar Reserva
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% include 'footer.html' %}
+
+    <!-- FullCalendar CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
     <script>
         let historialData = [];
@@ -373,24 +436,93 @@
                                         <span class="text-gray-600">Estado: <span class="font-semibold text-green-600">${cita.estado || 'Completada'}</span></span>
                                     </div>
 
-                                    <!-- Botones de Acción -->
+                                    <!-- Botones para Ver Exámenes / Ver Operaciones -->
+                                    ${(cita.examenes && cita.examenes.length > 0) || (cita.operaciones && cita.operaciones.length > 0) ? `
                                     <div class="mt-6 pt-4 border-t border-gray-200">
-                                        <p class="text-sm font-semibold text-gray-700 mb-3">Acciones Disponibles:</p>
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">🗓️ Agendar Procedimientos de esta Cita:</h4>
                                         <div class="flex flex-wrap gap-3">
-                                            <button onclick="generarExamen(${cita.id_reserva}, ${cita.id_cita})" class="inline-flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M12 5v14M5 12h14"/>
-                                                </svg>
-                                                Generar Examen
-                                            </button>
-                                            <button onclick="generarOperacion(${cita.id_reserva}, ${cita.id_cita})" class="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M12 5v14M5 12h14"/>
-                                                </svg>
-                                                Generar Operación
-                                            </button>
+                                            ${cita.examenes && cita.examenes.length > 0 ? `
+                                                <button onclick="verExamenesCita(${cita.id_cita})" 
+                                                        class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                                    </svg>
+                                                    Ver Exámenes (${cita.examenes.length})
+                                                </button>
+                                            ` : ''}
+                                            ${cita.operaciones && cita.operaciones.length > 0 ? `
+                                                <button onclick="verOperacionesCita(${cita.id_cita})" 
+                                                        class="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                                    </svg>
+                                                    Ver Operaciones (${cita.operaciones.length})
+                                                </button>
+                                            ` : ''}
                                         </div>
                                     </div>
+                                    ` : ''}
+
+                                    <!-- Autorizaciones de Procedimientos -->
+                                    ${cita.autorizaciones && cita.autorizaciones.length > 0 ? `
+                                    <div class="mt-6 pt-4 border-t border-gray-200">
+                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">📋 Procedimientos Autorizados por el Médico:</h4>
+                                        <div class="space-y-3">
+                                            ${cita.autorizaciones.map((aut, autIndex) => {
+                                                const isPendiente = aut.estado === 'PENDIENTE';
+                                                const isExamen = aut.tipo_procedimiento === 'EXAMEN';
+                                                const colorClasses = isExamen ? 'bg-purple-50 border-purple-300' : 'bg-orange-50 border-orange-300';
+                                                const iconColor = isExamen ? 'text-purple-600' : 'text-orange-600';
+                                                const icon = isExamen ? '🔬' : '🏥';
+                                                
+                                                return `
+                                                    <div class="${colorClasses} border-2 rounded-lg p-4">
+                                                        <div class="flex items-start justify-between gap-3">
+                                                            <div class="flex-1">
+                                                                <div class="flex items-center gap-2 mb-2">
+                                                                    <span class="text-2xl">${icon}</span>
+                                                                    <span class="font-semibold ${iconColor} text-lg">${aut.servicio_nombre}</span>
+                                                                    <span class="text-xs px-2 py-1 rounded-full font-medium ${
+                                                                        isPendiente ? 'bg-yellow-100 text-yellow-700' :
+                                                                        aut.estado === 'COMPLETADA' ? 'bg-green-100 text-green-700' :
+                                                                        'bg-gray-100 text-gray-700'
+                                                                    }">
+                                                                        ${aut.estado}
+                                                                    </span>
+                                                                </div>
+                                                                ${aut.medico_asignado ? `
+                                                                    <p class="text-sm text-gray-600 mb-1">
+                                                                        <span class="font-medium">Médico asignado:</span> ${aut.medico_asignado}
+                                                                    </p>
+                                                                ` : ''}
+                                                                ${aut.especialidad_requerida ? `
+                                                                    <p class="text-sm text-gray-600 mb-1">
+                                                                        <span class="font-medium">Especialidad:</span> ${aut.especialidad_requerida}
+                                                                    </p>
+                                                                ` : ''}
+                                                                ${aut.fecha_vencimiento ? `
+                                                                    <p class="text-xs text-gray-500 mt-2">
+                                                                        ⏰ Válido hasta: ${new Date(aut.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-ES')}
+                                                                    </p>
+                                                                ` : ''}
+                                                            </div>
+                                                            ${isPendiente ? `
+                                                                <button onclick="reservarProcedimiento(${aut.id_autorizacion}, '${aut.tipo_procedimiento}', '${aut.servicio_nombre}')" 
+                                                                        class="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                                        <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/>
+                                                                        <path d="M3 10h18"/>
+                                                                    </svg>
+                                                                    Agendar
+                                                                </button>
+                                                            ` : ''}
+                                                        </div>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -399,20 +531,557 @@
             }).join('');
         }
 
-        // Función para generar un nuevo examen
-        function generarExamen(idReserva, idCita) {
-            // Redirigir al formulario de generar examen
-            window.location.href = `/reservas/examenes/generar?reserva=${idReserva}&cita=${idCita}`;
+        // Variables globales para el modal
+        let calendarInstance = null;
+        let programacionSeleccionada = null;
+        
+        // Función para abrir modal de reserva de procedimiento autorizado
+        function reservarProcedimiento(idAutorizacion, tipoProcedimiento, nombreServicio) {
+            // Almacenar datos de la autorización
+            window.autorizacionActual = {
+                id: idAutorizacion,
+                tipo: tipoProcedimiento,
+                nombre: nombreServicio
+            };
+            
+            // Abrir modal de calendario
+            abrirModalReservaProcedimiento(idAutorizacion, tipoProcedimiento, nombreServicio);
         }
 
-        // Función para generar una nueva operación
-        function generarOperacion(idReserva, idCita) {
-            // Redirigir al formulario de generar operación
-            window.location.href = `/reservas/operaciones/generar?reserva=${idReserva}&cita=${idCita}`;
+        async function abrirModalReservaProcedimiento(idAutorizacion, tipoProcedimiento, nombreServicio) {
+            const modal = document.getElementById('modalReservaProcedimiento');
+            const titulo = document.getElementById('modalTituloProcedimiento');
+            const subtitulo = document.getElementById('modalSubtituloProcedimiento');
+            const loading = document.getElementById('loadingProgramaciones');
+            const calendarioDiv = document.getElementById('calendarioProcedimiento');
+            const empty = document.getElementById('emptyProgramaciones');
+            const footer = document.getElementById('footerReserva');
+
+            // Configurar títulos
+            titulo.textContent = `Agendar ${tipoProcedimiento === 'EXAMEN' ? 'Examen' : 'Operación'}`;
+            subtitulo.textContent = nombreServicio;
+
+            // Mostrar modal
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            calendarioDiv.classList.add('hidden');
+            empty.classList.add('hidden');
+            footer.classList.add('hidden');
+
+            try {
+                // Cargar programaciones disponibles
+                const response = await fetch(`/paciente/api/autorizacion/${idAutorizacion}/programaciones`);
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    cerrarModalReservaProcedimiento();
+                    return;
+                }
+
+                loading.classList.add('hidden');
+
+                if (!data.programaciones || data.programaciones.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                // Mostrar calendario
+                calendarioDiv.classList.remove('hidden');
+                inicializarCalendarioProcedimiento(data.programaciones);
+
+            } catch (error) {
+                console.error('Error al cargar programaciones:', error);
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+            }
+        }
+
+        function inicializarCalendarioProcedimiento(programaciones) {
+            const calendarEl = document.getElementById('calendar');
+            
+            // Limpiar calendario anterior si existe
+            if (calendarInstance) {
+                calendarInstance.destroy();
+            }
+
+            // Convertir programaciones a eventos de FullCalendar
+            const eventos = programaciones.map(prog => ({
+                id: prog.id_programacion,
+                title: `${prog.hora_inicio} - ${prog.medico_nombre}`,
+                start: `${prog.fecha}T${prog.hora_inicio}`,
+                end: `${prog.fecha}T${prog.hora_fin}`,
+                backgroundColor: '#06b6d4',
+                borderColor: '#0891b2',
+                extendedProps: {
+                    id_programacion: prog.id_programacion,
+                    medico: prog.medico_nombre,
+                    especialidad: prog.especialidad,
+                    servicio: prog.servicio_nombre
+                }
+            }));
+
+            // Crear calendario
+            calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'es',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek'
+                },
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana'
+                },
+                events: eventos,
+                eventClick: function(info) {
+                    seleccionarProgramacion(info.event);
+                },
+                height: 'auto',
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }
+            });
+
+            calendarInstance.render();
+        }
+
+        function seleccionarProgramacion(event) {
+            programacionSeleccionada = {
+                id_programacion: event.extendedProps.id_programacion,
+                fecha: event.start.toISOString().split('T')[0],
+                hora: event.start.toTimeString().slice(0, 5),
+                medico: event.extendedProps.medico,
+                especialidad: event.extendedProps.especialidad
+            };
+
+            // Mostrar resumen
+            const textoSeleccion = document.getElementById('textoSeleccion');
+            const fechaFormateada = new Date(programacionSeleccionada.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            textoSeleccion.innerHTML = `
+                📅 ${fechaFormateada} a las ${programacionSeleccionada.hora}<br>
+                👨‍⚕️ ${programacionSeleccionada.medico} - ${programacionSeleccionada.especialidad}
+            `;
+
+            // Mostrar footer
+            document.getElementById('footerReserva').classList.remove('hidden');
+        }
+
+        async function confirmarReservaProcedimiento() {
+            if (!programacionSeleccionada || !window.autorizacionActual) {
+                alert('Por favor, seleccione una programación');
+                return;
+            }
+
+            const btnConfirmar = document.getElementById('btnConfirmarReserva');
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
+
+            try {
+                const response = await fetch('/paciente/api/reservar-desde-autorizacion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_autorizacion: window.autorizacionActual.id,
+                        id_programacion: programacionSeleccionada.id_programacion
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Reserva confirmada exitosamente');
+                    cerrarModalReservaProcedimiento();
+                    // Recargar historial
+                    cargarHistorial();
+                } else {
+                    alert(data.error || 'Error al crear la reserva');
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.textContent = 'Confirmar Reserva';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar la reserva');
+                btnConfirmar.disabled = false;
+                btnConfirmar.textContent = 'Confirmar Reserva';
+            }
+        }
+
+        function cerrarModalReservaProcedimiento() {
+            const modal = document.getElementById('modalReservaProcedimiento');
+            modal.classList.add('hidden');
+            
+            // Limpiar
+            programacionSeleccionada = null;
+            if (calendarInstance) {
+                calendarInstance.destroy();
+                calendarInstance = null;
+            }
         }
 
         // Función para expandir/contraer el contenido
         function toggleExpand(index) {
+            const content = document.getElementById(`content-${index}`);
+            const chevron = document.getElementById(`chevron-${index}`);
+            const btnText = document.getElementById(`btnText-${index}`);
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                chevron.style.transform = 'rotate(0deg)';
+                btnText.textContent = 'Ver Detalles';
+            } else {
+                content.classList.add('expanded');
+                chevron.style.transform = 'rotate(180deg)';
+                btnText.textContent = 'Ocultar Detalles';
+            }
+        }
+
+        // ====== NUEVAS FUNCIONES PARA VER EXÁMENES Y OPERACIONES ======
+        
+        // Variables globales para los modales de exámenes/operaciones
+        let calendarExamenesInstance = null;
+        let calendarOperacionesInstance = null;
+        let programacionSeleccionadaProcedimiento = null;
+        let citaActual = null;
+
+        // Función para abrir modal de exámenes
+        async function verExamenesCita(idCita) {
+            // Buscar la cita en los datos del historial
+            const cita = historialData.find(c => c.id_cita === idCita);
+            if (!cita || !cita.examenes || cita.examenes.length === 0) {
+                alert('No se encontraron exámenes para esta cita');
+                return;
+            }
+
+            citaActual = cita;
+            abrirModalProcedimiento('EXAMEN', cita);
+        }
+
+        // Función para abrir modal de operaciones
+        async function verOperacionesCita(idCita) {
+            // Buscar la cita en los datos del historial
+            const cita = historialData.find(c => c.id_cita === idCita);
+            if (!cita || !cita.operaciones || cita.operaciones.length === 0) {
+                alert('No se encontraron operaciones para esta cita');
+                return;
+            }
+
+            citaActual = cita;
+            abrirModalProcedimiento('OPERACION', cita);
+        }
+
+        // Función genérica para abrir modal de procedimientos
+        async function abrirModalProcedimiento(tipoProcedimiento, cita) {
+            const modal = document.getElementById('modalReservaProcedimiento');
+            const titulo = document.getElementById('modalTituloProcedimiento');
+            const subtitulo = document.getElementById('modalSubtituloProcedimiento');
+            const loading = document.getElementById('loadingProgramaciones');
+            const calendarioDiv = document.getElementById('calendarioProcedimiento');
+            const empty = document.getElementById('emptyProgramaciones');
+            const footer = document.getElementById('footerReserva');
+
+            // Obtener los procedimientos según el tipo
+            const procedimientos = tipoProcedimiento === 'EXAMEN' ? cita.examenes : cita.operaciones;
+            const nombreTipo = tipoProcedimiento === 'EXAMEN' ? 'Exámenes' : 'Operaciones';
+
+            // Configurar títulos
+            titulo.textContent = `Agendar ${nombreTipo}`;
+            subtitulo.textContent = `Cita del ${new Date(cita.fecha_cita + 'T00:00:00').toLocaleDateString('es-ES')} con ${cita.medico_nombres} ${cita.medico_apellidos}`;
+
+            // Mostrar modal
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            calendarioDiv.classList.add('hidden');
+            empty.classList.add('hidden');
+            footer.classList.add('hidden');
+
+            try {
+                // Cargar programaciones disponibles para este tipo de procedimiento
+                const response = await fetch(`/paciente/api/cita/${cita.id_cita}/programaciones-procedimientos?tipo=${tipoProcedimiento}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    cerrarModalReservaProcedimiento();
+                    return;
+                }
+
+                loading.classList.add('hidden');
+
+                if (!data.programaciones || data.programaciones.length === 0) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                // Mostrar calendario
+                calendarioDiv.classList.remove('hidden');
+                inicializarCalendarioProcedimientoCita(data.programaciones, tipoProcedimiento);
+
+            } catch (error) {
+                console.error('Error al cargar programaciones:', error);
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+                empty.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="mx-auto text-gray-300 mb-4">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Error al cargar horarios</h3>
+                    <p class="text-gray-600">Ocurrió un error al obtener los horarios disponibles. Por favor, intente nuevamente.</p>
+                `;
+            }
+        }
+
+        // Inicializar calendario para procedimientos de cita
+        function inicializarCalendarioProcedimientoCita(programaciones, tipoProcedimiento) {
+            const calendarEl = document.getElementById('calendar');
+            
+            // Limpiar calendario anterior si existe
+            if (calendarInstance) {
+                calendarInstance.destroy();
+            }
+
+            // Convertir programaciones a eventos de FullCalendar
+            const ahora = new Date();
+            const eventos = programaciones.map(prog => {
+                const fechaHoraProgramacion = new Date(`${prog.fecha}T${prog.hora_inicio}`);
+                const yaPaso = fechaHoraProgramacion < ahora;
+                const esReservaPropia = prog.es_reserva_propia === 1;
+                
+                let backgroundColor, borderColor;
+                
+                if (esReservaPropia) {
+                    backgroundColor = '#fbbf24'; // Amarillo para reservas propias
+                    borderColor = '#f59e0b';
+                } else if (yaPaso) {
+                    backgroundColor = '#9ca3af'; // Gris para horarios pasados
+                    borderColor = '#6b7280';
+                } else if (prog.estado === 'Disponible') {
+                    backgroundColor = '#10b981'; // Verde para disponibles
+                    borderColor = '#059669';
+                } else {
+                    backgroundColor = '#ef4444'; // Rojo para ocupados
+                    borderColor = '#dc2626';
+                }
+                
+                return {
+                    id: prog.id_programacion,
+                    title: `${prog.hora_inicio} - ${prog.medico_nombre}`,
+                    start: `${prog.fecha}T${prog.hora_inicio}`,
+                    end: `${prog.fecha}T${prog.hora_fin}`,
+                    backgroundColor: backgroundColor,
+                    borderColor: borderColor,
+                    extendedProps: {
+                        id_programacion: prog.id_programacion,
+                        medico: prog.medico_nombre,
+                        especialidad: prog.especialidad,
+                        servicio: prog.servicio_nombre,
+                        estado: prog.estado,
+                        yaPaso: yaPaso,
+                        esReservaPropia: esReservaPropia,
+                        tipoProcedimiento: tipoProcedimiento
+                    }
+                };
+            });
+
+            // Crear calendario con configuración similar a nueva-cita
+            calendarInstance = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                locale: 'es',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,dayGridMonth'
+                },
+                slotMinTime: '07:00:00',
+                slotMaxTime: '20:00:00',
+                allDaySlot: false,
+                nowIndicator: true,
+                now: new Date(),
+                height: 'auto',
+                events: eventos,
+                eventClick: function(info) {
+                    // Validar si se puede seleccionar
+                    const yaPaso = info.event.extendedProps.yaPaso;
+                    const esReservaPropia = info.event.extendedProps.esReservaPropia;
+                    const estado = info.event.extendedProps.estado;
+                    
+                    if (yaPaso) {
+                        alert('⏰ Este horario ya pasó. Por favor, seleccione otro horario.');
+                        return;
+                    }
+                    
+                    if (esReservaPropia) {
+                        alert('📌 Esta es tu reserva actual. No puedes seleccionarla nuevamente.');
+                        return;
+                    }
+                    
+                    if (estado !== 'Disponible') {
+                        alert('❌ Este horario ya está ocupado. Por favor, seleccione otro horario.');
+                        return;
+                    }
+                    
+                    seleccionarProgramacionProcedimiento(info.event);
+                },
+                eventTimeFormat: {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }
+            });
+
+            calendarInstance.render();
+        }
+
+        function seleccionarProgramacionProcedimiento(event) {
+            programacionSeleccionadaProcedimiento = {
+                id_programacion: event.extendedProps.id_programacion,
+                fecha: event.start.toISOString().split('T')[0],
+                hora: event.start.toTimeString().slice(0, 5),
+                medico: event.extendedProps.medico,
+                especialidad: event.extendedProps.especialidad,
+                servicio: event.extendedProps.servicio,
+                tipoProcedimiento: event.extendedProps.tipoProcedimiento
+            };
+
+            // Mostrar resumen
+            const textoSeleccion = document.getElementById('textoSeleccion');
+            const fechaFormateada = new Date(programacionSeleccionadaProcedimiento.fecha + 'T00:00:00').toLocaleDateString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            textoSeleccion.innerHTML = `
+                📅 ${fechaFormateada} a las ${programacionSeleccionadaProcedimiento.hora}<br>
+                👨‍⚕️ ${programacionSeleccionadaProcedimiento.medico} - ${programacionSeleccionadaProcedimiento.especialidad}<br>
+                🏥 ${programacionSeleccionadaProcedimiento.servicio}
+            `;
+
+            // Mostrar footer
+            document.getElementById('footerReserva').classList.remove('hidden');
+        }
+
+        async function confirmarReservaProcedimientoCita() {
+            if (!programacionSeleccionadaProcedimiento || !citaActual) {
+                alert('Por favor, seleccione una programación');
+                return;
+            }
+
+            const btnConfirmar = document.getElementById('btnConfirmarReserva');
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
+
+            try {
+                const response = await fetch('/paciente/api/reservar-procedimiento-cita', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_cita: citaActual.id_cita,
+                        id_programacion: programacionSeleccionadaProcedimiento.id_programacion,
+                        tipo_procedimiento: programacionSeleccionadaProcedimiento.tipoProcedimiento
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`✅ ${programacionSeleccionadaProcedimiento.tipoProcedimiento === 'EXAMEN' ? 'Examen' : 'Operación'} agendado exitosamente`);
+                    cerrarModalReservaProcedimiento();
+                    // Recargar historial
+                    cargarHistorial();
+                } else {
+                    alert(data.error || 'Error al crear la reserva');
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.textContent = 'Confirmar Reserva';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar la reserva');
+                btnConfirmar.disabled = false;
+                btnConfirmar.textContent = 'Confirmar Reserva';
+            }
+        }
+        
+        // Modificar la función original de confirmar para detectar el contexto
+        async function confirmarReservaProcedimiento() {
+            // Si hay una programación de procedimiento de cita, usar esa función
+            if (programacionSeleccionadaProcedimiento && citaActual) {
+                return confirmarReservaProcedimientoCita();
+            }
+            
+            // Si no, usar la función original para autorizaciones
+            if (!programacionSeleccionada || !window.autorizacionActual) {
+                alert('Por favor, seleccione una programación');
+                return;
+            }
+
+            const btnConfirmar = document.getElementById('btnConfirmarReserva');
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Procesando...';
+
+            try {
+                const response = await fetch('/paciente/api/reservar-desde-autorizacion', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id_autorizacion: window.autorizacionActual.id,
+                        id_programacion: programacionSeleccionada.id_programacion
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Reserva confirmada exitosamente');
+                    cerrarModalReservaProcedimiento();
+                    // Recargar historial
+                    cargarHistorial();
+                } else {
+                    alert(data.error || 'Error al crear la reserva');
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.textContent = 'Confirmar Reserva';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al procesar la reserva');
+                btnConfirmar.disabled = false;
+                btnConfirmar.textContent = 'Confirmar Reserva';
+            }
+        }
+
+        function cerrarModalReservaProcedimiento() {
+            const modal = document.getElementById('modalReservaProcedimiento');
+            modal.classList.add('hidden');
+            
+            // Limpiar
+            programacionSeleccionada = null;
+            programacionSeleccionadaProcedimiento = null;
+            citaActual = null;
+            if (calendarInstance) {
+                calendarInstance.destroy();
+                calendarInstance = null;
+            }
+        }
+
+        // ====== FIN DE NUEVAS FUNCIONES ======
+
+        // Función para expandir/contraer el contenido (MANTENER LA ORIGINAL)
+        function toggleExpand_ORIGINAL(index) {
             const content = document.getElementById(`content-${index}`);
             const chevron = document.getElementById(`chevron-${index}`);
             const btnText = document.getElementById(`btnText-${index}`);
