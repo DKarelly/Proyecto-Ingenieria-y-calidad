@@ -143,16 +143,26 @@
                     <h2 class="text-2xl font-bold text-gray-800 mb-6">Paso 3: Selecciona Fecha y Horario</h2>
 
                     <div class="mb-6">
-                        <!-- Buscador de fecha -->
+                        <!-- Buscador de rango de fechas -->
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                             <div class="flex flex-wrap items-end gap-3">
                                 <div class="flex-1 min-w-[200px]">
-                                    <label for="fechaBusqueda" class="block text-sm font-medium text-gray-700 mb-1">
-                                        Buscar horarios desde:
+                                    <label for="fechaInicio" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Fecha inicio:
                                     </label>
                                     <input 
                                         type="date" 
-                                        id="fechaBusqueda" 
+                                        id="fechaInicio" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                </div>
+                                <div class="flex-1 min-w-[200px]">
+                                    <label for="fechaFin" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Fecha fin:
+                                    </label>
+                                    <input 
+                                        type="date" 
+                                        id="fechaFin" 
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
                                 </div>
@@ -178,7 +188,7 @@
                                 </button>
                             </div>
                             <p class="text-sm text-gray-600 mt-2">
-                                Mostrando horarios de la semana: <span id="rangoFechas" class="font-semibold text-blue-600"></span>
+                                Mostrando horarios del rango: <span id="rangoFechas" class="font-semibold text-blue-600"></span>
                             </p>
                         </div>
                         
@@ -325,16 +335,41 @@
         // Configurar y cargar especialidades al iniciar
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('[NuevaCita] Iniciando sistema de reservas');
+            
+            // Verificar si viene con médico y especialidad desde la URL (desde lista de médicos)
+            const urlParams = new URLSearchParams(window.location.search);
+            const idMedico = urlParams.get('medico');
+            const idEspecialidad = urlParams.get('especialidad');
+            
+            if (idMedico && idEspecialidad) {
+                // Si viene con médico y especialidad, saltar directamente al paso 3
+                console.log('[NuevaCita] Detectado médico y especialidad en URL, saltando al paso 3');
+                await preseleccionarMedicoYEspecialidad(idMedico, idEspecialidad);
+                return; // Salir temprano, no cargar especialidades ni mostrar paso 1
+            }
+            
             await cargarEspecialidades();
             
-            // Configurar fecha mínima en el buscador de fecha (hoy)
-            const fechaBusquedaEl = document.getElementById('fechaBusqueda');
-            if (fechaBusquedaEl) {
-                const hoy = new Date().toISOString().split('T')[0];
-                fechaBusquedaEl.setAttribute('min', hoy);
+            // Configurar fecha mínima en los buscadores de fecha (hoy)
+            const fechaInicioEl = document.getElementById('fechaInicio');
+            const fechaFinEl = document.getElementById('fechaFin');
+            const hoy = new Date().toISOString().split('T')[0];
+            
+            if (fechaInicioEl) {
+                fechaInicioEl.setAttribute('min', hoy);
                 
-                // Event listener para Enter en el input de fecha
-                fechaBusquedaEl.addEventListener('keypress', function(e) {
+                // Event listener para validar que fecha inicio <= fecha fin
+                fechaInicioEl.addEventListener('change', function() {
+                    if (fechaFinEl && fechaFinEl.value && this.value > fechaFinEl.value) {
+                        fechaFinEl.value = this.value;
+                    }
+                    if (fechaFinEl) {
+                        fechaFinEl.setAttribute('min', this.value || hoy);
+                    }
+                });
+                
+                // Event listener para Enter en el input de fecha inicio
+                fechaInicioEl.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         const btnBuscar = document.getElementById('btnBuscarFecha');
@@ -343,35 +378,64 @@
                 });
             }
             
-            // Event listener para buscar fecha específica
-            const btnBuscarFecha = document.getElementById('btnBuscarFecha');
-            if (btnBuscarFecha) {
-                btnBuscarFecha.addEventListener('click', async function() {
-                    const fechaBusqueda = document.getElementById('fechaBusqueda');
-                    if (fechaBusqueda && fechaBusqueda.value) {
-                        const fechaSeleccionada = fechaBusqueda.value;
-                        const hoy = new Date().toISOString().split('T')[0];
-                        
-                        if (fechaSeleccionada < hoy) {
-                            alert('No puedes buscar horarios de fechas pasadas. Por favor, selecciona la fecha de hoy o una fecha futura.');
-                            return;
-                        }
-                        
-                        console.log('[Paso3] Buscando horarios desde:', fechaSeleccionada);
-                        await cargarHorariosSemanales(fechaSeleccionada);
-                    } else {
-                        alert('Por favor, selecciona una fecha para buscar.');
+            if (fechaFinEl) {
+                fechaFinEl.setAttribute('min', hoy);
+                
+                // Event listener para validar que fecha fin >= fecha inicio
+                fechaFinEl.addEventListener('change', function() {
+                    if (fechaInicioEl && fechaInicioEl.value && this.value < fechaInicioEl.value) {
+                        alert('La fecha fin debe ser mayor o igual a la fecha inicio.');
+                        this.value = fechaInicioEl.value;
+                    }
+                });
+                
+                // Event listener para Enter en el input de fecha fin
+                fechaFinEl.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const btnBuscar = document.getElementById('btnBuscarFecha');
+                        if (btnBuscar) btnBuscar.click();
                     }
                 });
             }
             
-            // Event listener para limpiar fecha y volver a la semana actual
+            // Event listener para buscar rango de fechas
+            const btnBuscarFecha = document.getElementById('btnBuscarFecha');
+            if (btnBuscarFecha) {
+                btnBuscarFecha.addEventListener('click', async function() {
+                    const fechaInicio = fechaInicioEl ? fechaInicioEl.value : null;
+                    const fechaFin = fechaFinEl ? fechaFinEl.value : null;
+                    
+                    if (!fechaInicio || !fechaFin) {
+                        alert('Por favor, selecciona ambas fechas (inicio y fin) para buscar.');
+                        return;
+                    }
+                    
+                    if (fechaInicio > fechaFin) {
+                        alert('La fecha inicio debe ser menor o igual a la fecha fin.');
+                        return;
+                    }
+                    
+                    const hoyStr = new Date().toISOString().split('T')[0];
+                    if (fechaInicio < hoyStr) {
+                        alert('No puedes buscar horarios de fechas pasadas. Por favor, selecciona fechas desde hoy en adelante.');
+                        return;
+                    }
+                    
+                    console.log('[Paso3] Buscando horarios desde:', fechaInicio, 'hasta:', fechaFin);
+                    await cargarHorariosSemanales(fechaInicio, fechaFin);
+                });
+            }
+            
+            // Event listener para limpiar fechas y volver a la semana actual
             const btnLimpiarFecha = document.getElementById('btnLimpiarFecha');
             if (btnLimpiarFecha) {
                 btnLimpiarFecha.addEventListener('click', async function() {
-                    const fechaBusqueda = document.getElementById('fechaBusqueda');
-                    if (fechaBusqueda) {
-                        fechaBusqueda.value = '';
+                    if (fechaInicioEl) {
+                        fechaInicioEl.value = '';
+                    }
+                    if (fechaFinEl) {
+                        fechaFinEl.value = '';
                     }
                     console.log('[Paso3] Regresando a la semana actual');
                     await cargarHorariosSemanales();
@@ -643,10 +707,23 @@
             document.getElementById('btn-step2-next').disabled = false;
         }
 
-        // PASO 3: Cargar horarios de esta semana del médico seleccionado
-        async function cargarHorariosSemanales(fechaInicio = null) {
+        // PASO 3: Cargar horarios del rango de fechas del médico seleccionado
+        async function cargarHorariosSemanales(fechaInicio = null, fechaFin = null) {
             try {
-                console.log('[Paso3] Cargando horarios para servicio ID:', formData.id_servicio, 'y empleado ID:', formData.id_empleado, 'desde fecha:', fechaInicio || 'semana actual');
+                // Si no se proporcionan fechas, intentar leerlas de los inputs
+                if (!fechaInicio || !fechaFin) {
+                    const fechaInicioInput = document.getElementById('fechaInicio');
+                    const fechaFinInput = document.getElementById('fechaFin');
+                    if (fechaInicioInput && fechaInicioInput.value) {
+                        fechaInicio = fechaInicioInput.value;
+                    }
+                    if (fechaFinInput && fechaFinInput.value) {
+                        fechaFin = fechaFinInput.value;
+                    }
+                }
+                
+                console.log('[Paso3] Cargando horarios para servicio ID:', formData.id_servicio, 'y empleado ID:', formData.id_empleado, 'desde:', fechaInicio || 'semana actual', 'hasta:', fechaFin || 'semana actual');
+                console.log('[Paso3] Fechas recibidas - fechaInicio:', fechaInicio, 'fechaFin:', fechaFin);
                 
                 document.getElementById('medicoNombreHorario').textContent = formData.empleado_nombre;
                 
@@ -655,30 +732,49 @@
                 let url = `/reservas/api/buscar-horarios-disponibles?`;
                 
                 const params = ['id_tipo_servicio=1']; // Solo citas
-                if (formData.id_servicio) {
-                    params.push(`id_servicio=${formData.id_servicio}`);
-                }
+                // Para citas generales (id_tipo_servicio=1), NO incluimos id_servicio
+                // porque las citas pueden tener id_servicio NULL o un servicio específico
+                // Solo incluimos id_servicio si NO es cita general (por ejemplo, para exámenes)
+                // if (formData.id_servicio && formData.id_tipo_servicio && formData.id_tipo_servicio != 1) {
+                //     params.push(`id_servicio=${formData.id_servicio}`);
+                // }
                 if (formData.id_empleado) {
                     params.push(`id_empleado=${formData.id_empleado}`);
                 }
-                if (fechaInicio) {
-                    params.push(`fecha=${fechaInicio}`);
+                if (fechaInicio && fechaFin) {
+                    params.push(`fecha_inicio=${fechaInicio}`);
+                    params.push(`fecha_fin=${fechaFin}`);
+                } else if (fechaInicio) {
+                    // Si solo hay fecha inicio, usar fecha fin igual a fecha inicio
+                    params.push(`fecha_inicio=${fechaInicio}`);
+                    params.push(`fecha_fin=${fechaInicio}`);
                 }
                 
                 url += params.join('&');
                 
-                console.log('[Paso3] URL:', url);
+                console.log('[Paso3] URL completa:', url);
                 const response = await fetch(url);
                 const data = await response.json();
+                console.log('[Paso3] Respuesta del servidor:', data);
+                console.log('[Paso3] Horarios recibidos:', data.horarios ? data.horarios.length : 0);
+                console.log('[Paso3] Rango devuelto por servidor - inicio_semana:', data.inicio_semana, 'fin_semana:', data.fin_semana);
                 
                 // Actualizar el rango de fechas mostrado
                 const rangoFechasSpan = document.getElementById('rangoFechas');
-                if (rangoFechasSpan && data.inicio_semana && data.fin_semana) {
-                    const inicio = new Date(data.inicio_semana + 'T00:00:00');
-                    const fin = new Date(data.fin_semana + 'T00:00:00');
-                    const inicioFormateado = inicio.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-                    const finFormateado = fin.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-                    rangoFechasSpan.textContent = `${inicioFormateado} - ${finFormateado}`;
+                if (rangoFechasSpan) {
+                    // Priorizar las fechas proporcionadas, luego las del servidor
+                    let fechaInicioMostrar = fechaInicio || data.inicio_semana;
+                    let fechaFinMostrar = fechaFin || data.fin_semana;
+                    
+                    if (fechaInicioMostrar && fechaFinMostrar) {
+                        // Mostrar el rango (personalizado o de la semana actual)
+                        const inicio = new Date(fechaInicioMostrar + 'T00:00:00');
+                        const fin = new Date(fechaFinMostrar + 'T00:00:00');
+                        const inicioFormateado = inicio.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+                        const finFormateado = fin.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+                        rangoFechasSpan.textContent = `${inicioFormateado} - ${finFormateado}`;
+                        console.log('[Paso3] Rango mostrado:', `${inicioFormateado} - ${finFormateado}`, 'desde fechas:', fechaInicioMostrar, 'a', fechaFinMostrar);
+                    }
                 }
 
                 const container = document.getElementById('horariosSemanales');
@@ -841,7 +937,94 @@
                 `${fechaFormateada} - ${formData.hora_inicio} a ${formData.hora_fin}`;
         }
 
-        // Función para preseleccionar médico desde la URL
+        // Función para preseleccionar médico y especialidad desde la URL y saltar al paso 3
+        async function preseleccionarMedicoYEspecialidad(idMedico, idEspecialidad) {
+            try {
+                console.log('[NuevaCita] Preseleccionando médico y especialidad:', idMedico, idEspecialidad);
+                
+                // Obtener información del médico
+                const responseMedico = await fetch(`/reservas/api/medico/${idMedico}`);
+                const medico = await responseMedico.json();
+                
+                if (medico && !medico.error) {
+                    // Obtener nombre de la especialidad desde la lista de especialidades activas
+                    let nombreEspecialidad = 'Especialidad';
+                    try {
+                        const responseEspecialidades = await fetch('/reservas/api/especialidades-activas');
+                        const dataEspecialidades = await responseEspecialidades.json();
+                        if (dataEspecialidades.especialidades) {
+                            const especialidadEncontrada = dataEspecialidades.especialidades.find(
+                                esp => esp.id_especialidad == idEspecialidad
+                            );
+                            if (especialidadEncontrada) {
+                                nombreEspecialidad = especialidadEncontrada.nombre;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('No se pudo obtener nombre de especialidad, usando el del médico');
+                        nombreEspecialidad = medico.especialidad || 'Especialidad';
+                    }
+                    
+                    // Configurar formData con médico y especialidad
+                    formData.id_empleado = parseInt(idMedico);
+                    formData.empleado_nombre = `Dr(a). ${medico.nombres} ${medico.apellidos}`;
+                    formData.id_especialidad = parseInt(idEspecialidad);
+                    formData.especialidad_nombre = nombreEspecialidad;
+                    
+                    // Para citas generales (id_tipo_servicio=1), NO establecemos id_servicio
+                    // porque las citas pueden tener id_servicio NULL o un servicio específico
+                    // Solo establecemos id_servicio si NO es cita general (por ejemplo, para exámenes)
+                    // if (medico.id_servicio && formData.id_tipo_servicio && formData.id_tipo_servicio != 1) {
+                    //     formData.id_servicio = medico.id_servicio;
+                    //     formData.servicio_nombre = medico.servicio_nombre || 'Consulta Médica';
+                    // }
+                    
+                    console.log('[NuevaCita] Datos configurados:', formData);
+                    
+                    // Marcar pasos 1 y 2 como completados visualmente
+                    const step1Indicator = document.getElementById('step1-indicator');
+                    const step1Text = document.getElementById('step1-text');
+                    const step2Indicator = document.getElementById('step2-indicator');
+                    const step2Text = document.getElementById('step2-text');
+                    
+                    if (step1Indicator) {
+                        step1Indicator.classList.remove('step-inactive');
+                        step1Indicator.classList.add('step-completed');
+                    }
+                    if (step1Text) {
+                        step1Text.classList.remove('text-gray-400');
+                        step1Text.classList.add('text-green-600');
+                    }
+                    
+                    if (step2Indicator) {
+                        step2Indicator.classList.remove('step-inactive');
+                        step2Indicator.classList.add('step-completed');
+                    }
+                    if (step2Text) {
+                        step2Text.classList.remove('text-gray-400');
+                        step2Text.classList.add('text-green-600');
+                    }
+                    
+                    // Ir directamente al paso 3
+                    goToStep(3);
+                    
+                    // Cargar horarios del médico
+                    await cargarHorariosSemanales();
+                    
+                    console.log('[NuevaCita] Saltado al paso 3 con médico y especialidad preseleccionados');
+                } else {
+                    console.error('[NuevaCita] Error al obtener médico:', medico.error);
+                    // Si hay error, cargar normalmente
+                    await cargarEspecialidades();
+                }
+            } catch (error) {
+                console.error('[NuevaCita] Error al preseleccionar médico y especialidad:', error);
+                // Si hay error, cargar normalmente
+                await cargarEspecialidades();
+            }
+        }
+
+        // Función para preseleccionar médico desde la URL (versión antigua, mantiene compatibilidad)
         async function preseleccionarMedico(idMedico) {
             try {
                 console.log('Preseleccionando médico:', idMedico);

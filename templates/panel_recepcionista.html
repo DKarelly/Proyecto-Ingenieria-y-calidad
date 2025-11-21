@@ -814,7 +814,6 @@
                         <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
                                     <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Documento</th>
                                     <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Especialidad</th>
@@ -824,13 +823,46 @@
                             </thead>
                             <tbody class="divide-y divide-gray-200" id="medicos-table-body">
                                 <tr>
-                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                                         <span class="material-symbols-outlined animate-spin mr-2">sync</span>
                                         Cargando médicos...
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Modal para mostrar servicios del médico -->
+                <div id="servicios-modal" class="hidden fixed inset-0 z-50 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div class="bg-white rounded-lg shadow-2xl w-full max-w-3xl transform transition-all flex flex-col max-h-[85vh] mx-auto my-8" role="dialog" aria-modal="true">
+                        <div class="bg-cyan-600 text-white px-6 py-4 rounded-t-lg">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xl font-bold flex items-center">
+                                    <i class="fas fa-list-ul mr-2"></i>
+                                    <span id="servicios-modal-title">Servicios del Médico</span>
+                                </h3>
+                                <button id="close-servicios-modal" class="text-white hover:text-gray-200 transition-colors">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6 flex-1 overflow-y-auto">
+                            <div id="medico-info" class="mb-4 bg-gray-50 p-4 rounded-lg">
+                                <!-- Info del médico -->
+                            </div>
+                            <div id="servicios-list">
+                                <div class="flex justify-center items-center py-8">
+                                    <i class="fas fa-spinner fa-spin text-cyan-600 text-2xl mr-2"></i>
+                                    <span class="text-gray-600">Cargando servicios...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end">
+                            <button id="close-servicios-modal-btn" class="px-6 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors">
+                                <i class="fas fa-times mr-2"></i>Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {% elif accion == 'consultar_disponibilidad' %}
@@ -1011,6 +1043,24 @@
                                 </select>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Modal de detalle de horario -->
+                <div id="modal-detalle" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div class="bg-gradient-to-r from-cyan-600 to-cyan-700 text-white px-6 py-4 rounded-t-lg">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-xl font-bold">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Detalle del Horario
+                                </h3>
+                                <button id="btn-cerrar-modal" class="text-white hover:text-gray-200 transition-colors">
+                                    <i class="fas fa-times text-2xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="modal-contenido" class="p-6"></div>
                     </div>
                 </div>
                 {% elif accion == 'generar' %}

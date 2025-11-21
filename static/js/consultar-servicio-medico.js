@@ -12,11 +12,16 @@ function actualizarEstadisticas() {
 // Función para renderizar tabla
 function renderizarTabla() {
     const tbody = document.getElementById('medicos-table-body');
+    
+    if (!tbody) {
+        console.warn('No se encontró el elemento medicos-table-body');
+        return;
+    }
 
     if (medicosFiltrados.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
                     <i class="fas fa-info-circle mr-2"></i>
                     No se encontraron médicos con los filtros aplicados
                 </td>
@@ -27,9 +32,6 @@ function renderizarTabla() {
 
     tbody.innerHTML = medicosFiltrados.map(medico => `
         <tr class="hover:bg-cyan-50 transition-colors">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="text-gray-800 font-bold text-sm">#${medico.id_empleado}</span>
-            </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 h-10 w-10 bg-cyan-100 rounded-full flex items-center justify-center">
@@ -106,27 +108,59 @@ function aplicarFiltros() {
     actualizarEstadisticas();
 }
 
-// Función para cargar médicos
-function cargarMedicos() {
+// Función para cargar médicos desde API
+async function cargarMedicos() {
     const tbody = document.getElementById('medicos-table-body');
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                <i class="fas fa-spinner fa-spin mr-2"></i>
-                Cargando médicos...
-            </td>
-        </tr>
-    `;
+    if (!tbody) {
+        console.error('No se encontró el elemento medicos-table-body');
+        return;
+    }
+    
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    Cargando médicos...
+                </td>
+            </tr>
+        `;
 
     try {
-        // Los médicos ya vienen del servidor
-        const medicosJSON = '{{ medicos | tojson | safe }}';
-        const parsed = JSON.parse(medicosJSON);
-        if (typeof parsed === 'string') {
-            medicosData = JSON.parse(parsed);
-        } else {
-            medicosData = parsed;
+        // Cargar médicos desde API
+        const response = await fetch('/reservas/api/medicos-todos', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
         }
+
+        const data = await response.json();
+        
+        // Procesar datos recibidos
+        if (data.medicos && Array.isArray(data.medicos)) {
+            medicosData = data.medicos;
+        } else if (Array.isArray(data)) {
+            medicosData = data;
+        } else {
+            medicosData = [];
+        }
+
+        // Formatear datos para consistencia
+        medicosData = medicosData.map(medico => ({
+            id_empleado: medico.id_empleado,
+            nombres: medico.nombres || '',
+            apellidos: medico.apellidos || '',
+            documento_identidad: medico.documento_identidad || medico.documento || '',
+            correo: medico.correo || '',
+            telefono: medico.telefono || '',
+            especialidad: medico.especialidad || '',
+            rol: medico.rol || 'Médico'
+        }));
 
         // Extraer especialidades únicas
         medicosData.forEach(medico => {
@@ -137,25 +171,29 @@ function cargarMedicos() {
 
         // Llenar select de especialidades
         const selectEspecialidad = document.getElementById('filtro-especialidad');
-        especialidades.forEach(esp => {
-            const option = document.createElement('option');
-            option.value = esp;
-            option.textContent = esp;
-            selectEspecialidad.appendChild(option);
-        });
+        if (selectEspecialidad) {
+            especialidades.forEach(esp => {
+                const option = document.createElement('option');
+                option.value = esp;
+                option.textContent = esp;
+                selectEspecialidad.appendChild(option);
+            });
+        }
 
         aplicarFiltros();
 
     } catch (error) {
         console.error('Error al cargar médicos:', error);
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="px-6 py-8 text-center text-red-600">
-                    <i class="fas fa-exclamation-circle mr-2"></i>
-                    Error al cargar los médicos: ${error.message}
-                </td>
-            </tr>
-        `;
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-8 text-center text-red-600">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        Error al cargar los médicos: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -166,8 +204,28 @@ async function verServicios(id, nombre, especialidad) {
     const medicoInfo = document.getElementById('medico-info');
     const modalTitle = document.getElementById('servicios-modal-title');
 
+    // Validar que todos los elementos existan
+    if (!modal) {
+        console.error('No se encontró el modal servicios-modal');
+        alert('Error: No se pudo abrir el modal. Por favor, recarga la página.');
+        return;
+    }
+
+    if (!serviciosList) {
+        console.error('No se encontró el elemento servicios-list');
+        return;
+    }
+
+    if (!medicoInfo) {
+        console.error('No se encontró el elemento medico-info');
+        return;
+    }
+
     // Actualizar título y info del médico
-    modalTitle.textContent = `Servicios de ${nombre}`;
+    if (modalTitle) {
+        modalTitle.textContent = `Servicios de ${nombre}`;
+    }
+    
     medicoInfo.innerHTML = `
         <div class="flex items-center justify-between">
             <div>
@@ -295,21 +353,36 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarMedicos();
 
     // Búsqueda en tiempo real
-    document.getElementById('search-employee').addEventListener('input', aplicarFiltros);
+    const searchEmployee = document.getElementById('search-employee');
+    if (searchEmployee) {
+        searchEmployee.addEventListener('input', aplicarFiltros);
+    }
 
     // Filtro de especialidad
-    document.getElementById('filtro-especialidad').addEventListener('change', aplicarFiltros);
+    const filtroEspecialidad = document.getElementById('filtro-especialidad');
+    if (filtroEspecialidad) {
+        filtroEspecialidad.addEventListener('change', aplicarFiltros);
+    }
 
     // Botón limpiar
-    document.getElementById('btn-limpiar').addEventListener('click', function() {
-        document.getElementById('search-employee').value = '';
-        document.getElementById('filtro-especialidad').value = '';
-        aplicarFiltros();
-    });
+    const btnLimpiar = document.getElementById('btn-limpiar');
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener('click', function() {
+            if (searchEmployee) searchEmployee.value = '';
+            if (filtroEspecialidad) filtroEspecialidad.value = '';
+            aplicarFiltros();
+        });
+    }
 
     // Cerrar modal
-    document.getElementById('close-servicios-modal').addEventListener('click', cerrarModal);
-    document.getElementById('close-servicios-modal-btn').addEventListener('click', cerrarModal);
+    const closeModal = document.getElementById('close-servicios-modal');
+    const closeModalBtn = document.getElementById('close-servicios-modal-btn');
+    if (closeModal) {
+        closeModal.addEventListener('click', cerrarModal);
+    }
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', cerrarModal);
+    }
 
     // Cerrar modal con ESC
     document.addEventListener('keydown', function(e) {
@@ -319,11 +392,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Cerrar modal clickeando fuera
-    document.getElementById('servicios-modal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            cerrarModal();
-        }
-    });
+    const serviciosModal = document.getElementById('servicios-modal');
+    if (serviciosModal) {
+        serviciosModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+    }
 
     // Cargar información del usuario
     try {

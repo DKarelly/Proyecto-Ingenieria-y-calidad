@@ -26,51 +26,79 @@ document.addEventListener('DOMContentLoaded', function() {
     fechaDesdeInput = document.getElementById('fecha-desde-input');
     fechaHastaInput = document.getElementById('fecha-hasta-input');
     
+    // Verificar que los elementos críticos existan (solo ejecutar si estamos en la página correcta)
+    if (!rolSelect || !empleadoInput || !empleadoList || !empleadoId || !estadoSelect || !fechaDesdeInput || !fechaHastaInput) {
+        // No mostrar error si no estamos en la página de consultar disponibilidad
+        // Los scripts se cargan siempre pero solo deben ejecutarse cuando los elementos existan
+        return;
+    }
+    
     // Cargar datos iniciales
     cargarDatos();
     
     // Event listeners para autocomplete de empleados
-    empleadoInput.addEventListener('input', function() {
-        filtrarEmpleados(this.value);
-    });
+    if (empleadoInput) {
+        empleadoInput.addEventListener('input', function() {
+            filtrarEmpleados(this.value);
+        });
+    }
     
     // Event listeners para búsqueda automática
-    rolSelect.addEventListener('change', function() {
-        // Limpiar empleado cuando cambia el rol
-        empleadoInput.value = '';
-        empleadoId.value = '';
-        buscarAutomatico();
-    });
-    empleadoInput.addEventListener('change', buscarAutomatico);
-    estadoSelect.addEventListener('change', buscarAutomatico);
-    fechaDesdeInput.addEventListener('change', buscarAutomatico);
-    fechaHastaInput.addEventListener('change', buscarAutomatico);
+    if (rolSelect) {
+        rolSelect.addEventListener('change', function() {
+            // Limpiar empleado cuando cambia el rol
+            if (empleadoInput) empleadoInput.value = '';
+            if (empleadoId) empleadoId.value = '';
+            buscarAutomatico();
+        });
+    }
+    if (empleadoInput) empleadoInput.addEventListener('change', buscarAutomatico);
+    if (estadoSelect) estadoSelect.addEventListener('change', buscarAutomatico);
+    if (fechaDesdeInput) fechaDesdeInput.addEventListener('change', buscarAutomatico);
+    if (fechaHastaInput) fechaHastaInput.addEventListener('change', buscarAutomatico);
     
     // Botón limpiar
-    document.getElementById('btn-limpiar').addEventListener('click', limpiarFiltros);
+    const btnLimpiar = document.getElementById('btn-limpiar');
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener('click', limpiarFiltros);
+    }
     
     // Event listeners para paginación
-    document.getElementById('btn-primera-pagina').addEventListener('click', () => irAPagina(1));
-    document.getElementById('btn-ultima-pagina').addEventListener('click', () => irAPagina(totalPaginas));
-    document.getElementById('btn-pagina-anterior').addEventListener('click', () => irAPagina(paginaActual - 1));
-    document.getElementById('btn-pagina-siguiente').addEventListener('click', () => irAPagina(paginaActual + 1));
-    document.getElementById('registros-por-pagina').addEventListener('change', function() {
-        registrosPorPagina = parseInt(this.value);
-        paginaActual = 1;
-        actualizarVistaTabla();
-    });
+    const btnPrimera = document.getElementById('btn-primera-pagina');
+    const btnUltima = document.getElementById('btn-ultima-pagina');
+    const btnAnterior = document.getElementById('btn-pagina-anterior');
+    const btnSiguiente = document.getElementById('btn-pagina-siguiente');
+    const registrosPorPaginaEl = document.getElementById('registros-por-pagina');
+    
+    if (btnPrimera) btnPrimera.addEventListener('click', () => irAPagina(1));
+    if (btnUltima) btnUltima.addEventListener('click', () => irAPagina(totalPaginas));
+    if (btnAnterior) btnAnterior.addEventListener('click', () => irAPagina(paginaActual - 1));
+    if (btnSiguiente) btnSiguiente.addEventListener('click', () => irAPagina(paginaActual + 1));
+    if (registrosPorPaginaEl) {
+        registrosPorPaginaEl.addEventListener('change', function() {
+            registrosPorPagina = parseInt(this.value);
+            paginaActual = 1;
+            actualizarVistaTabla();
+        });
+    }
     
     // Modal cerrar
-    document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModal);
-    document.getElementById('modal-detalle').addEventListener('click', function(e) {
-        if (e.target === this) {
-            cerrarModal();
-        }
-    });
+    const btnCerrarModal = document.getElementById('btn-cerrar-modal');
+    const modalDetalle = document.getElementById('modal-detalle');
+    if (btnCerrarModal) {
+        btnCerrarModal.addEventListener('click', cerrarModal);
+    }
+    if (modalDetalle) {
+        modalDetalle.addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+    }
     
     // Cerrar listas al hacer click fuera
     document.addEventListener('click', function(e) {
-        if (!empleadoInput.contains(e.target) && !empleadoList.contains(e.target)) {
+        if (empleadoInput && empleadoList && !empleadoInput.contains(e.target) && !empleadoList.contains(e.target)) {
             empleadoList.classList.add('hidden');
         }
     });
@@ -85,7 +113,11 @@ async function cargarDatos() {
             const data = await respEmpleados.json();
             empleados = data.empleados || data || [];
             empleados.sort((a, b) => a.id_empleado - b.id_empleado);
-            document.getElementById('total-empleados').textContent = empleados.length;
+            
+            const totalEmpleadosEl = document.getElementById('total-empleados');
+            if (totalEmpleadosEl) {
+                totalEmpleadosEl.textContent = empleados.length;
+            }
             
             // Extraer roles únicos
             const rolesSet = new Set();
@@ -95,12 +127,14 @@ async function cargarDatos() {
             roles = Array.from(rolesSet).sort();
             
             // Llenar select de roles
-            roles.forEach(rol => {
-                const option = document.createElement('option');
-                option.value = rol;
-                option.textContent = rol;
-                rolSelect.appendChild(option);
-            });
+            if (rolSelect) {
+                roles.forEach(rol => {
+                    const option = document.createElement('option');
+                    option.value = rol;
+                    option.textContent = rol;
+                    rolSelect.appendChild(option);
+                });
+            }
         }
         
         // Cargar TODOS los horarios disponibles al inicio
