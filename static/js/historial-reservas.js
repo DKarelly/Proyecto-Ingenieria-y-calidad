@@ -426,9 +426,9 @@ function generarDetallesExamenesOperaciones(reserva) {
                     </div>
                     ${puedeReprogramar && examen.id_reserva ? `
                     <div class="mt-3 pt-3 border-t border-purple-300 flex gap-2">
-                        <button onclick="abrirModalReprogramacion(${examen.id_reserva}, '${examen.nombre_servicio || 'Examen'}', ${examen.id_servicio || 'null'}, '${examen.fecha_examen}')" 
+                        <button onclick="solicitarReprogramacion(${examen.id_reserva}, '${examen.nombre_servicio || 'Examen'}', '${examen.fecha_examen}')" 
                                 class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all">
-                            🔄 Reprogramar Examen
+                            🔄 Solicitar Reprogramación
                         </button>
                     </div>
                     ` : ''}
@@ -461,9 +461,9 @@ function generarDetallesExamenesOperaciones(reserva) {
                     </div>
                     ${puedeReprogramar && operacion.id_reserva ? `
                     <div class="mt-3 pt-3 border-t border-red-300 flex gap-2">
-                        <button onclick="abrirModalReprogramacion(${operacion.id_reserva}, 'Operación', null, '${operacion.fecha_operacion}')" 
+                        <button onclick="solicitarReprogramacion(${operacion.id_reserva}, 'Operación', '${operacion.fecha_operacion}')" 
                                 class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-3 rounded-lg text-sm transition-all">
-                            🔄 Reprogramar Operación
+                            🔄 Solicitar Reprogramación
                         </button>
                     </div>
                     ` : ''}
@@ -547,22 +547,36 @@ function generarTarjetaOperacion(reserva) {
                     </div>
                 </div>
 
+                ${reserva.operaciones && reserva.operaciones.length > 0 && reserva.operaciones[0].id_cita ? `
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <button onclick="verDetalleCitaOperacion(${reserva.id_reserva}, ${reserva.operaciones[0].id_cita})" 
+                            class="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Ver Detalle de Cita Médica
+                    </button>
+                </div>
+                ` : ''}
+
                 ${estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada' && reserva.estado_reserva !== 'Completada' ? `
-                <div class="mt-4 pt-4 border-t border-gray-200 flex gap-3">
-                    <button onclick="abrirModalReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', ${reserva.id_servicio}, '${reserva.fecha_programacion}')" 
-                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
-                        </svg>
-                        Reprogramar
-                    </button>
-                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')"
-                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                        Cancelar
-                    </button>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="grid md:grid-cols-2 gap-3">
+                        <button onclick="solicitarReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                class="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                            </svg>
+                            Solicitar Reprogramación
+                        </button>
+                        <button onclick="solicitarCancelacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                class="bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            Solicitar Cancelación
+                        </button>
+                    </div>
                 </div>
                 ` : ''}
             </div>
@@ -642,22 +656,36 @@ function generarTarjetaExamen(reserva) {
                     </div>
                 </div>
 
+                ${reserva.examenes && reserva.examenes.length > 0 ? `
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <button onclick="verDetalleCitaExamen(${reserva.id_reserva})" 
+                            class="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        Ver Detalle de Cita Médica
+                    </button>
+                </div>
+                ` : ''}
+
                 ${estadoCancelacion === 'Ninguna' && reserva.estado_reserva !== 'Cancelada' && reserva.estado_reserva !== 'Completada' ? `
-                <div class="mt-4 pt-4 border-t border-gray-200 flex gap-3">
-                    <button onclick="abrirModalReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', ${reserva.id_servicio}, '${reserva.fecha_programacion}')" 
-                            class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
-                        </svg>
-                        Reprogramar
-                    </button>
-                    <button onclick="abrirModalCancelacion(${reserva.id_reserva}, '${reserva.servicio}')"
-                            class="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                        </svg>
-                        Cancelar
-                    </button>
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="grid md:grid-cols-2 gap-3">
+                        <button onclick="solicitarReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                class="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                            </svg>
+                            Solicitar Reprogramación
+                        </button>
+                        <button onclick="solicitarCancelacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                class="bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            Solicitar Cancelación
+                        </button>
+                    </div>
                 </div>
                 ` : ''}
             </div>
@@ -1778,5 +1806,196 @@ function mostrarNotificacionExito(titulo, mensaje) {
             setTimeout(() => notif.remove(), 300);
         }
     }, 5000);
+}
+
+// ==================== FUNCIONES PARA VER DETALLE DE CITA ====================
+
+async function verDetalleCitaOperacion(idReserva, idCita) {
+    try {
+        const response = await fetch(`/reservas/api/paciente/mis-reservas`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('❌ Error al cargar los datos');
+            return;
+        }
+        
+        // Buscar la reserva y la cita
+        const reserva = data.reservas.find(r => r.citas && r.citas.some(c => c.id_cita === idCita));
+        
+        if (!reserva || !reserva.citas || reserva.citas.length === 0) {
+            alert('❌ No se encontró la cita médica asociada');
+            return;
+        }
+        
+        const cita = reserva.citas.find(c => c.id_cita === idCita);
+        mostrarModalDetalleCita(cita, reserva, 'OPERACION');
+        
+    } catch (error) {
+        console.error('Error al cargar detalle de cita:', error);
+        alert('❌ Error al cargar el detalle de la cita');
+    }
+}
+
+async function verDetalleCitaExamen(idReserva) {
+    try {
+        const response = await fetch(`/reservas/api/paciente/mis-reservas`);
+        const data = await response.json();
+        
+        if (data.error) {
+            alert('❌ Error al cargar los datos');
+            return;
+        }
+        
+        // Buscar la reserva original (la cita médica)
+        const reservaExamen = data.reservas.find(r => r.id_reserva === idReserva);
+        
+        if (!reservaExamen || !reservaExamen.examenes || reservaExamen.examenes.length === 0) {
+            alert('❌ No se encontró información de la cita médica asociada');
+            return;
+        }
+        
+        // Buscar la cita completada que generó este examen
+        const citaRelacionada = data.reservas.find(r => 
+            r.tipo === 1 && 
+            r.citas && 
+            r.citas.length > 0 && 
+            r.citas[0].estado === 'Completada' &&
+            r.estado_reserva === 'Completada'
+        );
+        
+        if (citaRelacionada && citaRelacionada.citas && citaRelacionada.citas.length > 0) {
+            mostrarModalDetalleCita(citaRelacionada.citas[0], citaRelacionada, 'EXAMEN');
+        } else {
+            alert('ℹ️ Este examen fue autorizado por el médico durante una consulta previa');
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar detalle de cita:', error);
+        alert('❌ Error al cargar el detalle de la cita');
+    }
+}
+
+function mostrarModalDetalleCita(cita, reserva, tipoProcedimiento) {
+    const fechaCita = new Date(cita.fecha_cita + 'T00:00:00').toLocaleDateString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    const modalHTML = `
+        <div id="modalDetalleCita" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl transform animate-slideIn">
+                <div class="bg-gradient-to-r from-cyan-500 to-blue-500 p-6 rounded-t-2xl sticky top-0 z-10">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <span class="text-3xl">🩺</span>
+                            Detalle de Cita Médica
+                        </h2>
+                        <button onclick="cerrarModalDetalleCita()" class="text-white hover:text-gray-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
+                        <p class="text-sm text-blue-800">
+                            <strong>📌 Información:</strong> Esta cita médica generó la autorización para el ${tipoProcedimiento === 'OPERACION' ? 'procedimiento quirúrgico' : 'examen de laboratorio'}.
+                        </p>
+                    </div>
+                    
+                    <!-- Información de la cita -->
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4">
+                            <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                                </svg>
+                                Datos de la Consulta
+                            </h3>
+                            <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p class="text-gray-600 font-semibold">Fecha:</p>
+                                    <p class="text-gray-800">${fechaCita}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 font-semibold">Horario:</p>
+                                    <p class="text-gray-800">${cita.hora_inicio} - ${cita.hora_fin}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 font-semibold">Servicio:</p>
+                                    <p class="text-gray-800">${reserva.servicio || 'Consulta Médica'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-600 font-semibold">Médico:</p>
+                                    <p class="text-gray-800">${reserva.medico_nombres ? 'Dr(a). ' + reserva.medico_nombres + ' ' + reserva.medico_apellidos : 'No especificado'}</p>
+                                </div>
+                                ${reserva.especialidad ? `
+                                <div class="col-span-2">
+                                    <p class="text-gray-600 font-semibold">Especialidad:</p>
+                                    <p class="text-gray-800">${reserva.especialidad}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        ${cita.diagnostico ? `
+                        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                            <h3 class="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                                Diagnóstico
+                            </h3>
+                            <p class="text-gray-700 text-sm whitespace-pre-wrap">${cita.diagnostico}</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${cita.observaciones ? `
+                        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                            <h3 class="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-yellow-600">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                                Observaciones
+                            </h3>
+                            <p class="text-gray-700 text-sm whitespace-pre-wrap">${cita.observaciones}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <p class="text-sm text-gray-600">
+                                <span class="font-semibold">Estado de la cita:</span> 
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold ${cita.estado === 'Completada' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}">
+                                    ${cita.estado}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 bg-gray-50 rounded-b-2xl border-t border-gray-200">
+                    <button onclick="cerrarModalDetalleCita()" 
+                            class="w-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-6 rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg hover:shadow-xl">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function cerrarModalDetalleCita() {
+    const modal = document.getElementById('modalDetalleCita');
+    if (modal) {
+        modal.remove();
+    }
 }
 

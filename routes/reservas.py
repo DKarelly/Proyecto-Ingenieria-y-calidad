@@ -3574,6 +3574,60 @@ def api_paciente_historial_clinico():
                         cita['operaciones'] = []
                 else:
                     cita['operaciones'] = []
+                
+                # Obtener autorizaciones activas para esta cita
+                if id_cita:
+                    sql_autorizaciones = """
+                        SELECT a.id_autorizacion,
+                               a.id_tipo_servicio,
+                               a.id_servicio,
+                               a.id_medico_asignado,
+                               a.id_especialidad_requerida,
+                               a.fecha_autorizacion,
+                               a.fecha_vencimiento,
+                               a.fecha_uso,
+                               a.id_reserva_generada,
+                               s.nombre as servicio_nombre,
+                               ts.nombre as tipo_servicio_nombre,
+                               CONCAT(emp.nombres, ' ', emp.apellidos) as medico_asignado,
+                               esp.nombre as especialidad_requerida,
+                               CASE 
+                                   WHEN a.fecha_uso IS NOT NULL THEN 'USADO'
+                                   WHEN a.fecha_vencimiento IS NOT NULL AND a.fecha_vencimiento < NOW() THEN 'VENCIDO'
+                                   ELSE 'ACTIVO'
+                               END as estado_autorizacion
+                        FROM AUTORIZACION_PROCEDIMIENTO a
+                        INNER JOIN SERVICIO s ON a.id_servicio = s.id_servicio
+                        INNER JOIN TIPO_SERVICIO ts ON a.id_tipo_servicio = ts.id_tipo_servicio
+                        LEFT JOIN EMPLEADO emp ON a.id_medico_asignado = emp.id_empleado
+                        LEFT JOIN ESPECIALIDAD esp ON a.id_especialidad_requerida = esp.id_especialidad
+                        WHERE a.id_cita = %s
+                        ORDER BY a.fecha_autorizacion DESC
+                    """
+                    cursor.execute(sql_autorizaciones, (id_cita,))
+                    autorizaciones = cursor.fetchall()
+                    
+                    # Convertir fechas
+                    for aut in autorizaciones:
+                        if aut.get('fecha_autorizacion'):
+                            if hasattr(aut['fecha_autorizacion'], 'strftime'):
+                                aut['fecha_autorizacion'] = aut['fecha_autorizacion'].strftime('%Y-%m-%d %H:%M')
+                        if aut.get('fecha_vencimiento'):
+                            if hasattr(aut['fecha_vencimiento'], 'strftime'):
+                                aut['fecha_vencimiento'] = aut['fecha_vencimiento'].strftime('%Y-%m-%d %H:%M')
+                        if aut.get('fecha_uso'):
+                            if hasattr(aut['fecha_uso'], 'strftime'):
+                                aut['fecha_uso'] = aut['fecha_uso'].strftime('%Y-%m-%d %H:%M')
+                    
+                    cita['autorizaciones'] = autorizaciones
+                    
+                    # Contar autorizaciones activas por tipo
+                    cita['autorizaciones_examenes_activas'] = sum(1 for a in autorizaciones if a['id_tipo_servicio'] == 4 and a['estado_autorizacion'] == 'ACTIVO')
+                    cita['autorizaciones_operaciones_activas'] = sum(1 for a in autorizaciones if a['id_tipo_servicio'] == 2 and a['estado_autorizacion'] == 'ACTIVO')
+                else:
+                    cita['autorizaciones'] = []
+                    cita['autorizaciones_examenes_activas'] = 0
+                    cita['autorizaciones_operaciones_activas'] = 0
 
             return jsonify({'historial': historial})
 
