@@ -567,36 +567,27 @@ class AutorizacionProcedimiento:
     def obtener_servicios_examen(id_especialidad_medico=None):
         """
         Obtiene servicios de tipo EXAMEN (id_tipo_servicio = 4)
-        Si se proporciona id_especialidad_medico, filtra exámenes de esa especialidad
+        SOLO de la especialidad del médico logueado
         """
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 if id_especialidad_medico:
-                    # Mostrar solo exámenes de la especialidad del médico
+                    # Mostrar ÚNICAMENTE exámenes de la especialidad del médico
                     sql = """
                         SELECT s.id_servicio, s.nombre, s.descripcion, s.id_especialidad,
                                e.nombre as nombre_especialidad
                         FROM SERVICIO s
-                        LEFT JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
+                        INNER JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
                         WHERE s.id_tipo_servicio = 4 
                         AND s.estado = 'activo'
-                        AND (s.id_especialidad = %s OR s.id_especialidad IS NULL)
+                        AND s.id_especialidad = %s
                         ORDER BY s.nombre
                     """
                     cursor.execute(sql, (id_especialidad_medico,))
                 else:
-                    # Sin especialidad: mostrar todos los exámenes
-                    sql = """
-                        SELECT s.id_servicio, s.nombre, s.descripcion, s.id_especialidad,
-                               e.nombre as nombre_especialidad
-                        FROM SERVICIO s
-                        LEFT JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
-                        WHERE s.id_tipo_servicio = 4 
-                        AND s.estado = 'activo'
-                        ORDER BY s.nombre
-                    """
-                    cursor.execute(sql)
+                    # Sin especialidad: retornar lista vacía
+                    return []
                 return cursor.fetchall()
         finally:
             conexion.close()
@@ -605,38 +596,27 @@ class AutorizacionProcedimiento:
     def obtener_servicios_operacion(id_especialidad_medico=None):
         """
         Obtiene servicios de tipo OPERACION (id_tipo_servicio = 2)
-        Si se proporciona id_especialidad_medico, incluye:
-        - Operaciones de la misma especialidad del médico
-        - Operaciones sin especialidad específica
+        SOLO de la especialidad del médico logueado
         """
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
                 if id_especialidad_medico:
+                    # Mostrar ÚNICAMENTE operaciones de la especialidad del médico
                     sql = """
                         SELECT s.id_servicio, s.nombre, s.descripcion, s.id_especialidad,
                                e.nombre as nombre_especialidad
                         FROM SERVICIO s
-                        LEFT JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
+                        INNER JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
                         WHERE s.id_tipo_servicio = 2 
                         AND s.estado = 'activo'
-                        AND (s.id_especialidad = %s OR s.id_especialidad IS NULL)
-                        ORDER BY 
-                            CASE WHEN s.id_especialidad = %s THEN 0 ELSE 1 END,
-                            s.nombre
-                    """
-                    cursor.execute(sql, (id_especialidad_medico, id_especialidad_medico))
-                else:
-                    sql = """
-                        SELECT s.id_servicio, s.nombre, s.descripcion, s.id_especialidad,
-                               e.nombre as nombre_especialidad
-                        FROM SERVICIO s
-                        LEFT JOIN ESPECIALIDAD e ON s.id_especialidad = e.id_especialidad
-                        WHERE s.id_tipo_servicio = 2 
-                        AND s.estado = 'activo'
+                        AND s.id_especialidad = %s
                         ORDER BY s.nombre
                     """
-                    cursor.execute(sql)
+                    cursor.execute(sql, (id_especialidad_medico,))
+                else:
+                    # Sin especialidad: retornar lista vacía
+                    return []
                 return cursor.fetchall()
         finally:
             conexion.close()
