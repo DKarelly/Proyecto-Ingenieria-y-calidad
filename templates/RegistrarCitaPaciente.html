@@ -376,6 +376,19 @@
                         </div>
 
                         <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-500">Servicio</p>
+                                <p id="detalleServicio" class="text-lg font-semibold text-gray-800"></p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
                             <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
                                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -900,7 +913,8 @@
                 stickyHeaderDates: true,
                 firstDay: 1, // Lunes
                 weekends: true,
-                nowIndicator: true,
+                nowIndicator: true, // Línea roja de hora actual
+                now: new Date(), // Hora actual actualizada
                 selectable: false,
                 eventClick: function(info) {
                     mostrarDetallePrograma(info.event);
@@ -998,25 +1012,52 @@
                 if (data.horarios && data.horarios.length > 0) {
                     noHorarios.classList.add('hidden');
                     
+                    // Obtener hora actual para validaciones
+                    const ahora = new Date();
+                    
                     // Convertir horarios a eventos de FullCalendar
                     const eventos = data.horarios.map(horario => {
                         // El backend envía 'estado_programacion' como string: 'Disponible' o 'Ocupado'
                         const disponible = horario.estado_programacion === 'Disponible';
+                        const esReservaPropia = horario.es_reserva_propia === true || horario.es_reserva_propia === 1;
+                        
+                        // Validar si la programación ya pasó
+                        const fechaHoraProgramacion = new Date(`${horario.fecha}T${horario.hora_inicio}`);
+                        const yaPaso = fechaHoraProgramacion < ahora;
+                        
+                        // Determinar color según estado
+                        let backgroundColor, borderColor;
+                        if (esReservaPropia) {
+                            // Amarillo para reservas propias
+                            backgroundColor = '#fbbf24';
+                            borderColor = '#f59e0b';
+                        } else if (disponible) {
+                            // Verde para disponibles
+                            backgroundColor = '#10b981';
+                            borderColor = '#059669';
+                        } else {
+                            // Rojo para ocupadas
+                            backgroundColor = '#ef4444';
+                            borderColor = '#dc2626';
+                        }
                         
                         return {
                             id: horario.id_programacion,
-                            title: disponible ? 'Disponible' : 'Ocupado',
+                            title: esReservaPropia ? 'Tu Reserva' : (disponible ? 'Disponible' : 'Ocupado'),
                             start: `${horario.fecha}T${horario.hora_inicio}`,
                             end: `${horario.fecha}T${horario.hora_fin}`,
-                            backgroundColor: disponible ? '#10b981' : '#ef4444', // Verde o Rojo
-                            borderColor: disponible ? '#059669' : '#dc2626',
+                            backgroundColor: backgroundColor,
+                            borderColor: borderColor,
                             textColor: '#ffffff',
                             extendedProps: {
                                 id_programacion: horario.id_programacion,
                                 fecha: horario.fecha,
                                 hora_inicio: horario.hora_inicio,
                                 hora_fin: horario.hora_fin,
-                                disponible: disponible,
+                                disponible: disponible && !yaPaso, // No disponible si ya pasó
+                                yaPaso: yaPaso,
+                                esReservaPropia: esReservaPropia,
+                                servicio_nombre: horario.servicio_nombre || 'Consulta Médica',
                                 seleccionado: false
                             }
                         };
@@ -1238,6 +1279,9 @@
             const fecha = event.extendedProps.fecha;
             const horaInicio = event.extendedProps.hora_inicio;
             const horaFin = event.extendedProps.hora_fin;
+            const yaPaso = event.extendedProps.yaPaso;
+            const esReservaPropia = event.extendedProps.esReservaPropia;
+            const servicioNombre = event.extendedProps.servicio_nombre || 'Consulta Médica';
             
             // Formatear fecha
             const fechaObj = new Date(fecha + 'T00:00:00');
@@ -1253,8 +1297,20 @@
             document.getElementById('detalleFecha').textContent = `${diaSemana}, ${fechaFormateada}`;
             document.getElementById('detalleHorario').textContent = `${horaInicio} - ${horaFin}`;
             
+            // Mostrar servicio
+            const detalleServicioDiv = document.getElementById('detalleServicio');
+            if (detalleServicioDiv) {
+                detalleServicioDiv.textContent = servicioNombre;
+            }
+            
             const estadoElement = document.getElementById('detalleEstado');
-            if (disponible) {
+            if (esReservaPropia) {
+                estadoElement.textContent = '⭐ Tu Reserva Actual';
+                estadoElement.className = 'text-lg font-semibold text-yellow-600';
+            } else if (yaPaso) {
+                estadoElement.textContent = '⏰ Horario Pasado';
+                estadoElement.className = 'text-lg font-semibold text-gray-500';
+            } else if (disponible) {
                 estadoElement.textContent = '✓ Disponible';
                 estadoElement.className = 'text-lg font-semibold text-green-600';
             } else {
@@ -1266,7 +1322,7 @@
             const modal = document.getElementById('modalDetalleProgramacion');
             const footer = document.getElementById('modalDetalleFooter');
             
-            if (disponible) {
+            if (disponible && !yaPaso && !esReservaPropia) {
                 footer.innerHTML = `
                     <button onclick="cerrarModalDetalle()" class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
                         Cancelar
@@ -1280,7 +1336,15 @@
                     </button>
                 `;
             } else {
+                let mensajeInfo = '';
+                if (esReservaPropia) {
+                    mensajeInfo = '<p class="text-sm text-yellow-600 mb-3">⭐ Esta es tu reserva actual. No puedes seleccionarla nuevamente.</p>';
+                } else if (yaPaso) {
+                    mensajeInfo = '<p class="text-sm text-gray-600 mb-3">⏰ Este horario ya pasó y no está disponible.</p>';
+                }
+                
                 footer.innerHTML = `
+                    ${mensajeInfo}
                     <button onclick="cerrarModalDetalle()" class="flex-1 bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors">
                         Cerrar
                     </button>

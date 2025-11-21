@@ -745,6 +745,14 @@ def api_buscar_horarios_disponibles():
     # Actualizar automáticamente los horarios vencidos antes de consultar
     actualizar_horarios_vencidos()
     
+    # Obtener ID del paciente desde sesión (si está logueado)
+    id_paciente_sesion = None
+    if 'usuario_id' in session and session.get('tipo_usuario') == 'paciente':
+        from models.paciente import Paciente
+        paciente = Paciente.obtener_por_usuario(session.get('usuario_id'))
+        if paciente:
+            id_paciente_sesion = paciente.get('id_paciente')
+    
     id_servicio = request.args.get('id_servicio', '').strip()
     id_tipo_servicio = request.args.get('id_tipo_servicio', '').strip()
     id_empleado = request.args.get('id_empleado', '').strip()
@@ -799,6 +807,7 @@ def api_buscar_horarios_disponibles():
             return jsonify({'error': 'La fecha inicio debe ser menor o igual a la fecha fin', 'horarios': []}), 400
         
         # Query: buscar TODAS las PROGRAMACIONES (Disponible y Ocupado)
+        # Incluir verificación de si es reserva del paciente logueado
         query = """
             SELECT 
                 p.id_programacion,
@@ -811,18 +820,23 @@ def api_buscar_horarios_disponibles():
                 p.estado as estado_programacion,
                 CONCAT(e.nombres, ' ', e.apellidos) as profesional,
                 es.nombre as especialidad,
-                s.nombre as servicio_nombre
+                s.nombre as servicio_nombre,
+                CASE 
+                    WHEN r.id_paciente = %s AND p.estado = 'Ocupado' THEN 1
+                    ELSE 0
+                END as es_reserva_propia
             FROM PROGRAMACION p
             INNER JOIN HORARIO h ON p.id_horario = h.id_horario
             INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
             LEFT JOIN ESPECIALIDAD es ON e.id_especialidad = es.id_especialidad
             LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            LEFT JOIN RESERVA r ON p.id_programacion = r.id_programacion
             WHERE h.activo = 1
                 AND p.fecha >= %s
                 AND p.fecha <= %s
         """
         
-        params = [fecha_inicio, fecha_fin]
+        params = [id_paciente_sesion, fecha_inicio, fecha_fin]
         
         # Filtro por tipo de servicio (1=Cita, 4=Examen, etc.)
         # Nota: Si id_servicio es NULL en PROGRAMACION, s.id_tipo_servicio también será NULL
@@ -2754,6 +2768,66 @@ def paciente_crear_reserva():
             if not programacion['activo']:
                 return jsonify({'error': 'El horario asociado no está activo'}), 400
 
+            # VALIDACIÓN 1: Verificar que el paciente no tenga ya una reserva del mismo servicio, médico y día
+            id_servicio_prog = programacion.get('id_servicio')
+            id_empleado_prog = programacion.get('id_empleado')
+            fecha_prog = programacion.get('fecha')
+            
+            sql_check_duplicado = """
+                SELECT r.id_reserva
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                WHERE r.id_paciente = %s
+                  AND p.id_servicio = %s
+                  AND h.id_empleado = %s
+                  AND p.fecha = %s
+                  AND r.estado IN ('Confirmada', 'Pendiente')
+                LIMIT 1
+            """
+            cursor.execute(sql_check_duplicado, (id_paciente, id_servicio_prog, id_empleado_prog, fecha_prog))
+            reserva_duplicada = cursor.fetchone()
+            
+            if reserva_duplicada:
+                return jsonify({
+                    'error': 'Ya tienes una reserva para este mismo servicio y médico en esta fecha. No puedes agendar dos veces el mismo día.'
+                }), 400
+            
+            # VALIDACIÓN 2: Verificar que no haya solapamiento de horarios
+            hora_inicio_prog = programacion.get('hora_inicio')
+            hora_fin_prog = programacion.get('hora_fin')
+            
+            sql_check_solapamiento = """
+                SELECT r.id_reserva, 
+                       TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                       TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                WHERE r.id_paciente = %s
+                  AND p.fecha = %s
+                  AND r.estado IN ('Confirmada', 'Pendiente')
+                  AND (
+                      (p.hora_inicio < %s AND p.hora_fin > %s) OR
+                      (p.hora_inicio < %s AND p.hora_fin > %s) OR
+                      (p.hora_inicio >= %s AND p.hora_fin <= %s)
+                  )
+                LIMIT 1
+            """
+            cursor.execute(sql_check_solapamiento, (
+                id_paciente, fecha_prog,
+                hora_fin_prog, hora_inicio_prog,  # Nueva reserva termina después del inicio de existente
+                hora_fin_prog, hora_inicio_prog,  # Nueva reserva empieza antes del fin de existente
+                hora_inicio_prog, hora_fin_prog   # Nueva reserva está completamente dentro de existente
+            ))
+            reserva_solapada = cursor.fetchone()
+            
+            if reserva_solapada:
+                hora_conflicto_inicio = reserva_solapada.get('hora_inicio')
+                hora_conflicto_fin = reserva_solapada.get('hora_fin')
+                return jsonify({
+                    'error': f'Ya tienes una reserva en este horario. Conflicto con la reserva de {hora_conflicto_inicio} a {hora_conflicto_fin}.'
+                }), 400
+
             # Actualizar estado de PROGRAMACION de 'Disponible' a 'Ocupado'
             sql_update = """
                 UPDATE PROGRAMACION 
@@ -2999,7 +3073,19 @@ def api_paciente_mis_reservas():
                        COALESCE(s.nombre, 'Consulta Médica') as servicio,
                        e.nombres as medico_nombres,
                        e.apellidos as medico_apellidos,
-                       esp.nombre as especialidad
+                       esp.nombre as especialidad,
+                       (SELECT COUNT(*) FROM SOLICITUD sol 
+                        WHERE sol.id_reserva = r.id_reserva 
+                        AND sol.tipo_solicitud = 'Reprogramación' 
+                        AND sol.estado = 'Pendiente') as tiene_solicitud_reprogramacion,
+                       (SELECT COUNT(*) FROM SOLICITUD sol 
+                        WHERE sol.id_reserva = r.id_reserva 
+                        AND sol.tipo_solicitud = 'Reprogramación' 
+                        AND sol.estado = 'Aprobada') as tiene_reprogramacion_aprobada,
+                       (SELECT COUNT(*) FROM SOLICITUD sol 
+                        WHERE sol.id_reserva = r.id_reserva 
+                        AND sol.tipo_solicitud = 'Cancelación' 
+                        AND sol.estado = 'Pendiente') as tiene_solicitud_cancelacion
                 FROM RESERVA r
                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
                 LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
@@ -3043,6 +3129,50 @@ def api_paciente_mis_reservas():
                         cita['fecha_cita'] = cita['fecha_cita'].strftime('%Y-%m-%d')
                 
                 reserva['citas'] = citas
+                
+                # DETERMINAR EL ESTADO REAL DE LA RESERVA
+                # Completada: tiene diagnóstico en la cita
+                # Inasistida: no tiene diagnóstico y la fecha ya pasó
+                # Confirmada: es una reserva activa (fecha futura)
+                # Cancelada: solicitud de cancelación aprobada
+                
+                from datetime import datetime, date
+                
+                # Obtener fecha de programación
+                fecha_prog = reserva.get('fecha_programacion')
+                if isinstance(fecha_prog, str):
+                    fecha_prog_date = datetime.strptime(fecha_prog, '%Y-%m-%d').date()
+                elif hasattr(fecha_prog, 'date'):
+                    fecha_prog_date = fecha_prog.date() if callable(fecha_prog.date) else fecha_prog
+                else:
+                    fecha_prog_date = fecha_prog
+                
+                fecha_hoy = date.today()
+                
+                if reserva['estado_reserva'] != 'Cancelada':
+                    if len(citas) > 0:
+                        cita = citas[0]
+                        tiene_diagnostico = cita.get('diagnostico') and cita.get('diagnostico').strip()
+                        
+                        if tiene_diagnostico:
+                            # Si tiene diagnóstico, es Completada
+                            reserva['estado_reserva'] = 'Completada'
+                        else:
+                            # No tiene diagnóstico
+                            if fecha_prog_date < fecha_hoy:
+                                # Fecha pasada sin diagnóstico = Inasistida
+                                reserva['estado_reserva'] = 'Inasistida'
+                            else:
+                                # Fecha futura sin diagnóstico = Confirmada
+                                reserva['estado_reserva'] = 'Confirmada'
+                    else:
+                        # No tiene cita médica aún
+                        if fecha_prog_date < fecha_hoy:
+                            # Fecha pasada sin cita = Inasistida
+                            reserva['estado_reserva'] = 'Inasistida'
+                        else:
+                            # Fecha futura = Confirmada
+                            reserva['estado_reserva'] = 'Confirmada'
                 
                 # Obtener EXAMENES relacionados
                 sql_examenes = """
@@ -3794,8 +3924,8 @@ def api_horarios_disponibles_reprogramacion():
 
 
 @reservas_bp.route('/api/reprogramar', methods=['POST'])
-def api_reprogramar_reserva():
-    """API para reprogramar una reserva cambiando su horario"""
+def api_reprogramar_reserva_legacy():
+    """API LEGACY para reprogramar una reserva cambiando su horario"""
     if 'usuario_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
@@ -3985,9 +4115,10 @@ def api_solicitar_cancelacion():
         with conexion.cursor() as cursor:
             # Verificar que la reserva existe y pertenece al paciente
             sql_verificar = """
-                SELECT id_reserva, estado 
-                FROM RESERVA 
-                WHERE id_reserva = %s AND id_paciente = %s
+                SELECT r.id_reserva, r.estado, p.fecha as fecha_programacion
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                WHERE r.id_reserva = %s AND r.id_paciente = %s
             """
             cursor.execute(sql_verificar, (id_reserva, id_paciente))
             reserva = cursor.fetchone()
@@ -3995,28 +4126,44 @@ def api_solicitar_cancelacion():
             if not reserva:
                 return jsonify({'error': 'Reserva no encontrada'}), 404
             
+            # Verificar si la fecha ya pasó
+            from datetime import date
+            fecha_prog = reserva['fecha_programacion']
+            if isinstance(fecha_prog, str):
+                fecha_prog = datetime.strptime(fecha_prog, '%Y-%m-%d').date()
+            
+            if fecha_prog < date.today():
+                return jsonify({'error': 'No se puede cancelar una cita cuya fecha ya pasó'}), 400
+            
             if reserva['estado'] == 'Cancelada':
                 return jsonify({'error': 'Esta reserva ya está cancelada'}), 400
             
             if reserva['estado'] == 'Completada':
                 return jsonify({'error': 'No se puede cancelar una reserva completada'}), 400
             
-            # Verificar si ya existe una solicitud pendiente en la tabla SOLICITUD
+            # Verificar si ya existe CUALQUIER solicitud pendiente (reprogramación o cancelación)
             sql_verificar_solicitud = """
-                SELECT COUNT(*) as count 
+                SELECT tipo_solicitud
                 FROM SOLICITUD 
                 WHERE id_reserva = %s AND estado = 'Pendiente'
+                LIMIT 1
             """
             cursor.execute(sql_verificar_solicitud, (id_reserva,))
-            result = cursor.fetchone()
+            solicitud_existente = cursor.fetchone()
             
-            if result and result['count'] > 0:
-                return jsonify({'error': 'Ya existe una solicitud de cancelación pendiente para esta reserva'}), 400
+            if solicitud_existente:
+                tipo = solicitud_existente['tipo_solicitud']
+                if tipo == 'Cancelación':
+                    return jsonify({'error': 'Ya existe una solicitud de cancelación pendiente para esta reserva'}), 400
+                elif tipo == 'Reprogramación':
+                    return jsonify({'error': 'Ya existe una solicitud de reprogramación pendiente. Si deseas cancelar en lugar de reprogramar, espera a que se resuelva la solicitud actual'}), 400
+                else:
+                    return jsonify({'error': 'Ya existe una solicitud pendiente para esta reserva'}), 400
 
-            # Crear solicitud en la tabla SOLICITUD
+            # Crear solicitud en la tabla SOLICITUD con tipo_solicitud
             sql_insertar_solicitud = """
-                INSERT INTO SOLICITUD (id_reserva, estado, motivo, fecha_solicitud)
-                VALUES (%s, 'Pendiente', %s, NOW())
+                INSERT INTO SOLICITUD (id_reserva, tipo_solicitud, estado, motivo, fecha_solicitud)
+                VALUES (%s, 'Cancelación', 'Pendiente', %s, NOW())
             """
             cursor.execute(sql_insertar_solicitud, (id_reserva, motivo))
             conexion.commit()
@@ -4033,6 +4180,337 @@ def api_solicitar_cancelacion():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Error al solicitar cancelación: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+@reservas_bp.route('/api/solicitar-reprogramacion', methods=['POST'])
+def api_solicitar_reprogramacion():
+    """API para solicitar la reprogramación de una reserva"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    try:
+        data = request.get_json()
+        id_reserva = data.get('id_reserva')
+        motivo = data.get('motivo', '').strip()
+
+        if not id_reserva:
+            return jsonify({'error': 'Datos incompletos'}), 400
+
+        if not motivo:
+            return jsonify({'error': 'Debe proporcionar un motivo para la reprogramación'}), 400
+
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar que la reserva existe y pertenece al paciente
+            cursor.execute("""
+                SELECT r.id_reserva, r.estado, p.fecha as fecha_programacion
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                WHERE r.id_reserva = %s AND r.id_paciente = %s
+            """, (id_reserva, id_paciente))
+            
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada'}), 404
+            
+            # Verificar si la fecha ya pasó
+            from datetime import date
+            fecha_prog = reserva['fecha_programacion']
+            if isinstance(fecha_prog, str):
+                fecha_prog = datetime.strptime(fecha_prog, '%Y-%m-%d').date()
+            
+            if fecha_prog < date.today():
+                return jsonify({'error': 'No se puede reprogramar una cita cuya fecha ya pasó'}), 400
+            
+            if reserva['estado'] == 'Cancelada':
+                return jsonify({'error': 'No se puede reprogramar una reserva cancelada'}), 400
+            
+            if reserva['estado'] == 'Completada':
+                return jsonify({'error': 'No se puede reprogramar una reserva completada'}), 400
+            
+            # Verificar si ya existe CUALQUIER solicitud pendiente (reprogramación o cancelación)
+            cursor.execute("""
+                SELECT tipo_solicitud
+                FROM SOLICITUD 
+                WHERE id_reserva = %s 
+                AND estado = 'Pendiente'
+                LIMIT 1
+            """, (id_reserva,))
+            
+            solicitud_existente = cursor.fetchone()
+            
+            if solicitud_existente:
+                tipo = solicitud_existente['tipo_solicitud']
+                if tipo == 'Reprogramación':
+                    return jsonify({'error': 'Ya existe una solicitud de reprogramación pendiente para esta reserva'}), 400
+                elif tipo == 'Cancelación':
+                    return jsonify({'error': 'Ya existe una solicitud de cancelación pendiente. No puedes solicitar reprogramación hasta que se resuelva'}), 400
+                else:
+                    return jsonify({'error': 'Ya existe una solicitud pendiente para esta reserva'}), 400
+
+            # Crear solicitud en la tabla SOLICITUD
+            cursor.execute("""
+                INSERT INTO SOLICITUD (id_reserva, tipo_solicitud, estado, motivo, fecha_solicitud)
+                VALUES (%s, 'Reprogramación', 'Pendiente', %s, NOW())
+            """, (id_reserva, motivo))
+            
+            conexion.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Solicitud de reprogramación enviada. Un trabajador la revisará pronto.'
+            }), 200
+
+    except Exception as e:
+        if conexion:
+            try:
+                conexion.rollback()
+            except:
+                pass
+        print(f"[API solicitar-reprogramacion] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al solicitar reprogramación: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+@reservas_bp.route('/api/reprogramar-reserva', methods=['POST'])
+def api_reprogramar_reserva():
+    """API para ejecutar la reprogramación de una reserva (cuando ya fue aprobada)"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    if session.get('tipo_usuario') != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    try:
+        data = request.get_json()
+        id_reserva = data.get('id_reserva')
+        id_programacion_nueva = data.get('id_programacion')
+
+        if not all([id_reserva, id_programacion_nueva]):
+            return jsonify({'error': 'Datos incompletos'}), 400
+
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+        
+        id_paciente = paciente.get('id_paciente')
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Verificar que la reserva existe, pertenece al paciente y tiene solicitud aprobada
+            cursor.execute("""
+                SELECT r.id_reserva, r.estado, r.id_programacion as id_programacion_anterior
+                FROM RESERVA r
+                WHERE r.id_reserva = %s AND r.id_paciente = %s
+            """, (id_reserva, id_paciente))
+            
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada'}), 404
+            
+            # Verificar que hay una solicitud de reprogramación aprobada
+            cursor.execute("""
+                SELECT id_solicitud
+                FROM SOLICITUD 
+                WHERE id_reserva = %s 
+                AND tipo_solicitud = 'Reprogramación' 
+                AND estado = 'Aprobada'
+                ORDER BY fecha_solicitud DESC
+                LIMIT 1
+            """, (id_reserva,))
+            
+            solicitud = cursor.fetchone()
+            
+            if not solicitud:
+                return jsonify({'error': 'No existe una solicitud de reprogramación aprobada para esta reserva'}), 400
+
+            # Verificar que la nueva programación existe y está disponible
+            cursor.execute("""
+                SELECT id_programacion, estado, fecha, hora_inicio, hora_fin
+                FROM PROGRAMACION
+                WHERE id_programacion = %s
+            """, (id_programacion_nueva,))
+            
+            nueva_prog = cursor.fetchone()
+            
+            if not nueva_prog:
+                return jsonify({'error': 'Programación no encontrada'}), 404
+            
+            if nueva_prog['estado'] != 'Disponible':
+                return jsonify({'error': 'La programación seleccionada ya no está disponible'}), 400
+
+            # Actualizar la reserva con la nueva programación
+            cursor.execute("""
+                UPDATE RESERVA
+                SET id_programacion = %s
+                WHERE id_reserva = %s
+            """, (id_programacion_nueva, id_reserva))
+
+            # Liberar la programación anterior
+            id_programacion_anterior = reserva['id_programacion_anterior']
+            cursor.execute("""
+                UPDATE PROGRAMACION
+                SET estado = 'Disponible'
+                WHERE id_programacion = %s
+            """, (id_programacion_anterior,))
+
+            # Ocupar la nueva programación
+            cursor.execute("""
+                UPDATE PROGRAMACION
+                SET estado = 'Ocupado'
+                WHERE id_programacion = %s
+            """, (id_programacion_nueva,))
+
+            # Marcar la solicitud como completada
+            cursor.execute("""
+                UPDATE SOLICITUD
+                SET estado = 'Completada',
+                    fecha_respuesta = NOW()
+                WHERE id_solicitud = %s
+            """, (solicitud['id_solicitud'],))
+
+            conexion.commit()
+
+            return jsonify({
+                'success': True,
+                'message': 'Reserva reprogramada exitosamente'
+            }), 200
+
+    except Exception as e:
+        if conexion:
+            try:
+                conexion.rollback()
+            except:
+                pass
+        print(f"[API reprogramar-reserva] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al reprogramar reserva: {str(e)}'}), 500
+    finally:
+        if conexion:
+            try:
+                conexion.close()
+            except:
+                pass
+
+
+@reservas_bp.route('/reservas/api/horarios-disponibles-reserva/<int:id_reserva>')
+def api_horarios_disponibles_reserva(id_reserva):
+    """API para obtener todos los horarios disponibles del mismo servicio para reprogramar"""
+    if 'usuario_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    tipo_usuario = session.get('tipo_usuario')
+    if tipo_usuario != 'paciente':
+        return jsonify({'error': 'Acceso no autorizado'}), 403
+
+    conexion = None
+    try:
+        usuario_id = session.get('usuario_id')
+        paciente = Paciente.obtener_por_usuario(usuario_id)
+        if not paciente:
+            return jsonify({'error': 'Paciente no encontrado'}), 404
+
+        conexion = obtener_conexion()
+        with conexion.cursor() as cursor:
+            # Obtener información de la reserva actual
+            sql_reserva = """
+                SELECT 
+                    r.id_paciente,
+                    r.id_programacion as prog_actual,
+                    p.id_servicio,
+                    p.id_horario,
+                    h.id_empleado
+                FROM RESERVA r
+                INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                WHERE r.id_reserva = %s
+            """
+            cursor.execute(sql_reserva, (id_reserva,))
+            reserva = cursor.fetchone()
+            
+            if not reserva:
+                return jsonify({'error': 'Reserva no encontrada'}), 404
+            
+            # Verificar que la reserva pertenezca al paciente
+            if reserva['id_paciente'] != paciente['id_paciente']:
+                return jsonify({'error': 'No tienes permiso para acceder a esta reserva'}), 403
+            
+            # Obtener horarios disponibles del mismo servicio y médico, excluyendo el actual
+            # Solo mostrar fechas futuras
+            sql_horarios = """
+                SELECT 
+                    p.id_programacion,
+                    p.fecha,
+                    TIME_FORMAT(p.hora_inicio, '%%H:%%i:%%s') as hora_inicio,
+                    TIME_FORMAT(p.hora_fin, '%%H:%%i:%%s') as hora_fin,
+                    p.estado,
+                    h.id_horario,
+                    h.id_empleado,
+                    s.id_servicio,
+                    s.nombre as servicio_nombre
+                FROM PROGRAMACION p
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                WHERE p.id_servicio = %s
+                    AND h.id_empleado = %s
+                    AND p.estado = 'Disponible'
+                    AND p.fecha >= CURDATE()
+                    AND p.id_programacion != %s
+                ORDER BY p.fecha ASC, p.hora_inicio ASC
+                LIMIT 100
+            """
+            cursor.execute(sql_horarios, (
+                reserva['id_servicio'],
+                reserva['id_empleado'],
+                reserva['prog_actual']
+            ))
+            horarios = cursor.fetchall()
+            
+            # Convertir fechas a formato string
+            for horario in horarios:
+                if hasattr(horario['fecha'], 'strftime'):
+                    horario['fecha'] = horario['fecha'].strftime('%Y-%m-%d')
+            
+            return jsonify({
+                'success': True,
+                'horarios': horarios,
+                'total': len(horarios)
+            }), 200
+
+    except Exception as e:
+        print(f"[API horarios-disponibles-reserva] ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error al obtener horarios: {str(e)}'}), 500
     finally:
         if conexion:
             try:
