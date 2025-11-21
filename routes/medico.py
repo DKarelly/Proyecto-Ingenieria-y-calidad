@@ -10,6 +10,7 @@ from bd import obtener_conexion
 from models.autorizacion_procedimiento import AutorizacionProcedimiento
 from models.empleado import Empleado
 from models.servicio import Servicio
+from models.notificacion import Notificacion
 
 # Crear el Blueprint
 medico_bp = Blueprint('medico', __name__, url_prefix='/medico')
@@ -425,111 +426,84 @@ def obtener_mis_pacientes(id_empleado):
 
 def obtener_notificaciones_medico(id_empleado):
     """
-    Obtiene las notificaciones del médico desde su perspectiva
-    Incluye: nuevas citas asignadas, confirmaciones, cancelaciones, recordatorios
+    Obtiene las notificaciones del médico desde la tabla NOTIFICACION
     """
-    conexion = None
     try:
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] id_empleado: {id_empleado}")
+        
+        # Obtener id_usuario del empleado
         conexion = obtener_conexion()
         cursor = conexion.cursor()
+        cursor.execute("SELECT id_usuario FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+        empleado = cursor.fetchone()
+        conexion.close()
         
-        # Obtener las citas del médico para generar notificaciones desde su perspectiva
-        cursor.execute("""
-            SELECT 
-                c.id_cita,
-                c.fecha_cita,
-                c.hora_inicio,
-                c.estado,
-                c.fecha_registro,
-                CONCAT(p.nombres, ' ', p.apellidos) as paciente_nombre,
-                s.nombre as servicio_nombre,
-                r.fecha_reserva
-            FROM CITA c
-            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
-            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
-            WHERE h.id_empleado = %s
-            AND c.fecha_registro >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            ORDER BY c.fecha_registro DESC
-            LIMIT 50
-        """, (id_empleado,))
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] Empleado encontrado: {empleado}")
         
-        citas = cursor.fetchall()
+        if not empleado or not empleado.get('id_usuario'):
+            print(f"⚠️ [DEBUG obtener_notificaciones_medico] No se encontró id_usuario para empleado {id_empleado}")
+            return []
         
-        # Generar notificaciones desde la perspectiva del médico
+        id_usuario = empleado['id_usuario']
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] id_usuario: {id_usuario}")
+        
+        # Obtener notificaciones usando el modelo
+        notificaciones = Notificacion.obtener_por_usuario(id_usuario)
+        print(f"🔍 [DEBUG obtener_notificaciones_medico] Notificaciones obtenidas: {len(notificaciones) if notificaciones else 0}")
+        
+        if notificaciones:
+            print(f"🔍 [DEBUG obtener_notificaciones_medico] Primera notificación: {notificaciones[0] if notificaciones else 'N/A'}")
+        
+        # Formatear notificaciones para el template
         notificaciones_formateadas = []
-        for cita in citas:
-            # Calcular tiempo transcurrido desde el registro de la cita
-            if isinstance(cita['fecha_registro'], str):
-                fecha_registro = datetime.strptime(cita['fecha_registro'], '%Y-%m-%d %H:%M:%S')
+        for n in notificaciones:
+            fecha_envio = n.get('fecha_envio')
+            hora_envio = n.get('hora_envio')
+            
+            # Formatear fecha
+            if fecha_envio:
+                if isinstance(fecha_envio, str):
+                    fecha_str = fecha_envio
+                else:
+                    fecha_str = fecha_envio.strftime('%Y-%m-%d')
             else:
-                fecha_registro = cita['fecha_registro']
+                fecha_str = None
             
-            tiempo_transcurrido = datetime.now() - fecha_registro
-            
-            # Formatear tiempo de forma legible
-            if tiempo_transcurrido.days > 0:
-                tiempo_texto = f"Hace {tiempo_transcurrido.days} día{'s' if tiempo_transcurrido.days > 1 else ''}"
-            elif tiempo_transcurrido.seconds >= 3600:
-                horas = tiempo_transcurrido.seconds // 3600
-                tiempo_texto = f"Hace {horas} hora{'s' if horas > 1 else ''}"
-            elif tiempo_transcurrido.seconds >= 60:
-                minutos = tiempo_transcurrido.seconds // 60
-                tiempo_texto = f"Hace {minutos} minuto{'s' if minutos > 1 else ''}"
-            else:
-                tiempo_texto = "Hace unos segundos"
-            
-            # Formatear hora de la cita
-            if isinstance(cita['hora_inicio'], str):
-                hora_cita = datetime.strptime(cita['hora_inicio'], '%H:%M:%S').time()
-            elif isinstance(cita['hora_inicio'], timedelta):
-                hora_cita = (datetime.min + cita['hora_inicio']).time()
-            else:
-                hora_cita = cita['hora_inicio']
-            
-            hora_formateada = hora_cita.strftime('%H:%M')
-            fecha_formateada = cita['fecha_cita'].strftime('%d/%m/%Y')
-            
-            # Determinar tipo y mensaje según el estado de la cita
-            if cita['estado'] == 'Confirmada':
-                tipo = 'confirmacion'
-                titulo = 'Cita confirmada'
-                mensaje = f"El paciente {cita['paciente_nombre']} confirmó su cita para el {fecha_formateada} a las {hora_formateada}"
-            elif cita['estado'] == 'Cancelada':
-                tipo = 'cancelacion'
-                titulo = 'Cita cancelada'
-                mensaje = f"La cita con {cita['paciente_nombre']} del {fecha_formateada} a las {hora_formateada} fue cancelada"
-            else:
-                tipo = 'recordatorio'
-                titulo = 'Nueva cita asignada'
-                mensaje = f"Nueva cita programada con {cita['paciente_nombre']} para el {fecha_formateada} a las {hora_formateada}"
-                if cita['servicio_nombre']:
-                    mensaje += f" - {cita['servicio_nombre']}"
+            # Formatear hora
+            hora_str = None
+            if hora_envio:
+                if isinstance(hora_envio, str):
+                    hora_str = hora_envio[:5] if len(hora_envio) >= 5 else hora_envio
+                elif isinstance(hora_envio, timedelta):
+                    # Convertir timedelta a formato HH:MM
+                    total_seconds = int(hora_envio.total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    hora_str = f"{hours:02d}:{minutes:02d}"
+                elif hasattr(hora_envio, 'strftime'):
+                    hora_str = hora_envio.strftime('%H:%M')
+                else:
+                    hora_str = str(hora_envio)[:5]
             
             notificaciones_formateadas.append({
-                'id': cita['id_cita'],
-                'titulo': titulo,
-                'mensaje': mensaje,
-                'tipo': tipo,
-                'paciente': cita['paciente_nombre'],
-                'leida': False,  # Por ahora todas como no leídas
-                'tiempo': tiempo_texto,
-                'fecha_envio': cita['fecha_registro'].date() if isinstance(cita['fecha_registro'], datetime) else cita['fecha_registro'],
-                'hora_envio': cita['fecha_registro'].time() if isinstance(cita['fecha_registro'], datetime) else None
+                'id_notificacion': n.get('id_notificacion'),
+                'titulo': n.get('titulo'),
+                'mensaje': n.get('mensaje'),
+                'tipo': n.get('tipo'),
+                'fecha_envio': fecha_str,
+                'hora_envio': hora_str,
+                'leida': bool(n.get('leida')),
+                'fecha_leida': n.get('fecha_leida').strftime('%Y-%m-%d %H:%M:%S') if n.get('fecha_leida') and hasattr(n.get('fecha_leida'), 'strftime') else (str(n.get('fecha_leida')) if n.get('fecha_leida') else None),
+                'id_reserva': n.get('id_reserva'),
+                'estado_reserva': n.get('estado_reserva')
             })
         
         return notificaciones_formateadas
-        
     except Exception as e:
-        print(f"Error al obtener notificaciones: {e}")
+        print(f"Error obteniendo notificaciones del médico: {e}")
         import traceback
         traceback.print_exc()
         return []
-    finally:
-        if conexion:
-            conexion.close()
 
 
 def obtener_citas_pendientes_diagnostico(id_empleado):
@@ -724,7 +698,9 @@ def panel():
         citas_semana = {}
         mis_pacientes = []
         citas_pendientes = []
+        print(f"🔍 [DEBUG panel] Cargando notificaciones para subsistema 'notificaciones'")
         notificaciones = obtener_notificaciones_medico(id_empleado)
+        print(f"🔍 [DEBUG panel] Notificaciones obtenidas: {len(notificaciones) if notificaciones else 0}")
         
     else:
         # Dashboard: estadísticas + citas hoy solamente
@@ -736,27 +712,44 @@ def panel():
         citas_pendientes = []
         notificaciones = []
     
-    # Obtener contador de notificaciones no leídas para el badge
-    # Contamos las citas registradas en los últimos 7 días que aún no han pasado
+            # Obtener contador de notificaciones no leídas para el badge
     notificaciones_no_leidas = 0
     if subsistema != 'notificaciones':
         try:
+            # Obtener id_usuario del empleado
             conexion = obtener_conexion()
             cursor = conexion.cursor()
-            cursor.execute("""
-                SELECT COUNT(*) as total
-                FROM CITA c
-                INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
-                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
-                INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
-                WHERE h.id_empleado = %s 
-                AND c.fecha_registro >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-                AND c.fecha_cita >= CURDATE()
-            """, (id_empleado,))
-            result = cursor.fetchone()
-            notificaciones_no_leidas = result['total'] if result else 0
+            cursor.execute("SELECT id_usuario FROM EMPLEADO WHERE id_empleado = %s", (id_empleado,))
+            empleado = cursor.fetchone()
+            print(f"🔍 [DEBUG panel] Empleado para badge: {empleado}")
+            
+            if empleado and empleado.get('id_usuario'):
+                id_usuario = empleado['id_usuario']
+                print(f"🔍 [DEBUG panel] Contando notificaciones no leídas para id_usuario: {id_usuario}")
+                
+                try:
+                    cursor.execute("""
+                        SELECT COUNT(*) as total
+                        FROM NOTIFICACION
+                        WHERE id_usuario = %s AND (leida = FALSE OR leida = 0 OR leida IS NULL)
+                    """, (id_usuario,))
+                    result = cursor.fetchone()
+                    notificaciones_no_leidas = result['total'] if result else 0
+                    print(f"🔍 [DEBUG panel] Notificaciones no leídas: {notificaciones_no_leidas}")
+                except Exception as e:
+                    print(f"❌ [DEBUG panel] Error contando notificaciones: {e}")
+                    # Si falla porque no existe el campo, intentar verificar si existe
+                    error_str = str(e).lower()
+                    if 'id_usuario' in error_str or 'unknown column' in error_str:
+                        print(f"⚠️ Campo id_usuario no existe en NOTIFICACION")
+                    else:
+                        import traceback
+                        traceback.print_exc()
             conexion.close()
-        except:
+        except Exception as e:
+            print(f"❌ Error obteniendo contador de notificaciones: {e}")
+            import traceback
+            traceback.print_exc()
             notificaciones_no_leidas = 0
 
     return render_template(

@@ -32,11 +32,26 @@ class Notificacion:
                 if hasattr(Notificacion, '_override_hora_envio') and Notificacion._override_hora_envio:
                     hora_envio = Notificacion._override_hora_envio
 
-                sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
-                         hora_envio, id_reserva, id_paciente) 
-                         VALUES (%s, %s, %s, %s, %s, %s, %s)"""
-                cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, id_paciente))
-                conexion.commit()
+                # Intentar insertar con id_usuario primero
+                try:
+                    sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                             hora_envio, id_reserva, id_paciente, id_usuario) 
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                    cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, id_paciente, None))
+                    conexion.commit()
+                except Exception as e:
+                    # Si falla porque no existe el campo id_usuario, intentar sin él
+                    error_str = str(e).lower()
+                    if 'id_usuario' in error_str or 'unknown column' in error_str:
+                        print(f"⚠️ Campo id_usuario no existe en NOTIFICACION, insertando sin él...")
+                        sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                                 hora_envio, id_reserva, id_paciente) 
+                                 VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+                        cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, id_paciente))
+                        conexion.commit()
+                    else:
+                        raise
+                
                 id_notificacion = cursor.lastrowid
                 
                 # Obtener datos del paciente para enviar email
@@ -288,6 +303,120 @@ class Notificacion:
                          SET leida = TRUE, fecha_leida = %s 
                          WHERE id_paciente = %s AND leida = FALSE"""
                 cursor.execute(sql, (ahora, id_paciente))
+                conexion.commit()
+                return {'success': True, 'count': cursor.rowcount}
+        except Exception as e:
+            conexion.rollback()
+            return {'error': str(e)}
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def crear_para_medico(titulo, mensaje, tipo, id_usuario, id_reserva=None):
+        """Crea una nueva notificación para un médico (empleado)"""
+        print(f"🔍 [DEBUG crear_para_medico] Iniciando. titulo={titulo}, mensaje={mensaje}, tipo={tipo}, id_usuario={id_usuario}, id_reserva={id_reserva}")
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                ahora = datetime.now()
+                fecha_envio = ahora.date()
+                hora_envio = ahora.time()
+                
+                print(f"🔍 [DEBUG crear_para_medico] Fecha: {fecha_envio}, Hora: {hora_envio}")
+                
+                # Intentar insertar con id_usuario, id_paciente como NULL (ya que es para médico)
+                try:
+                    # Para notificaciones de médico, id_paciente es NULL
+                    sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                             hora_envio, id_reserva, id_paciente, id_usuario) 
+                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                    print(f"🔍 [DEBUG crear_para_medico] Ejecutando SQL con id_usuario (id_paciente=NULL): {sql}")
+                    print(f"🔍 [DEBUG crear_para_medico] Parámetros: titulo={titulo}, mensaje={mensaje}, tipo={tipo}, fecha_envio={fecha_envio}, hora_envio={hora_envio}, id_reserva={id_reserva}, id_paciente=NULL, id_usuario={id_usuario}")
+                    
+                    cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, None, id_usuario))
+                    conexion.commit()
+                    id_notificacion = cursor.lastrowid
+                    
+                    print(f"✅ [DEBUG crear_para_medico] Notificación creada exitosamente. ID: {id_notificacion}")
+                    return {
+                        'success': True, 
+                        'id_notificacion': id_notificacion
+                    }
+                except Exception as e:
+                    # Si falla porque no existe el campo id_usuario, intentar sin él
+                    error_str = str(e).lower()
+                    print(f"⚠️ [DEBUG crear_para_medico] Error al insertar: {e}")
+                    
+                    if 'id_usuario' in error_str or 'unknown column' in error_str:
+                        print(f"⚠️ Campo id_usuario no existe, intentando sin él...")
+                        # Si id_usuario no existe, intentar sin él pero tampoco con id_paciente
+                        sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                                 hora_envio, id_reserva) 
+                                 VALUES (%s, %s, %s, %s, %s, %s)"""
+                        cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva))
+                        conexion.commit()
+                        id_notificacion = cursor.lastrowid
+                        print(f"⚠️ Notificación creada sin id_usuario. Ejecuta el script SQL para agregar el campo.")
+                        return {
+                            'success': True, 
+                            'id_notificacion': id_notificacion,
+                            'warning': 'Campo id_usuario no existe en la tabla'
+                        }
+                    else:
+                        raise
+        except Exception as e:
+            conexion.rollback()
+            print(f"❌ Error en crear_para_medico: {e}")
+            import traceback
+            traceback.print_exc()
+            return {'error': str(e)}
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def obtener_por_usuario(id_usuario):
+        """Obtiene notificaciones de un usuario (médico) con estado de reserva"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                # Intentar primero con id_usuario
+                try:
+                    sql = """
+                        SELECT n.*, r.estado as estado_reserva
+                        FROM NOTIFICACION n
+                        LEFT JOIN RESERVA r ON n.id_reserva = r.id_reserva
+                        WHERE n.id_usuario = %s
+                        ORDER BY n.fecha_envio DESC, n.hora_envio DESC
+                    """
+                    cursor.execute(sql, (id_usuario,))
+                    return cursor.fetchall()
+                except Exception as e:
+                    # Si falla porque no existe el campo id_usuario, retornar lista vacía
+                    error_str = str(e).lower()
+                    if 'id_usuario' in error_str or 'unknown column' in error_str:
+                        print(f"⚠️ Campo id_usuario no existe en NOTIFICACION. Ejecuta el script SQL para agregarlo.")
+                        return []
+                    else:
+                        raise
+        except Exception as e:
+            print(f"❌ Error en obtener_por_usuario: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def marcar_todas_como_leidas_medico(id_usuario):
+        """Marca todas las notificaciones de un médico como leídas"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                ahora = datetime.now()
+                sql = """UPDATE NOTIFICACION 
+                         SET leida = TRUE, fecha_leida = %s 
+                         WHERE id_usuario = %s AND leida = FALSE"""
+                cursor.execute(sql, (ahora, id_usuario))
                 conexion.commit()
                 return {'success': True, 'count': cursor.rowcount}
         except Exception as e:
