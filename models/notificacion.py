@@ -64,29 +64,35 @@ class Notificacion:
                 cursor.execute(sql_paciente, (id_paciente,))
                 paciente = cursor.fetchone()
                 
-                # Enviar email al paciente
+                # Enviar email al paciente (NO CRÍTICO - si falla, la notificación ya está creada)
+                email_enviado = False
+                email_mensaje = ''
                 if paciente and paciente['correo']:
-                    resultado_email = email_service.enviar_notificacion_email(
-                        destinatario_email=paciente['correo'],
-                        destinatario_nombre=paciente['nombre_completo'],
-                        titulo=titulo,
-                        mensaje=mensaje,
-                        tipo=tipo
-                    )
-                    
-                    return {
-                        'success': True, 
-                        'id_notificacion': id_notificacion,
-                        'email_enviado': resultado_email['success'],
-                        'email_mensaje': resultado_email.get('message', '')
-                    }
+                    try:
+                        resultado_email = email_service.enviar_notificacion_email(
+                            destinatario_email=paciente['correo'],
+                            destinatario_nombre=paciente['nombre_completo'],
+                            titulo=titulo,
+                            mensaje=mensaje,
+                            tipo=tipo
+                        )
+                        email_enviado = resultado_email.get('success', False)
+                        email_mensaje = resultado_email.get('message', '')
+                    except Exception as e:
+                        # Error enviando email NO debe fallar la creación de notificación
+                        print(f"⚠️ Error enviando email de notificación (no crítico): {e}")
+                        email_enviado = False
+                        email_mensaje = f'Error al enviar email: {str(e)}'
                 else:
-                    return {
-                        'success': True, 
-                        'id_notificacion': id_notificacion,
-                        'email_enviado': False,
-                        'email_mensaje': 'Correo del paciente no disponible'
-                    }
+                    email_mensaje = 'Correo del paciente no disponible'
+                
+                # SIEMPRE devolver éxito - la notificación ya está creada
+                return {
+                    'success': True, 
+                    'id_notificacion': id_notificacion,
+                    'email_enviado': email_enviado,
+                    'email_mensaje': email_mensaje
+                }
                     
         except Exception as e:
             conexion.rollback()

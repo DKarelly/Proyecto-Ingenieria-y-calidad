@@ -484,16 +484,20 @@ def api_cancelar_reserva(id_reserva):
             if reserva['estado'] in ['Completada', 'Inasistida']:
                 return jsonify({'error': f'No se puede cancelar una reserva en estado {reserva["estado"]}'}), 400
             
-            # Actualizar estado de la reserva
-            hora_actual = datetime.now().time()
+            # Usar el método del modelo que envía emails automáticamente
+            resultado_actualizacion = Reserva.actualizar_estado(id_reserva, 'Cancelada', motivo)
             
+            if resultado_actualizacion.get('error'):
+                conexion.rollback()
+                return jsonify({'error': resultado_actualizacion['error']}), 500
+            
+            # Actualizar fecha_cancelada manualmente (el método actualizar_estado no lo hace)
+            hora_actual = datetime.now().time()
             cursor.execute("""
                 UPDATE RESERVA 
-                SET estado = 'Cancelada',
-                    fecha_cancelada = %s,
-                    motivo_cancelacion = %s
+                SET fecha_cancelada = %s
                 WHERE id_reserva = %s
-            """, (hora_actual, motivo, id_reserva))
+            """, (hora_actual, id_reserva))
             
             # Liberar la programación
             cursor.execute("""
@@ -504,7 +508,8 @@ def api_cancelar_reserva(id_reserva):
             
             conexion.commit()
             
-            # Enviar notificación al paciente
+            # Los emails ya se enviaron automáticamente en Reserva.actualizar_estado()
+            # Solo crear notificación en el sistema
             try:
                 cursor.execute("""
                     SELECT id_paciente FROM RESERVA WHERE id_reserva = %s
@@ -512,10 +517,11 @@ def api_cancelar_reserva(id_reserva):
                 paciente_data = cursor.fetchone()
                 if paciente_data:
                     Notificacion.crear(
-                        paciente_data['id_paciente'],
-                        'reserva_cancelada',
+                        'Reserva Cancelada',
                         f'Su reserva #{id_reserva} ha sido cancelada.',
-                        f'/paciente/mis-reservas'
+                        'cancelacion',
+                        paciente_data['id_paciente'],
+                        id_reserva
                     )
             except Exception as e:
                 print(f"Error al crear notificación: {e}")
@@ -1486,6 +1492,100 @@ def api_crear_reserva():
             except:
                 pass
         
+        # Obtener datos completos para enviar emails (no crítico - si falla, la reserva ya está creada)
+        conexion_email = None
+        try:
+            conexion_email = obtener_conexion()
+            with conexion_email.cursor() as cursor:
+                # Obtener datos del paciente
+                cursor.execute("""
+                    SELECT CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
+                           u.correo as email_paciente
+                    FROM PACIENTE p
+                    INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+                    WHERE p.id_paciente = %s
+                """, (id_paciente,))
+                paciente_data = cursor.fetchone()
+                
+                # Obtener datos del médico y servicio
+                cursor.execute("""
+                    SELECT CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico,
+                           u_medico.correo as email_medico,
+                           esp.nombre as especialidad,
+                           s.nombre as servicio_nombre
+                    FROM PROGRAMACION prog
+                    INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    INNER JOIN USUARIO u_medico ON e.id_usuario = u_medico.id_usuario
+                    INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                    WHERE prog.id_programacion = %s
+                """, (id_programacion,))
+                medico_data = cursor.fetchone()
+                
+                # Formatear fecha y hora
+                fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
+                hora_inicio_str = str(hora_inicio)[:5] if hora_inicio else ''
+                hora_fin_str = str(hora_fin)[:5] if hora_fin else ''
+                
+                # Enviar email al paciente
+                if paciente_data and paciente_data.get('email_paciente'):
+                    from utils.email_service import enviar_email_reserva_creada
+                    try:
+                        resultado_email_paciente = enviar_email_reserva_creada(
+                            paciente_email=paciente_data['email_paciente'],
+                            paciente_nombre=paciente_data['nombre_paciente'],
+                            fecha=fecha_str,
+                            hora_inicio=hora_inicio_str,
+                            hora_fin=hora_fin_str,
+                            medico_nombre=medico_data.get('nombre_medico', 'Médico') if medico_data else 'Médico',
+                            especialidad=medico_data.get('especialidad', '') if medico_data else '',
+                            servicio=medico_data.get('servicio_nombre', '') if medico_data else '',
+                            id_reserva=id_reserva
+                        )
+                        if resultado_email_paciente.get('success'):
+                            print(f"📧✅ Email de reserva enviado al paciente: {paciente_data['email_paciente']}")
+                        else:
+                            print(f"📧❌ Error enviando email al paciente: {resultado_email_paciente.get('message', 'Error desconocido')}")
+                    except Exception as e:
+                        print(f"📧❌ Excepción al enviar email al paciente: {e}")
+                        import traceback
+                        traceback.print_exc()
+                
+                # Enviar email al médico
+                if medico_data and medico_data.get('email_medico'):
+                    from utils.email_service import enviar_email_reserva_creada_medico
+                    try:
+                        resultado_email_medico = enviar_email_reserva_creada_medico(
+                            medico_email=medico_data['email_medico'],
+                            medico_nombre=medico_data['nombre_medico'],
+                            paciente_nombre=paciente_data.get('nombre_paciente', 'Paciente') if paciente_data else 'Paciente',
+                            fecha=fecha_str,
+                            hora_inicio=hora_inicio_str,
+                            hora_fin=hora_fin_str,
+                            servicio=medico_data.get('servicio_nombre', ''),
+                            id_reserva=id_reserva
+                        )
+                        if resultado_email_medico.get('success'):
+                            print(f"📧✅ Email de reserva enviado al médico: {medico_data['email_medico']}")
+                        else:
+                            print(f"📧❌ Error enviando email al médico: {resultado_email_medico.get('message', 'Error desconocido')}")
+                    except Exception as e:
+                        print(f"📧❌ Excepción al enviar email al médico: {e}")
+                        import traceback
+                        traceback.print_exc()
+        except Exception as e:
+            print(f"⚠️ Error obteniendo datos para emails (no crítico): {e}")
+            import traceback
+            traceback.print_exc()
+            # No fallar la creación de reserva si falla el email
+        finally:
+            if conexion_email:
+                try:
+                    conexion_email.close()
+                except:
+                    pass
+        
         # Crear notificaciones para el paciente
         try:
             # 1. Notificación de confirmación de creación
@@ -1576,15 +1676,50 @@ def api_crear_reserva():
         except Exception as e:
             print(f"Error programando recordatorio de cita (API): {e}")
         
-        return jsonify({'success': True, 'id_reserva': id_reserva}), 201
+        # La reserva se creó exitosamente, devolver éxito
+        # Los errores de email/notificaciones no deben afectar la respuesta
+        return jsonify({
+            'success': True, 
+            'id_reserva': id_reserva,
+            'message': 'Reserva creada exitosamente'
+        }), 201
 
     except Exception as e:
+        print(f"❌ [API crear-reserva] Error crítico: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Asegurar que siempre devolvemos JSON, nunca HTML
         if conexion:
-            conexion.rollback()
-        return jsonify({'error': str(e)}), 500
+            try:
+                conexion.rollback()
+                # Si la reserva se creó pero hubo error después, intentar revertir
+                if 'id_reserva' in locals():
+                    try:
+                        with conexion.cursor() as cursor:
+                            cursor.execute("DELETE FROM RESERVA WHERE id_reserva = %s", (id_reserva,))
+                            cursor.execute("""
+                                UPDATE PROGRAMACION 
+                                SET estado = 'Disponible' 
+                                WHERE id_programacion = %s
+                            """, (id_programacion,))
+                            conexion.commit()
+                    except:
+                        pass
+            except:
+                pass
+        
+        # Siempre devolver JSON, nunca HTML
+        return jsonify({
+            'error': 'Error al crear la reserva',
+            'message': str(e)
+        }), 500
     finally:
         if conexion:
-            conexion.close()
+            try:
+                conexion.close()
+            except:
+                pass
 
 @reservas_bp.route('/reporte-servicios')
 def reporte_servicios():
@@ -2999,6 +3134,8 @@ def paciente_crear_reserva():
             import traceback
             traceback.print_exc()
 
+        # La reserva se creó exitosamente, devolver éxito
+        # Los errores de notificaciones/emails NO deben afectar la respuesta
         return jsonify({
             'success': True,
             'id_reserva': id_reserva,
@@ -3007,9 +3144,22 @@ def paciente_crear_reserva():
         }), 201
 
     except Exception as e:
+        print(f"❌ [paciente_crear_reserva] Error crítico: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Asegurar que siempre devolvemos JSON, nunca HTML
         if conexion:
-            conexion.rollback()
-        return jsonify({'error': f'Error al crear reserva: {str(e)}'}), 500
+            try:
+                conexion.rollback()
+            except:
+                pass
+        
+        # Siempre devolver JSON, nunca HTML
+        return jsonify({
+            'error': 'Error al crear la reserva',
+            'message': str(e)
+        }), 500
     finally:
         try:
             conexion.close()
@@ -4756,39 +4906,85 @@ def api_trabajador_procesar_cancelacion():
             """
             cursor.execute(sql_actualizar_solicitud, (accion, respuesta, id_solicitud))
 
-            # Si se aprueba, cancelar la reserva
+            # Si se aprueba, cancelar la reserva usando el método del modelo (envía emails automáticamente)
             if accion == 'Aprobada':
-                sql_cancelar_reserva = """
-                    UPDATE RESERVA 
-                    SET estado = 'Cancelada',
-                        fecha_cancelada = NOW()
-                    WHERE id_reserva = %s
-                """
-                cursor.execute(sql_cancelar_reserva, (id_reserva,))
+                # Obtener motivo de cancelación de la solicitud
+                motivo_cancelacion = solicitud.get('motivo', 'Cancelación aprobada por el personal')
                 
-                # Obtener información de la reserva para las notificaciones
+                # Usar el método del modelo que envía emails automáticamente
+                resultado_actualizacion = Reserva.actualizar_estado(id_reserva, 'Cancelada', motivo_cancelacion)
+                
+                if resultado_actualizacion.get('error'):
+                    print(f"⚠️ Error al actualizar estado de reserva: {resultado_actualizacion['error']}")
+                else:
+                    # Actualizar fecha_cancelada manualmente
+                    cursor.execute("""
+                        UPDATE RESERVA 
+                        SET fecha_cancelada = NOW()
+                        WHERE id_reserva = %s
+                    """, (id_reserva,))
+                
+                # Obtener información de la reserva para las notificaciones y emails
                 sql_info_reserva = """
                     SELECT 
                         r.id_paciente,
                         r.id_reserva,
+                        r.estado as estado_anterior,
                         p.fecha,
                         TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
                         COALESCE(serv.nombre, 'Consulta Médica') as servicio,
                         h.id_empleado as id_medico,
                         CONCAT(emp.nombres, ' ', emp.apellidos) as nombre_medico,
-                        CONCAT(pac.nombres, ' ', pac.apellidos) as nombre_paciente
+                        u_medico.correo as email_medico,
+                        CONCAT(pac.nombres, ' ', pac.apellidos) as nombre_paciente,
+                        u_paciente.correo as email_paciente
                     FROM RESERVA r
                     INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
                     LEFT JOIN SERVICIO serv ON p.id_servicio = serv.id_servicio
                     INNER JOIN PACIENTE pac ON r.id_paciente = pac.id_paciente
+                    INNER JOIN USUARIO u_paciente ON pac.id_usuario = u_paciente.id_usuario
                     LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
                     LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                    LEFT JOIN USUARIO u_medico ON emp.id_usuario = u_medico.id_usuario
                     WHERE r.id_reserva = %s
                 """
                 cursor.execute(sql_info_reserva, (id_reserva,))
                 info = cursor.fetchone()
                 
                 if info:
+                    # Enviar emails de cambio de estado
+                    try:
+                        from utils.email_service import enviar_email_cambio_estado_reserva
+                        
+                        fecha_str = info.get('fecha')
+                        if hasattr(fecha_str, 'strftime'):
+                            fecha_str = fecha_str.strftime('%d/%m/%Y')
+                        
+                        resultado_email = enviar_email_cambio_estado_reserva(
+                            paciente_email=info.get('email_paciente'),
+                            paciente_nombre=info.get('nombre_paciente', 'Paciente'),
+                            medico_email=info.get('email_medico'),
+                            medico_nombre=info.get('nombre_medico', 'Médico'),
+                            id_reserva=id_reserva,
+                            estado_anterior=info.get('estado_anterior', 'Confirmada'),
+                            estado_nuevo='Cancelada',
+                            fecha=str(fecha_str),
+                            hora_inicio=info.get('hora_inicio', ''),
+                            hora_fin=info.get('hora_fin', ''),
+                            servicio=info.get('servicio', ''),
+                            motivo=respuesta if respuesta else 'Cancelación aprobada'
+                        )
+                        
+                        if resultado_email.get('paciente') and resultado_email['paciente'].get('success'):
+                            print(f"📧✅ Email de cancelación enviado al paciente: {info.get('email_paciente')}")
+                        if resultado_email.get('medico') and resultado_email['medico'].get('success'):
+                            print(f"📧✅ Email de cancelación enviado al médico: {info.get('email_medico')}")
+                    except Exception as e:
+                        print(f"📧❌ Error enviando emails de cancelación: {e}")
+                        import traceback
+                        traceback.print_exc()
+                    
                     # Notificar al paciente
                     try:
                         mensaje_paciente = f"Su solicitud de cancelación fue aprobada. La reserva de {info['servicio']} programada para el {info['fecha']} a las {info['hora_inicio']} ha sido cancelada."
@@ -4796,10 +4992,11 @@ def api_trabajador_procesar_cancelacion():
                             mensaje_paciente += f" Comentario: {respuesta}"
                         
                         Notificacion.crear(
-                            info['id_paciente'],
-                            'cancelacion_aprobada',
+                            'Cancelación Aprobada',
                             mensaje_paciente,
-                            f'/paciente/mis-reservas'
+                            'cancelacion',
+                            info['id_paciente'],
+                            id_reserva
                         )
                         print(f"✅ Notificación enviada al paciente {info['nombre_paciente']}")
                     except Exception as e:

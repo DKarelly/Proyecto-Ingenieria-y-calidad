@@ -21,6 +21,18 @@ class EmailService:
         self.sender_email = os.getenv('SMTP_EMAIL')
         self.sender_password = os.getenv('SMTP_PASSWORD')
         self.sender_name = os.getenv('SMTP_SENDER_NAME', 'Clínica Unión')
+        # URL del frontend para enlaces en emails
+        self.frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:5000')
+        # Asegurar que la URL no termine con /
+        if self.frontend_url.endswith('/'):
+            self.frontend_url = self.frontend_url.rstrip('/')
+        
+        # Log de configuración (sin mostrar contraseña)
+        if self.sender_email and self.sender_password:
+            print(f"📧✅ EmailService inicializado: {self.sender_email} en {self.smtp_server}:{self.smtp_port}")
+            print(f"📧✅ Frontend URL configurada: {self.frontend_url}")
+        else:
+            print(f"⚠️ EmailService: Credenciales SMTP no configuradas (SMTP_EMAIL o SMTP_PASSWORD faltantes)")
     
     def enviar_notificacion_email(self, destinatario_email, destinatario_nombre, titulo, mensaje, tipo='informacion'):
         """
@@ -39,12 +51,24 @@ class EmailService:
         
         # Verificar que las credenciales estén configuradas
         if not self.sender_email or not self.sender_password:
+            error_msg = 'Credenciales de email no configuradas. Verifica SMTP_EMAIL y SMTP_PASSWORD en .env'
+            print(f"📧❌ {error_msg}")
             return {
                 'success': False,
-                'message': 'Credenciales de email no configuradas'
+                'message': error_msg
+            }
+        
+        # Verificar que el email del destinatario sea válido
+        if not destinatario_email or not destinatario_email.strip():
+            error_msg = f'Email del destinatario inválido: {destinatario_email}'
+            print(f"📧❌ {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
             }
         
         try:
+            print(f"📧 Enviando email a {destinatario_email}...")
             # Crear el mensaje
             msg = MIMEMultipart('alternative')
             msg['From'] = f"{self.sender_name} <{self.sender_email}>"
@@ -82,30 +106,52 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
             msg.attach(part2)
             
             # Enviar el correo
-            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
+            print(f"📧 Conectando a {self.smtp_server}:{self.smtp_port}...")
+            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30) as server:
+                print(f"📧 Iniciando TLS...")
                 server.starttls()
+                print(f"📧 Autenticando con {self.sender_email}...")
                 server.login(self.sender_email, self.sender_password)
+                print(f"📧 Enviando mensaje a {destinatario_email}...")
                 server.send_message(msg)
+                print(f"📧✅ Email enviado exitosamente a {destinatario_email}")
             
             return {
                 'success': True,
                 'message': f'Email enviado exitosamente a {destinatario_email}'
             }
             
-        except smtplib.SMTPAuthenticationError:
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = f'Error de autenticación SMTP. Verifica las credenciales de email. Detalle: {str(e)}'
+            print(f"📧❌ {error_msg}")
             return {
                 'success': False,
-                'message': 'Error de autenticación. Verifica las credenciales de email.'
+                'message': error_msg
+            }
+        except (smtplib.SMTPConnectError, ConnectionError, OSError) as e:
+            error_msg = f'Error conectando al servidor SMTP {self.smtp_server}:{self.smtp_port}. Detalle: {str(e)}'
+            print(f"📧❌ {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
             }
         except smtplib.SMTPException as e:
+            error_msg = f'Error SMTP: {str(e)}'
+            print(f"📧❌ {error_msg}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
-                'message': f'Error SMTP: {str(e)}'
+                'message': error_msg
             }
         except Exception as e:
+            error_msg = f'Error inesperado al enviar email: {str(e)}'
+            print(f"📧❌ {error_msg}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
-                'message': f'Error al enviar email: {str(e)}'
+                'message': error_msg
             }
     
     def _get_emoji_tipo(self, tipo):
@@ -135,6 +181,9 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
         color = self._get_color_tipo(tipo)
         emoji = self._get_emoji_tipo(tipo)
         fecha_actual = datetime.now().strftime('%d de %B de %Y a las %H:%M')
+        
+        # Generar URL del login con parámetro para mostrar el modal
+        login_url = f"{self.frontend_url}/?show_login=true"
         
         html = f"""
 <!DOCTYPE html>
@@ -188,7 +237,7 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
                             
                             <!-- CTA Button -->
                             <div style="text-align: center; margin: 30px 0;">
-                                <a href="#" style="display: inline-block; background: linear-gradient(135deg, {color} 0%, {color}dd 100%); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: transform 0.2s;">
+                                <a href="{login_url}" style="display: inline-block; background: linear-gradient(135deg, {color} 0%, {color}dd 100%); color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transition: transform 0.2s;">
                                     Ver en el Sistema
                                 </a>
                             </div>
@@ -243,14 +292,17 @@ def enviar_email_reserva_creada(paciente_email, paciente_nombre, fecha, hora_ini
         Su reserva ha sido registrada exitosamente en nuestro sistema.
     </p>
     
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid #0891b2; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: #0891b2;">#{id_reserva}</span>
+        </div>
+    </div>
+    
     <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de su Reserva</h3>
         
         <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>N° Reserva:</strong></td>
-                <td style="padding: 8px 0; color: #111827; font-size: 14px;">#{id_reserva}</td>
-            </tr>
             <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
                 <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
@@ -298,14 +350,17 @@ def enviar_email_reserva_creada_medico(medico_email, medico_nombre, paciente_nom
         Se ha registrado una nueva reserva médica en su agenda.
     </p>
     
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid #0891b2; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: #0891b2;">#{id_reserva}</span>
+        </div>
+    </div>
+    
     <div style="background-color: #ffffff; border: 2px solid #0891b2; border-radius: 8px; padding: 20px; margin: 20px 0;">
         <h3 style="margin: 0 0 15px 0; color: #0891b2; font-size: 18px;">📋 Detalles de la Reserva</h3>
         
         <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>N° Reserva:</strong></td>
-                <td style="padding: 8px 0; color: #111827; font-size: 14px;">#{id_reserva}</td>
-            </tr>
             <tr>
                 <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👤 Paciente:</strong></td>
                 <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
@@ -330,6 +385,178 @@ def enviar_email_reserva_creada_medico(medico_email, medico_nombre, paciente_nom
     return email_service.enviar_notificacion_email(
         medico_email, medico_nombre, titulo, mensaje, tipo='informacion'
     )
+
+
+def enviar_email_cambio_estado_reserva(paciente_email, paciente_nombre, medico_email, medico_nombre,
+                                       id_reserva, estado_anterior, estado_nuevo, fecha, hora_inicio, hora_fin,
+                                       servicio, motivo=None):
+    """
+    Envía emails tanto al paciente como al médico cuando cambia el estado de una reserva
+    """
+    resultados = {'paciente': None, 'medico': None}
+    
+    # Determinar colores y mensajes según el estado
+    estados_info = {
+        'Confirmada': {
+            'color': '#22c55e',
+            'icono': '✅',
+            'titulo_paciente': 'Reserva Confirmada',
+            'titulo_medico': 'Reserva Confirmada',
+            'mensaje_paciente': 'Su reserva ha sido confirmada exitosamente.',
+            'mensaje_medico': 'La reserva ha sido confirmada.'
+        },
+        'Cancelada': {
+            'color': '#ef4444',
+            'icono': '❌',
+            'titulo_paciente': 'Reserva Cancelada',
+            'titulo_medico': 'Reserva Cancelada',
+            'mensaje_paciente': 'Su reserva ha sido cancelada.',
+            'mensaje_medico': 'Una reserva ha sido cancelada.'
+        },
+        'Completada': {
+            'color': '#3b82f6',
+            'icono': '✓',
+            'titulo_paciente': 'Reserva Completada',
+            'titulo_medico': 'Reserva Completada',
+            'mensaje_paciente': 'Su cita médica ha sido completada.',
+            'mensaje_medico': 'La cita médica ha sido completada.'
+        },
+        'Inasistida': {
+            'color': '#f59e0b',
+            'icono': '⚠️',
+            'titulo_paciente': 'Reserva Marcada como Inasistida',
+            'titulo_medico': 'Reserva Marcada como Inasistida',
+            'mensaje_paciente': 'Su reserva ha sido marcada como inasistida.',
+            'mensaje_medico': 'Una reserva ha sido marcada como inasistida.'
+        },
+        'Pendiente': {
+            'color': '#6366f1',
+            'icono': '⏳',
+            'titulo_paciente': 'Reserva Pendiente',
+            'titulo_medico': 'Reserva Pendiente',
+            'mensaje_paciente': 'Su reserva está pendiente de confirmación.',
+            'mensaje_medico': 'Una reserva está pendiente de confirmación.'
+        }
+    }
+    
+    info = estados_info.get(estado_nuevo, {
+        'color': '#0891b2',
+        'icono': 'ℹ️',
+        'titulo_paciente': f'Estado de Reserva Actualizado',
+        'titulo_medico': f'Estado de Reserva Actualizado',
+        'mensaje_paciente': f'El estado de su reserva ha cambiado a: {estado_nuevo}',
+        'mensaje_medico': f'El estado de la reserva ha cambiado a: {estado_nuevo}'
+    })
+    
+    # Email al paciente
+    if paciente_email:
+        mensaje_paciente = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        {info['mensaje_paciente']}
+    </p>
+    
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid {info['color']}; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: {info['color']};">#{id_reserva}</span>
+        </div>
+    </div>
+    
+    <div style="background-color: #ffffff; border: 2px solid {info['color']}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: {info['color']}; font-size: 18px;">{info['icono']} Detalles de la Reserva</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Estado:</strong></td>
+                <td style="padding: 8px 0; color: {info['color']}; font-size: 14px; font-weight: 600;">{estado_nuevo}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+"""
+        if motivo:
+            mensaje_paciente += f"""
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>📝 Motivo:</strong> {motivo}
+        </p>
+    </div>
+"""
+        mensaje_paciente += "</div>"
+        
+        resultados['paciente'] = email_service.enviar_notificacion_email(
+            paciente_email, paciente_nombre, info['titulo_paciente'], mensaje_paciente, tipo='estado'
+        )
+    
+    # Email al médico
+    if medico_email and medico_nombre:
+        mensaje_medico = f"""
+<div style="margin: 20px 0;">
+    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+        {info['mensaje_medico']}
+    </p>
+    
+    <div style="text-align: center; margin: 25px 0;">
+        <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px; font-weight: 600;">Código de Reserva</p>
+        <div style="display: inline-block; background-color: #f0f9ff; border: 3px solid {info['color']}; border-radius: 12px; padding: 20px 40px;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 3px; color: {info['color']};">#{id_reserva}</span>
+        </div>
+    </div>
+    
+    <div style="background-color: #ffffff; border: 2px solid {info['color']}; border-radius: 8px; padding: 20px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: {info['color']}; font-size: 18px;">{info['icono']} Detalles de la Reserva</h3>
+        
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 40%;"><strong>Estado:</strong></td>
+                <td style="padding: 8px 0; color: {info['color']}; font-size: 14px; font-weight: 600;">{estado_nuevo}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>👤 Paciente:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{paciente_nombre}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📅 Fecha:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{fecha}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>⏰ Hora:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{hora_inicio} - {hora_fin}</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px 0; color: #6b7280; font-size: 14px;"><strong>📋 Servicio:</strong></td>
+                <td style="padding: 8px 0; color: #111827; font-size: 14px;">{servicio}</td>
+            </tr>
+        </table>
+    </div>
+"""
+        if motivo:
+            mensaje_medico += f"""
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>📝 Motivo:</strong> {motivo}
+        </p>
+    </div>
+"""
+        mensaje_medico += "</div>"
+        
+        resultados['medico'] = email_service.enviar_notificacion_email(
+            medico_email, medico_nombre, info['titulo_medico'], mensaje_medico, tipo='informacion'
+        )
+    
+    return resultados
 
 
 def enviar_email_cancelacion_aprobada(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin,
