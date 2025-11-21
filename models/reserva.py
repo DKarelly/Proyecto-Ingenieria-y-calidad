@@ -206,13 +206,98 @@ class Reserva:
 
     @staticmethod
     def actualizar_estado(id_reserva, estado, motivo_cancelacion=None):
-        """Actualiza el estado de una reserva"""
+        """Actualiza el estado de una reserva y envía notificaciones por email"""
         conexion = obtener_conexion()
+        estado_anterior = None
         try:
             with conexion.cursor() as cursor:
+                # Obtener el estado anterior y datos de la reserva
+                cursor.execute("""
+                    SELECT r.estado as estado_anterior, r.id_paciente, r.id_programacion,
+                           p.fecha, p.hora_inicio, p.hora_fin, p.id_servicio
+                    FROM RESERVA r
+                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                    WHERE r.id_reserva = %s
+                """, (id_reserva,))
+                reserva_data = cursor.fetchone()
+                
+                if not reserva_data:
+                    return {'error': 'Reserva no encontrada'}
+                
+                estado_anterior = reserva_data.get('estado_anterior')
+                
+                # Si el estado no cambió, no hacer nada
+                if estado_anterior == estado:
+                    return {'success': True, 'affected_rows': 0, 'message': 'Estado sin cambios'}
+                
+                # Actualizar estado
                 sql = "UPDATE RESERVA SET estado = %s, motivo_cancelacion = %s WHERE id_reserva = %s"
                 cursor.execute(sql, (estado, motivo_cancelacion, id_reserva))
                 conexion.commit()
+                
+                # Enviar emails de notificación
+                try:
+                    from utils.email_service import enviar_email_cambio_estado_reserva
+                    
+                    # Obtener datos del paciente
+                    cursor.execute("""
+                        SELECT CONCAT(pac.nombres, ' ', pac.apellidos) as nombre_paciente,
+                               u_paciente.correo as email_paciente
+                        FROM PACIENTE pac
+                        INNER JOIN USUARIO u_paciente ON pac.id_usuario = u_paciente.id_usuario
+                        WHERE pac.id_paciente = %s
+                    """, (reserva_data['id_paciente'],))
+                    paciente_data = cursor.fetchone()
+                    
+                    # Obtener datos del médico y servicio
+                    cursor.execute("""
+                        SELECT CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico,
+                               u_medico.correo as email_medico,
+                               s.nombre as servicio_nombre
+                        FROM PROGRAMACION prog
+                        INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+                        INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                        INNER JOIN USUARIO u_medico ON e.id_usuario = u_medico.id_usuario
+                        INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                        WHERE prog.id_programacion = %s
+                    """, (reserva_data['id_programacion'],))
+                    medico_data = cursor.fetchone()
+                    
+                    if paciente_data and medico_data:
+                        # Formatear fecha y hora
+                        fecha = reserva_data.get('fecha')
+                        fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
+                        hora_inicio = reserva_data.get('hora_inicio')
+                        hora_inicio_str = str(hora_inicio)[:5] if hora_inicio else ''
+                        hora_fin = reserva_data.get('hora_fin')
+                        hora_fin_str = str(hora_fin)[:5] if hora_fin else ''
+                        
+                        # Enviar emails
+                        resultado_email = enviar_email_cambio_estado_reserva(
+                            paciente_email=paciente_data.get('email_paciente'),
+                            paciente_nombre=paciente_data.get('nombre_paciente', 'Paciente'),
+                            medico_email=medico_data.get('email_medico'),
+                            medico_nombre=medico_data.get('nombre_medico', 'Médico'),
+                            id_reserva=id_reserva,
+                            estado_anterior=estado_anterior,
+                            estado_nuevo=estado,
+                            fecha=fecha_str,
+                            hora_inicio=hora_inicio_str,
+                            hora_fin=hora_fin_str,
+                            servicio=medico_data.get('servicio_nombre', ''),
+                            motivo=motivo_cancelacion
+                        )
+                        
+                        if resultado_email.get('paciente') and resultado_email['paciente'].get('success'):
+                            print(f"📧✅ Email de cambio de estado enviado al paciente: {paciente_data.get('email_paciente')}")
+                        if resultado_email.get('medico') and resultado_email['medico'].get('success'):
+                            print(f"📧✅ Email de cambio de estado enviado al médico: {medico_data.get('email_medico')}")
+                except Exception as e:
+                    print(f"📧❌ Error enviando emails de cambio de estado: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    # No fallar la actualización si el email falla
+                
                 return {'success': True, 'affected_rows': cursor.rowcount}
         except Exception as e:
             conexion.rollback()
