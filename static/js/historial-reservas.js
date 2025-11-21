@@ -335,7 +335,7 @@ function generarTarjetaCita(reserva) {
             // Si tiene solicitud de reprogramación pendiente, mostrar botón deshabilitado
             html += `
                             <button disabled 
-                                    class="group relative overflow-hidden bg-gray-400 opacity-70 cursor-not-allowed text-white font-semibold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-md">
+                                    class="group relative overflow-hidden bg-gray-500 cursor-not-allowed text-white font-semibold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                                 </svg>
@@ -362,7 +362,7 @@ function generarTarjetaCita(reserva) {
             // Si tiene solicitud de cancelación pendiente, mostrar botón deshabilitado
             html += `
                             <button disabled 
-                                    class="group relative overflow-hidden bg-gray-400 opacity-70 cursor-not-allowed text-white font-semibold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-md">
+                                    class="group relative overflow-hidden bg-gray-500 cursor-not-allowed text-white font-semibold py-3.5 px-5 rounded-xl flex items-center justify-center gap-2 shadow-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                     <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
                                 </svg>
@@ -383,6 +383,8 @@ function generarTarjetaCita(reserva) {
                             </button>
             `;
         }
+        
+        html += `
                         </div>
                     </div>
                 </div>
@@ -843,7 +845,7 @@ function abrirModalCancelacion(idReserva, nombreServicio) {
                             id="motivoCancelacion" 
                             rows="4" 
                             class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                            placeholder="Por favor, explica el motivo de tu cancelación (mínimo 10 caracteres)..."
+                            placeholder="Por favor, explica el motivo de tu cancelación (mínimo 20 caracteres)..."
                             maxlength="500"
                         ></textarea>
                         <p class="text-xs text-gray-500 mt-1">
@@ -886,7 +888,7 @@ async function confirmarCancelacion() {
     const motivo = document.getElementById('motivoCancelacion').value.trim();
     
     if (!motivo || motivo.length < 10) {
-        alert('Por favor, proporciona un motivo válido (mínimo 10 caracteres)');
+        alert('Por favor, proporciona un motivo válido (mínimo 20 caracteres)');
         return;
     }
     
@@ -1357,7 +1359,7 @@ async function solicitarReprogramacion(idReserva, nombreServicio, fechaActual) {
                             rows="4" 
                             class="w-full border-2 border-gray-300 rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
                             placeholder="Por favor, explica por qué necesitas reprogramar tu cita..."></textarea>
-                        <p class="text-xs text-gray-500 mt-2">Mínimo 10 caracteres</p>
+                        <p class="text-xs text-gray-500 mt-2">Mínimo 20 caracteres</p>
                     </div>
                     
                     <div class="flex gap-3">
@@ -1391,13 +1393,13 @@ function cerrarModalSolicitudReprogramacion() {
 async function confirmarSolicitudReprogramacion(idReserva) {
     const motivo = document.getElementById('motivoReprogramacion').value.trim();
     
-    if (!motivo || motivo.length < 10) {
-        mostrarNotificacion('Por favor, proporciona un motivo detallado (mínimo 10 caracteres)', 'error');
+    if (!motivo || motivo.length < 20) {
+        alert('Por favor, proporciona un motivo detallado (mínimo 20 caracteres)');
         return;
     }
     
     try {
-        const response = await fetch('/api/solicitar-reprogramacion', {
+        const response = await fetch('/reservas/api/solicitar-reprogramacion', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_reserva: idReserva, motivo: motivo })
@@ -1407,14 +1409,14 @@ async function confirmarSolicitudReprogramacion(idReserva) {
         
         if (data.success) {
             cerrarModalSolicitudReprogramacion();
-            mostrarNotificacion('✅ Solicitud enviada correctamente. Te notificaremos cuando sea revisada.', 'success');
-            cargarHistorialReservas(); // Recargar para actualizar el estado del botón
+            alert('✅ Solicitud enviada correctamente. Te notificaremos cuando sea revisada.');
+            cargarReservas(); // Recargar para actualizar el estado del botón
         } else {
-            mostrarNotificacion('❌ ' + (data.error || 'Error al enviar la solicitud'), 'error');
+            alert('❌ ' + (data.error || 'Error al enviar la solicitud'));
         }
     } catch (error) {
         console.error('Error al solicitar reprogramación:', error);
-        mostrarNotificacion('❌ Error de conexión al enviar la solicitud', 'error');
+        alert('❌ Error de conexión al enviar la solicitud');
     }
 }
 
@@ -1510,7 +1512,7 @@ async function inicializarCalendarioReprogramar(idReserva) {
         const data = await response.json();
         
         if (!data.success) {
-            mostrarNotificacion('❌ ' + (data.error || 'Error al cargar horarios'), 'error');
+            alert('❌ ' + (data.error || 'Error al cargar horarios'));
             return;
         }
         
@@ -1555,13 +1557,13 @@ async function inicializarCalendarioReprogramar(idReserva) {
         
     } catch (error) {
         console.error('Error al inicializar calendario de reprogramación:', error);
-        mostrarNotificacion('❌ Error al cargar el calendario', 'error');
+        alert('❌ Error al cargar el calendario');
     }
 }
 
 async function confirmarReprogramacion() {
     if (!window.programacionSeleccionadaReprogramar || !window.reservaReprogramar) {
-        mostrarNotificacion('❌ Selecciona un horario primero', 'error');
+        alert('❌ Selecciona un horario primero');
         return;
     }
     
@@ -1579,14 +1581,14 @@ async function confirmarReprogramacion() {
         
         if (data.success) {
             cerrarModalReprogramar();
-            mostrarNotificacion('✅ ¡Cita reprogramada exitosamente!', 'success');
-            cargarHistorialReservas(); // Recargar historial
+            alert('✅ ¡Cita reprogramada exitosamente!');
+            cargarReservas(); // Recargar historial
         } else {
-            mostrarNotificacion('❌ ' + (data.error || 'Error al reprogramar'), 'error');
+            alert('❌ ' + (data.error || 'Error al reprogramar'));
         }
     } catch (error) {
         console.error('Error al confirmar reprogramación:', error);
-        mostrarNotificacion('❌ Error de conexión', 'error');
+        alert('❌ Error de conexión');
     }
 }
 
@@ -1703,24 +1705,31 @@ function cerrarModalSolicitudCancelacion() {
 async function confirmarSolicitudCancelacion(idReserva) {
     const motivo = document.getElementById('motivoCancelacion').value.trim();
     
+    console.log(`📝 Confirmando cancelación: ID=${idReserva}, Motivo length=${motivo.length}`);
+    
     if (motivo.length < 20) {
         alert('❌ El motivo debe tener al menos 20 caracteres.');
         return;
     }
     
     try {
+        const payload = {
+            id_reserva: idReserva,
+            motivo: motivo
+        };
+        console.log('📤 Enviando payload:', payload);
+        
         const response = await fetch('/reservas/api/solicitar-cancelacion', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                id_reserva: idReserva,
-                motivo: motivo
-            })
+            body: JSON.stringify(payload)
         });
         
+        console.log('📥 Response status:', response.status);
         const data = await response.json();
+        console.log('📥 Response data:', data);
         
         if (data.success) {
             cerrarModalSolicitudCancelacion();
