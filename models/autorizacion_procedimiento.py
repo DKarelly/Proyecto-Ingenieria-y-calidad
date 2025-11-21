@@ -15,7 +15,7 @@ class AutorizacionProcedimiento:
     def __init__(self, id_autorizacion=None, id_cita=None, id_paciente=None,
                  id_medico_autoriza=None, tipo_procedimiento=None, 
                  id_servicio=None, id_especialidad_requerida=None, id_medico_asignado=None,
-                 estado='PENDIENTE', fecha_autorizacion=None, fecha_vencimiento=None,
+                 fecha_autorizacion=None, fecha_vencimiento=None,
                  fecha_uso=None, id_reserva_generada=None):
         self.id_autorizacion = id_autorizacion
         self.id_cita = id_cita
@@ -25,94 +25,137 @@ class AutorizacionProcedimiento:
         self.id_servicio = id_servicio
         self.id_especialidad_requerida = id_especialidad_requerida
         self.id_medico_asignado = id_medico_asignado
-        self.estado = estado  # 'PENDIENTE', 'APROBADA', 'RECHAZADA', 'COMPLETADA', 'VENCIDA'
         self.fecha_autorizacion = fecha_autorizacion
-        self.fecha_vencimiento = fecha_vencimiento  # Nueva: fecha límite de uso
-        self.fecha_uso = fecha_uso  # Nueva: cuándo fue utilizada
-        self.id_reserva_generada = id_reserva_generada  # Nueva: vínculo con reserva/procedimiento
+        self.fecha_vencimiento = fecha_vencimiento  # Fecha límite de uso
+        self.fecha_uso = fecha_uso  # Cuándo fue utilizada
+        self.id_reserva_generada = id_reserva_generada  # Vínculo con reserva/procedimiento
 
     @staticmethod
-    def crear(data):
+    def crear(data, cursor_externo=None):
         """
         Crea una nueva autorización de procedimiento con fecha de vencimiento automática (7 días)
         Envía notificaciones automáticas al paciente y al médico asignado (Puntos 5.1 y 5.2)
+        
+        Args:
+            data: Diccionario con los datos de la autorización
+            cursor_externo: Cursor de conexión externa (para reutilizar transacción)
         """
-        conexion = obtener_conexion()
+        usar_conexion_propia = cursor_externo is None
+        conexion = None
+        
         try:
-            with conexion.cursor() as cursor:
-                from datetime import timedelta
-                fecha_actual = datetime.now()
-                fecha_vencimiento = fecha_actual + timedelta(days=7)  # Vence en 7 días
+            if usar_conexion_propia:
+                conexion = obtener_conexion()
+                cursor = conexion.cursor()
+            else:
+                cursor = cursor_externo
                 
-                sql = """INSERT INTO AUTORIZACION_PROCEDIMIENTO (
-                    id_cita, id_paciente, id_medico_autoriza, tipo_procedimiento,
-                    id_servicio, id_especialidad_requerida, id_medico_asignado, 
-                    estado, fecha_autorizacion, fecha_vencimiento
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                
-                cursor.execute(sql, (
-                    data.get('id_cita'),
-                    data.get('id_paciente'),
-                    data.get('id_medico_autoriza'),
-                    data.get('tipo_procedimiento'),
-                    data.get('id_servicio'),
-                    data.get('id_especialidad_requerida'),
-                    data.get('id_medico_asignado'),
-                    'PENDIENTE',
-                    fecha_actual,
-                    fecha_vencimiento
-                ))
-                id_autorizacion = cursor.lastrowid
+            from datetime import timedelta
+            fecha_actual = datetime.now()
+            fecha_vencimiento = fecha_actual + timedelta(days=7)  # Vence en 7 días
+            
+            print(f"🔍 [DEBUG crear] Datos recibidos: {data}")
+            print(f"🔍 [DEBUG crear] Usando cursor externo: {not usar_conexion_propia}")
+            
+            sql = """INSERT INTO AUTORIZACION_PROCEDIMIENTO (
+                id_cita, id_paciente, id_medico_autoriza, id_tipo_servicio,
+                id_servicio, id_especialidad_requerida, id_medico_asignado, 
+                fecha_autorizacion, fecha_vencimiento
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+            
+            # Convertir tipo_procedimiento a id_tipo_servicio
+            # EXAMEN = 4, OPERACION = 2
+            tipo_procedimiento = data.get('tipo_procedimiento')
+            if tipo_procedimiento == 'EXAMEN':
+                id_tipo_servicio = 4
+            elif tipo_procedimiento == 'OPERACION':
+                id_tipo_servicio = 2
+            else:
+                id_tipo_servicio = data.get('id_tipo_servicio')
+            
+            # Convertir strings a int donde sea necesario
+            valores = (
+                int(data.get('id_cita')) if data.get('id_cita') else None,
+                int(data.get('id_paciente')) if data.get('id_paciente') else None,
+                int(data.get('id_medico_autoriza')) if data.get('id_medico_autoriza') else None,
+                int(id_tipo_servicio) if id_tipo_servicio else None,
+                int(data.get('id_servicio')) if data.get('id_servicio') else None,
+                int(data.get('id_especialidad_requerida')) if data.get('id_especialidad_requerida') else None,
+                int(data.get('id_medico_asignado')) if data.get('id_medico_asignado') else None,
+                fecha_actual,
+                fecha_vencimiento
+            )
+            
+            print(f"🔍 [DEBUG crear] SQL: {sql}")
+            print(f"🔍 [DEBUG crear] Valores: {valores}")
+            
+            cursor.execute(sql, valores)
+            id_autorizacion = cursor.lastrowid
+            
+            print(f"✅ [DEBUG crear] Autorización insertada con ID: {id_autorizacion}")
+            
+            # Solo hacer commit si estamos usando conexión propia
+            if usar_conexion_propia:
                 conexion.commit()
+                print(f"✅ [DEBUG crear] Commit realizado exitosamente")
+            else:
+                print(f"✅ [DEBUG crear] INSERT exitoso (commit será manejado externamente)")
+            
+            # Enviar notificaciones automáticas (sin bloquear el proceso principal)
+            try:
+                from utils.notificaciones_autorizaciones import (
+                    crear_notificacion_autorizacion_paciente,
+                    crear_notificacion_autorizacion_medico
+                )
                 
-                # Enviar notificaciones automáticas
-                try:
-                    from utils.notificaciones_autorizaciones import (
-                        crear_notificacion_autorizacion_paciente,
-                        crear_notificacion_autorizacion_medico
+                # Obtener datos adicionales para las notificaciones
+                cursor.execute("""
+                    SELECT s.nombre as nombre_servicio,
+                           CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
+                           u.correo as correo_paciente
+                    FROM SERVICIO s
+                    INNER JOIN PACIENTE p ON p.id_paciente = %s
+                    INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+                    WHERE s.id_servicio = %s
+                """, (valores[1], valores[4]))  # Usar valores ya convertidos
+                info = cursor.fetchone()
+                
+                if info:
+                    # Notificación al paciente
+                    crear_notificacion_autorizacion_paciente(
+                        valores[1],
+                        id_autorizacion,
+                        data.get('tipo_procedimiento'),
+                        info['nombre_servicio'],
+                        fecha_vencimiento
                     )
                     
-                    # Obtener datos adicionales para las notificaciones
-                    cursor.execute("""
-                        SELECT s.nombre as nombre_servicio,
-                               CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
-                               u.correo as correo_paciente
-                        FROM SERVICIO s
-                        INNER JOIN PACIENTE p ON p.id_paciente = %s
-                        INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
-                        WHERE s.id_servicio = %s
-                    """, (data.get('id_paciente'), data.get('id_servicio')))
-                    info = cursor.fetchone()
-                    
-                    if info:
-                        # Notificación al paciente
-                        crear_notificacion_autorizacion_paciente(
-                            data.get('id_paciente'),
+                    # Notificación al médico asignado (si existe)
+                    if valores[6]:
+                        crear_notificacion_autorizacion_medico(
+                            valores[6],
                             id_autorizacion,
                             data.get('tipo_procedimiento'),
-                            info['nombre_servicio'],
-                            fecha_vencimiento
+                            info['nombre_paciente'],
+                            info['nombre_servicio']
                         )
-                        
-                        # Notificación al médico asignado (si existe)
-                        if data.get('id_medico_asignado'):
-                            crear_notificacion_autorizacion_medico(
-                                data.get('id_medico_asignado'),
-                                id_autorizacion,
-                                data.get('tipo_procedimiento'),
-                                info['nombre_paciente'],
-                                info['nombre_servicio']
-                            )
-                except Exception as notif_error:
-                    # No fallar la creación si las notificaciones fallan
-                    print(f"Error al enviar notificaciones: {notif_error}")
-                
-                return {'success': True, 'id_autorizacion': id_autorizacion, 'fecha_vencimiento': fecha_vencimiento}
+            except Exception as notif_error:
+                # No fallar la creación si las notificaciones fallan
+                print(f"⚠️ Error al enviar notificaciones (no crítico): {notif_error}")
+                import traceback
+                traceback.print_exc()
+            
+            return {'success': True, 'id_autorizacion': id_autorizacion, 'fecha_vencimiento': fecha_vencimiento}
         except Exception as e:
-            conexion.rollback()
+            print(f"❌ [DEBUG crear] Error al crear autorización: {e}")
+            import traceback
+            traceback.print_exc()
+            if usar_conexion_propia and conexion:
+                conexion.rollback()
             return {'success': False, 'error': str(e)}
         finally:
-            conexion.close()
+            if usar_conexion_propia and conexion:
+                conexion.close()
 
     @staticmethod
     def obtener_por_id(id_autorizacion):
@@ -222,14 +265,14 @@ class AutorizacionProcedimiento:
         try:
             with conexion.cursor() as cursor:
                 sql = """
-                    SELECT tipo_procedimiento, COUNT(*) as cantidad,
+                    SELECT id_tipo_servicio, COUNT(*) as cantidad,
                            MIN(fecha_vencimiento) as proxima_vencimiento
                     FROM AUTORIZACION_PROCEDIMIENTO
                     WHERE id_paciente = %s 
                     AND fecha_uso IS NULL
                     AND (fecha_vencimiento IS NULL OR fecha_vencimiento > NOW())
                     AND id_reserva_generada IS NULL
-                    GROUP BY tipo_procedimiento
+                    GROUP BY id_tipo_servicio
                 """
                 cursor.execute(sql, (id_paciente,))
                 result = cursor.fetchall()
@@ -243,7 +286,8 @@ class AutorizacionProcedimiento:
                 }
                 
                 for row in result:
-                    if row['tipo_procedimiento'] == 'EXAMEN' and row['cantidad'] > 0:
+                    # id_tipo_servicio: 4 = EXAMEN, 2 = OPERACION
+                    if row['id_tipo_servicio'] == 4 and row['cantidad'] > 0:
                         permisos['examen'] = True
                         permisos['tiene_autorizaciones'] = True
                         permisos['detalles'].append({
@@ -251,7 +295,7 @@ class AutorizacionProcedimiento:
                             'cantidad': row['cantidad'],
                             'proxima_vencimiento': row['proxima_vencimiento']
                         })
-                    elif row['tipo_procedimiento'] == 'OPERACION' and row['cantidad'] > 0:
+                    elif row['id_tipo_servicio'] == 2 and row['cantidad'] > 0:
                         permisos['operacion'] = True
                         permisos['tiene_autorizaciones'] = True
                         permisos['detalles'].append({
@@ -308,8 +352,8 @@ class AutorizacionProcedimiento:
                 valores = []
                 
                 campos_permitidos = [
-                    'id_medico_asignado', 'id_servicio', 'estado', 'id_especialidad_requerida',
-                    'fecha_vencimiento'
+                    'id_medico_asignado', 'id_servicio', 'id_especialidad_requerida',
+                    'fecha_vencimiento', 'fecha_uso', 'id_reserva_generada'
                 ]
                 
                 for campo in campos_permitidos:
@@ -365,15 +409,15 @@ class AutorizacionProcedimiento:
     @staticmethod
     def editar_pendiente(id_autorizacion, data, id_usuario_modifica):
         """
-        Edita una autorización SOLO si está en estado PENDIENTE
+        Edita una autorización SOLO si no ha sido utilizada (fecha_uso IS NULL)
         Punto 1.2 del documento: Modificación de Autorizaciones
         """
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                # Verificar que está en PENDIENTE
+                # Verificar que no ha sido utilizada
                 cursor.execute(
-                    "SELECT estado FROM AUTORIZACION_PROCEDIMIENTO WHERE id_autorizacion = %s",
+                    "SELECT fecha_uso, fecha_vencimiento, id_reserva_generada FROM AUTORIZACION_PROCEDIMIENTO WHERE id_autorizacion = %s",
                     (id_autorizacion,)
                 )
                 resultado = cursor.fetchone()
@@ -381,10 +425,16 @@ class AutorizacionProcedimiento:
                 if not resultado:
                     return {'success': False, 'error': 'Autorización no encontrada'}
                 
-                if resultado['estado'] != 'PENDIENTE':
+                if resultado['fecha_uso'] is not None:
                     return {
                         'success': False, 
-                        'error': f'No se puede editar. La autorización está en estado: {resultado["estado"]}'
+                        'error': 'No se puede editar. La autorización ya fue utilizada'
+                    }
+                    
+                if resultado['id_reserva_generada'] is not None:
+                    return {
+                        'success': False, 
+                        'error': 'No se puede editar. La autorización ya tiene una reserva asociada'
                     }
                 
                 # Proceder con la actualización usando auditoría
@@ -394,18 +444,32 @@ class AutorizacionProcedimiento:
 
     @staticmethod
     def aprobar(id_autorizacion):
-        """Aprueba una autorización"""
-        return AutorizacionProcedimiento.actualizar(id_autorizacion, {'estado': 'APROBADA'})
+        """Aprueba una autorización (mantener por compatibilidad, no hace cambios en tabla)"""
+        # La tabla no tiene campo estado, las autorizaciones se consideran aprobadas al crearse
+        return {'success': True, 'message': 'Autorización aprobada'}
 
     @staticmethod
     def rechazar(id_autorizacion):
-        """Rechaza una autorización"""
-        return AutorizacionProcedimiento.actualizar(id_autorizacion, {'estado': 'RECHAZADA'})
+        """Rechaza una autorización eliminándola de la tabla"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                cursor.execute("DELETE FROM AUTORIZACION_PROCEDIMIENTO WHERE id_autorizacion = %s AND fecha_uso IS NULL", (id_autorizacion,))
+                conexion.commit()
+                if cursor.rowcount > 0:
+                    return {'success': True, 'message': 'Autorización rechazada y eliminada'}
+                else:
+                    return {'success': False, 'error': 'No se puede rechazar una autorización ya utilizada'}
+        except Exception as e:
+            conexion.rollback()
+            return {'success': False, 'error': str(e)}
+        finally:
+            conexion.close()
 
     @staticmethod
     def completar(id_autorizacion):
-        """Marca una autorización como completada (procedimiento realizado)"""
-        return AutorizacionProcedimiento.actualizar(id_autorizacion, {'estado': 'COMPLETADA'})
+        """Marca una autorización como completada (registra fecha_uso)"""
+        return AutorizacionProcedimiento.actualizar(id_autorizacion, {'fecha_uso': datetime.now()})
 
     @staticmethod
     def asignar_medico(id_autorizacion, id_medico, validar_especialidad=True):
@@ -420,7 +484,7 @@ class AutorizacionProcedimiento:
                 if validar_especialidad:
                     # Verificar que el médico tenga la especialidad requerida
                     sql = """
-                        SELECT a.id_especialidad_requerida, a.tipo_procedimiento, a.id_paciente,
+                        SELECT a.id_especialidad_requerida, a.id_tipo_servicio, a.id_paciente,
                                a.id_servicio, e.id_especialidad as especialidad_medico
                         FROM AUTORIZACION_PROCEDIMIENTO a
                         INNER JOIN EMPLEADO e ON e.id_empleado = %s
@@ -450,7 +514,7 @@ class AutorizacionProcedimiento:
                         
                         # Obtener datos para la notificación
                         cursor.execute("""
-                            SELECT a.tipo_procedimiento,
+                            SELECT a.id_tipo_servicio,
                                    CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
                                    s.nombre as nombre_servicio
                             FROM AUTORIZACION_PROCEDIMIENTO a
@@ -461,10 +525,12 @@ class AutorizacionProcedimiento:
                         info = cursor.fetchone()
                         
                         if info:
+                            # Convertir id_tipo_servicio a texto para la notificación
+                            tipo_proc = 'EXAMEN' if info['id_tipo_servicio'] == 4 else 'OPERACION'
                             crear_notificacion_autorizacion_medico(
                                 id_medico,
                                 id_autorizacion,
-                                info['tipo_procedimiento'],
+                                tipo_proc,
                                 info['nombre_paciente'],
                                 info['nombre_servicio']
                             )
@@ -486,7 +552,7 @@ class AutorizacionProcedimiento:
             with conexion.cursor() as cursor:
                 # Verificar que no haya sido usada antes
                 cursor.execute(
-                    "SELECT id_reserva_generada, estado FROM AUTORIZACION_PROCEDIMIENTO WHERE id_autorizacion = %s",
+                    "SELECT id_reserva_generada, fecha_uso, fecha_vencimiento FROM AUTORIZACION_PROCEDIMIENTO WHERE id_autorizacion = %s",
                     (id_autorizacion,)
                 )
                 result = cursor.fetchone()
@@ -497,12 +563,16 @@ class AutorizacionProcedimiento:
                 if result['id_reserva_generada']:
                     return {'success': False, 'error': 'Esta autorización ya fue utilizada'}
                 
-                if result['estado'] == 'VENCIDA':
+                if result['fecha_uso'] is not None:
+                    return {'success': False, 'error': 'Esta autorización ya fue utilizada'}
+                
+                # Verificar si está vencida
+                if result['fecha_vencimiento'] and result['fecha_vencimiento'] < datetime.now():
                     return {'success': False, 'error': 'Esta autorización está vencida'}
                 
                 # Marcar como usada
                 sql = """UPDATE AUTORIZACION_PROCEDIMIENTO 
-                        SET id_reserva_generada = %s, fecha_uso = %s, estado = 'COMPLETADA'
+                        SET id_reserva_generada = %s, fecha_uso = %s
                         WHERE id_autorizacion = %s"""
                 cursor.execute(sql, (id_reserva, datetime.now(), id_autorizacion))
                 conexion.commit()
@@ -517,22 +587,21 @@ class AutorizacionProcedimiento:
     @staticmethod
     def marcar_vencidas():
         """
-        Marca como VENCIDAS las autorizaciones que superaron su fecha de vencimiento
+        Obtiene autorizaciones vencidas (la tabla no tiene campo estado, se verifica por fecha)
         Punto 1.1 del documento: Vencimiento de Autorizaciones
         """
         conexion = obtener_conexion()
         try:
             with conexion.cursor() as cursor:
-                sql = """UPDATE AUTORIZACION_PROCEDIMIENTO 
-                        SET estado = 'VENCIDA'
-                        WHERE estado = 'PENDIENTE'
-                        AND fecha_vencimiento < NOW()
+                sql = """SELECT COUNT(*) as total
+                        FROM AUTORIZACION_PROCEDIMIENTO 
+                        WHERE fecha_vencimiento < NOW()
+                        AND fecha_uso IS NULL
                         AND id_reserva_generada IS NULL"""
                 cursor.execute(sql)
-                conexion.commit()
-                return {'success': True, 'autorizaciones_vencidas': cursor.rowcount}
+                result = cursor.fetchone()
+                return {'success': True, 'autorizaciones_vencidas': result['total'] if result else 0}
         except Exception as e:
-            conexion.rollback()
             return {'success': False, 'error': str(e)}
         finally:
             conexion.close()
@@ -553,7 +622,7 @@ class AutorizacionProcedimiento:
                     FROM AUTORIZACION_PROCEDIMIENTO a
                     INNER JOIN PACIENTE p ON a.id_paciente = p.id_paciente
                     INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
-                    WHERE a.estado = 'PENDIENTE'
+                    WHERE a.fecha_uso IS NULL
                     AND a.fecha_vencimiento BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL %s DAY)
                     AND a.id_reserva_generada IS NULL
                     ORDER BY a.fecha_vencimiento ASC
