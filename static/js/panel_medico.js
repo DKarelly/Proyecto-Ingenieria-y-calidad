@@ -366,16 +366,24 @@ document.addEventListener('click', function(e) {
 
 // ========== FUNCIONES PARA NAVEGACIÓN DEL CALENDARIO ==========
 function cambiarSemana(direccion) {
-    // Esta función se puede implementar para navegar entre semanas
-    console.log(`Cambiar semana: ${direccion > 0 ? 'siguiente' : 'anterior'}`);
-    // Aquí se puede hacer una petición al servidor para obtener las citas de otra semana
-    alert(`Navegación de semanas: Próximamente disponible. Se mostraría la semana ${direccion > 0 ? 'siguiente' : 'anterior'}.`);
+    // Obtener parámetros actuales de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let offsetSemana = parseInt(urlParams.get('offset_semana')) || 0;
+    
+    // Calcular nuevo offset
+    offsetSemana += direccion;
+    
+    // Construir nueva URL manteniendo el subsistema
+    urlParams.set('subsistema', 'agenda');
+    urlParams.set('offset_semana', offsetSemana);
+    
+    // Navegar a la nueva URL
+    window.location.href = `/medico/panel?${urlParams.toString()}`;
 }
 
 function irHoy() {
-    console.log('Ir a la semana actual');
-    // Recargar la página para mostrar la semana actual
-    window.location.href = '/medico/panel?subsistema=agenda';
+    // Ir a la semana actual (offset = 0)
+    window.location.href = '/medico/panel?subsistema=agenda&offset_semana=0';
 }
 
 // ========== FUNCIONES PARA MANEJO DE EVENTOS EN EL CALENDARIO ==========
