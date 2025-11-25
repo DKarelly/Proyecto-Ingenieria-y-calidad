@@ -164,9 +164,10 @@ def obtener_citas_hoy(id_empleado):
             conexion.close()
 
 
-def obtener_horarios_medico(id_empleado):
+def obtener_horarios_medico(id_empleado, offset_semana=0):
     """
     Obtiene los horarios del médico (OPTIMIZADO - índice en id_empleado, activo, fecha)
+    offset_semana: número de semanas a avanzar (+) o retroceder (-) desde la semana actual
     """
     from datetime import datetime, timedelta
     
@@ -175,9 +176,9 @@ def obtener_horarios_medico(id_empleado):
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # Obtener fecha de inicio de la semana actual (Lunes)
+        # Obtener fecha de inicio de la semana (Lunes) con offset
         hoy = datetime.now()
-        inicio_semana = hoy - timedelta(days=hoy.weekday())
+        inicio_semana = hoy - timedelta(days=hoy.weekday()) + timedelta(weeks=offset_semana)
         fin_semana = inicio_semana + timedelta(days=6)
         
         # OPTIMIZACIÓN: Query más simple, filtrado directo por índice
@@ -255,18 +256,19 @@ def obtener_horarios_medico(id_empleado):
             conexion.close()
 
 
-def obtener_citas_semana(id_empleado):
+def obtener_citas_semana(id_empleado, offset_semana=0):
     """
-    Obtiene las citas del médico para la semana actual (OPTIMIZADO)
+    Obtiene las citas del médico para la semana (OPTIMIZADO)
+    offset_semana: número de semanas a avanzar (+) o retroceder (-) desde la semana actual
     """
     conexion = None
     try:
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         
-        # Obtener fecha de inicio de la semana actual (Lunes)
+        # Obtener fecha de inicio de la semana (Lunes) con offset
         hoy = datetime.now()
-        inicio_semana = hoy - timedelta(days=hoy.weekday())
+        inicio_semana = hoy - timedelta(days=hoy.weekday()) + timedelta(weeks=offset_semana)
         fin_semana = inicio_semana + timedelta(days=6)
         
         # OPTIMIZACIÓN: Iniciar desde HORARIO (tabla más pequeña filtrada por id_empleado)
@@ -662,13 +664,21 @@ def panel():
         'id_empleado': id_empleado
     }
 
+    # Obtener offset de semana desde los parámetros de la URL
+    offset_semana = request.args.get('offset_semana', 0, type=int)
+    
+    # Calcular fechas de la semana para mostrar en el header
+    hoy = datetime.now()
+    inicio_semana = hoy - timedelta(days=hoy.weekday()) + timedelta(weeks=offset_semana)
+    fin_semana = inicio_semana + timedelta(days=6)
+    
     # OPTIMIZACIÓN: Cargar solo los datos necesarios según el subsistema
     if subsistema == 'agenda':
         # Solo agenda: estadísticas + citas hoy + horarios + citas semana
         stats = obtener_estadisticas_medico(id_empleado)
         citas_hoy = obtener_citas_hoy(id_empleado)
-        horarios_medico = obtener_horarios_medico(id_empleado)
-        citas_semana = obtener_citas_semana(id_empleado)
+        horarios_medico = obtener_horarios_medico(id_empleado, offset_semana)
+        citas_semana = obtener_citas_semana(id_empleado, offset_semana)
         mis_pacientes = []
         citas_pendientes = []
         
@@ -763,7 +773,10 @@ def panel():
         mis_pacientes=mis_pacientes,
         citas_pendientes=citas_pendientes,
         notificaciones=notificaciones if subsistema == 'notificaciones' else [],
-        notificaciones_no_leidas=notificaciones_no_leidas
+        notificaciones_no_leidas=notificaciones_no_leidas,
+        offset_semana=offset_semana,
+        inicio_semana=inicio_semana,
+        fin_semana=fin_semana
     )
 
 

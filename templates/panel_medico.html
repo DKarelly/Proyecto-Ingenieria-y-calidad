@@ -198,17 +198,23 @@
                                     <span class="material-symbols-outlined">chevron_left</span>
                                 </button>
                                 <h2 class="text-lg md:text-xl font-semibold">
-                                    Semana del 4 al 10 nov 2025
+                                    {% if inicio_semana and fin_semana %}
+                                    Semana del {{ inicio_semana.strftime('%d') }} al {{ fin_semana.strftime('%d %b %Y') }}
+                                    {% else %}
+                                    Semana actual
+                                    {% endif %}
                                 </h2>
                                 <button onclick="cambiarSemana(1)" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
                                     <span class="material-symbols-outlined">chevron_right</span>
                                 </button>
                             </div>
                             <div class="flex gap-2">
+                                {% if offset_semana != 0 %}
                                 <button onclick="irHoy()" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-md">
                                     <span class="material-symbols-outlined text-lg">today</span>
                                     <span class="hidden md:inline">Hoy</span>
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -809,7 +815,7 @@
     </div>
 
     <!-- Script del panel médico -->
-    <script src="{{ url_for('static', filename='js/panel_medico.js') }}?v=20251121-004"></script>
+    <script src="{{ url_for('static', filename='js/panel_medico.js') }}?v=20251125-001"></script>
     
     {% if subsistema == 'notificaciones' %}
     <script>
