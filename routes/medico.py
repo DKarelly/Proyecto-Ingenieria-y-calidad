@@ -966,6 +966,7 @@ def guardar_diagnostico():
     Validaciones:
     - Solo se puede registrar a partir de la hora de inicio de la cita
     - Fecha límite: hasta las 23:59:59 del mismo día de la cita
+    - Se puede omitir validación temporal con parámetro 'omitir_validacion_tiempo'
     """
     conexion = None
     try:
@@ -974,6 +975,7 @@ def guardar_diagnostico():
         diagnostico = request.form.get('diagnostico')
         observaciones = request.form.get('observaciones', '')
         es_modificacion = request.form.get('es_modificacion') == 'true'
+        omitir_validacion_tiempo = request.form.get('omitir_validacion_tiempo') == 'true'
         
         # Datos de autorización de procedimientos
         autorizar_examen = request.form.get('autorizar_examen') == 'true'
@@ -1019,8 +1021,8 @@ def guardar_diagnostico():
         fecha_limite = datetime.combine(fecha_cita, time(23, 59, 59))
         ahora = datetime.now()
         
-        # VALIDACIÓN 1: Solo si es registro nuevo (no modificación)
-        if not es_modificacion:
+        # VALIDACIÓN 1: Solo si es registro nuevo (no modificación) y no se omite validación
+        if not es_modificacion and not omitir_validacion_tiempo:
             # No permitir registro antes de que inicie la cita
             if ahora < fecha_hora_cita:
                 hora_formatted = hora_inicio.strftime('%H:%M')
@@ -1177,6 +1179,64 @@ def guardar_diagnostico():
                 if resultado.get('success'):
                     autorizaciones_creadas.append('operación')
                     print(f"✅ [DEBUG] Autorización de operación creada con ID: {resultado.get('id_autorizacion')}")
+                    
+                    # NOTIFICACIÓN: Enviar notificación al médico derivado (si aplica)
+                    if id_medico_derivar and id_medico_derivar != id_empleado:
+                        try:
+                            # Obtener información del médico que autoriza y del servicio
+                            cursor.execute("""
+                                SELECT 
+                                    CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico_autoriza,
+                                    CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
+                                    s.nombre as nombre_servicio,
+                                    u.id_usuario as id_usuario_derivado
+                                FROM EMPLEADO e
+                                CROSS JOIN PACIENTE p
+                                CROSS JOIN SERVICIO s
+                                INNER JOIN EMPLEADO e2 ON e2.id_empleado = %s
+                                INNER JOIN USUARIO u ON e2.id_usuario = u.id_usuario
+                                WHERE e.id_empleado = %s
+                                AND p.id_paciente = %s
+                                AND s.id_servicio = %s
+                            """, (id_medico_derivar, id_empleado, id_paciente, id_servicio_operacion))
+                            
+                            info_notif = cursor.fetchone()
+                            
+                            if info_notif and info_notif['id_usuario_derivado']:
+                                titulo_notif = "Nueva Operación Derivada"
+                                mensaje_notif = f"""
+                                <div style="margin: 15px 0;">
+                                    <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+                                        El Dr./Dra. <strong>{info_notif['nombre_medico_autoriza']}</strong> le ha derivado una operación.
+                                    </p>
+                                    <div style="background-color: #f9fafb; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>🏥 Operación:</strong> {info_notif['nombre_servicio']}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>👤 Paciente:</strong> {info_notif['nombre_paciente']}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📋 ID Autorización:</strong> {resultado.get('id_autorizacion')}</p>
+                                    </div>
+                                    <p style="margin: 10px 0; font-size: 14px; color: #6b7280;">
+                                        Por favor, revise su agenda para programar la operación correspondiente.
+                                    </p>
+                                </div>
+                                """
+                                
+                                result_notif = Notificacion.crear_para_medico(
+                                    titulo=titulo_notif,
+                                    mensaje=mensaje_notif,
+                                    tipo='derivacion_operacion',
+                                    id_usuario=info_notif['id_usuario_derivado']
+                                )
+                                
+                                if result_notif.get('success'):
+                                    print(f"✅ [DEBUG] Notificación enviada al médico derivado (ID usuario: {info_notif['id_usuario_derivado']})")
+                                else:
+                                    print(f"⚠️ [DEBUG] Error al enviar notificación: {result_notif.get('error')}")
+                            else:
+                                print(f"⚠️ [DEBUG] No se pudo obtener id_usuario del médico derivado")
+                                
+                        except Exception as notif_error:
+                            # No hacer fallar todo si la notificación falla
+                            print(f"⚠️ [DEBUG] Error al enviar notificación de derivación: {notif_error}")
                 else:
                     print(f"❌ Error al crear autorización de operación: {resultado.get('error')}")
         
@@ -1610,3 +1670,141 @@ def medico_server_error(error):
     """
     flash('Ha ocurrido un error en el servidor. Por favor, intenta nuevamente', 'danger')
     return redirect(url_for('medico.panel'))
+
+
+@medico_bp.route('/api/auto_completar_citas_sin_diagnostico', methods=['POST'])
+@medico_required
+def auto_completar_citas_sin_diagnostico():
+    """
+    Auto-completa citas que no recibieron diagnóstico en su día correspondiente.
+    Marca las citas como 'Completada' con observación indicando que no se registró diagnóstico.
+    IMPORTANTE: No crea autorizaciones ni procedimientos.
+    
+    Puede ser llamado:
+    - Manualmente por el médico
+    - Por un scheduler/cron job al final del día
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        fecha_objetivo = request.json.get('fecha') if request.json else None
+        
+        # Si no se especifica fecha, usar ayer (para citas del día anterior)
+        if fecha_objetivo:
+            fecha_citas = datetime.strptime(fecha_objetivo, '%Y-%m-%d').date()
+        else:
+            fecha_citas = (datetime.now() - timedelta(days=1)).date()
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Obtener citas del médico sin diagnóstico de la fecha especificada
+        # Estados que indican que la cita debió haberse atendido: Pendiente, Confirmada
+        # NOTA: id_paciente está en RESERVA, no en CITA
+        cursor.execute("""
+            SELECT 
+                c.id_cita, 
+                r.id_paciente,
+                c.fecha_cita,
+                c.hora_inicio,
+                CONCAT(p.nombres, ' ', p.apellidos) as paciente
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION pr ON r.id_programacion = pr.id_programacion
+            INNER JOIN HORARIO h ON pr.id_horario = h.id_horario
+            LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            WHERE h.id_empleado = %s 
+            AND c.fecha_cita = %s
+            AND c.estado IN ('Pendiente', 'Confirmada')
+            AND (c.diagnostico IS NULL OR c.diagnostico = '')
+        """, (id_empleado, fecha_citas))
+        
+        citas_sin_diagnostico = cursor.fetchall()
+        
+        if not citas_sin_diagnostico:
+            return jsonify({
+                'success': True, 
+                'message': f'No hay citas sin diagnóstico para el {fecha_citas.strftime("%d/%m/%Y")}',
+                'citas_actualizadas': 0
+            })
+        
+        # Marcar cada cita como completada con observación de no registro
+        citas_actualizadas = []
+        for cita in citas_sin_diagnostico:
+            cursor.execute("""
+                UPDATE CITA 
+                SET estado = 'Completada',
+                    diagnostico = '[No registrado]',
+                    observaciones = 'Diagnóstico no registrado por el médico durante la cita. Auto-completado por el sistema.'
+                WHERE id_cita = %s
+            """, (cita['id_cita'],))
+            
+            citas_actualizadas.append({
+                'id_cita': cita['id_cita'],
+                'paciente': cita['paciente'],
+                'fecha': cita['fecha_cita'].strftime('%d/%m/%Y') if cita['fecha_cita'] else 'N/A'
+            })
+        
+        conexion.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Se auto-completaron {len(citas_actualizadas)} cita(s) sin diagnóstico del {fecha_citas.strftime("%d/%m/%Y")}',
+            'citas_actualizadas': len(citas_actualizadas),
+            'detalle': citas_actualizadas
+        })
+        
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"Error al auto-completar citas: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/citas_sin_diagnostico_pendientes', methods=['GET'])
+@medico_required
+def obtener_citas_sin_diagnostico_pendientes():
+    """
+    Obtiene el conteo de citas pasadas sin diagnóstico para mostrar alerta al médico.
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        hoy = datetime.now().date()
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Contar citas de días anteriores sin diagnóstico
+        # NOTA: id_paciente está en RESERVA, no en CITA
+        cursor.execute("""
+            SELECT COUNT(*) as total
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION pr ON r.id_programacion = pr.id_programacion
+            INNER JOIN HORARIO h ON pr.id_horario = h.id_horario
+            WHERE h.id_empleado = %s 
+            AND c.fecha_cita < %s
+            AND c.estado IN ('Pendiente', 'Confirmada')
+            AND (c.diagnostico IS NULL OR c.diagnostico = '')
+        """, (id_empleado, hoy))
+        
+        resultado = cursor.fetchone()
+        total = resultado['total'] if resultado else 0
+        
+        return jsonify({
+            'success': True,
+            'citas_pendientes': total
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener citas sin diagnóstico: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
