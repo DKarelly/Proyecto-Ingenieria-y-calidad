@@ -637,16 +637,29 @@ class Notificacion:
                 
                 print(f"🔍 [DEBUG crear_para_medico] Fecha: {fecha_envio}, Hora: {hora_envio}")
                 
-                # Intentar insertar con id_usuario, id_paciente como NULL (ya que es para médico)
+                # Construir SQL dinámicamente según si id_reserva está presente
+                # Para notificaciones de médico, id_paciente es NULL
+                # Si id_reserva es None, intentar insertar con NULL o sin la columna
+                
                 try:
-                    # Para notificaciones de médico, id_paciente es NULL
-                    sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
-                             hora_envio, id_reserva, id_paciente, id_usuario) 
-                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-                    print(f"🔍 [DEBUG crear_para_medico] Ejecutando SQL con id_usuario (id_paciente=NULL): {sql}")
-                    print(f"🔍 [DEBUG crear_para_medico] Parámetros: titulo={titulo}, mensaje={mensaje}, tipo={tipo}, fecha_envio={fecha_envio}, hora_envio={hora_envio}, id_reserva={id_reserva}, id_paciente=NULL, id_usuario={id_usuario}")
+                    if id_reserva is not None:
+                        # Incluir id_reserva en el INSERT
+                        sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                                 hora_envio, id_reserva, id_paciente, id_usuario) 
+                                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                        params = (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, None, id_usuario)
+                        print(f"🔍 [DEBUG crear_para_medico] Ejecutando SQL CON id_reserva: {sql}")
+                        print(f"🔍 [DEBUG crear_para_medico] Parámetros: titulo={titulo}, tipo={tipo}, id_reserva={id_reserva}, id_usuario={id_usuario}")
+                    else:
+                        # Intentar insertar sin id_reserva (omitir la columna)
+                        sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                                 hora_envio, id_paciente, id_usuario) 
+                                 VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+                        params = (titulo, mensaje, tipo, fecha_envio, hora_envio, None, id_usuario)
+                        print(f"🔍 [DEBUG crear_para_medico] Ejecutando SQL SIN id_reserva: {sql}")
+                        print(f"🔍 [DEBUG crear_para_medico] Parámetros: titulo={titulo}, tipo={tipo}, id_reserva=None, id_usuario={id_usuario}")
                     
-                    cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva, None, id_usuario))
+                    cursor.execute(sql, params)
                     conexion.commit()
                     id_notificacion = cursor.lastrowid
                     
@@ -655,18 +668,36 @@ class Notificacion:
                         'success': True, 
                         'id_notificacion': id_notificacion
                     }
+                    
                 except Exception as e:
-                    # Si falla porque no existe el campo id_usuario, intentar sin él
+                    # Si falla porque id_reserva no puede ser NULL o la columna no existe
                     error_str = str(e).lower()
                     print(f"⚠️ [DEBUG crear_para_medico] Error al insertar: {e}")
                     
-                    if 'id_usuario' in error_str or 'unknown column' in error_str:
+                    if id_reserva is None and ("cannot be null" in error_str and "id_reserva" in error_str or "field 'id_reserva' doesn't have a default value" in error_str):
+                        # La columna id_reserva no permite NULL y no tiene valor por defecto
+                        # Necesitamos modificar la tabla
+                        error_msg = (
+                            f"❌ La columna id_reserva no permite NULL. "
+                            f"Para crear notificaciones sin reserva (como derivaciones de operación), "
+                            f"ejecuta el script SQL: scripts/modificar_id_reserva_null.sql\n"
+                            f"Error original: {str(e)}"
+                        )
+                        print(f"⚠️ {error_msg}")
+                        raise Exception(error_msg)
+                    elif 'id_usuario' in error_str or 'unknown column' in error_str:
                         print(f"⚠️ Campo id_usuario no existe, intentando sin él...")
-                        # Si id_usuario no existe, intentar sin él pero tampoco con id_paciente
-                        sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
-                                 hora_envio, id_reserva) 
-                                 VALUES (%s, %s, %s, %s, %s, %s)"""
-                        cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva))
+                        # Si id_usuario no existe, intentar sin él
+                        if id_reserva is not None:
+                            sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                                     hora_envio, id_reserva) 
+                                     VALUES (%s, %s, %s, %s, %s, %s)"""
+                            cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio, id_reserva))
+                        else:
+                            sql = """INSERT INTO NOTIFICACION (titulo, mensaje, tipo, fecha_envio, 
+                                     hora_envio) 
+                                     VALUES (%s, %s, %s, %s, %s)"""
+                            cursor.execute(sql, (titulo, mensaje, tipo, fecha_envio, hora_envio))
                         conexion.commit()
                         id_notificacion = cursor.lastrowid
                         print(f"⚠️ Notificación creada sin id_usuario. Ejecuta el script SQL para agregar el campo.")

@@ -14,6 +14,28 @@
     
     <!-- CSS personalizado del panel médico -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/panel_medico.css') }}">
+    <style>
+        /* Estilos para notificaciones con HTML */
+        .notification-message {
+            line-height: 1.6;
+        }
+        .notification-message p {
+            margin: 0.5rem 0;
+        }
+        .notification-message strong {
+            font-weight: 600;
+        }
+        .notification-message div {
+            margin: 0.75rem 0;
+        }
+        .notification-message ul, .notification-message ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        .notification-message li {
+            margin: 0.25rem 0;
+        }
+    </style>
 </head>
 
 <body class="font-body bg-background-light dark:bg-background-dark text-text-secondary-light dark:text-text-secondary-dark antialiased">
@@ -736,7 +758,7 @@
                                             <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700">Operación</span>
                                             {% endif %}
                                         </div>
-                                        <p class="text-sm text-gray-600 leading-relaxed">{{ n.mensaje }}</p>
+                                        <div class="text-sm text-gray-600 leading-relaxed notification-message">{{ n.mensaje|safe }}</div>
                                     </div>
                                     
                                     <!-- Estado leída y botón marcar como leído -->
