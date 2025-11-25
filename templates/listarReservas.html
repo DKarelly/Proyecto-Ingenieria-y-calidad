@@ -18,7 +18,7 @@
 <body class="text-gray-700">
     {% include 'header_admin.html' %}
     
-    <div class="max-w-7xl mx-auto p-6 md:p-10">
+    <div class="max-w-screen-2xl mx-auto p-6 md:p-10">
         <!-- Botón de regreso -->
         <div class="mb-6">
             <a href="/reservas/" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
@@ -205,7 +205,6 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gradient-to-r from-cyan-500 to-blue-500">
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">ID</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Paciente</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">DNI</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Servicio</th>
@@ -560,7 +559,6 @@
                 });
 
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">#${reserva.id_reserva}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${reserva.paciente_nombre}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${reserva.paciente_dni}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">

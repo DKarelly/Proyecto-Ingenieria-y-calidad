@@ -53,10 +53,13 @@ def panel():
         print(f"Error obteniendo alertas de vencimiento: {e}")
         stats['alertas_vencimiento'] = 0
 
-    # Medicamentos recientes (últimos 5)
+    # Medicamentos recientes (últimos 7)
     medicamentos_recientes = []
     try:
-        medicamentos_recientes = Medicamento.obtener_recientes(5)
+        medicamentos_recientes = Medicamento.obtener_recientes(7)
+        print(f"DEBUG: Medicamentos recientes obtenidos: {len(medicamentos_recientes) if medicamentos_recientes else 0}")
+        if medicamentos_recientes:
+            print(f"DEBUG: Primer medicamento: {medicamentos_recientes[0]}")
     except Exception as e:
         print(f"Error obteniendo medicamentos recientes: {e}")
 
@@ -68,10 +71,13 @@ def panel():
     except Exception as e:
         print(f"Error obteniendo medicamentos por vencer: {e}")
 
-    # Ingresos recientes (última semana)
+    # Ingresos recientes (últimos 7 medicamentos registrados)
     ingresos_recientes = []
     try:
-        ingresos_recientes = Medicamento.obtener_ingresos_recientes()
+        ingresos_recientes = Medicamento.obtener_ingresos_recientes(7)
+        print(f"DEBUG: Ingresos recientes obtenidos: {len(ingresos_recientes) if ingresos_recientes else 0}")
+        if ingresos_recientes:
+            print(f"DEBUG: Primer ingreso: {ingresos_recientes[0]}")
     except Exception as e:
         print(f"Error obteniendo ingresos recientes: {e}")
 
@@ -112,18 +118,6 @@ def panel():
         # Las fechas ya vienen en formato '%d/%m/%Y' del modelo, no necesitamos parsear
     except Exception as e:
         print(f"Error obteniendo medicamentos con stock bajo: {e}")
-
-    # Dummy data for testing if methods return empty
-    if not medicamentos_recientes:
-        medicamentos_recientes = [
-            {'nombre': 'Paracetamol', 'stock': 100, 'cantidad': 100},
-            {'nombre': 'Ibuprofeno', 'stock': 50, 'cantidad': 50}
-        ]
-    if not ingresos_recientes:
-        ingresos_recientes = [
-            {'nombre': 'Paracetamol', 'descripcion': 'Analgésico', 'cantidad': 100, 'fecha_vencimiento': '01/01/2026', 'fecha_ingreso': '01/11/2025'},
-            {'nombre': 'Ibuprofeno', 'descripcion': 'Antiinflamatorio', 'cantidad': 50, 'fecha_vencimiento': '01/01/2026', 'fecha_ingreso': '01/11/2025'}
-        ]
 
     # Determinar subsistema desde query params
     subsistema = request.args.get('subsistema')
