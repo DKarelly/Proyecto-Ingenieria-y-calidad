@@ -65,24 +65,34 @@ class Notificacion:
                 paciente = cursor.fetchone()
                 
                 # Enviar email al paciente (NO CRÍTICO - si falla, la notificación ya está creada)
+                # USO DE PROTOCOLO ASÍNCRONO: El email se envía en segundo plano para no bloquear la respuesta HTTP
                 email_enviado = False
                 email_mensaje = ''
                 if paciente and paciente['correo']:
                     try:
-                        resultado_email = email_service.enviar_notificacion_email(
+                        # Usar envío asíncrono (no bloqueante) para evitar timeouts de Gunicorn
+                        from utils.email_service import invocar_protocolo_envio_rapido
+                        
+                        # Esto retorna inmediatamente (no espera a Gmail)
+                        # El email se enviará en un hilo separado
+                        email_lanzado = invocar_protocolo_envio_rapido(
+                            email_service,
                             destinatario_email=paciente['correo'],
                             destinatario_nombre=paciente['nombre_completo'],
                             titulo=titulo,
                             mensaje=mensaje,
                             tipo=tipo
                         )
-                        email_enviado = resultado_email.get('success', False)
-                        email_mensaje = resultado_email.get('message', '')
+                        
+                        # Como es asíncrono, asumimos que se enviará (no podemos saber el resultado inmediatamente)
+                        email_enviado = email_lanzado
+                        email_mensaje = 'Email despachado en segundo plano' if email_lanzado else 'Error al despachar email'
+                        
                     except Exception as e:
                         # Error enviando email NO debe fallar la creación de notificación
-                        print(f"⚠️ Error enviando email de notificación (no crítico): {e}")
+                        print(f"⚠️ Error despachando email de notificación (no crítico): {e}")
                         email_enviado = False
-                        email_mensaje = f'Error al enviar email: {str(e)}'
+                        email_mensaje = f'Error al despachar email: {str(e)}'
                 else:
                     email_mensaje = 'Correo del paciente no disponible'
                 
