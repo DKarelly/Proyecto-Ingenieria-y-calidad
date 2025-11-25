@@ -84,3 +84,4 @@ Después de reiniciar, busca en los logs de Render:
 
 **Si después de esto sigue fallando, el problema puede ser restricciones de red en Render. Considera usar SendGrid o Mailgun como alternativa.**
 
+

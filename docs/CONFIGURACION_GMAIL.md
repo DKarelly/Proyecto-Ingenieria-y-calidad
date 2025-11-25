@@ -212,3 +212,4 @@ Si después de seguir esta guía sigues teniendo problemas:
 
 **Última actualización:** Noviembre 2025
 
+
