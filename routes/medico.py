@@ -1673,8 +1673,10 @@ def obtener_servicios_operacion():
 def obtener_medicos_mi_especialidad():
     """
     Obtiene médicos de la misma especialidad del médico logueado
+    que tengan programaciones disponibles para operaciones.
     Se usa para derivar operaciones sin mostrar selector de especialidad
     """
+    conexion = None
     try:
         id_empleado = session.get('id_empleado')
         
@@ -1689,28 +1691,61 @@ def obtener_medicos_mi_especialidad():
         result = cursor.fetchone()
         
         if not result:
-            conexion.close()
             return jsonify({'success': False, 'message': 'Médico no encontrado'}), 404
         
         id_especialidad_medico = result['id_especialidad']
-        medico_actual_nombre = f"{result['nombres']} {result['apellidos']}"
         
-        # Obtener otros médicos de la misma especialidad
-        medicos = AutorizacionProcedimiento.obtener_medicos_por_especialidad(id_especialidad_medico)
+        # Obtener médicos de la misma especialidad que tengan programaciones disponibles
+        # para servicios de tipo OPERACION (id_tipo_servicio = 2)
+        cursor.execute("""
+            SELECT DISTINCT
+                e.id_empleado,
+                CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
+                e.nombres,
+                e.apellidos,
+                esp.nombre as especialidad,
+                u.correo,
+                u.telefono
+            FROM EMPLEADO e
+            INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            INNER JOIN HORARIO h ON h.id_empleado = e.id_empleado
+            INNER JOIN PROGRAMACION p ON p.id_horario = h.id_horario
+            INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE e.id_especialidad = %s
+            AND e.id_empleado != %s
+            AND e.id_rol = 2
+            AND e.estado = 'activo'
+            AND u.estado = 'activo'
+            AND s.id_tipo_servicio = 2
+            AND p.estado = 'Disponible'
+            AND p.fecha >= CURDATE()
+            ORDER BY e.apellidos, e.nombres
+        """, (id_especialidad_medico, id_empleado))
         
-        # Filtrar para excluir el médico actual
-        medicos_filtrados = [m for m in medicos if m['id_empleado'] != id_empleado]
+        medicos = cursor.fetchall()
         
-        conexion.close()
+        # Obtener nombre de especialidad
+        cursor.execute("""
+            SELECT nombre FROM ESPECIALIDAD WHERE id_especialidad = %s
+        """, (id_especialidad_medico,))
+        esp_result = cursor.fetchone()
+        especialidad_nombre = esp_result['nombre'] if esp_result else 'N/A'
+        
         return jsonify({
             'success': True, 
-            'medicos': medicos_filtrados,
-            'especialidad_nombre': medicos[0]['especialidad'] if medicos else 'N/A'
+            'medicos': medicos,
+            'especialidad_nombre': especialidad_nombre
         })
         
     except Exception as e:
         print(f"Error al obtener médicos de mi especialidad: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
 
 
 @medico_bp.route('/api/verificar_autorizaciones/<int:id_paciente>', methods=['GET'])
