@@ -909,6 +909,68 @@ def historial_paciente(id_paciente):
                 'observaciones': cita['observaciones'] if cita['observaciones'] else ''
             })
         
+        # Obtener autorizaciones (exámenes y operaciones) del paciente
+        cursor.execute("""
+            SELECT 
+                ap.id_autorizacion,
+                ap.id_tipo_servicio,
+                CASE 
+                    WHEN ap.id_tipo_servicio = 4 THEN 'EXAMEN'
+                    WHEN ap.id_tipo_servicio = 2 THEN 'OPERACION'
+                    ELSE 'OTRO'
+                END as tipo_procedimiento,
+                s.nombre as servicio_nombre,
+                ap.fecha_autorizacion,
+                ap.fecha_vencimiento,
+                ap.fecha_uso,
+                CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
+                CONCAT(med_asig.nombres, ' ', med_asig.apellidos) as medico_asignado,
+                esp.nombre as especialidad_requerida,
+                c.fecha_cita,
+                c.diagnostico as diagnostico_cita,
+                CASE 
+                    WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
+                    WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
+                    ELSE 'PENDIENTE'
+                END as estado_autorizacion
+            FROM AUTORIZACION_PROCEDIMIENTO ap
+            INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
+            INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
+            LEFT JOIN EMPLEADO med_asig ON ap.id_medico_asignado = med_asig.id_empleado
+            LEFT JOIN ESPECIALIDAD esp ON ap.id_especialidad_requerida = esp.id_especialidad
+            LEFT JOIN CITA c ON ap.id_cita = c.id_cita
+            WHERE ap.id_paciente = %s
+            ORDER BY ap.fecha_autorizacion DESC
+        """, (id_paciente,))
+        
+        autorizaciones = cursor.fetchall()
+        
+        # Separar en exámenes y operaciones
+        examenes = []
+        operaciones = []
+        
+        for aut in autorizaciones:
+            fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
+            fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
+            fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
+            
+            item = {
+                'id': aut['id_autorizacion'],
+                'servicio': aut['servicio_nombre'],
+                'fecha_autorizacion': fecha_aut,
+                'fecha_vencimiento': fecha_venc,
+                'fecha_uso': fecha_uso,
+                'medico_autoriza': aut['medico_autoriza'],
+                'medico_asignado': aut['medico_asignado'] if aut['medico_asignado'] else None,
+                'especialidad': aut['especialidad_requerida'] if aut['especialidad_requerida'] else None,
+                'estado': aut['estado_autorizacion']
+            }
+            
+            if aut['id_tipo_servicio'] == 4:
+                examenes.append(item)
+            elif aut['id_tipo_servicio'] == 2:
+                operaciones.append(item)
+        
         return jsonify({
             'success': True,
             'paciente': {
@@ -916,7 +978,9 @@ def historial_paciente(id_paciente):
                 'dni': paciente['documento_identidad'],
                 'edad': edad
             },
-            'historial': historial_formateado
+            'historial': historial_formateado,
+            'examenes': examenes,
+            'operaciones': operaciones
         })
         
     except Exception as e:
@@ -1079,30 +1143,50 @@ def guardar_diagnostico():
         autorizaciones_creadas = []
         
         if autorizar_examen:
-            id_servicio_examen = request.form.get('id_servicio_examen')
-            print(f"🔍 [DEBUG] Autorizar examen: {autorizar_examen}, ID servicio: {id_servicio_examen}")
+            # Soportar múltiples exámenes (hasta 3)
+            cantidad_examenes = request.form.get('cantidad_examenes', '0')
+            examenes_ids = []
             
-            if id_servicio_examen:
-                # Para exámenes, el médico que autoriza es el mismo que lo realiza
-                datos_examen = {
-                    'id_cita': int(id_cita),
-                    'id_paciente': int(id_paciente),
-                    'id_medico_autoriza': int(id_empleado),
-                    'tipo_procedimiento': 'EXAMEN',
-                    'id_servicio': int(id_servicio_examen),
-                    'id_especialidad_requerida': None,
-                    'id_medico_asignado': int(id_empleado)  # El mismo médico realiza el examen
-                }
-                print(f"🔍 [DEBUG] Datos para crear autorización de examen: {datos_examen}")
-                
-                resultado = AutorizacionProcedimiento.crear(datos_examen, cursor_externo=cursor)
-                print(f"🔍 [DEBUG] Resultado crear examen: {resultado}")
-                
-                if resultado.get('success'):
-                    autorizaciones_creadas.append('examen')
-                    print(f"✅ [DEBUG] Autorización de examen creada con ID: {resultado.get('id_autorizacion')}")
-                else:
-                    print(f"❌ Error al crear autorización de examen: {resultado.get('error')}")
+            # Obtener exámenes del nuevo formato (múltiples)
+            for i in range(int(cantidad_examenes) if cantidad_examenes else 0):
+                examen_id = request.form.get(f'examenes[{i}]')
+                if examen_id:
+                    examenes_ids.append(examen_id)
+            
+            # Fallback al formato antiguo (un solo examen)
+            if not examenes_ids:
+                id_servicio_examen = request.form.get('id_servicio_examen')
+                if id_servicio_examen:
+                    examenes_ids.append(id_servicio_examen)
+            
+            print(f"🔍 [DEBUG] Autorizar exámenes: {len(examenes_ids)} examen(es)")
+            
+            examenes_creados = 0
+            for id_servicio_examen in examenes_ids:
+                if id_servicio_examen:
+                    # Para exámenes, el médico que autoriza es el mismo que lo realiza
+                    datos_examen = {
+                        'id_cita': int(id_cita),
+                        'id_paciente': int(id_paciente),
+                        'id_medico_autoriza': int(id_empleado),
+                        'tipo_procedimiento': 'EXAMEN',
+                        'id_servicio': int(id_servicio_examen),
+                        'id_especialidad_requerida': None,
+                        'id_medico_asignado': int(id_empleado)  # El mismo médico realiza el examen
+                    }
+                    print(f"🔍 [DEBUG] Datos para crear autorización de examen: {datos_examen}")
+                    
+                    resultado = AutorizacionProcedimiento.crear(datos_examen, cursor_externo=cursor)
+                    print(f"🔍 [DEBUG] Resultado crear examen: {resultado}")
+                    
+                    if resultado.get('success'):
+                        examenes_creados += 1
+                        print(f"✅ [DEBUG] Autorización de examen creada con ID: {resultado.get('id_autorizacion')}")
+                    else:
+                        print(f"❌ Error al crear autorización de examen: {resultado.get('error')}")
+            
+            if examenes_creados > 0:
+                autorizaciones_creadas.append(f'{examenes_creados} examen(es)')
         
         if autorizar_operacion:
             id_servicio_operacion = request.form.get('id_servicio_operacion')

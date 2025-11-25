@@ -50,6 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (diagnosticoForm) {
         diagnosticoForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Prevenir doble submit
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn.disabled) return;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="animate-spin inline-block mr-2">⏳</span> Guardando...';
 
             const formData = new FormData(this);
             
@@ -59,6 +66,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             formData.append('autorizar_examen', autorizarExamen);
             formData.append('autorizar_operacion', autorizarOperacion);
+            
+            // Agregar múltiples exámenes si están seleccionados
+            if (autorizarExamen) {
+                const examenesSeleccionados = obtenerExamenesSeleccionados();
+                formData.delete('id_servicio_examen'); // Eliminar el campo individual
+                examenesSeleccionados.forEach((id, index) => {
+                    formData.append(`examenes[${index}]`, id);
+                });
+                formData.append('cantidad_examenes', examenesSeleccionados.length);
+            }
             
             // Agregar flag para omitir validación de tiempo si está desactivada
             if (!validacionesActivas) {
@@ -78,10 +95,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.reload();
                 } else {
                     alert('Error: ' + result.message);
+                    // Rehabilitar botón en caso de error
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Guardar Diagnóstico';
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error al guardar el diagnóstico');
+                // Rehabilitar botón en caso de error
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Guardar Diagnóstico';
             }
         });
     }
@@ -377,7 +400,7 @@ async function verHistorialPaciente(idPaciente) {
         const result = await response.json();
         
         if (result.success) {
-            mostrarModalHistorial(result.paciente, result.historial);
+            mostrarModalHistorial(result.paciente, result.historial, result.examenes || [], result.operaciones || []);
         } else {
             alert('Error: ' + result.message);
         }
@@ -387,7 +410,7 @@ async function verHistorialPaciente(idPaciente) {
     }
 }
 
-function mostrarModalHistorial(paciente, historial) {
+function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
     const modal = document.getElementById('modal-historial');
     const nombreEl = document.getElementById('modal-paciente-nombre');
     const infoEl = document.getElementById('modal-paciente-info');
@@ -396,14 +419,36 @@ function mostrarModalHistorial(paciente, historial) {
     nombreEl.textContent = `Historial Médico - ${paciente.nombre}`;
     infoEl.textContent = `DNI: ${paciente.dni} | Edad: ${paciente.edad} años`;
     
-    // Construir HTML del historial
-    let html = '<div class="space-y-4">';
+    // Construir HTML del historial con tabs
+    let html = `
+        <div class="mb-4">
+            <div class="flex border-b border-gray-200">
+                <button type="button" onclick="cambiarTabHistorial('citas')" id="tab-citas" 
+                        class="tab-historial px-4 py-2 text-sm font-semibold border-b-2 border-cyan-500 text-cyan-600">
+                    <span class="material-symbols-outlined text-sm align-middle mr-1">event</span>
+                    Citas (${historial.length})
+                </button>
+                <button type="button" onclick="cambiarTabHistorial('examenes')" id="tab-examenes"
+                        class="tab-historial px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <span class="material-symbols-outlined text-sm align-middle mr-1">biotech</span>
+                    Exámenes (${examenes.length})
+                </button>
+                <button type="button" onclick="cambiarTabHistorial('operaciones')" id="tab-operaciones"
+                        class="tab-historial px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                    <span class="material-symbols-outlined text-sm align-middle mr-1">surgical</span>
+                    Operaciones (${operaciones.length})
+                </button>
+            </div>
+        </div>
+    `;
     
+    // Contenido de Citas
+    html += '<div id="content-citas" class="tab-content-historial space-y-4">';
     if (historial.length === 0) {
         html += `
             <div class="text-center py-8 text-gray-500">
-                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">folder_off</span>
-                <p>No hay historial disponible</p>
+                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">event_busy</span>
+                <p>No hay citas registradas</p>
             </div>
         `;
     } else {
@@ -453,10 +498,151 @@ function mostrarModalHistorial(paciente, historial) {
         });
     }
     
-    html += '</div>';
+    html += '</div>'; // Cierra content-citas
+    
+    // Contenido de Exámenes
+    html += '<div id="content-examenes" class="tab-content-historial space-y-4 hidden">';
+    if (examenes.length === 0) {
+        html += `
+            <div class="text-center py-8 text-gray-500">
+                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">biotech</span>
+                <p>No hay exámenes autorizados</p>
+            </div>
+        `;
+    } else {
+        examenes.forEach(examen => {
+            const estadoClass = examen.estado === 'COMPLETADO' ? 'bg-emerald-100 text-emerald-700' : 
+                               examen.estado === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' : 
+                               'bg-red-100 text-red-700';
+            const estadoIcon = examen.estado === 'COMPLETADO' ? 'check_circle' : 
+                              examen.estado === 'PENDIENTE' ? 'pending' : 'cancel';
+            
+            html += `
+                <div class="border border-blue-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-blue-50 to-cyan-50">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-blue-600 text-2xl">biotech</span>
+                            <div>
+                                <p class="font-semibold text-gray-800">${examen.servicio}</p>
+                                <p class="text-sm text-gray-600">Autorizado: ${examen.fecha_autorizacion}</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">${estadoIcon}</span>
+                            ${examen.estado}
+                        </span>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-blue-200 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                            <p class="text-gray-500">Autorizado por:</p>
+                            <p class="font-medium text-gray-700">${examen.medico_autoriza}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500">Vence:</p>
+                            <p class="font-medium ${examen.estado === 'VENCIDO' ? 'text-red-600' : 'text-gray-700'}">${examen.fecha_vencimiento}</p>
+                        </div>
+                        ${examen.fecha_uso ? `
+                            <div class="col-span-2">
+                                <p class="text-gray-500">Realizado:</p>
+                                <p class="font-medium text-emerald-600">${examen.fecha_uso}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+    }
+    html += '</div>'; // Cierra content-examenes
+    
+    // Contenido de Operaciones
+    html += '<div id="content-operaciones" class="tab-content-historial space-y-4 hidden">';
+    if (operaciones.length === 0) {
+        html += `
+            <div class="text-center py-8 text-gray-500">
+                <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">surgical</span>
+                <p>No hay operaciones autorizadas</p>
+            </div>
+        `;
+    } else {
+        operaciones.forEach(operacion => {
+            const estadoClass = operacion.estado === 'COMPLETADO' ? 'bg-emerald-100 text-emerald-700' : 
+                               operacion.estado === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' : 
+                               'bg-red-100 text-red-700';
+            const estadoIcon = operacion.estado === 'COMPLETADO' ? 'check_circle' : 
+                              operacion.estado === 'PENDIENTE' ? 'pending' : 'cancel';
+            
+            html += `
+                <div class="border border-orange-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-orange-50 to-yellow-50">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-orange-600 text-2xl">surgical</span>
+                            <div>
+                                <p class="font-semibold text-gray-800">${operacion.servicio}</p>
+                                <p class="text-sm text-gray-600">Autorizado: ${operacion.fecha_autorizacion}</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs">${estadoIcon}</span>
+                            ${operacion.estado}
+                        </span>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-orange-200 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                            <p class="text-gray-500">Autorizado por:</p>
+                            <p class="font-medium text-gray-700">${operacion.medico_autoriza}</p>
+                        </div>
+                        ${operacion.medico_asignado ? `
+                            <div>
+                                <p class="text-gray-500">Médico asignado:</p>
+                                <p class="font-medium text-gray-700">${operacion.medico_asignado}</p>
+                            </div>
+                        ` : ''}
+                        ${operacion.especialidad ? `
+                            <div>
+                                <p class="text-gray-500">Especialidad:</p>
+                                <p class="font-medium text-gray-700">${operacion.especialidad}</p>
+                            </div>
+                        ` : ''}
+                        <div>
+                            <p class="text-gray-500">Vence:</p>
+                            <p class="font-medium ${operacion.estado === 'VENCIDO' ? 'text-red-600' : 'text-gray-700'}">${operacion.fecha_vencimiento}</p>
+                        </div>
+                        ${operacion.fecha_uso ? `
+                            <div class="col-span-2">
+                                <p class="text-gray-500">Realizada:</p>
+                                <p class="font-medium text-emerald-600">${operacion.fecha_uso}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+    }
+    html += '</div>'; // Cierra content-operaciones
+    
     contenidoEl.innerHTML = html;
     
     modal.classList.remove('hidden');
+}
+
+// Función para cambiar tabs en el modal historial
+function cambiarTabHistorial(tab) {
+    // Ocultar todos los contenidos
+    document.querySelectorAll('.tab-content-historial').forEach(el => el.classList.add('hidden'));
+    
+    // Desactivar todos los tabs
+    document.querySelectorAll('.tab-historial').forEach(el => {
+        el.classList.remove('border-cyan-500', 'text-cyan-600');
+        el.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Mostrar contenido seleccionado
+    document.getElementById(`content-${tab}`).classList.remove('hidden');
+    
+    // Activar tab seleccionado
+    const tabBtn = document.getElementById(`tab-${tab}`);
+    tabBtn.classList.add('border-cyan-500', 'text-cyan-600');
+    tabBtn.classList.remove('border-transparent', 'text-gray-500');
 }
 
 function cerrarModalHistorial() {
@@ -677,6 +863,10 @@ function actualizarContadores() {
 
 // ========== FUNCIONES PARA AUTORIZACIONES DE PROCEDIMIENTOS ==========
 
+// Variables para control de exámenes múltiples
+let examenesAgregados = [];
+const MAX_EXAMENES = 3;
+
 function toggleAutorizacionExamen() {
     const checkbox = document.getElementById('check_autorizar_examen');
     const fields = document.getElementById('fields_examen');
@@ -684,8 +874,11 @@ function toggleAutorizacionExamen() {
     if (checkbox.checked) {
         fields.classList.remove('hidden');
         cargarServiciosExamen();
+        examenesAgregados = []; // Reset al abrir
+        actualizarListaExamenes();
     } else {
         fields.classList.add('hidden');
+        examenesAgregados = [];
     }
 }
 
@@ -729,6 +922,90 @@ async function cargarServiciosExamen() {
     } catch (error) {
         console.error('Error al cargar servicios de examen:', error);
     }
+}
+
+/**
+ * Agrega un examen a la lista (máximo 3)
+ */
+function agregarExamen() {
+    const select = document.getElementById('servicio_examen');
+    const idServicio = select.value;
+    const nombreServicio = select.options[select.selectedIndex]?.text;
+    
+    if (!idServicio) {
+        alert('Seleccione un examen primero');
+        return;
+    }
+    
+    if (examenesAgregados.length >= MAX_EXAMENES) {
+        alert(`Solo puede agregar hasta ${MAX_EXAMENES} exámenes por diagnóstico`);
+        return;
+    }
+    
+    // Verificar que no esté duplicado
+    if (examenesAgregados.some(e => e.id === idServicio)) {
+        alert('Este examen ya fue agregado');
+        return;
+    }
+    
+    examenesAgregados.push({
+        id: idServicio,
+        nombre: nombreServicio
+    });
+    
+    actualizarListaExamenes();
+    select.value = ''; // Reset select
+}
+
+/**
+ * Elimina un examen de la lista
+ */
+function eliminarExamen(idServicio) {
+    examenesAgregados = examenesAgregados.filter(e => e.id !== idServicio);
+    actualizarListaExamenes();
+}
+
+/**
+ * Actualiza la visualización de la lista de exámenes
+ */
+function actualizarListaExamenes() {
+    const container = document.getElementById('lista_examenes_agregados');
+    const contador = document.getElementById('contador_examenes');
+    
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (examenesAgregados.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-sm italic">No hay exámenes agregados</p>';
+    } else {
+        examenesAgregados.forEach(examen => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between bg-white p-2 rounded-lg border border-blue-200';
+            div.innerHTML = `
+                <span class="text-sm text-gray-700">${examen.nombre}</span>
+                <button type="button" onclick="eliminarExamen('${examen.id}')" 
+                        class="text-red-500 hover:text-red-700 p-1" title="Eliminar">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    if (contador) {
+        contador.textContent = `${examenesAgregados.length}/${MAX_EXAMENES}`;
+        contador.className = examenesAgregados.length >= MAX_EXAMENES 
+            ? 'text-red-600 font-bold' 
+            : 'text-gray-600';
+    }
+}
+
+/**
+ * Obtiene los IDs de los exámenes seleccionados
+ */
+function obtenerExamenesSeleccionados() {
+    return examenesAgregados.map(e => e.id);
 }
 
 async function cargarServiciosOperacion() {
