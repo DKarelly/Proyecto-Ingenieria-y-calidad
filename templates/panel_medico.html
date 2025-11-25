@@ -627,18 +627,33 @@
                                         <span class="material-symbols-outlined text-lg align-middle mr-1">biotech</span>
                                         Autorizar Examen Médico
                                     </label>
+                                    <span id="contador_examenes" class="text-gray-600 text-sm ml-auto">0/3</span>
                                 </div>
                                 
                                 <div id="fields_examen" class="hidden space-y-3 ml-8">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Tipo de Examen <span class="text-red-500">*</span>
-                                        </label>
-                                        <select id="servicio_examen" name="id_servicio_examen"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm">
-                                            <option value="">-- Seleccione el tipo de examen --</option>
-                                        </select>
-                                        <p class="text-xs text-gray-500 mt-1">Seleccione el examen que el paciente debe realizarse</p>
+                                    <div class="flex gap-2">
+                                        <div class="flex-1">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                                Tipo de Examen
+                                            </label>
+                                            <select id="servicio_examen" name="id_servicio_examen"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-sm">
+                                                <option value="">-- Seleccione el tipo de examen --</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex items-end">
+                                            <button type="button" onclick="agregarExamen()" 
+                                                    class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-sm">add</span>
+                                                Agregar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-500">Puede agregar hasta 3 exámenes por diagnóstico</p>
+                                    
+                                    <!-- Lista de exámenes agregados -->
+                                    <div id="lista_examenes_agregados" class="space-y-2 mt-3">
+                                        <p class="text-gray-500 text-sm italic">No hay exámenes agregados</p>
                                     </div>
                                 </div>
                             </div>
@@ -858,7 +873,7 @@
     </div>
 
     <!-- Script del panel médico -->
-    <script src="{{ url_for('static', filename='js/panel_medico.js') }}?v=20251125-003"></script>
+    <script src="{{ url_for('static', filename='js/panel_medico.js') }}?v=20251125-005"></script>
     
     {% if subsistema == 'notificaciones' %}
     <script>
