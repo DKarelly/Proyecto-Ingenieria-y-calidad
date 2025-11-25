@@ -187,6 +187,10 @@
                                 type="date"
                                 required
                             />
+                            <p class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-info-circle"></i>
+                                Rango válido: 18 a 100 años
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -584,6 +588,39 @@
                     document.getElementById('confirm-password').focus(); 
                     return; 
                 }
+                
+                // Validar fecha de nacimiento (18-100 años)
+                const fechaNacimiento = document.getElementById('fecha-nacimiento').value;
+                if (fechaNacimiento) {
+                    const fecha = new Date(fechaNacimiento);
+                    const hoy = new Date();
+                    
+                    // Calcular edad exacta
+                    let edad = hoy.getFullYear() - fecha.getFullYear();
+                    const mesActual = hoy.getMonth();
+                    const diaActual = hoy.getDate();
+                    const mesNacimiento = fecha.getMonth();
+                    const diaNacimiento = fecha.getDate();
+                    
+                    if (mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
+                        edad--;
+                    }
+                    
+                    // Validar edad mínima (18 años)
+                    if (edad < 18) {
+                        showNotification(`Edad: ${edad} años. Debe ser mayor de 18 años.`, 'error');
+                        document.getElementById('fecha-nacimiento').focus();
+                        return;
+                    }
+                    
+                    // Validar edad máxima (100 años)
+                    if (edad > 100) {
+                        showNotification(`Edad: ${edad} años. La edad no puede superar los 100 años.`, 'error');
+                        document.getElementById('fecha-nacimiento').focus();
+                        return;
+                    }
+                }
+                
                 if (!terms) { 
                     showNotification('Debe aceptar los términos y condiciones', 'warning'); 
                     document.getElementById('terms').focus(); 
@@ -771,6 +808,35 @@
         `;
         document.head.appendChild(style);
 
+        // Establecer límites de fecha de nacimiento (18-100 años)
+        const fechaNacimientoInput = document.getElementById('fecha-nacimiento');
+        if (fechaNacimientoInput) {
+            const hoy = new Date();
+            const fechaMaxima = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+            const fechaMinima = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
+            fechaNacimientoInput.setAttribute('max', fechaMaxima.toISOString().split('T')[0]);
+            fechaNacimientoInput.setAttribute('min', fechaMinima.toISOString().split('T')[0]);
+            
+            // Guardar el valor original para no borrarlo si hay error
+            let fechaOriginal = fechaNacimientoInput.value;
+            
+            fechaNacimientoInput.addEventListener('change', function() {
+                // Guardar el valor antes de validar
+                fechaOriginal = this.value;
+                
+                // La validación se hará en tiempo real por el validador
+                // NO borrar el campo si hay error
+            });
+            
+            // Prevenir que se borre la fecha al perder el foco si es inválida
+            fechaNacimientoInput.addEventListener('blur', function() {
+                if (this.value && this.validity.customError) {
+                    // Si hay un error de validación personalizado, mantener el valor
+                    this.reportValidity();
+                }
+            });
+        }
+
         // Load departamentos on page load
         loadDepartamentos();
 
@@ -850,8 +916,24 @@
                 const fecha = new Date(v);
                 const hoy = new Date();
                 if (fecha > hoy) return 'La fecha de nacimiento no puede ser futura';
-                const edad = Math.floor((hoy - fecha) / (365.25 * 24 * 60 * 60 * 1000));
-                if (edad > 150) return 'La fecha de nacimiento no es válida';
+                
+                // Calcular edad exacta
+                let edad = hoy.getFullYear() - fecha.getFullYear();
+                const mesActual = hoy.getMonth();
+                const diaActual = hoy.getDate();
+                const mesNacimiento = fecha.getMonth();
+                const diaNacimiento = fecha.getDate();
+                
+                if (mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
+                    edad--;
+                }
+                
+                // Validar edad mínima (18 años)
+                if (edad < 18) return `Edad: ${edad} años. Debe ser mayor de 18 años.`;
+                
+                // Validar edad máxima (100 años)
+                if (edad > 100) return `Edad: ${edad} años. La edad no puede superar los 100 años.`;
+                
                 return '';
             },
             'email': v => {

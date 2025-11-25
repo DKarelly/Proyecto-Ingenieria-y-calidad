@@ -473,6 +473,28 @@ def registrar_cuenta_paciente():
             if len(telefono) != 9 or not telefono.isdigit():
                 return error_response('El teléfono debe tener exactamente 9 dígitos')
             
+            # Validar fecha de nacimiento (18-100 años)
+            from datetime import datetime, timedelta
+            try:
+                fecha_nac = datetime.strptime(fecha_nacimiento, '%Y-%m-%d')
+                ahora = datetime.now()
+                
+                # Calcular edad exacta
+                edad = ahora.year - fecha_nac.year
+                if (ahora.month, ahora.day) < (fecha_nac.month, fecha_nac.day):
+                    edad -= 1
+                
+                # Validar edad mínima (18 años)
+                edad_minima = datetime.now() - timedelta(days=18*365.25)
+                if fecha_nac > edad_minima:
+                    return error_response('El paciente debe ser mayor de 18 años')
+                
+                # Validar edad máxima (100 años)
+                if edad > 100:
+                    return error_response('La edad no puede superar los 100 años')
+            except ValueError:
+                return error_response('Fecha de nacimiento no válida')
+            
             # Validar contraseñas
             if password != confirm_password:
                 return error_response('Las contraseñas no coinciden')
@@ -730,13 +752,25 @@ def gestionar_cuentas_internas():
             if not re.search(r'[A-Z]', password):
                 return handle_error('La contraseña debe incluir al menos una letra mayúscula')
 
-            # Validar fecha de nacimiento (mayor de 18 años)
+            # Validar fecha de nacimiento (18-100 años)
             from datetime import datetime, timedelta
             try:
                 fecha_nac = datetime.strptime(fecha_nacimiento, '%Y-%m-%d')
+                ahora = datetime.now()
+                
+                # Calcular edad exacta
+                edad = ahora.year - fecha_nac.year
+                if (ahora.month, ahora.day) < (fecha_nac.month, fecha_nac.day):
+                    edad -= 1
+                
+                # Validar edad mínima (18 años)
                 edad_minima = datetime.now() - timedelta(days=18*365.25)
                 if fecha_nac > edad_minima:
                     return handle_error('El empleado debe ser mayor de 18 años')
+                
+                # Validar edad máxima (100 años)
+                if edad > 100:
+                    return handle_error('La edad no puede superar los 100 años')
             except ValueError:
                 return handle_error('Fecha de nacimiento no válida')
 
@@ -1444,6 +1478,22 @@ def eliminar_paciente(id_paciente):
 def recuperar_contrasena():
     """Recuperar Contraseña"""
     return render_template('recuperarContraseña.html')
+
+@cuentas_bp.route('/cambiar-contrasena', methods=['GET', 'POST'])
+def cambiar_contrasena():
+    """Cambiar contraseña del usuario logueado - Redirige a la ruta correcta en usuarios"""
+    # Verificar que el usuario esté logueado
+    if 'usuario_id' not in session:
+        flash('Debe iniciar sesión para acceder a esta página', 'warning')
+        return redirect(url_for('usuarios.login'))
+    
+    # Si es POST, redirigir con los datos del formulario
+    if request.method == 'POST':
+        # Redirigir a la ruta de usuarios que procesará el POST
+        return redirect(url_for('usuarios.cambiar_contrasena'), code=307)  # 307 preserva el método POST
+    else:
+        # Si es GET, redirigir normalmente
+        return redirect(url_for('usuarios.cambiar_contrasena'))
 
 @cuentas_bp.route('/api/especialidades', methods=['GET'])
 def api_obtener_especialidades():

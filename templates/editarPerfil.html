@@ -406,6 +406,9 @@
         
         Receptaculo_De_Fecha.setAttribute('max', fechaMaximaStr);
         Receptaculo_De_Fecha.setAttribute('min', fechaMinimaStr);
+        
+        // Guardar el valor original de la fecha para restaurarlo si es inválida
+        let fechaOriginal = Receptaculo_De_Fecha.value;
 
         // Validación en tiempo real (SIN BORRAR EL INPUT)
         Receptaculo_De_Fecha.addEventListener('change', function() {
@@ -418,13 +421,56 @@
                 // CRÍTICO: NO BORRAR EL INPUT - Mantener el "Estado Sucio" (Dirty State)
                 // El dato permanece en la caja de texto para que el usuario vea su error
                 // y solo necesite corregir el dígito incorrecto
-                this.setCustomValidity('Fecha de nacimiento inválida');
+                this.setCustomValidity('Fecha de nacimiento inválida. Debe estar entre 18 y 100 años.');
                 this.focus(); // Enfocar el campo para facilitar la corrección
+                // NO borrar el valor - dejar que el usuario lo corrija
             } else {
                 this.setCustomValidity('');
+                // Guardar el valor válido como fecha original
+                fechaOriginal = this.value;
+            }
+        });
+        
+        // Prevenir que se borre la fecha al perder el foco si es inválida
+        Receptaculo_De_Fecha.addEventListener('blur', function() {
+            if (this.value && this.validity.customError) {
+                // Si hay un error de validación personalizado, mantener el valor
+                // pero mostrar el mensaje de error
+                this.reportValidity();
             }
         });
 
+        // ==================== PROTECCIÓN DEL CAMPO DE SEXO ====================
+        // Prevenir cualquier modificación del campo de sexo
+        const sexoSelect = document.getElementById('sexo');
+        const sexoHidden = document.querySelector('input[name="sexo"][type="hidden"]');
+        const sexoOriginal = sexoHidden ? sexoHidden.value : sexoSelect.value;
+        
+        // Prevenir cambios mediante eventos
+        sexoSelect.addEventListener('change', function(e) {
+            e.preventDefault();
+            this.value = sexoOriginal;
+            alert('El campo de sexo no puede modificarse por integridad médica');
+            return false;
+        });
+        
+        sexoSelect.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('El campo de sexo no puede modificarse por integridad médica');
+            return false;
+        });
+        
+        // Prevenir cambios mediante manipulación del DOM
+        Object.defineProperty(sexoSelect, 'value', {
+            get: function() {
+                return sexoOriginal;
+            },
+            set: function(val) {
+                // Ignorar cualquier intento de cambiar el valor
+                console.warn('Intento de modificar el campo de sexo bloqueado');
+            }
+        });
+        
         // ==================== VALIDACIÓN ANTES DE ENVIAR ====================
         
         document.getElementById('form-editar-perfil').addEventListener('submit', function(e) {

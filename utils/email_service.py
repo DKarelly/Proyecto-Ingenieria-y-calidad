@@ -471,6 +471,12 @@ def enviar_email_reserva_creada(paciente_email, paciente_nombre, fecha, hora_ini
     
     <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
         <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>⚠️ Aviso de Seguimiento:</strong> Para asegurar su asistencia, este sistema automático le enviará recordatorios <strong>cada 24 horas</strong> hasta el momento de su cita. El próximo recordatorio será <strong>2 horas antes</strong> de su cita programada.
+        </p>
+    </div>
+    
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
             <strong>⚠️ Importante:</strong> Por favor, llegue 15 minutos antes de su cita. 
             Si necesita cancelar o reprogramar, hágalo con al menos 24 horas de anticipación.
         </p>
@@ -1061,6 +1067,12 @@ def enviar_email_recordatorio_24h(paciente_email, paciente_nombre, fecha, hora_i
         </table>
     </div>
     
+    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+            <strong>⚠️ Aviso de Seguimiento:</strong> Para asegurar su asistencia, este sistema automático le enviará recordatorios <strong>cada 24 horas</strong> hasta el momento de su cita. El próximo recordatorio será <strong>2 horas antes</strong> de su cita programada.
+        </p>
+    </div>
+    
     <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
         <p style="margin: 0 0 10px 0; color: #1e40af; font-size: 14px; font-weight: bold;">
             📝 Recomendaciones:
@@ -1111,6 +1123,12 @@ def enviar_email_recordatorio_2h(paciente_email, paciente_nombre, fecha, hora_in
                 <td style="padding: 10px 0; color: #111827; font-size: 15px;">{especialidad}</td>
             </tr>
         </table>
+    </div>
+    
+    <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #991b1b; font-size: 14px; line-height: 1.6;">
+            <strong>🚨 Recordatorio Final:</strong> Este es el último recordatorio antes de su cita. El sistema le ha estado enviando recordatorios <strong>cada 24 horas</strong> y ahora le notifica <strong>2 horas antes</strong> de su cita programada.
+        </p>
     </div>
     
     <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">

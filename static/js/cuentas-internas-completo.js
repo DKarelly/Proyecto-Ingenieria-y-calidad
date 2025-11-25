@@ -75,20 +75,30 @@ function poblarTablaEmpleados(empleados) {
             const badgeClass = esActivo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
             const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
             
+            // Escapar comillas simples y dobles en los datos para evitar errores de JavaScript
+            const nombresEscapados = (empleado.nombres || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const apellidosEscapados = (empleado.apellidos || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const documentoEscapado = (empleado.documento_identidad || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const correoEscapado = (empleado.correo || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const telefonoEscapado = (empleado.telefono || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const rolEscapado = (empleado.rol || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const especialidadEscapada = (empleado.especialidad || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const nombreCompletoEscapado = `${nombresEscapados} ${apellidosEscapados}`.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            
             // HTML COMPLETO restaurado
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center gap-3">
                         <div class="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
-                            <span class="text-cyan-600 font-bold">${empleado.nombres[0]}${empleado.apellidos[0]}</span>
+                            <span class="text-cyan-600 font-bold">${(empleado.nombres || '')[0] || ''}${(empleado.apellidos || '')[0] || ''}</span>
                         </div>
-                        <span class="text-sm font-semibold text-slate-900">${empleado.nombres} ${empleado.apellidos}</span>
+                        <span class="text-sm font-semibold text-slate-900">${empleado.nombres || ''} ${empleado.apellidos || ''}</span>
                     </div>
                 </td>
                 <td class="px-6 py-4 text-sm text-slate-600">
                     <div class="flex items-center gap-2">
                         <span class="text-slate-400">✉️</span>
-                        ${empleado.correo}
+                        ${empleado.correo || 'N/A'}
                     </div>
                 </td>
                 <td class="px-6 py-4">
@@ -103,13 +113,19 @@ function poblarTablaEmpleados(empleados) {
                 </td>
                 <td class="px-6 py-4 text-center">
                     <div class="flex items-center justify-center gap-2">
+                        <button onclick="verPerfilEmpleado(${empleado.id_empleado}, '${nombresEscapados}', '${apellidosEscapados}', '${documentoEscapado}', '${correoEscapado}', '${telefonoEscapado}', '${rolEscapado}', '${especialidadEscapada}')" 
+                               class="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-xs font-semibold"
+                               title="Ver perfil del empleado">
+                            <span class="material-symbols-outlined text-base">visibility</span>
+                            Perfil
+                        </button>
                         <a href="/cuentas/editar-empleado/${empleado.id_empleado}" 
                            class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all text-xs font-semibold"
                            title="Editar empleado">
                             <span class="material-symbols-outlined text-base">edit</span>
                             Editar
                         </a>
-                        <button onclick="eliminarEmpleado(${empleado.id_empleado}, '${empleado.nombres} ${empleado.apellidos}')" 
+                        <button onclick="eliminarEmpleado(${empleado.id_empleado}, '${nombreCompletoEscapado}')" 
                                 class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-semibold"
                                 title="Eliminar empleado">
                             <span class="material-symbols-outlined text-base">delete</span>
@@ -250,13 +266,22 @@ function poblarTablaPacientes(pacientes) {
         const iconClass = esActivo ? 'fa-circle-check' : 'fa-circle-xmark';
         const estadoTexto = esActivo ? 'Activo' : 'Inactivo';
         
+        // Escapar comillas simples y dobles en los datos para evitar errores de JavaScript
+        const nombresEscapados = (paciente.nombres || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const apellidosEscapados = (paciente.apellidos || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const documentoEscapado = (paciente.documento_identidad || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const correoEscapado = (paciente.correo || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const telefonoEscapado = (paciente.telefono || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const fechaNacimientoEscapada = (paciente.fecha_nacimiento || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const nombreCompletoEscapado = `${nombresEscapados} ${apellidosEscapados}`.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        
         tr.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                         <i class="fa-solid fa-user-injured text-blue-600"></i>
                     </div>
-                    <span class="text-sm font-semibold text-slate-900">${paciente.nombres} ${paciente.apellidos}</span>
+                    <span class="text-sm font-semibold text-slate-900">${paciente.nombres || ''} ${paciente.apellidos || ''}</span>
                 </div>
             </td>
             <td class="px-6 py-4 text-sm text-slate-600">
@@ -275,7 +300,7 @@ function poblarTablaPacientes(pacientes) {
             </td>
             <td class="px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-2">
-                    <button onclick="verPerfilPaciente(${paciente.id_paciente}, '${paciente.nombres}', '${paciente.apellidos}', '${paciente.documento_identidad}', '${paciente.correo}', '${paciente.telefono}', '${paciente.fecha_nacimiento}', '${estadoTexto}')" 
+                    <button onclick="verPerfilPaciente(${paciente.id_paciente}, '${nombresEscapados}', '${apellidosEscapados}', '${documentoEscapado}', '${correoEscapado}', '${telefonoEscapado}', '${fechaNacimientoEscapada}', '${estadoTexto}')" 
                        class="inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition-all text-xs font-semibold"
                        title="Ver perfil del paciente">
                         <span class="material-symbols-outlined text-base">visibility</span>
@@ -287,7 +312,7 @@ function poblarTablaPacientes(pacientes) {
                         <span class="material-symbols-outlined text-base">edit</span>
                         Editar
                     </a>
-                    <button onclick="eliminarPaciente(${paciente.id_paciente}, '${paciente.nombres} ${paciente.apellidos}')" 
+                    <button onclick="eliminarPaciente(${paciente.id_paciente}, '${nombreCompletoEscapado}')" 
                             class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all text-xs font-semibold"
                             title="Eliminar paciente">
                         <span class="material-symbols-outlined text-base">delete</span>
