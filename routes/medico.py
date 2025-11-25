@@ -1347,7 +1347,7 @@ def guardar_diagnostico():
                                         <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>ID Autorización:</strong> {resultado.get('id_autorizacion')}</p>
                                     </div>
                                     <p style="margin: 10px 0; font-size: 14px; color: #6b7280;">
-                                        Por favor, revise su agenda para programar la operación correspondiente.
+                                        El paciente programará la operación cuando esté listo. Esté preparado para cuando reciba la solicitud de reserva.
                                     </p>
                                 </div>
                                 """
