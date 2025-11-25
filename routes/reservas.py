@@ -1386,305 +1386,323 @@ def api_crear_reserva():
 
         conexion = None
         try:
-        # Verificar que la programación existe y está disponible
-        conexion = obtener_conexion()
-        with conexion.cursor() as cursor:
-            cursor.execute("""
-                SELECT p.id_programacion, p.fecha, p.hora_inicio, p.hora_fin, p.estado, h.id_empleado
-                FROM PROGRAMACION p
-                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
-                WHERE p.id_programacion = %s
-            """, (id_programacion,))
-            programacion = cursor.fetchone()
-            
-            if not programacion:
-                return jsonify({'error': 'Programación no encontrada'}), 404
-            
-            if programacion.get('estado') != 'Disponible':
-                return jsonify({'error': 'Esta programación ya no está disponible'}), 400
-            
-            fecha = programacion.get('fecha')
-            hora_inicio = programacion.get('hora_inicio')
-            hora_fin = programacion.get('hora_fin')
-            
-            # Actualizar estado de PROGRAMACION a 'Ocupado'
-            cursor.execute("""
-                UPDATE PROGRAMACION 
-                SET estado = 'Ocupado' 
-                WHERE id_programacion = %s
-            """, (id_programacion,))
-            conexion.commit()
-
-        # Crear reserva con tipo = 1 (por defecto)
-        res = Reserva.crear(1, int(id_paciente), int(id_programacion))
-        if res.get('error'):
-            # Revertir estado de programación
+            # Verificar que la programación existe y está disponible
+            conexion = obtener_conexion()
             with conexion.cursor() as cursor:
                 cursor.execute("""
+                    SELECT p.id_programacion, p.fecha, p.hora_inicio, p.hora_fin, p.estado, h.id_empleado
+                    FROM PROGRAMACION p
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    WHERE p.id_programacion = %s
+                """, (id_programacion,))
+                programacion = cursor.fetchone()
+                
+                if not programacion:
+                    return jsonify({'error': 'Programación no encontrada'}), 404
+                
+                if programacion.get('estado') != 'Disponible':
+                    return jsonify({'error': 'Esta programación ya no está disponible'}), 400
+                
+                fecha = programacion.get('fecha')
+                hora_inicio = programacion.get('hora_inicio')
+                hora_fin = programacion.get('hora_fin')
+                
+                # Actualizar estado de PROGRAMACION a 'Ocupado'
+                cursor.execute("""
                     UPDATE PROGRAMACION 
-                    SET estado = 'Disponible' 
+                    SET estado = 'Ocupado' 
                     WHERE id_programacion = %s
                 """, (id_programacion,))
                 conexion.commit()
-            return jsonify({'error': res['error']}), 500
-        
-        id_reserva = res.get('id_reserva')
-        
-        # Determinar el tipo de servicio y crear el registro correspondiente
-        conexion_tipo = obtener_conexion()
-        try:
-            with conexion_tipo.cursor() as cursor:
-                # Obtener el tipo de servicio
-                cursor.execute("""
-                    SELECT ts.nombre 
-                    FROM SERVICIO s 
-                    INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio 
-                    WHERE s.id_servicio = %s
-                """, (id_servicio,))
-                tipo_servicio_data = cursor.fetchone()
-                tipo_servicio_nombre = tipo_servicio_data.get('nombre', '').lower() if tipo_servicio_data else ''
-                
-                # Crear registro según el tipo de servicio
-                if 'consulta' in tipo_servicio_nombre or 'cita' in tipo_servicio_nombre:
-                    # Crear CITA
+
+            # Crear reserva con tipo = 1 (por defecto)
+            res = Reserva.crear(1, int(id_paciente), int(id_programacion))
+            if res.get('error'):
+                # Revertir estado de programación
+                with conexion.cursor() as cursor:
                     cursor.execute("""
-                        INSERT INTO CITA (fecha_cita, hora_inicio, hora_fin, estado, id_reserva)
-                        VALUES (%s, %s, %s, 'Pendiente', %s)
-                    """, (fecha, hora_inicio, hora_fin, id_reserva))
-                    print(f"✓ CITA creada para reserva {id_reserva}")
-                    
-                elif 'examen' in tipo_servicio_nombre or 'diagnóstico' in tipo_servicio_nombre or 'diagnostico' in tipo_servicio_nombre:
-                    # Crear EXAMEN
-                    cursor.execute("""
-                        INSERT INTO EXAMEN (fecha_examen, hora_inicio, estado, id_reserva)
-                        VALUES (%s, %s, 'Pendiente', %s)
-                    """, (fecha, hora_inicio, id_reserva))
-                    print(f"✓ EXAMEN creado para reserva {id_reserva}")
-                    
-                elif 'quirúrgico' in tipo_servicio_nombre or 'quirurgico' in tipo_servicio_nombre or 'operación' in tipo_servicio_nombre or 'operacion' in tipo_servicio_nombre:
-                    # Crear OPERACION
-                    cursor.execute("""
-                        INSERT INTO OPERACION (fecha_operacion, hora_inicio, hora_fin, id_reserva)
-                        VALUES (%s, %s, %s, %s)
-                    """, (fecha, hora_inicio, hora_fin, id_reserva))
-                    print(f"✓ OPERACION creada para reserva {id_reserva}")
-                else:
-                    print(f"⚠ Tipo de servicio '{tipo_servicio_nombre}' no reconocido para crear registro específico")
-                
-                conexion_tipo.commit()
-        except Exception as e:
-            print(f"Error creando registro de tipo específico: {e}")
-            conexion_tipo.rollback()
-        finally:
-            conexion_tipo.close()
-        
-        # Obtener el estado de la reserva recién creada (normalmente será 'Confirmada')
-        conexion_notif = obtener_conexion()
-        try:
-            with conexion_notif.cursor() as cursor:
-                cursor.execute("SELECT estado FROM RESERVA WHERE id_reserva = %s", (id_reserva,))
-                reserva_data = cursor.fetchone()
-                estado_reserva = reserva_data.get('estado', 'Confirmada') if reserva_data else 'Confirmada'
-        except Exception as e:
-            print(f"Error obteniendo estado de reserva: {e}")
-            estado_reserva = 'Confirmada'
-        finally:
+                        UPDATE PROGRAMACION 
+                        SET estado = 'Disponible' 
+                        WHERE id_programacion = %s
+                    """, (id_programacion,))
+                    conexion.commit()
+                return jsonify({'error': res['error']}), 500
+            
+            id_reserva = res.get('id_reserva')
+            
+            # Determinar el tipo de servicio y crear el registro correspondiente
+            conexion_tipo = obtener_conexion()
             try:
-                conexion_notif.close()
-            except:
-                pass
-        
-        # Obtener datos completos para enviar emails (no crítico - si falla, la reserva ya está creada)
-        conexion_email = None
-        try:
-            conexion_email = obtener_conexion()
-            with conexion_email.cursor() as cursor:
-                # Obtener datos del paciente
-                cursor.execute("""
-                    SELECT CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
-                           u.correo as email_paciente
-                    FROM PACIENTE p
-                    INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
-                    WHERE p.id_paciente = %s
-                """, (id_paciente,))
-                paciente_data = cursor.fetchone()
-                
-                # Obtener datos del médico y servicio
-                cursor.execute("""
-                    SELECT CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico,
-                           u_medico.correo as email_medico,
-                           esp.nombre as especialidad,
-                           s.nombre as servicio_nombre
-                    FROM PROGRAMACION prog
-                    INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
-                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
-                    INNER JOIN USUARIO u_medico ON e.id_usuario = u_medico.id_usuario
-                    INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
-                    INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
-                    WHERE prog.id_programacion = %s
-                """, (id_programacion,))
-                medico_data = cursor.fetchone()
-                
-                # Formatear fecha y hora
-                fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
-                hora_inicio_str = str(hora_inicio)[:5] if hora_inicio else ''
-                hora_fin_str = str(hora_fin)[:5] if hora_fin else ''
-                
-                # Enviar email al paciente
-                if paciente_data and paciente_data.get('email_paciente'):
-                    from utils.email_service import enviar_email_reserva_creada
-                    try:
-                        resultado_email_paciente = enviar_email_reserva_creada(
-                            paciente_email=paciente_data['email_paciente'],
-                            paciente_nombre=paciente_data['nombre_paciente'],
-                            fecha=fecha_str,
-                            hora_inicio=hora_inicio_str,
-                            hora_fin=hora_fin_str,
-                            medico_nombre=medico_data.get('nombre_medico', 'Médico') if medico_data else 'Médico',
-                            especialidad=medico_data.get('especialidad', '') if medico_data else '',
-                            servicio=medico_data.get('servicio_nombre', '') if medico_data else '',
-                            id_reserva=id_reserva
-                        )
-                        if resultado_email_paciente.get('success'):
-                            print(f"📧✅ Email de reserva enviado al paciente: {paciente_data['email_paciente']}")
-                        else:
-                            print(f"📧❌ Error enviando email al paciente: {resultado_email_paciente.get('message', 'Error desconocido')}")
-                    except Exception as e:
-                        print(f"📧❌ Excepción al enviar email al paciente: {e}")
-                        import traceback
-                        traceback.print_exc()
-                
-                # Enviar email al médico
-                if medico_data and medico_data.get('email_medico'):
-                    from utils.email_service import enviar_email_reserva_creada_medico
-                    try:
-                        resultado_email_medico = enviar_email_reserva_creada_medico(
-                            medico_email=medico_data['email_medico'],
-                            medico_nombre=medico_data['nombre_medico'],
-                            paciente_nombre=paciente_data.get('nombre_paciente', 'Paciente') if paciente_data else 'Paciente',
-                            fecha=fecha_str,
-                            hora_inicio=hora_inicio_str,
-                            hora_fin=hora_fin_str,
-                            servicio=medico_data.get('servicio_nombre', ''),
-                            id_reserva=id_reserva
-                        )
-                        if resultado_email_medico.get('success'):
-                            print(f"📧✅ Email de reserva enviado al médico: {medico_data['email_medico']}")
-                        else:
-                            print(f"📧❌ Error enviando email al médico: {resultado_email_medico.get('message', 'Error desconocido')}")
-                    except Exception as e:
-                        print(f"📧❌ Excepción al enviar email al médico: {e}")
-                        import traceback
-                        traceback.print_exc()
-        except Exception as e:
-            print(f"⚠️ Error obteniendo datos para emails (no crítico): {e}")
-            import traceback
-            traceback.print_exc()
-            # No fallar la creación de reserva si falla el email
-        finally:
-            if conexion_email:
+                with conexion_tipo.cursor() as cursor:
+                    # Obtener el tipo de servicio
+                    cursor.execute("""
+                        SELECT ts.nombre 
+                        FROM SERVICIO s 
+                        INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio 
+                        WHERE s.id_servicio = %s
+                    """, (id_servicio,))
+                    tipo_servicio_data = cursor.fetchone()
+                    tipo_servicio_nombre = tipo_servicio_data.get('nombre', '').lower() if tipo_servicio_data else ''
+                    
+                    # Crear registro según el tipo de servicio
+                    if 'consulta' in tipo_servicio_nombre or 'cita' in tipo_servicio_nombre:
+                        # Crear CITA
+                        cursor.execute("""
+                            INSERT INTO CITA (fecha_cita, hora_inicio, hora_fin, estado, id_reserva)
+                            VALUES (%s, %s, %s, 'Pendiente', %s)
+                        """, (fecha, hora_inicio, hora_fin, id_reserva))
+                        print(f"✓ CITA creada para reserva {id_reserva}")
+                        
+                    elif 'examen' in tipo_servicio_nombre or 'diagnóstico' in tipo_servicio_nombre or 'diagnostico' in tipo_servicio_nombre:
+                        # Crear EXAMEN
+                        cursor.execute("""
+                            INSERT INTO EXAMEN (fecha_examen, hora_inicio, estado, id_reserva)
+                            VALUES (%s, %s, 'Pendiente', %s)
+                        """, (fecha, hora_inicio, id_reserva))
+                        print(f"✓ EXAMEN creado para reserva {id_reserva}")
+                        
+                    elif 'quirúrgico' in tipo_servicio_nombre or 'quirurgico' in tipo_servicio_nombre or 'operación' in tipo_servicio_nombre or 'operacion' in tipo_servicio_nombre:
+                        # Crear OPERACION
+                        cursor.execute("""
+                            INSERT INTO OPERACION (fecha_operacion, hora_inicio, hora_fin, id_reserva)
+                            VALUES (%s, %s, %s, %s)
+                        """, (fecha, hora_inicio, hora_fin, id_reserva))
+                        print(f"✓ OPERACION creada para reserva {id_reserva}")
+                    else:
+                        print(f"⚠ Tipo de servicio '{tipo_servicio_nombre}' no reconocido para crear registro específico")
+                    
+                    conexion_tipo.commit()
+            except Exception as e:
+                print(f"Error creando registro de tipo específico: {e}")
+                conexion_tipo.rollback()
+            finally:
+                conexion_tipo.close()
+            
+            # Obtener el estado de la reserva recién creada (normalmente será 'Confirmada')
+            conexion_notif = obtener_conexion()
+            try:
+                with conexion_notif.cursor() as cursor:
+                    cursor.execute("SELECT estado FROM RESERVA WHERE id_reserva = %s", (id_reserva,))
+                    reserva_data = cursor.fetchone()
+                    estado_reserva = reserva_data.get('estado', 'Confirmada') if reserva_data else 'Confirmada'
+            except Exception as e:
+                print(f"Error obteniendo estado de reserva: {e}")
+                estado_reserva = 'Confirmada'
+            finally:
                 try:
-                    conexion_email.close()
+                    conexion_notif.close()
                 except:
                     pass
-        
-        # Crear notificaciones para el paciente
-        try:
-            # 1. Notificación de confirmación de creación
-            resultado = Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
-            if resultado.get('error'):
-                print(f"❌ Error creando notificación de confirmación (API): {resultado['error']}")
-            else:
-                print(f"✅ Notificación de confirmación creada para paciente (ID: {id_paciente})")
-        except Exception as e:
-            print(f"❌ Error creando notificación de confirmación (API): {e}")
-            import traceback
-            traceback.print_exc()
-        
-        try:
-            # 2. Notificación del estado actual de la reserva
-            resultado = Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, estado_reserva)
-            if resultado.get('error'):
-                print(f"❌ Error creando notificación de estado (API): {resultado['error']}")
-            else:
-                print(f"✅ Notificación de estado creada para paciente (ID: {id_paciente})")
-        except Exception as e:
-            print(f"❌ Error creando notificación de estado (API): {e}")
-            import traceback
-            traceback.print_exc()
-        
-        # 4. Crear notificación para el médico
-        try:
-            id_empleado = programacion.get('id_empleado')
-            print(f"🔍 [DEBUG] Intentando crear notificación para médico. id_empleado: {id_empleado}, id_reserva: {id_reserva}")
             
-            if id_empleado:
-                # Obtener id_usuario del médico usando una nueva conexión
-                conexion_medico = obtener_conexion()
-                try:
-                    with conexion_medico.cursor() as cursor:
-                        cursor.execute("""
-                            SELECT id_usuario 
-                            FROM EMPLEADO 
-                            WHERE id_empleado = %s
-                        """, (id_empleado,))
-                        empleado = cursor.fetchone()
-                        print(f"🔍 [DEBUG] Empleado encontrado: {empleado}")
-                        
-                        if empleado and empleado.get('id_usuario'):
-                            id_usuario_medico = empleado['id_usuario']
-                            print(f"🔍 [DEBUG] id_usuario_medico: {id_usuario_medico}")
-                            
-                            # Obtener nombre del paciente
-                            cursor.execute("""
-                                SELECT CONCAT(nombres, ' ', apellidos) as nombre_paciente
-                                FROM PACIENTE
-                                WHERE id_paciente = %s
-                            """, (id_paciente,))
-                            paciente_data = cursor.fetchone()
-                            nombre_paciente = paciente_data.get('nombre_paciente', 'un paciente') if paciente_data else 'un paciente'
-                            
-                            # Formatear fecha y hora
-                            fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
-                            hora_str = str(hora_inicio)[:5] if hora_inicio else ''
-                            
-                            titulo = "Nueva Cita Asignada"
-                            mensaje = f"Tiene una nueva cita con {nombre_paciente} el {fecha_str} a las {hora_str}"
-                            
-                            print(f"🔍 [DEBUG] Creando notificación: titulo={titulo}, mensaje={mensaje}, id_usuario={id_usuario_medico}, id_reserva={id_reserva}")
-                            resultado = Notificacion.crear_para_medico(titulo, mensaje, 'nueva_cita', id_usuario_medico, id_reserva)
-                            print(f"🔍 [DEBUG] Resultado de crear_para_medico: {resultado}")
-                            
-                            if resultado.get('error'):
-                                print(f"❌ Error creando notificación para médico: {resultado['error']}")
-                                import traceback
-                                traceback.print_exc()
+            # Obtener datos completos para enviar emails (no crítico - si falla, la reserva ya está creada)
+            conexion_email = None
+            try:
+                conexion_email = obtener_conexion()
+                with conexion_email.cursor() as cursor:
+                    # Obtener datos del paciente
+                    cursor.execute("""
+                        SELECT CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
+                               u.correo as email_paciente
+                        FROM PACIENTE p
+                        INNER JOIN USUARIO u ON p.id_usuario = u.id_usuario
+                        WHERE p.id_paciente = %s
+                    """, (id_paciente,))
+                    paciente_data = cursor.fetchone()
+                    
+                    # Obtener datos del médico y servicio
+                    cursor.execute("""
+                        SELECT CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico,
+                               u_medico.correo as email_medico,
+                               esp.nombre as especialidad,
+                               s.nombre as servicio_nombre
+                        FROM PROGRAMACION prog
+                        INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+                        INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                        INNER JOIN USUARIO u_medico ON e.id_usuario = u_medico.id_usuario
+                        INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                        INNER JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                        WHERE prog.id_programacion = %s
+                    """, (id_programacion,))
+                    medico_data = cursor.fetchone()
+                    
+                    # Formatear fecha y hora
+                    fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
+                    hora_inicio_str = str(hora_inicio)[:5] if hora_inicio else ''
+                    hora_fin_str = str(hora_fin)[:5] if hora_fin else ''
+                    
+                    # Enviar email al paciente
+                    if paciente_data and paciente_data.get('email_paciente'):
+                        from utils.email_service import enviar_email_reserva_creada
+                        try:
+                            resultado_email_paciente = enviar_email_reserva_creada(
+                                paciente_email=paciente_data['email_paciente'],
+                                paciente_nombre=paciente_data['nombre_paciente'],
+                                fecha=fecha_str,
+                                hora_inicio=hora_inicio_str,
+                                hora_fin=hora_fin_str,
+                                medico_nombre=medico_data.get('nombre_medico', 'Médico') if medico_data else 'Médico',
+                                especialidad=medico_data.get('especialidad', '') if medico_data else '',
+                                servicio=medico_data.get('servicio_nombre', '') if medico_data else '',
+                                id_reserva=id_reserva
+                            )
+                            if resultado_email_paciente.get('success'):
+                                print(f"📧✅ Email de reserva enviado al paciente: {paciente_data['email_paciente']}")
                             else:
-                                print(f"✅ Notificación creada para médico (ID usuario: {id_usuario_medico}, ID reserva: {id_reserva})")
-                        else:
-                            print(f"⚠️ No se encontró id_usuario para el empleado {id_empleado}. Empleado: {empleado}")
-                finally:
-                    conexion_medico.close()
-            else:
-                print(f"⚠️ No se encontró id_empleado en la programación. Programación: {programacion}")
+                                print(f"📧❌ Error enviando email al paciente: {resultado_email_paciente.get('message', 'Error desconocido')}")
+                        except Exception as e:
+                            print(f"📧❌ Excepción al enviar email al paciente: {e}")
+                            import traceback
+                            traceback.print_exc()
+                    
+                    # Enviar email al médico
+                    if medico_data and medico_data.get('email_medico'):
+                        from utils.email_service import enviar_email_reserva_creada_medico
+                        try:
+                            resultado_email_medico = enviar_email_reserva_creada_medico(
+                                medico_email=medico_data['email_medico'],
+                                medico_nombre=medico_data['nombre_medico'],
+                                paciente_nombre=paciente_data.get('nombre_paciente', 'Paciente') if paciente_data else 'Paciente',
+                                fecha=fecha_str,
+                                hora_inicio=hora_inicio_str,
+                                hora_fin=hora_fin_str,
+                                servicio=medico_data.get('servicio_nombre', ''),
+                                id_reserva=id_reserva
+                            )
+                            if resultado_email_medico.get('success'):
+                                print(f"📧✅ Email de reserva enviado al médico: {medico_data['email_medico']}")
+                            else:
+                                print(f"📧❌ Error enviando email al médico: {resultado_email_medico.get('message', 'Error desconocido')}")
+                        except Exception as e:
+                            print(f"📧❌ Excepción al enviar email al médico: {e}")
+                            import traceback
+                            traceback.print_exc()
+            except Exception as e:
+                print(f"⚠️ Error obteniendo datos para emails (no crítico): {e}")
+                import traceback
+                traceback.print_exc()
+                # No fallar la creación de reserva si falla el email
+            finally:
+                if conexion_email:
+                    try:
+                        conexion_email.close()
+                    except:
+                        pass
+            
+            # Crear notificaciones para el paciente
+            try:
+                # 1. Notificación de confirmación de creación
+                resultado = Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+                if resultado.get('error'):
+                    print(f"❌ Error creando notificación de confirmación (API): {resultado['error']}")
+                else:
+                    print(f"✅ Notificación de confirmación creada para paciente (ID: {id_paciente})")
+            except Exception as e:
+                print(f"❌ Error creando notificación de confirmación (API): {e}")
+                import traceback
+                traceback.print_exc()
+            
+            try:
+                # 2. Notificación del estado actual de la reserva
+                resultado = Notificacion.crear_notificacion_estado_reserva(id_paciente, id_reserva, estado_reserva)
+                if resultado.get('error'):
+                    print(f"❌ Error creando notificación de estado (API): {resultado['error']}")
+                else:
+                    print(f"✅ Notificación de estado creada para paciente (ID: {id_paciente})")
+            except Exception as e:
+                print(f"❌ Error creando notificación de estado (API): {e}")
+                import traceback
+                traceback.print_exc()
+            
+            # 4. Crear notificación para el médico
+            try:
+                id_empleado = programacion.get('id_empleado')
+                print(f"🔍 [DEBUG] Intentando crear notificación para médico. id_empleado: {id_empleado}, id_reserva: {id_reserva}")
+                
+                if id_empleado:
+                    # Obtener id_usuario del médico usando una nueva conexión
+                    conexion_medico = obtener_conexion()
+                    try:
+                        with conexion_medico.cursor() as cursor:
+                            cursor.execute("""
+                                SELECT id_usuario 
+                                FROM EMPLEADO 
+                                WHERE id_empleado = %s
+                            """, (id_empleado,))
+                            empleado = cursor.fetchone()
+                            print(f"🔍 [DEBUG] Empleado encontrado: {empleado}")
+                            
+                            if empleado and empleado.get('id_usuario'):
+                                id_usuario_medico = empleado['id_usuario']
+                                print(f"🔍 [DEBUG] id_usuario_medico: {id_usuario_medico}")
+                                
+                                # Obtener nombre del paciente
+                                cursor.execute("""
+                                    SELECT CONCAT(nombres, ' ', apellidos) as nombre_paciente
+                                    FROM PACIENTE
+                                    WHERE id_paciente = %s
+                                """, (id_paciente,))
+                                paciente_data = cursor.fetchone()
+                                nombre_paciente = paciente_data.get('nombre_paciente', 'un paciente') if paciente_data else 'un paciente'
+                                
+                                # Formatear fecha y hora
+                                fecha_str = fecha.strftime('%d/%m/%Y') if hasattr(fecha, 'strftime') else str(fecha)
+                                hora_str = str(hora_inicio)[:5] if hora_inicio else ''
+                                
+                                titulo = "Nueva Cita Asignada"
+                                mensaje = f"Tiene una nueva cita con {nombre_paciente} el {fecha_str} a las {hora_str}"
+                                
+                                print(f"🔍 [DEBUG] Creando notificación: titulo={titulo}, mensaje={mensaje}, id_usuario={id_usuario_medico}, id_reserva={id_reserva}")
+                                resultado = Notificacion.crear_para_medico(titulo, mensaje, 'nueva_cita', id_usuario_medico, id_reserva)
+                                print(f"🔍 [DEBUG] Resultado de crear_para_medico: {resultado}")
+                                
+                                if resultado.get('error'):
+                                    print(f"❌ Error creando notificación para médico: {resultado['error']}")
+                                    import traceback
+                                    traceback.print_exc()
+                                else:
+                                    print(f"✅ Notificación creada para médico (ID usuario: {id_usuario_medico}, ID reserva: {id_reserva})")
+                            else:
+                                print(f"⚠️ No se encontró id_usuario para el empleado {id_empleado}. Empleado: {empleado}")
+                    finally:
+                        conexion_medico.close()
+                else:
+                    print(f"⚠️ No se encontró id_empleado en la programación. Programación: {programacion}")
+            except Exception as e:
+                print(f"❌ Error creando notificación para médico (API): {e}")
+                import traceback
+                traceback.print_exc()
+            
+            try:
+                # 3. Programar recordatorio para la fecha de la cita (se mostrará 24h antes)
+                Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha, hora_inicio)
+            except Exception as e:
+                print(f"Error programando recordatorio de cita (API): {e}")
+            
+            # La reserva se creó exitosamente, devolver éxito
+            # Los errores de email/notificaciones no deben afectar la respuesta
+            return jsonify({
+                'success': True, 
+                'id_reserva': id_reserva,
+                'message': 'Reserva creada exitosamente'
+            }), 201
+            
         except Exception as e:
-            print(f"❌ Error creando notificación para médico (API): {e}")
+            # Si hay error en el bloque try interno, hacer rollback y cerrar conexión
+            if conexion:
+                try:
+                    conexion.rollback()
+                except:
+                    pass
+            print(f"❌ Error en api_crear_reserva: {e}")
             import traceback
             traceback.print_exc()
-        
-        try:
-            # 3. Programar recordatorio para la fecha de la cita (se mostrará 24h antes)
-            Notificacion.crear_recordatorio_cita(id_paciente, id_reserva, fecha, hora_inicio)
-        except Exception as e:
-            print(f"Error programando recordatorio de cita (API): {e}")
-        
-        # La reserva se creó exitosamente, devolver éxito
-        # Los errores de email/notificaciones no deben afectar la respuesta
-        return jsonify({
-            'success': True, 
-            'id_reserva': id_reserva,
-            'message': 'Reserva creada exitosamente'
-        }), 201
+            return jsonify({'error': f'Error al crear reserva: {str(e)}'}), 500
+        finally:
+            if conexion:
+                try:
+                    conexion.close()
+                except:
+                    pass
 
     except Exception as e:
         # Capturar cualquier error no manejado y devolver JSON
