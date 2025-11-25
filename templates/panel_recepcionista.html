@@ -50,6 +50,24 @@
         .rotate-180 {
             transform: rotate(180deg);
         }
+
+        /* Estilos para botones de filtro */
+        .filtro-reserva, .filtro-incidencia {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.2s ease;
+        }
+
+        .filtro-reserva:hover, .filtro-incidencia:hover {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .filtro-reserva.active, .filtro-incidencia.active {
+            background: linear-gradient(to right, #06b6d4, #14b8a6);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(6, 182, 212, 0.3);
+        }
     </style>
     <script>
         // Configuración personalizada (si es necesaria)
@@ -695,7 +713,7 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Buscar Paciente</h3>
                     <div class="relative">
-                        <input type="text" id="buscar-paciente-reserva" placeholder="Buscar por nombre o DNI..."
+                        <input type="text" id="buscar-paciente-reserva" placeholder="Buscar por nombre del paciente..."
                                class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
                     </div>
@@ -710,14 +728,17 @@
                     <button onclick="filtrarReservas('todas')" class="filtro-reserva active px-4 py-2 rounded-lg text-sm font-medium">
                         Todas
                     </button>
-                    <button onclick="filtrarReservas('pendiente')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
-                        Pendientes
-                    </button>
                     <button onclick="filtrarReservas('confirmada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
                         Confirmadas
                     </button>
+                    <button onclick="filtrarReservas('completada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Completadas
+                    </button>
                     <button onclick="filtrarReservas('cancelada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
                         Canceladas
+                    </button>
+                    <button onclick="filtrarReservas('inasistida')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Inasistidas
                     </button>
                 </div>
 
@@ -1086,7 +1107,7 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">Buscar Paciente</h3>
                     <div class="relative">
-                        <input type="text" id="buscar-paciente-reserva" placeholder="Buscar por nombre o DNI..."
+                        <input type="text" id="buscar-paciente-reserva-default" placeholder="Buscar por nombre del paciente..."
                                class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
                     </div>
@@ -1101,14 +1122,17 @@
                     <button onclick="filtrarReservas('todas')" class="filtro-reserva active px-4 py-2 rounded-lg text-sm font-medium">
                         Todas
                     </button>
-                    <button onclick="filtrarReservas('pendiente')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
-                        Pendientes
-                    </button>
                     <button onclick="filtrarReservas('confirmada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
                         Confirmadas
                     </button>
+                    <button onclick="filtrarReservas('completada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Completadas
+                    </button>
                     <button onclick="filtrarReservas('cancelada')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
                         Canceladas
+                    </button>
+                    <button onclick="filtrarReservas('inasistida')" class="filtro-reserva px-4 py-2 rounded-lg text-sm font-medium">
+                        Inasistidas
                     </button>
                 </div>
 
@@ -1298,6 +1322,19 @@
             // Cargar incidencias si estamos en incidencia
             if (window.location.search.includes('subsistema=incidencia') && !window.location.search.includes('accion=generar')) {
                 cargarIncidencias();
+            }
+
+            // Cargar reservas si estamos en reserva (sin acción específica o con acción listar)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('subsistema') === 'reserva') {
+                const accion = urlParams.get('accion');
+                // Cargar solo si no hay acción o si la acción es 'listar'
+                if (!accion || accion === 'listar') {
+                    console.log('Cargando reservas...');
+                    cargarReservas();
+                    // Configurar búsqueda de pacientes en reservas
+                    configurarBusquedaPacienteReservas();
+                }
             }
 
             // Función para mostrar modal de mensaje
@@ -2180,6 +2217,133 @@
             return `<span class="bg-cyan-100 text-cyan-800 text-xs font-semibold px-3 py-1 rounded-full">${categoria}</span>`;
         }
 
+        async function cargarReservas() {
+            try {
+                const response = await fetch('/recepcionista/reservas/listar');
+                const data = await response.json();
+                
+                console.log('Datos recibidos:', data);
+                console.log('Cantidad de reservas:', data.reservas ? data.reservas.length : 0);
+
+                if (data.error) {
+                    console.error('Error al cargar reservas:', data.error);
+                    const container = document.getElementById('lista-reservas');
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="text-center py-8 text-red-500">
+                                <span class="material-symbols-outlined text-5xl mb-2 block">error</span>
+                                <p class="font-medium">Error al cargar reservas</p>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+
+                const reservas = data.reservas || [];
+                const container = document.getElementById('lista-reservas');
+
+                if (!container) {
+                    console.error('Contenedor lista-reservas no encontrado');
+                    return;
+                }
+
+                if (reservas.length === 0) {
+                    console.log('No hay reservas para mostrar');
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">event_busy</span>
+                            <p class="font-medium">No hay reservas registradas</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                console.log('Mostrando', reservas.length, 'reservas');
+
+                container.innerHTML = reservas.map(reserva => {
+                    const fecha = new Date(reserva.fecha_reserva);
+                    const fechaFormateada = !isNaN(fecha.getTime()) ? fecha.toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    }) : 'Fecha no disponible';
+
+                    const hora = reserva.hora_reserva || reserva.hora_formateada || 'N/A';
+                    const paciente = escapeHtml(reserva.paciente_nombre || 'Sin paciente');
+                    const servicio = escapeHtml(reserva.servicio_nombre || 'Sin servicio');
+                    const medico = escapeHtml(reserva.medico_nombre || 'Sin médico');
+                    const estado = (reserva.estado || 'pendiente').toLowerCase();
+
+                    let estadoBadge = '';
+                    let estadoColor = '';
+                    
+                    if (estado === 'confirmada') {
+                        estadoBadge = '<span class="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">Confirmada</span>';
+                        estadoColor = 'border-green-200';
+                    } else if (estado === 'completada') {
+                        estadoBadge = '<span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">Completada</span>';
+                        estadoColor = 'border-blue-200';
+                    } else if (estado === 'pendiente') {
+                        estadoBadge = '<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">Pendiente</span>';
+                        estadoColor = 'border-yellow-200';
+                    } else if (estado === 'cancelada') {
+                        estadoBadge = '<span class="bg-red-100 text-red-800 text-xs font-semibold px-3 py-1 rounded-full">Cancelada</span>';
+                        estadoColor = 'border-red-200';
+                    } else if (estado === 'inasistida') {
+                        estadoBadge = '<span class="bg-gray-100 text-gray-800 text-xs font-semibold px-3 py-1 rounded-full">Inasistida</span>';
+                        estadoColor = 'border-gray-200';
+                    } else {
+                        estadoBadge = '<span class="bg-gray-100 text-gray-800 text-xs font-semibold px-3 py-1 rounded-full">Sin estado</span>';
+                        estadoColor = 'border-gray-200';
+                    }
+
+                    return `
+                        <div class="bg-white rounded-xl border ${estadoColor} p-6 hover:shadow-md transition-shadow reserva-item" data-estado="${estado}">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="material-symbols-outlined text-cyan-600">person</span>
+                                        <h4 class="text-lg font-bold text-gray-800">${paciente}</h4>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-gray-600 text-sm mb-1">
+                                        <span class="material-symbols-outlined text-sm">medical_services</span>
+                                        <span>${servicio}</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-gray-600 text-sm">
+                                        <span class="material-symbols-outlined text-sm">stethoscope</span>
+                                        <span>${medico}</span>
+                                    </div>
+                                </div>
+                                ${estadoBadge}
+                            </div>
+                            <div class="flex items-center gap-6 text-sm text-gray-600 border-t pt-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">calendar_today</span>
+                                    <span>${fechaFormateada}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">schedule</span>
+                                    <span>${hora}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error cargando reservas:', error);
+                const container = document.getElementById('lista-reservas');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-red-500">
+                            <span class="material-symbols-outlined text-5xl mb-2 block">error</span>
+                            <p class="font-medium">Error al cargar reservas</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
         async function cargarIncidencias() {
             try {
                 const response = await fetch('/recepcionista/incidencias/listar');
@@ -2355,6 +2519,57 @@
                 content.classList.add('expanded');
                 chevron.classList.add('rotate-180');
                 btnText.textContent = 'Ocultar Detalles';
+            }
+        }
+
+        // Función para filtrar reservas
+        function filtrarReservas(filtro) {
+            const buttons = document.querySelectorAll('.filtro-reserva');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const reservas = document.querySelectorAll('#lista-reservas > .reserva-item');
+            reservas.forEach(reserva => {
+                const estado = reserva.dataset.estado;
+                if (filtro === 'todas' || estado === filtro) {
+                    reserva.style.display = '';
+                } else {
+                    reserva.style.display = 'none';
+                }
+            });
+        }
+
+        // Función para configurar la búsqueda de pacientes en reservas
+        function configurarBusquedaPacienteReservas() {
+            // Buscar ambos inputs (para accion='listar' y vista default)
+            const input1 = document.getElementById('buscar-paciente-reserva');
+            const input2 = document.getElementById('buscar-paciente-reserva-default');
+            const input = input1 || input2; // Usar el que exista
+            
+            if (input) {
+                input.addEventListener('input', function(e) {
+                    const termino = e.target.value.trim().toLowerCase();
+                    
+                    // Obtener todas las reservas (divs con clase reserva-item)
+                    const reservas = document.querySelectorAll('#lista-reservas .reserva-item');
+                    
+                    reservas.forEach(reserva => {
+                        // Buscar el nombre del paciente (está en el h4 dentro del div)
+                        const nombreElement = reserva.querySelector('h4');
+                        if (nombreElement) {
+                            const nombrePaciente = nombreElement.textContent.toLowerCase();
+                            
+                            // Buscar solo por nombre del paciente
+                            if (nombrePaciente.includes(termino)) {
+                                reserva.style.display = '';
+                            } else {
+                                reserva.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+                
+                console.log('Búsqueda de pacientes en reservas configurada (solo por nombre)');
             }
         }
 
