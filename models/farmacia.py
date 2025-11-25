@@ -139,24 +139,26 @@ class Medicamento:
             conexion.close()
 
     @staticmethod
-    def obtener_recientes(limite=5):
+    def obtener_recientes(limite=7):
         """Obtiene los medicamentos más recientes registrados"""
         conexion = obtener_conexion()
         try:
             cursor = _get_cursor(conexion)
             try:
+                # Convertir limite a int para evitar problemas con el formato
+                limite = int(limite)
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_registro,
-                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_registro, %s) as fecha_registro,
+                           DATE_FORMAT(fecha_vencimiento, %s) as fecha_vencimiento,
                            stock as cantidad
                     FROM MEDICAMENTO
                     ORDER BY fecha_registro DESC
-                    LIMIT %s
-                """, (limite,))
+                    LIMIT """ + str(limite), ('%d/%m/%Y', '%d/%m/%Y'))
                 rows = cursor.fetchall()
                 print(f"DEBUG obtener_recientes: {len(rows)} medicamentos encontrados")
-                return _rows_to_dicts(cursor, rows)
+                resultado = _rows_to_dicts(cursor, rows)
+                return resultado
             finally:
                 try:
                     cursor.close()
@@ -230,24 +232,26 @@ class Medicamento:
             conexion.close()
 
     @staticmethod
-    def obtener_ingresos_recientes(limite=10):
-        """Obtiene los medicamentos registrados exactamente hace 7 días"""
+    def obtener_ingresos_recientes(limite=7):
+        """Obtiene los medicamentos más recientes registrados, ordenados por fecha de registro"""
         conexion = obtener_conexion()
         try:
             cursor = _get_cursor(conexion)
             try:
+                # Convertir limite a int para evitar problemas con el formato
+                limite = int(limite)
                 cursor.execute("""
                     SELECT id_medicamento, nombre, descripcion, stock,
-                           DATE_FORMAT(fecha_vencimiento, '%d/%m/%Y') as fecha_vencimiento,
+                           DATE_FORMAT(fecha_vencimiento, %s) as fecha_vencimiento,
                            stock as cantidad,
-                           DATE_FORMAT(fecha_registro, '%d/%m/%Y') as fecha_ingreso
+                           DATE_FORMAT(fecha_registro, %s) as fecha_ingreso
                     FROM MEDICAMENTO
-                    WHERE DATE(fecha_registro) = DATE_SUB(CURDATE(), INTERVAL 7 DAY)
                     ORDER BY fecha_registro DESC
-                    LIMIT %s
-                """, (limite,))
+                    LIMIT """ + str(limite), ('%d/%m/%Y', '%d/%m/%Y'))
                 rows = cursor.fetchall()
-                return _rows_to_dicts(cursor, rows)
+                print(f"DEBUG obtener_ingresos_recientes: {len(rows)} medicamentos encontrados")
+                resultado = _rows_to_dicts(cursor, rows)
+                return resultado
             finally:
                 try:
                     cursor.close()
