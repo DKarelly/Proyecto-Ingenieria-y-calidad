@@ -122,17 +122,34 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
             msg.attach(part1)
             msg.attach(part2)
             
-            # Enviar el correo con timeout reducido para evitar bloqueos
+            # Enviar el correo con timeout reducido y reintentos
             print(f"📧 Conectando a {self.smtp_server}:{self.smtp_port}...")
             # Timeout reducido a 10 segundos para evitar que bloquee el worker
-            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
-                print(f"📧 Iniciando TLS...")
-                server.starttls()
-                print(f"📧 Autenticando con {self.sender_email}...")
-                server.login(self.sender_email, self.sender_password)
-                print(f"📧 Enviando mensaje a {destinatario_email}...")
-                server.send_message(msg)
-                print(f"📧✅ Email enviado exitosamente a {destinatario_email}")
+            max_intentos = 3
+            intento = 0
+            ultimo_error = None
+            
+            while intento < max_intentos:
+                try:
+                    with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
+                        print(f"📧 Iniciando TLS...")
+                        server.starttls()
+                        print(f"📧 Autenticando con {self.sender_email}...")
+                        server.login(self.sender_email, self.sender_password)
+                        print(f"📧 Enviando mensaje a {destinatario_email}...")
+                        server.send_message(msg)
+                        print(f"📧✅ Email enviado exitosamente a {destinatario_email}")
+                        break  # Éxito, salir del bucle
+                except (smtplib.SMTPConnectError, ConnectionError, OSError, socket.timeout, socket.gaierror) as e:
+                    intento += 1
+                    ultimo_error = e
+                    if intento < max_intentos:
+                        print(f"📧⚠️ Intento {intento}/{max_intentos} falló. Reintentando en 2 segundos...")
+                        import time
+                        time.sleep(2)
+                    else:
+                        # Último intento falló, lanzar excepción
+                        raise
             
             return {
                 'success': True,
@@ -146,9 +163,18 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
                 'success': False,
                 'message': error_msg
             }
-        except (smtplib.SMTPConnectError, ConnectionError, OSError, TimeoutError, socket.timeout) as e:
+        except (smtplib.SMTPConnectError, ConnectionError, OSError, TimeoutError, socket.timeout, socket.gaierror) as e:
             error_msg = f'Error conectando al servidor SMTP {self.smtp_server}:{self.smtp_port}. Detalle: {str(e)}'
             print(f"📧❌ {error_msg}")
+            
+            # Mensaje adicional para errores de red en Render
+            if '101' in str(e) or 'inalcanzable' in str(e).lower() or 'unreachable' in str(e).lower():
+                print("⚠️ NOTA: Este error puede deberse a restricciones de red en Render.")
+                print("💡 Soluciones posibles:")
+                print("   1. Verificar que Render permita conexiones salientes al puerto 587")
+                print("   2. Considerar usar un servicio de email alternativo (SendGrid, Mailgun, AWS SES)")
+                print("   3. Verificar configuración de firewall de Gmail")
+            
             # No es crítico - el sistema puede funcionar sin email
             return {
                 'success': False,
