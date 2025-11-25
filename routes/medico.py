@@ -909,25 +909,17 @@ def historial_paciente(id_paciente):
                 'observaciones': cita['observaciones'] if cita['observaciones'] else ''
             })
         
-        # Obtener autorizaciones (exámenes y operaciones) del paciente
+        # Obtener EXÁMENES del paciente - Solo los que el médico autorizó (ya que él mismo los realiza)
         cursor.execute("""
             SELECT 
                 ap.id_autorizacion,
                 ap.id_tipo_servicio,
-                CASE 
-                    WHEN ap.id_tipo_servicio = 4 THEN 'EXAMEN'
-                    WHEN ap.id_tipo_servicio = 2 THEN 'OPERACION'
-                    ELSE 'OTRO'
-                END as tipo_procedimiento,
+                'EXAMEN' as tipo_procedimiento,
                 s.nombre as servicio_nombre,
                 ap.fecha_autorizacion,
                 ap.fecha_vencimiento,
                 ap.fecha_uso,
                 CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
-                CONCAT(med_asig.nombres, ' ', med_asig.apellidos) as medico_asignado,
-                esp.nombre as especialidad_requerida,
-                c.fecha_cita,
-                c.diagnostico as diagnostico_cita,
                 CASE 
                     WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
                     WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
@@ -936,40 +928,77 @@ def historial_paciente(id_paciente):
             FROM AUTORIZACION_PROCEDIMIENTO ap
             INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
             INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
-            LEFT JOIN EMPLEADO med_asig ON ap.id_medico_asignado = med_asig.id_empleado
-            LEFT JOIN ESPECIALIDAD esp ON ap.id_especialidad_requerida = esp.id_especialidad
-            LEFT JOIN CITA c ON ap.id_cita = c.id_cita
             WHERE ap.id_paciente = %s
+            AND ap.id_tipo_servicio = 4
+            AND ap.id_medico_asignado = %s
             ORDER BY ap.fecha_autorizacion DESC
-        """, (id_paciente,))
+        """, (id_paciente, id_empleado))
         
-        autorizaciones = cursor.fetchall()
+        examenes_raw = cursor.fetchall()
         
-        # Separar en exámenes y operaciones
+        # Obtener OPERACIONES del paciente - Solo las asignadas a este médico
+        cursor.execute("""
+            SELECT 
+                ap.id_autorizacion,
+                ap.id_tipo_servicio,
+                'OPERACION' as tipo_procedimiento,
+                s.nombre as servicio_nombre,
+                ap.fecha_autorizacion,
+                ap.fecha_vencimiento,
+                ap.fecha_uso,
+                CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
+                esp.nombre as especialidad_requerida,
+                CASE 
+                    WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
+                    WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
+                    ELSE 'PENDIENTE'
+                END as estado_autorizacion
+            FROM AUTORIZACION_PROCEDIMIENTO ap
+            INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
+            INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
+            LEFT JOIN ESPECIALIDAD esp ON ap.id_especialidad_requerida = esp.id_especialidad
+            WHERE ap.id_paciente = %s
+            AND ap.id_tipo_servicio = 2
+            AND ap.id_medico_asignado = %s
+            ORDER BY ap.fecha_autorizacion DESC
+        """, (id_paciente, id_empleado))
+        
+        operaciones_raw = cursor.fetchall()
+        
+        # Formatear exámenes
         examenes = []
-        operaciones = []
-        
-        for aut in autorizaciones:
+        for aut in examenes_raw:
             fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
             fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
             fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
             
-            item = {
+            examenes.append({
                 'id': aut['id_autorizacion'],
                 'servicio': aut['servicio_nombre'],
                 'fecha_autorizacion': fecha_aut,
                 'fecha_vencimiento': fecha_venc,
                 'fecha_uso': fecha_uso,
                 'medico_autoriza': aut['medico_autoriza'],
-                'medico_asignado': aut['medico_asignado'] if aut['medico_asignado'] else None,
+                'estado': aut['estado_autorizacion']
+            })
+        
+        # Formatear operaciones
+        operaciones = []
+        for aut in operaciones_raw:
+            fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
+            fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
+            fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
+            
+            operaciones.append({
+                'id': aut['id_autorizacion'],
+                'servicio': aut['servicio_nombre'],
+                'fecha_autorizacion': fecha_aut,
+                'fecha_vencimiento': fecha_venc,
+                'fecha_uso': fecha_uso,
+                'medico_autoriza': aut['medico_autoriza'],
                 'especialidad': aut['especialidad_requerida'] if aut['especialidad_requerida'] else None,
                 'estado': aut['estado_autorizacion']
-            }
-            
-            if aut['id_tipo_servicio'] == 4:
-                examenes.append(item)
-            elif aut['id_tipo_servicio'] == 2:
-                operaciones.append(item)
+            })
         
         return jsonify({
             'success': True,
@@ -1307,7 +1336,7 @@ def guardar_diagnostico():
                                 result_notif = Notificacion.crear_para_medico(
                                     titulo=titulo_notif,
                                     mensaje=mensaje_notif,
-                                    tipo='derivacion_operacion',
+                                    tipo='operacion_asignada',
                                     id_usuario=info_notif['id_usuario_derivado']
                                 )
                                 
