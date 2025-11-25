@@ -51,7 +51,16 @@ def login():
         session['tipo_usuario'] = usuario['tipo_usuario']
         # Asegurar que nombre_usuario nunca sea None
         session['nombre_usuario'] = usuario.get('nombre') or usuario.get('correo', 'Usuario')
-        session['rol'] = usuario.get('rol')
+        # Asegurar que rol nunca sea None o la cadena "None"
+        rol_val = usuario.get('rol') or usuario.get('rol_empleado')
+        if rol_val and str(rol_val).strip() != 'None':
+            session['rol'] = str(rol_val).strip()
+        else:
+            # Asignar rol por defecto según el tipo de usuario
+            if usuario['tipo_usuario'] == 'empleado':
+                session['rol'] = 'Empleado'
+            else:
+                session['rol'] = 'Paciente'
         session['id_rol'] = usuario.get('id_rol')
         session['id_paciente'] = usuario.get('id_paciente')
         session['id_empleado'] = usuario.get('id_empleado')
@@ -103,8 +112,70 @@ def perfil():
     """Página de perfil del usuario - Vista detallada para empleados, simple para pacientes"""
     usuario = Usuario.obtener_por_id(session['usuario_id'])
     
+    if not usuario:
+        flash('Usuario no encontrado', 'danger')
+        return redirect(url_for('home'))
+    
+    # Usar el estado exacto de la base de datos (sin normalizar)
+    # Los estados en la BD son "Activo" e "Inactivo" exactamente como están almacenados
+    estado_val = usuario.get('estado')
+    if estado_val:
+        # Limpiar espacios pero mantener el valor exacto
+        estado_val = str(estado_val).strip()
+        usuario['estado'] = estado_val
+    else:
+        usuario['estado'] = 'Inactivo'
+    
+    # Asegurar que el nombre_empleado esté disponible si es empleado
+    if usuario.get('tipo_usuario') == 'empleado' and not usuario.get('nombre_empleado'):
+        # Si no hay nombre_empleado, intentar construir desde nombres y apellidos
+        from models.empleado import Empleado
+        if usuario.get('id_empleado'):
+            empleado = Empleado.obtener_por_id(usuario['id_empleado'])
+            if empleado:
+                usuario['nombre_empleado'] = f"{empleado.get('nombres', '')} {empleado.get('apellidos', '')}".strip()
+        # Si aún no hay nombre, intentar desde la BD directamente
+        if not usuario.get('nombre_empleado'):
+            from bd import obtener_conexion
+            conexion = obtener_conexion()
+            try:
+                with conexion.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT nombres, apellidos 
+                        FROM EMPLEADO 
+                        WHERE id_usuario = %s
+                    """, (session['usuario_id'],))
+                    empleado_data = cursor.fetchone()
+                    if empleado_data:
+                        usuario['nombre_empleado'] = f"{empleado_data.get('nombres', '')} {empleado_data.get('apellidos', '')}".strip()
+            except:
+                pass
+            finally:
+                conexion.close()
+    
+    # Actualizar nombre_usuario en sesión si no está o está como None
+    if not session.get('nombre_usuario') or session.get('nombre_usuario') == 'None':
+        if usuario.get('tipo_usuario') == 'empleado':
+            session['nombre_usuario'] = usuario.get('nombre_empleado') or usuario.get('correo', 'Usuario')
+        elif usuario.get('tipo_usuario') == 'paciente':
+            session['nombre_usuario'] = usuario.get('nombre_paciente') or usuario.get('correo', 'Usuario')
+        else:
+            session['nombre_usuario'] = usuario.get('correo', 'Usuario')
+    
+    # Actualizar rol en sesión si no está o está como None
+    if not session.get('rol') or session.get('rol') == 'None':
+        rol_val = usuario.get('rol_empleado') or usuario.get('rol')
+        if rol_val and str(rol_val).strip() != 'None':
+            session['rol'] = str(rol_val).strip()
+        else:
+            # Asignar rol por defecto según el tipo de usuario
+            if usuario.get('tipo_usuario') == 'empleado':
+                session['rol'] = 'Empleado'
+            else:
+                session['rol'] = 'Paciente'
+    
     # Si es empleado, usar vista detallada (antes consultarperfil.html)
-    if usuario and usuario.get('tipo_usuario') == 'empleado':
+    if usuario.get('tipo_usuario') == 'empleado':
         # Redirigir según el rol del empleado a su panel correspondiente después de ver el perfil
         id_rol = usuario.get('id_rol')
         if id_rol == 3:  # Recepcionista
@@ -307,37 +378,55 @@ def editar_perfil():
 
         # Actualizar nombres y ubicación según tipo de usuario
         try:
-            sexo = request.form.get('sexo')
+            # IMPORTANTE: El sexo NO se puede modificar por integridad médica
+            # Usamos el valor original de la base de datos, no el del formulario
+            sexo = None  # No permitir cambios de sexo
+            
             fecha_nacimiento = request.form.get('fecha_nacimiento')
             
-            # Validar edad mínima (18 años) si se proporciona fecha de nacimiento
+            # Validar edad (18-100 años) si se proporciona fecha de nacimiento
             if fecha_nacimiento:
                 from datetime import datetime, timedelta
                 fecha_nac = datetime.strptime(fecha_nacimiento, '%Y-%m-%d')
+                ahora = datetime.now()
+                
+                # Calcular edad exacta
+                edad = ahora.year - fecha_nac.year
+                if (ahora.month, ahora.day) < (fecha_nac.month, fecha_nac.day):
+                    edad -= 1
+                
+                # Validar edad mínima (18 años)
                 edad_minima = datetime.now() - timedelta(days=18*365.25)
                 if fecha_nac > edad_minima:
                     flash('Debes ser mayor de 18 años', 'danger')
-                    return render_template('editarPerfil.html', usuario=usuario)
+                    return render_template('editarPerfil.html', usuario=usuario, max_fecha=max_fecha)
+                
+                # Validar edad máxima (100 años)
+                if edad > 100:
+                    flash('La edad no puede superar los 100 años', 'danger')
+                    return render_template('editarPerfil.html', usuario=usuario, max_fecha=max_fecha)
             
             if usuario['tipo_usuario'] == 'paciente' and usuario.get('id_paciente'):
                 from models.paciente import Paciente
                 
+                # NO actualizar sexo - mantener el valor original de la BD
                 Paciente.actualizar(
                     id_paciente=usuario['id_paciente'],
                     nombres=nombres if nombres else None,
                     apellidos=apellidos if apellidos else None,
-                    sexo=sexo if sexo else None,
+                    sexo=None,  # No permitir cambios de sexo
                     fecha_nacimiento=fecha_nacimiento if fecha_nacimiento else None,
                     id_distrito=int(id_distrito) if id_distrito else None
                 )
             elif usuario['tipo_usuario'] == 'empleado' and usuario.get('id_empleado'):
                 from models.empleado import Empleado
                 
+                # NO actualizar sexo - mantener el valor original de la BD
                 Empleado.actualizar(
                     id_empleado=usuario['id_empleado'],
                     nombres=nombres if nombres else None,
                     apellidos=apellidos if apellidos else None,
-                    sexo=sexo if sexo else None,
+                    sexo=None,  # No permitir cambios de sexo
                     fecha_nacimiento=fecha_nacimiento if fecha_nacimiento else None,
                     id_distrito=int(id_distrito) if id_distrito else None
                 )
@@ -410,8 +499,17 @@ def api_login():
     session['correo'] = usuario['correo']
     session['telefono'] = usuario['telefono']
     session['tipo_usuario'] = usuario['tipo_usuario']
+    
     # Asegurar que nombre_usuario nunca sea None
-    session['nombre_usuario'] = usuario.get('nombre') or usuario.get('correo', 'Usuario')
+    # Si es empleado y no hay nombre, obtenerlo de la BD
+    nombre_usuario = usuario.get('nombre')
+    if not nombre_usuario and usuario.get('tipo_usuario') == 'empleado' and usuario.get('id_empleado'):
+        from models.empleado import Empleado
+        empleado = Empleado.obtener_por_id(usuario['id_empleado'])
+        if empleado:
+            nombre_usuario = f"{empleado.get('nombres', '')} {empleado.get('apellidos', '')}".strip()
+    
+    session['nombre_usuario'] = nombre_usuario or usuario.get('correo', 'Usuario')
     session['rol'] = usuario.get('rol')
     session['id_rol'] = usuario.get('id_rol')
     session['id_paciente'] = usuario.get('id_paciente')

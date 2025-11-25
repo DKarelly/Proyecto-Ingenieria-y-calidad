@@ -74,7 +74,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Nombre Completo</p>
                     <p class="text-gray-800 font-semibold md:col-span-2">
-                        {{ usuario.nombre_empleado or 'No especificado' }}
+                        {% if usuario.nombre_empleado and usuario.nombre_empleado != 'None' %}
+                            {{ usuario.nombre_empleado }}
+                        {% else %}
+                            No especificado
+                        {% endif %}
                     </p>
                 </div>
                 
@@ -135,14 +139,22 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                     <p class="text-gray-500 text-sm font-medium">Estado de Cuenta</p>
                     <p class="md:col-span-2">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                            {% if usuario.estado == 'Activo' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                            {% if usuario.estado == 'Activo' %}
-                                <i class="fa-solid fa-circle-check mr-2"></i>Activo
+                        {% if usuario.estado %}
+                            {% set estado_upper = usuario.estado|upper %}
+                            {% if estado_upper == 'ACTIVO' %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                    <i class="fa-solid fa-circle-check mr-2"></i>Activo
+                                </span>
                             {% else %}
-                                <i class="fa-solid fa-circle-xmark mr-2"></i>Inactivo
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                    <i class="fa-solid fa-circle-xmark mr-2"></i>{{ usuario.estado }}
+                                </span>
                             {% endif %}
-                        </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                <i class="fa-solid fa-circle-xmark mr-2"></i>Inactivo
+                            </span>
+                        {% endif %}
                     </p>
                 </div>
                 

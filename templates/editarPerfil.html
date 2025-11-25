@@ -7,6 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Estilo para campo petrificado (inmutable) */
+        .campo-petrificado {
+            background-color: #f3f4f6 !important;
+            color: #4b5563 !important;
+            cursor: not-allowed !important;
+            opacity: 0.8;
+        }
+        .campo-petrificado:hover {
+            background-color: #f3f4f6 !important;
+        }
+    </style>
 </head>
 <body class="text-gray-700 bg-gray-50">
     {% include 'header_admin.html' %}
@@ -125,7 +137,7 @@
                     <div>
                         <label for="fecha_nacimiento" class="block text-sm font-semibold text-gray-700 mb-2">
                             Fecha de Nacimiento <span class="text-red-500">*</span>
-                            <span class="text-xs text-gray-500">(Debes ser mayor de 18 años)</span>
+                            <span class="text-xs text-gray-500">(Entre 18 y 100 años)</span>
                         </label>
                         <input
                             type="date"
@@ -136,22 +148,27 @@
                             class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
                             required
                         >
-                        <p class="text-xs text-gray-500 mt-1">Edad mínima: 18 años</p>
+                        <p class="text-xs text-gray-500 mt-1">Rango válido: 18 a 100 años</p>
                     </div>
                     <div>
                         <label for="sexo" class="block text-sm font-semibold text-gray-700 mb-2">
                             Sexo <span class="text-red-500">*</span>
+                            <span class="text-xs text-gray-500">(No modificable por integridad médica)</span>
                         </label>
                         <select
                             id="sexo"
                             name="sexo"
-                            class="w-full px-4 py-3 border border-gray-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 text-gray-700 bg-white rounded-lg transition-all"
+                            class="w-full px-4 py-3 border border-gray-300 bg-gray-100 text-gray-600 rounded-lg cursor-not-allowed campo-petrificado"
+                            disabled
                             required
+                            style="background-color: #f3f4f6; color: #4b5563;"
                         >
                             <option value="">Seleccione</option>
                             <option value="Masculino" {% if (usuario.tipo_usuario == 'paciente' and (usuario.sexo_paciente == 'M' or usuario.sexo_paciente == 'Masculino')) or (usuario.tipo_usuario == 'empleado' and (usuario.sexo_empleado == 'M' or usuario.sexo_empleado == 'Masculino')) %}selected{% endif %}>Masculino</option>
                             <option value="Femenino" {% if (usuario.tipo_usuario == 'paciente' and (usuario.sexo_paciente == 'F' or usuario.sexo_paciente == 'Femenino')) or (usuario.tipo_usuario == 'empleado' and (usuario.sexo_empleado == 'F' or usuario.sexo_empleado == 'Femenino')) %}selected{% endif %}>Femenino</option>
                         </select>
+                        <input type="hidden" name="sexo" value="{% if (usuario.tipo_usuario == 'paciente' and (usuario.sexo_paciente == 'M' or usuario.sexo_paciente == 'Masculino')) or (usuario.tipo_usuario == 'empleado' and (usuario.sexo_empleado == 'M' or usuario.sexo_empleado == 'Masculino')) %}Masculino{% else %}Femenino{% endif %}" />
+                        <p class="text-xs text-gray-500 mt-1">Este campo no puede modificarse para preservar la integridad de los registros médicos</p>
                     </div>
                 </div>
 
@@ -308,29 +325,152 @@
             document.getElementById('id_distrito').value = e.target.value || '';
         });
 
-        // ==================== VALIDACIÓN DE EDAD MÍNIMA ====================
+        // ==================== PROTOCOLO_REALIDAD_BIOLOGICA ====================
+        // Implementación según Protocolo de Validación Temporal
+        
+        // NOMENCLATURA DEL SISTEMA
+        const Ahora_Absoluto = new Date();
+        const Umbral_Longevidad = 100; // Máximo años permitidos
+        
+        /**
+         * Función: Auditar_Cronologia
+         * Objetivo: Validar que la fecha de nacimiento esté dentro de límites biológicos lógicos
+         * @param {Date} Origen_Temporal - Fecha de nacimiento ingresada
+         * @returns {boolean} - true si es válida, false si no
+         */
+        function Auditar_Cronologia(Origen_Temporal) {
+            if (!Origen_Temporal || isNaN(Origen_Temporal.getTime())) {
+                return false;
+            }
+            
+            // 1. CALCULO DE LA EXISTENCIA (Edad Exacta)
+            const Edad_Calculada = Ahora_Absoluto.getFullYear() - Origen_Temporal.getFullYear();
+            const mesActual = Ahora_Absoluto.getMonth();
+            const diaActual = Ahora_Absoluto.getDate();
+            const mesNacimiento = Origen_Temporal.getMonth();
+            const diaNacimiento = Origen_Temporal.getDate();
+            
+            // Ajustar edad si aún no ha cumplido años este año
+            let Edad_Exacta = Edad_Calculada;
+            if (mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
+                Edad_Exacta--;
+            }
+            
+            // 2. REGLAS DE VALIDACIÓN (Filtros de Realidad)
+            
+            // Caso A: Viajero del Futuro o Recién Nacido (Menor de 18)
+            if (Edad_Exacta < 18) {
+                Mostrar_Alerta("El paciente debe ser mayor de edad legal (mínimo 18 años).");
+                return false; // DETIENE EL PROCESO, PERO NO BORRA EL INPUT
+            }
+            
+            // Caso B: Cronología Inverosímil (Mayor de 100 años)
+            // Lógica: Nadie en la clínica tiene más de 100 años.
+            if (Edad_Exacta > Umbral_Longevidad) {
+                Mostrar_Alerta("Verificar fecha: La edad excede el límite biológico estándar (" + Umbral_Longevidad + " años).");
+                return false; // DETIENE EL PROCESO, PERO NO BORRA EL INPUT
+            }
+            
+            // Caso C: Fecha Absurda (Año menor a 1900 o mayor al actual)
+            const añoNacimiento = Origen_Temporal.getFullYear();
+            const añoActual = Ahora_Absoluto.getFullYear();
+            
+            if (añoNacimiento < 1900 || añoNacimiento > añoActual) {
+                Mostrar_Alerta("La fecha ingresada no es válida. Verifique el año de nacimiento.");
+                return false; // DETIENE EL PROCESO, PERO NO BORRA EL INPUT
+            }
+            
+            return true; // Validación exitosa
+        }
+        
+        /**
+         * Función: Mostrar_Alerta
+         * Muestra un mensaje de error al usuario
+         */
+        function Mostrar_Alerta(mensaje) {
+            alert(mensaje);
+        }
+        
+        // ==================== VALIDACIÓN DE FECHA DE NACIMIENTO ====================
         
         const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+        const Receptaculo_De_Fecha = fechaNacimientoInput; // Alias para claridad
         
         // Calcular fecha máxima permitida (18 años atrás desde hoy)
-        const hoy = new Date();
-        const fechaMaxima = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+        const fechaMaxima = new Date(Ahora_Absoluto.getFullYear() - 18, Ahora_Absoluto.getMonth(), Ahora_Absoluto.getDate());
         const fechaMaximaStr = fechaMaxima.toISOString().split('T')[0];
-        fechaNacimientoInput.setAttribute('max', fechaMaximaStr);
+        
+        // Calcular fecha mínima permitida (100 años atrás desde hoy)
+        const fechaMinima = new Date(Ahora_Absoluto.getFullYear() - Umbral_Longevidad, Ahora_Absoluto.getMonth(), Ahora_Absoluto.getDate());
+        const fechaMinimaStr = fechaMinima.toISOString().split('T')[0];
+        
+        Receptaculo_De_Fecha.setAttribute('max', fechaMaximaStr);
+        Receptaculo_De_Fecha.setAttribute('min', fechaMinimaStr);
+        
+        // Guardar el valor original de la fecha para restaurarlo si es inválida
+        let fechaOriginal = Receptaculo_De_Fecha.value;
 
-        // Validación en tiempo real
-        fechaNacimientoInput.addEventListener('change', function() {
+        // Validación en tiempo real (SIN BORRAR EL INPUT)
+        Receptaculo_De_Fecha.addEventListener('change', function() {
             const fechaSeleccionada = new Date(this.value);
             
-            if (fechaSeleccionada > fechaMaxima) {
-                alert('Debes ser mayor de 18 años. Por favor, selecciona una fecha válida.');
-                this.value = '';
-                this.setCustomValidity('Debes ser mayor de 18 años');
+            // Validar usando el protocolo
+            const esValida = Auditar_Cronologia(fechaSeleccionada);
+            
+            if (!esValida) {
+                // CRÍTICO: NO BORRAR EL INPUT - Mantener el "Estado Sucio" (Dirty State)
+                // El dato permanece en la caja de texto para que el usuario vea su error
+                // y solo necesite corregir el dígito incorrecto
+                this.setCustomValidity('Fecha de nacimiento inválida. Debe estar entre 18 y 100 años.');
+                this.focus(); // Enfocar el campo para facilitar la corrección
+                // NO borrar el valor - dejar que el usuario lo corrija
             } else {
                 this.setCustomValidity('');
+                // Guardar el valor válido como fecha original
+                fechaOriginal = this.value;
+            }
+        });
+        
+        // Prevenir que se borre la fecha al perder el foco si es inválida
+        Receptaculo_De_Fecha.addEventListener('blur', function() {
+            if (this.value && this.validity.customError) {
+                // Si hay un error de validación personalizado, mantener el valor
+                // pero mostrar el mensaje de error
+                this.reportValidity();
             }
         });
 
+        // ==================== PROTECCIÓN DEL CAMPO DE SEXO ====================
+        // Prevenir cualquier modificación del campo de sexo
+        const sexoSelect = document.getElementById('sexo');
+        const sexoHidden = document.querySelector('input[name="sexo"][type="hidden"]');
+        const sexoOriginal = sexoHidden ? sexoHidden.value : sexoSelect.value;
+        
+        // Prevenir cambios mediante eventos
+        sexoSelect.addEventListener('change', function(e) {
+            e.preventDefault();
+            this.value = sexoOriginal;
+            alert('El campo de sexo no puede modificarse por integridad médica');
+            return false;
+        });
+        
+        sexoSelect.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('El campo de sexo no puede modificarse por integridad médica');
+            return false;
+        });
+        
+        // Prevenir cambios mediante manipulación del DOM
+        Object.defineProperty(sexoSelect, 'value', {
+            get: function() {
+                return sexoOriginal;
+            },
+            set: function(val) {
+                // Ignorar cualquier intento de cambiar el valor
+                console.warn('Intento de modificar el campo de sexo bloqueado');
+            }
+        });
+        
         // ==================== VALIDACIÓN ANTES DE ENVIAR ====================
         
         document.getElementById('form-editar-perfil').addEventListener('submit', function(e) {
@@ -378,35 +518,30 @@
                 return false;
             }
             
-            // Validar fecha de nacimiento
+            // Validar fecha de nacimiento usando Protocolo_Realidad_Biologica
             const fechaNacimiento = fechaNacimientoInput.value;
             if (fechaNacimiento) {
-                const fechaSeleccionada = new Date(fechaNacimiento);
-                const hoy = new Date();
-                const edad = hoy.getFullYear() - fechaSeleccionada.getFullYear();
-                const mesActual = hoy.getMonth();
-                const diaActual = hoy.getDate();
-                const mesNacimiento = fechaSeleccionada.getMonth();
-                const diaNacimiento = fechaSeleccionada.getDate();
+                const Origen_Temporal = new Date(fechaNacimiento);
                 
-                let edadReal = edad;
-                if (mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) {
-                    edadReal--;
-                }
-                
-                if (edadReal < 18) {
+                // Usar la función de auditoría cronológica
+                if (!Auditar_Cronologia(Origen_Temporal)) {
                     e.preventDefault();
-                    alert('Debes ser mayor de 18 años para actualizar tu perfil.');
-                    return false;
+                    fechaNacimientoInput.focus();
+                    return false; // DETIENE EL PROCESO, PERO NO BORRA EL INPUT
                 }
+            } else {
+                e.preventDefault();
+                alert('La fecha de nacimiento es requerida');
+                fechaNacimientoInput.focus();
+                return false;
             }
             
-            // Validar sexo
-            const sexo = document.getElementById('sexo').value;
+            // Validar sexo (ya está bloqueado, pero verificamos que tenga valor)
+            const sexoHidden = document.querySelector('input[name="sexo"][type="hidden"]');
+            const sexo = sexoHidden ? sexoHidden.value : document.getElementById('sexo').value;
             if (!sexo) {
                 e.preventDefault();
-                alert('Por favor, seleccione su sexo');
-                document.getElementById('sexo').focus();
+                alert('El sexo es requerido y no puede modificarse');
                 return false;
             }
             

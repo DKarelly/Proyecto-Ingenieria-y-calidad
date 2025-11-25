@@ -191,26 +191,27 @@ def obtener_reservas():
         cursor.execute("""
             SELECT
                 r.id_reserva,
-                r.fecha_reserva,
-                r.hora_reserva,
                 r.estado,
                 r.fecha_registro,
                 r.id_paciente,
                 p.nombres,
                 p.apellidos,
                 p.documento_identidad as dni,
+                prog.fecha as fecha_reserva,
+                prog.hora_inicio as hora_reserva,
                 s.nombre as servicio_nombre,
                 s.descripcion as servicio_descripcion,
-                m.nombres as medico_nombres,
-                m.apellidos as medico_apellidos,
-                e.nombre as especialidad
+                emp.nombres as medico_nombres,
+                emp.apellidos as medico_apellidos,
+                esp.nombre as especialidad
             FROM RESERVA r
             LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-            LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
-            LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
-            LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
-            LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
-            ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+            LEFT JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+            LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+            LEFT JOIN ESPECIALIDAD esp ON emp.id_especialidad = esp.id_especialidad
+            ORDER BY prog.fecha DESC, prog.hora_inicio DESC
         """)
 
         reservas = cursor.fetchall()
@@ -227,16 +228,28 @@ def obtener_reservas():
             else:
                 reserva['medico_nombre'] = 'Médico no asignado'
 
-            # Formatear fecha y hora
+            # Formatear fecha
             if reserva['fecha_reserva']:
-                reserva['fecha_formateada'] = datetime.strptime(str(reserva['fecha_reserva']), '%Y-%m-%d').strftime('%d/%m/%Y')
+                if isinstance(reserva['fecha_reserva'], str):
+                    reserva['fecha_formateada'] = datetime.strptime(reserva['fecha_reserva'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                else:
+                    reserva['fecha_formateada'] = reserva['fecha_reserva'].strftime('%d/%m/%Y')
+                    reserva['fecha_reserva'] = reserva['fecha_reserva'].strftime('%Y-%m-%d')
             else:
                 reserva['fecha_formateada'] = 'Fecha no disponible'
 
+            # Formatear hora (convertir timedelta a string)
             if reserva['hora_reserva']:
-                reserva['hora_formateada'] = str(reserva['hora_reserva'])
+                # Convertir timedelta a formato HH:MM:SS
+                total_seconds = int(reserva['hora_reserva'].total_seconds())
+                hours = total_seconds // 3600
+                minutes = (total_seconds % 3600) // 60
+                seconds = total_seconds % 60
+                reserva['hora_formateada'] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                reserva['hora_reserva'] = reserva['hora_formateada']
             else:
                 reserva['hora_formateada'] = 'Hora no disponible'
+                reserva['hora_reserva'] = None
 
         return reservas
 
@@ -851,29 +864,30 @@ def api_reservas_listar():
             cursor.execute("""
                 SELECT
                     r.id_reserva,
-                    r.fecha_reserva,
-                    r.hora_reserva,
                     r.estado,
                     r.fecha_registro,
                     r.id_paciente,
                     p.nombres,
                     p.apellidos,
                     p.documento_identidad as dni,
+                    prog.fecha as fecha_reserva,
+                    prog.hora_inicio as hora_reserva,
                     s.nombre as servicio_nombre,
                     s.descripcion as servicio_descripcion,
-                    m.nombres as medico_nombres,
-                    m.apellidos as medico_apellidos,
-                    e.nombre as especialidad
+                    emp.nombres as medico_nombres,
+                    emp.apellidos as medico_apellidos,
+                    esp.nombre as especialidad
                 FROM RESERVA r
                 LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-                LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
-                LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
-                LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
-                LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+                LEFT JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                LEFT JOIN ESPECIALIDAD esp ON emp.id_especialidad = esp.id_especialidad
                 WHERE CONCAT(COALESCE(p.nombres, ''), ' ', COALESCE(p.apellidos, '')) LIKE %s
                    OR COALESCE(p.documento_identidad, '') LIKE %s
                    OR COALESCE(s.nombre, '') LIKE %s
-                ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+                ORDER BY prog.fecha DESC, prog.hora_inicio DESC
             """, (f'%{q}%', f'%{q}%', f'%{q}%'))
 
             reservas = cursor.fetchall()
@@ -890,27 +904,28 @@ def api_reservas_listar():
             cursor.execute("""
                 SELECT
                     r.id_reserva,
-                    r.fecha_reserva,
-                    r.hora_reserva,
                     r.estado,
                     r.fecha_registro,
                     r.id_paciente,
                     p.nombres,
                     p.apellidos,
                     p.documento_identidad as dni,
+                    prog.fecha as fecha_reserva,
+                    prog.hora_inicio as hora_reserva,
                     s.nombre as servicio_nombre,
                     s.descripcion as servicio_descripcion,
-                    m.nombres as medico_nombres,
-                    m.apellidos as medico_apellidos,
-                    e.nombre as especialidad
+                    emp.nombres as medico_nombres,
+                    emp.apellidos as medico_apellidos,
+                    esp.nombre as especialidad
                 FROM RESERVA r
                 LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-                LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
-                LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
-                LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
-                LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+                LEFT JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                LEFT JOIN ESPECIALIDAD esp ON emp.id_especialidad = esp.id_especialidad
                 WHERE r.estado = %s
-                ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+                ORDER BY prog.fecha DESC, prog.hora_inicio DESC
             """, (estado,))
 
             reservas = cursor.fetchall()
@@ -928,27 +943,28 @@ def api_reservas_listar():
                 cursor.execute("""
                     SELECT
                         r.id_reserva,
-                        r.fecha_reserva,
-                        r.hora_reserva,
                         r.estado,
                         r.fecha_registro,
                         r.id_paciente,
                         p.nombres,
                         p.apellidos,
                         p.documento_identidad as dni,
+                        prog.fecha as fecha_reserva,
+                        prog.hora_inicio as hora_reserva,
                         s.nombre as servicio_nombre,
                         s.descripcion as servicio_descripcion,
-                        m.nombres as medico_nombres,
-                        m.apellidos as medico_apellidos,
-                        e.nombre as especialidad
+                        emp.nombres as medico_nombres,
+                        emp.apellidos as medico_apellidos,
+                        esp.nombre as especialidad
                     FROM RESERVA r
                     LEFT JOIN PACIENTE p ON r.id_paciente = p.id_paciente
-                    LEFT JOIN SERVICIO s ON r.id_servicio = s.id_servicio
-                    LEFT JOIN MEDICO med ON r.id_medico = med.id_medico
-                    LEFT JOIN EMPLEADO m ON med.id_empleado = m.id_empleado
-                    LEFT JOIN ESPECIALIDAD e ON med.id_especialidad = e.id_especialidad
+                    LEFT JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                    LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                    LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
+                    LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
+                    LEFT JOIN ESPECIALIDAD esp ON emp.id_especialidad = esp.id_especialidad
                     WHERE r.id_paciente = %s
-                    ORDER BY r.fecha_reserva DESC, r.hora_reserva DESC
+                    ORDER BY prog.fecha DESC, prog.hora_inicio DESC
                 """, (id_paciente_int,))
 
                 reservas = cursor.fetchall()
@@ -972,16 +988,32 @@ def api_reservas_listar():
             else:
                 reserva['medico_nombre'] = 'Médico no asignado'
 
-            # Formatear fecha y hora
+            # Formatear fecha
             if reserva['fecha_reserva']:
-                reserva['fecha_formateada'] = datetime.strptime(str(reserva['fecha_reserva']), '%Y-%m-%d').strftime('%d/%m/%Y')
+                if isinstance(reserva['fecha_reserva'], str):
+                    reserva['fecha_formateada'] = datetime.strptime(reserva['fecha_reserva'], '%Y-%m-%d').strftime('%d/%m/%Y')
+                else:
+                    reserva['fecha_formateada'] = reserva['fecha_reserva'].strftime('%d/%m/%Y')
+                    reserva['fecha_reserva'] = reserva['fecha_reserva'].strftime('%Y-%m-%d')
             else:
                 reserva['fecha_formateada'] = 'Fecha no disponible'
 
+            # Formatear hora (convertir timedelta a string)
             if reserva['hora_reserva']:
-                reserva['hora_formateada'] = str(reserva['hora_reserva'])
+                # Si ya es string, no hacer nada
+                if isinstance(reserva['hora_reserva'], str):
+                    reserva['hora_formateada'] = reserva['hora_reserva']
+                else:
+                    # Convertir timedelta a formato HH:MM:SS
+                    total_seconds = int(reserva['hora_reserva'].total_seconds())
+                    hours = total_seconds // 3600
+                    minutes = (total_seconds % 3600) // 60
+                    seconds = total_seconds % 60
+                    reserva['hora_formateada'] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    reserva['hora_reserva'] = reserva['hora_formateada']
             else:
                 reserva['hora_formateada'] = 'Hora no disponible'
+                reserva['hora_reserva'] = None
 
         return jsonify({'reservas': reservas})
     except Exception as e:

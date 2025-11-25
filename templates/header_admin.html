@@ -47,8 +47,22 @@
                             class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-gray-50 hover:bg-cyan-50 border border-gray-200 hover:border-cyan-300 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/40 group">
                         <div class="flex items-center gap-3">
                             <div class="hidden sm:block text-right">
-                                <p class="text-sm font-semibold text-gray-800" id="admin-username">{{ session.get('nombre_usuario', 'Usuario') }}</p>
-                                <p class="text-xs text-gray-500" id="admin-role">{{ session.get('rol', 'Administrador') }}</p>
+                                <p class="text-sm font-semibold text-gray-800" id="admin-username">
+                                    {% if session.get('nombre_usuario') and session.get('nombre_usuario') != 'None' %}
+                                        {{ session.get('nombre_usuario') }}
+                                    {% elif session.get('correo') %}
+                                        {{ session.get('correo') }}
+                                    {% else %}
+                                        Usuario
+                                    {% endif %}
+                                </p>
+                                <p class="text-xs text-gray-500" id="admin-role">
+                                    {% if session.get('rol') and session.get('rol') != 'None' %}
+                                        {{ session.get('rol') }}
+                                    {% else %}
+                                        Administrador
+                                    {% endif %}
+                                </p>
                             </div>
                             <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center shadow-sm">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -72,8 +86,22 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="font-bold text-gray-800">{{ session.get('nombre_usuario', 'Usuario') }}</p>
-                                    <p class="text-sm text-gray-600">{{ session.get('rol', 'Administrador') }}</p>
+                                    <p class="font-bold text-gray-800">
+                                        {% if session.get('nombre_usuario') and session.get('nombre_usuario') != 'None' %}
+                                            {{ session.get('nombre_usuario') }}
+                                        {% elif session.get('correo') %}
+                                            {{ session.get('correo') }}
+                                        {% else %}
+                                            Usuario
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        {% if session.get('rol') and session.get('rol') != 'None' %}
+                                            {{ session.get('rol') }}
+                                        {% else %}
+                                            Administrador
+                                        {% endif %}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -92,7 +120,7 @@
                                 </div>
                             </a>
 
-                            <a href="/cuentas/cambiar-contrasena" class="flex items-center gap-4 px-5 py-3 text-gray-700 hover:bg-blue-50 transition-colors group">
+                            <a href="/cuentas/recuperar-contrasena" class="flex items-center gap-4 px-5 py-3 text-gray-700 hover:bg-blue-50 transition-colors group">
                                 <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -100,7 +128,7 @@
                                 </div>
                                 <div>
                                     <p class="font-semibold text-sm">Seguridad</p>
-                                    <p class="text-xs text-gray-500">Cambiar contraseña</p>
+                                    <p class="text-xs text-gray-500">Recuperar contraseña</p>
                                 </div>
                             </a>
 
