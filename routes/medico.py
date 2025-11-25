@@ -1296,36 +1296,55 @@ def guardar_diagnostico():
                     # NOTIFICACIÓN: Enviar notificación al médico derivado (si aplica)
                     if id_medico_derivar and id_medico_derivar != id_empleado:
                         try:
-                            # Obtener información del médico que autoriza y del servicio
+                            # Obtener información del médico que autoriza
                             cursor.execute("""
-                                SELECT 
-                                    CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico_autoriza,
-                                    CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
-                                    s.nombre as nombre_servicio,
-                                    u.id_usuario as id_usuario_derivado
+                                SELECT CONCAT(nombres, ' ', apellidos) as nombre_medico_autoriza
+                                FROM EMPLEADO
+                                WHERE id_empleado = %s
+                            """, (id_empleado,))
+                            medico_autoriza = cursor.fetchone()
+                            nombre_medico_autoriza = medico_autoriza['nombre_medico_autoriza'] if medico_autoriza else 'Médico'
+                            
+                            # Obtener información del paciente
+                            cursor.execute("""
+                                SELECT CONCAT(nombres, ' ', apellidos) as nombre_paciente
+                                FROM PACIENTE
+                                WHERE id_paciente = %s
+                            """, (id_paciente,))
+                            paciente_info = cursor.fetchone()
+                            nombre_paciente = paciente_info['nombre_paciente'] if paciente_info else 'Paciente'
+                            
+                            # Obtener información del servicio
+                            cursor.execute("""
+                                SELECT nombre as nombre_servicio
+                                FROM SERVICIO
+                                WHERE id_servicio = %s
+                            """, (id_servicio_operacion,))
+                            servicio_info = cursor.fetchone()
+                            nombre_servicio = servicio_info['nombre_servicio'] if servicio_info else 'Operación'
+                            
+                            # Obtener id_usuario del médico derivado
+                            cursor.execute("""
+                                SELECT u.id_usuario
                                 FROM EMPLEADO e
-                                CROSS JOIN PACIENTE p
-                                CROSS JOIN SERVICIO s
-                                INNER JOIN EMPLEADO e2 ON e2.id_empleado = %s
-                                INNER JOIN USUARIO u ON e2.id_usuario = u.id_usuario
+                                INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
                                 WHERE e.id_empleado = %s
-                                AND p.id_paciente = %s
-                                AND s.id_servicio = %s
-                            """, (id_medico_derivar, id_empleado, id_paciente, id_servicio_operacion))
+                            """, (id_medico_derivar,))
+                            usuario_derivado = cursor.fetchone()
                             
-                            info_notif = cursor.fetchone()
-                            
-                            if info_notif and info_notif['id_usuario_derivado']:
+                            if usuario_derivado and usuario_derivado.get('id_usuario'):
+                                id_usuario_derivado = usuario_derivado['id_usuario']
+                                
                                 titulo_notif = "Nueva Operación Derivada"
                                 mensaje_notif = f"""
                                 <div style="margin: 15px 0;">
                                     <p style="margin: 10px 0; font-size: 15px; color: #374151;">
-                                        El Dr./Dra. <strong>{info_notif['nombre_medico_autoriza']}</strong> le ha derivado una operación.
+                                        El Dr./Dra. <strong>{nombre_medico_autoriza}</strong> le ha derivado una operación.
                                     </p>
                                     <div style="background-color: #f9fafb; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; border-radius: 4px;">
-                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>🏥 Operación:</strong> {info_notif['nombre_servicio']}</p>
-                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>👤 Paciente:</strong> {info_notif['nombre_paciente']}</p>
-                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📋 ID Autorización:</strong> {resultado.get('id_autorizacion')}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>Operación:</strong> {nombre_servicio}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>Paciente:</strong> {nombre_paciente}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>ID Autorización:</strong> {resultado.get('id_autorizacion')}</p>
                                     </div>
                                     <p style="margin: 10px 0; font-size: 14px; color: #6b7280;">
                                         Por favor, revise su agenda para programar la operación correspondiente.
@@ -1333,23 +1352,33 @@ def guardar_diagnostico():
                                 </div>
                                 """
                                 
+                                print(f"🔍 [DEBUG] Creando notificación para médico derivado:")
+                                print(f"   - ID Usuario: {id_usuario_derivado}")
+                                print(f"   - Nombre médico autoriza: {nombre_medico_autoriza}")
+                                print(f"   - Nombre paciente: {nombre_paciente}")
+                                print(f"   - Nombre servicio: {nombre_servicio}")
+                                print(f"   - ID Autorización: {resultado.get('id_autorizacion')}")
+                                
                                 result_notif = Notificacion.crear_para_medico(
                                     titulo=titulo_notif,
                                     mensaje=mensaje_notif,
-                                    tipo='operacion_asignada',
-                                    id_usuario=info_notif['id_usuario_derivado']
+                                    tipo='derivacion_operacion',
+                                    id_usuario=id_usuario_derivado,
+                                    id_reserva=None  # No hay reserva en derivaciones
                                 )
                                 
                                 if result_notif.get('success'):
-                                    print(f"✅ [DEBUG] Notificación enviada al médico derivado (ID usuario: {info_notif['id_usuario_derivado']})")
+                                    print(f"✅ [DEBUG] Notificación enviada al médico derivado (ID usuario: {id_usuario_derivado}, ID notificación: {result_notif.get('id_notificacion')})")
                                 else:
                                     print(f"⚠️ [DEBUG] Error al enviar notificación: {result_notif.get('error')}")
                             else:
-                                print(f"⚠️ [DEBUG] No se pudo obtener id_usuario del médico derivado")
+                                print(f"⚠️ [DEBUG] No se pudo obtener id_usuario del médico derivado (ID empleado: {id_medico_derivar})")
                                 
                         except Exception as notif_error:
                             # No hacer fallar todo si la notificación falla
                             print(f"⚠️ [DEBUG] Error al enviar notificación de derivación: {notif_error}")
+                            import traceback
+                            traceback.print_exc()
                 else:
                     print(f"❌ Error al crear autorización de operación: {resultado.get('error')}")
         
