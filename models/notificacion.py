@@ -247,13 +247,130 @@ class Notificacion:
 
     @staticmethod
     def crear_recordatorio_cita(id_paciente, id_reserva, fecha_cita, hora_cita):
-        """Crea una notificación de recordatorio de cita"""
-        titulo = "Recordatorio de Cita"
-        mensaje = f"Tiene una cita programada para el {fecha_cita} a las {hora_cita}"
+        """Crea una notificación de recordatorio de cita con información completa"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                # Obtener información completa de la reserva
+                sql = """
+                    SELECT 
+                        r.id_reserva,
+                        p.fecha,
+                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
+                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                        CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                        esp.nombre as especialidad,
+                        s.nombre as servicio_nombre
+                    FROM RESERVA r
+                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    WHERE r.id_reserva = %s
+                """
+                cursor.execute(sql, (id_reserva,))
+                reserva_data = cursor.fetchone()
+                
+                if reserva_data:
+                    medico_nombre = reserva_data.get('medico_nombre', 'Médico')
+                    especialidad = reserva_data.get('especialidad', '')
+                    servicio = reserva_data.get('servicio_nombre', '')
+                    
+                    # Formatear fecha
+                    fecha_obj = reserva_data.get('fecha')
+                    if fecha_obj:
+                        if hasattr(fecha_obj, 'strftime'):
+                            fecha_formateada = fecha_obj.strftime('%d/%m/%Y')
+                        else:
+                            fecha_formateada = str(fecha_obj)
+                    else:
+                        fecha_formateada = str(fecha_cita) if fecha_cita else 'Fecha no disponible'
+                    
+                    # Formatear hora
+                    hora_obj = reserva_data.get('hora_inicio')
+                    if hora_obj:
+                        if hasattr(hora_obj, 'strftime'):
+                            hora_formateada = hora_obj.strftime('%H:%M')
+                        elif isinstance(hora_obj, str):
+                            hora_formateada = hora_obj[:5] if len(hora_obj) >= 5 else hora_obj
+                        else:
+                            hora_formateada = str(hora_obj)[:5] if len(str(hora_obj)) >= 5 else str(hora_obj)
+                    else:
+                        hora_formateada = str(hora_cita) if hora_cita else 'Hora no disponible'
+                    
+                    titulo = "Recordatorio de Cita Médica"
+                    mensaje = f"""
+                    <div style="margin: 15px 0;">
+                        <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+                            Le recordamos que tiene una <strong>cita médica programada</strong>.
+                        </p>
+                        <div style="background-color: #f9fafb; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong> {medico_nombre}</p>
+                            {f'<p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>🏥 Especialidad:</strong> {especialidad}</p>' if especialidad else ''}
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📅 Fecha:</strong> {fecha_formateada}</p>
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>⏰ Hora:</strong> {hora_formateada}</p>
+                        </div>
+                        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                            <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+                                <strong>⚠️ Aviso de Seguimiento:</strong> Para asegurar su asistencia, este sistema automático le enviará recordatorios <strong>cada 24 horas</strong> hasta el momento de su cita. El próximo recordatorio será <strong>2 horas antes</strong> de su cita programada.
+                            </p>
+                        </div>
+                    </div>
+                    """
+                else:
+                    # Fallback si no se encuentra la reserva
+                    titulo = "Recordatorio de Cita"
+                    mensaje = f"Tiene una cita programada para el {fecha_cita} a las {hora_cita}"
+                
+        except Exception as e:
+            print(f"⚠️ Error obteniendo datos de reserva para recordatorio: {e}")
+            titulo = "Recordatorio de Cita"
+            mensaje = f"Tiene una cita programada para el {fecha_cita} a las {hora_cita}"
+        finally:
+            conexion.close()
+        
         # Temporarily override the fecha/hora used by crear to schedule this notification
         try:
-            Notificacion._override_fecha_envio = fecha_cita
-            Notificacion._override_hora_envio = hora_cita
+            # Convertir fecha_cita a date si es necesario
+            fecha_envio_obj = fecha_cita
+            if isinstance(fecha_cita, str):
+                from datetime import datetime as dt
+                try:
+                    fecha_envio_obj = dt.strptime(fecha_cita, '%Y-%m-%d').date()
+                except:
+                    try:
+                        fecha_envio_obj = dt.strptime(fecha_cita, '%d/%m/%Y').date()
+                    except:
+                        fecha_envio_obj = datetime.now().date()
+            
+            # Convertir hora_cita a time si es necesario
+            hora_envio_obj = hora_cita
+            if isinstance(hora_cita, str):
+                from datetime import datetime as dt
+                # Limpiar la hora (remover espacios y caracteres extra)
+                hora_limpia = hora_cita.strip().rstrip(':')
+                try:
+                    # Intentar parsear como HH:MM o HH:MM:SS
+                    if ':' in hora_limpia:
+                        hora_parts = hora_limpia.split(':')
+                        if len(hora_parts) >= 2:
+                            hora_str = f"{hora_parts[0].zfill(2)}:{hora_parts[1].zfill(2)}"
+                            hora_envio_obj = dt.strptime(hora_str, '%H:%M').time()
+                        else:
+                            hora_envio_obj = datetime.now().time()
+                    else:
+                        hora_envio_obj = datetime.now().time()
+                except Exception as e:
+                    print(f"⚠️ Error parseando hora '{hora_cita}': {e}")
+                    # Si falla, usar hora actual como fallback
+                    hora_envio_obj = datetime.now().time()
+            elif not hasattr(hora_cita, 'hour'):
+                # Si no es un objeto time, usar hora actual
+                hora_envio_obj = datetime.now().time()
+            
+            Notificacion._override_fecha_envio = fecha_envio_obj
+            Notificacion._override_hora_envio = hora_envio_obj
             return Notificacion.crear(titulo, mensaje, 'recordatorio', id_paciente, id_reserva)
         finally:
             Notificacion._override_fecha_envio = None
@@ -261,25 +378,205 @@ class Notificacion:
 
     @staticmethod
     def crear_confirmacion_reserva(id_paciente, id_reserva):
-        """Crea una notificación de confirmación de reserva"""
-        titulo = "Reserva Generada"
-        mensaje = "Su reserva ha sido generada exitosamente"
+        """Crea una notificación de confirmación de reserva con información completa"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                # Obtener información completa de la reserva
+                sql = """
+                    SELECT 
+                        r.id_reserva,
+                        p.fecha,
+                        p.hora_inicio,
+                        p.hora_fin,
+                        CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                        esp.nombre as especialidad,
+                        s.nombre as servicio_nombre
+                    FROM RESERVA r
+                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    WHERE r.id_reserva = %s
+                """
+                cursor.execute(sql, (id_reserva,))
+                reserva_data = cursor.fetchone()
+                
+                if reserva_data:
+                    medico_nombre = reserva_data.get('medico_nombre', 'Médico')
+                    especialidad = reserva_data.get('especialidad', '')
+                    servicio = reserva_data.get('servicio_nombre', '')
+                    fecha_obj = reserva_data.get('fecha')
+                    hora_inicio_obj = reserva_data.get('hora_inicio')
+                    hora_fin_obj = reserva_data.get('hora_fin')
+                    
+                    # Formatear fecha
+                    if fecha_obj:
+                        if hasattr(fecha_obj, 'strftime'):
+                            fecha_formateada = fecha_obj.strftime('%d/%m/%Y')
+                        else:
+                            fecha_formateada = str(fecha_obj)
+                    else:
+                        fecha_formateada = 'Fecha no disponible'
+                    
+                    # Formatear horas
+                    if hora_inicio_obj:
+                        if hasattr(hora_inicio_obj, 'strftime'):
+                            hora_inicio = hora_inicio_obj.strftime('%H:%M')
+                        elif isinstance(hora_inicio_obj, str):
+                            hora_inicio = hora_inicio_obj[:5] if len(hora_inicio_obj) >= 5 else hora_inicio_obj
+                        else:
+                            hora_inicio = str(hora_inicio_obj)[:5] if len(str(hora_inicio_obj)) >= 5 else str(hora_inicio_obj)
+                    else:
+                        hora_inicio = 'Hora no disponible'
+                    
+                    if hora_fin_obj:
+                        if hasattr(hora_fin_obj, 'strftime'):
+                            hora_fin = hora_fin_obj.strftime('%H:%M')
+                        elif isinstance(hora_fin_obj, str):
+                            hora_fin = hora_fin_obj[:5] if len(hora_fin_obj) >= 5 else hora_fin_obj
+                        else:
+                            hora_fin = str(hora_fin_obj)[:5] if len(str(hora_fin_obj)) >= 5 else str(hora_fin_obj)
+                    else:
+                        hora_fin = ''
+                    
+                    hora_completa = f"{hora_inicio} - {hora_fin}" if hora_fin else hora_inicio
+                    
+                    titulo = "Reserva Médica Generada"
+                    mensaje = f"""
+                    <div style="margin: 15px 0;">
+                        <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+                            Su reserva ha sido generada exitosamente en nuestro sistema.
+                        </p>
+                        <div style="background-color: #f9fafb; border-left: 4px solid #22c55e; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong> {medico_nombre}</p>
+                            {f'<p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>🏥 Especialidad:</strong> {especialidad}</p>' if especialidad else ''}
+                            {f'<p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📋 Servicio:</strong> {servicio}</p>' if servicio else ''}
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📅 Fecha:</strong> {fecha_formateada}</p>
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>⏰ Hora:</strong> {hora_completa}</p>
+                        </div>
+                    </div>
+                    """
+                else:
+                    # Fallback si no se encuentra la reserva
+                    titulo = "Reserva Generada"
+                    mensaje = "Su reserva ha sido generada exitosamente"
+                
+        except Exception as e:
+            print(f"⚠️ Error obteniendo datos de reserva para confirmación: {e}")
+            titulo = "Reserva Generada"
+            mensaje = "Su reserva ha sido generada exitosamente"
+        finally:
+            conexion.close()
+        
         return Notificacion.crear(titulo, mensaje, 'confirmacion', id_paciente, id_reserva)
     
     @staticmethod
     def crear_notificacion_estado_reserva(id_paciente, id_reserva, estado):
-        """Crea una notificación informando el estado actual de la reserva"""
-        titulo = "Estado de Reserva"
+        """Crea una notificación informando el estado actual de la reserva con información completa"""
+        conexion = obtener_conexion()
+        try:
+            with conexion.cursor() as cursor:
+                # Obtener información completa de la reserva
+                sql = """
+                    SELECT 
+                        r.id_reserva,
+                        r.estado,
+                        p.fecha,
+                        p.hora_inicio,
+                        p.hora_fin,
+                        CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                        esp.nombre as especialidad,
+                        s.nombre as servicio_nombre
+                    FROM RESERVA r
+                    INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                    INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                    INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
+                    LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+                    LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                    WHERE r.id_reserva = %s
+                """
+                cursor.execute(sql, (id_reserva,))
+                reserva_data = cursor.fetchone()
+                
+                # Mensajes personalizados según el estado
+                mensajes_estado = {
+                    'Pendiente': 'Su reserva está pendiente de confirmación',
+                    'Confirmada': 'Su reserva ha sido confirmada',
+                    'Cancelada': 'Su reserva ha sido cancelada',
+                    'Completada': 'Su reserva ha sido completada'
+                }
+                
+                mensaje_estado = mensajes_estado.get(estado, f'Su reserva está en estado: {estado}')
+                
+                if reserva_data:
+                    medico_nombre = reserva_data.get('medico_nombre', 'Médico')
+                    especialidad = reserva_data.get('especialidad', '')
+                    servicio = reserva_data.get('servicio_nombre', '')
+                    fecha_obj = reserva_data.get('fecha')
+                    hora_inicio_obj = reserva_data.get('hora_inicio')
+                    hora_fin_obj = reserva_data.get('hora_fin')
+                    
+                    # Formatear fecha
+                    if fecha_obj:
+                        if hasattr(fecha_obj, 'strftime'):
+                            fecha_formateada = fecha_obj.strftime('%d/%m/%Y')
+                        else:
+                            fecha_formateada = str(fecha_obj)
+                    else:
+                        fecha_formateada = 'Fecha no disponible'
+                    
+                    # Formatear horas
+                    if hora_inicio_obj:
+                        if hasattr(hora_inicio_obj, 'strftime'):
+                            hora_inicio = hora_inicio_obj.strftime('%H:%M')
+                        elif isinstance(hora_inicio_obj, str):
+                            hora_inicio = hora_inicio_obj[:5] if len(hora_inicio_obj) >= 5 else hora_inicio_obj
+                        else:
+                            hora_inicio = str(hora_inicio_obj)[:5] if len(str(hora_inicio_obj)) >= 5 else str(hora_inicio_obj)
+                    else:
+                        hora_inicio = 'Hora no disponible'
+                    
+                    if hora_fin_obj:
+                        if hasattr(hora_fin_obj, 'strftime'):
+                            hora_fin = hora_fin_obj.strftime('%H:%M')
+                        elif isinstance(hora_fin_obj, str):
+                            hora_fin = hora_fin_obj[:5] if len(hora_fin_obj) >= 5 else hora_fin_obj
+                        else:
+                            hora_fin = str(hora_fin_obj)[:5] if len(str(hora_fin_obj)) >= 5 else str(hora_fin_obj)
+                    else:
+                        hora_fin = ''
+                    
+                    hora_completa = f"{hora_inicio} - {hora_fin}" if hora_fin else hora_inicio
+                    
+                    titulo = f"Estado de Reserva: {estado}"
+                    mensaje = f"""
+                    <div style="margin: 15px 0;">
+                        <p style="margin: 10px 0; font-size: 15px; color: #374151;">
+                            {mensaje_estado}
+                        </p>
+                        <div style="background-color: #f9fafb; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>👨‍⚕️ Médico:</strong> {medico_nombre}</p>
+                            {f'<p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>🏥 Especialidad:</strong> {especialidad}</p>' if especialidad else ''}
+                            {f'<p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📋 Servicio:</strong> {servicio}</p>' if servicio else ''}
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📅 Fecha:</strong> {fecha_formateada}</p>
+                            <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>⏰ Hora:</strong> {hora_completa}</p>
+                        </div>
+                    </div>
+                    """
+                else:
+                    # Fallback si no se encuentra la reserva
+                    titulo = "Estado de Reserva"
+                    mensaje = mensaje_estado
+                
+        except Exception as e:
+            print(f"⚠️ Error obteniendo datos de reserva para estado: {e}")
+            titulo = "Estado de Reserva"
+            mensaje = mensajes_estado.get(estado, f'Su reserva está en estado: {estado}')
+        finally:
+            conexion.close()
         
-        # Mensajes personalizados según el estado
-        mensajes_estado = {
-            'Pendiente': 'Su reserva está pendiente de confirmación',
-            'Confirmada': 'Su reserva ha sido confirmada',
-            'Cancelada': 'Su reserva ha sido cancelada',
-            'Completada': 'Su reserva ha sido completada'
-        }
-        
-        mensaje = mensajes_estado.get(estado, f'Su reserva está en estado: {estado}')
         return Notificacion.crear(titulo, mensaje, 'estado', id_paciente, id_reserva)
 
     @staticmethod

@@ -1566,26 +1566,52 @@
             });
         }
 
-        // Validación de edad
+        // Validación de edad (18-100 años)
         const nacimientoInput = document.getElementById('emp-nacimiento');
         if (nacimientoInput) {
+            // Establecer límites de fecha
+            const hoy = new Date();
+            const fechaMaxima = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+            const fechaMinima = new Date(hoy.getFullYear() - 100, hoy.getMonth(), hoy.getDate());
+            nacimientoInput.setAttribute('max', fechaMaxima.toISOString().split('T')[0]);
+            nacimientoInput.setAttribute('min', fechaMinima.toISOString().split('T')[0]);
+            
             nacimientoInput.addEventListener('change', function() {
                 const parent = this.parentElement;
                 const prevMsg = parent.querySelector('.validation-message');
                 if (prevMsg) prevMsg.remove();
                 
+                if (!this.value) {
+                    this.classList.remove('border-red-500', 'border-orange-500');
+                    return;
+                }
+                
                 const fechaNac = new Date(this.value);
                 const hoy = new Date();
                 const edad = Math.floor((hoy - fechaNac) / (365.25 * 24 * 60 * 60 * 1000));
                 
+                // Validar edad mínima (18 años)
                 if (edad < 18) {
                     const msg = document.createElement('p');
                     msg.className = 'validation-message text-sm text-red-500 mt-1';
                     msg.textContent = `Edad: ${edad} años. Debe ser mayor de 18 años.`;
                     parent.appendChild(msg);
                     this.classList.add('border-red-500');
-                } else {
-                    this.classList.remove('border-red-500');
+                    this.classList.remove('border-orange-500');
+                    // NO borrar el campo - mantener el valor para que el usuario lo corrija
+                } 
+                // Validar edad máxima (100 años)
+                else if (edad > 100) {
+                    const msg = document.createElement('p');
+                    msg.className = 'validation-message text-sm text-red-500 mt-1';
+                    msg.textContent = `Edad: ${edad} años. La edad no puede superar los 100 años.`;
+                    parent.appendChild(msg);
+                    this.classList.add('border-red-500');
+                    this.classList.remove('border-orange-500');
+                    // NO borrar el campo - mantener el valor para que el usuario lo corrija
+                } 
+                else {
+                    this.classList.remove('border-red-500', 'border-orange-500');
                 }
             });
         }
@@ -1711,7 +1737,7 @@
                     return;
                 }
                 
-                // Validar edad mínima (18 años)
+                // Validar edad (18-100 años)
                 const fechaNacimiento = new Date(document.getElementById('emp-nacimiento').value);
                 const hoy = new Date();
                 const edad = Math.floor((hoy - fechaNacimiento) / (365.25 * 24 * 60 * 60 * 1000));
@@ -1723,6 +1749,18 @@
                         tipo: 'warning',
                         textoAceptar: 'Entendido'
                     });
+                    document.getElementById('emp-nacimiento').focus();
+                    return;
+                }
+                
+                if (edad > 100) {
+                    await mostrarConfirmacion({
+                        titulo: 'Error de Validación',
+                        mensaje: 'La edad no puede superar los 100 años.',
+                        tipo: 'warning',
+                        textoAceptar: 'Entendido'
+                    });
+                    document.getElementById('emp-nacimiento').focus();
                     return;
                 }
                 

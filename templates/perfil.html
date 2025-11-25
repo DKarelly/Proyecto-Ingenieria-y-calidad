@@ -135,8 +135,13 @@
                 <div class="pb-4">
                     <p class="text-sm text-gray-500 mb-1">Estado</p>
                     <p class="text-lg font-semibold">
-                        {% if usuario.estado == 'activo' %}
-                            <span class="text-green-600"><i class="fa-solid fa-circle-check mr-1"></i>Activo</span>
+                        {% if usuario.estado %}
+                            {% set estado_upper = usuario.estado|upper %}
+                            {% if estado_upper == 'ACTIVO' %}
+                                <span class="text-green-600"><i class="fa-solid fa-circle-check mr-1"></i>Activo</span>
+                            {% else %}
+                                <span class="text-red-600"><i class="fa-solid fa-circle-xmark mr-1"></i>{{ usuario.estado }}</span>
+                            {% endif %}
                         {% else %}
                             <span class="text-red-600"><i class="fa-solid fa-circle-xmark mr-1"></i>Inactivo</span>
                         {% endif %}
