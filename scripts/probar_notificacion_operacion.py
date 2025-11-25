@@ -74,7 +74,7 @@ def crear_notificacion_prueba_operacion(id_usuario, nombre_medico):
             <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>ID Autorización:</strong> 999 (PRUEBA)</p>
         </div>
         <p style="margin: 10px 0; font-size: 14px; color: #6b7280;">
-            Por favor, revise su agenda para programar la operación correspondiente.
+            El paciente programará la operación cuando esté listo. Esté preparado para cuando reciba la solicitud de reserva.
         </p>
         <p style="margin: 10px 0; font-size: 12px; color: #9ca3af; font-style: italic;">
             Esta es una notificación de prueba generada automáticamente.
