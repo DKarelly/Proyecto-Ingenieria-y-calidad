@@ -103,8 +103,60 @@ def perfil():
     """Página de perfil del usuario - Vista detallada para empleados, simple para pacientes"""
     usuario = Usuario.obtener_por_id(session['usuario_id'])
     
+    if not usuario:
+        flash('Usuario no encontrado', 'danger')
+        return redirect(url_for('home'))
+    
+    # Normalizar el estado: asegurar que sea 'Activo' o 'Inactivo' con mayúscula inicial
+    estado_val = usuario.get('estado')
+    if estado_val:
+        estado_str = str(estado_val).strip()
+        # Convertir a formato estándar: 'Activo' o 'Inactivo'
+        if estado_str.lower() == 'activo':
+            usuario['estado'] = 'Activo'
+        else:
+            usuario['estado'] = 'Inactivo'
+    else:
+        usuario['estado'] = 'Inactivo'
+    
+    # Asegurar que el nombre_empleado esté disponible si es empleado
+    if usuario.get('tipo_usuario') == 'empleado' and not usuario.get('nombre_empleado'):
+        # Si no hay nombre_empleado, intentar construir desde nombres y apellidos
+        from models.empleado import Empleado
+        if usuario.get('id_empleado'):
+            empleado = Empleado.obtener_por_id(usuario['id_empleado'])
+            if empleado:
+                usuario['nombre_empleado'] = f"{empleado.get('nombres', '')} {empleado.get('apellidos', '')}".strip()
+        # Si aún no hay nombre, intentar desde la BD directamente
+        if not usuario.get('nombre_empleado'):
+            from bd import obtener_conexion
+            conexion = obtener_conexion()
+            try:
+                with conexion.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT nombres, apellidos 
+                        FROM EMPLEADO 
+                        WHERE id_usuario = %s
+                    """, (session['usuario_id'],))
+                    empleado_data = cursor.fetchone()
+                    if empleado_data:
+                        usuario['nombre_empleado'] = f"{empleado_data.get('nombres', '')} {empleado_data.get('apellidos', '')}".strip()
+            except:
+                pass
+            finally:
+                conexion.close()
+    
+    # Actualizar nombre_usuario en sesión si no está o está como None
+    if not session.get('nombre_usuario') or session.get('nombre_usuario') == 'None':
+        if usuario.get('tipo_usuario') == 'empleado':
+            session['nombre_usuario'] = usuario.get('nombre_empleado') or usuario.get('correo', 'Usuario')
+        elif usuario.get('tipo_usuario') == 'paciente':
+            session['nombre_usuario'] = usuario.get('nombre_paciente') or usuario.get('correo', 'Usuario')
+        else:
+            session['nombre_usuario'] = usuario.get('correo', 'Usuario')
+    
     # Si es empleado, usar vista detallada (antes consultarperfil.html)
-    if usuario and usuario.get('tipo_usuario') == 'empleado':
+    if usuario.get('tipo_usuario') == 'empleado':
         # Redirigir según el rol del empleado a su panel correspondiente después de ver el perfil
         id_rol = usuario.get('id_rol')
         if id_rol == 3:  # Recepcionista
@@ -410,8 +462,17 @@ def api_login():
     session['correo'] = usuario['correo']
     session['telefono'] = usuario['telefono']
     session['tipo_usuario'] = usuario['tipo_usuario']
+    
     # Asegurar que nombre_usuario nunca sea None
-    session['nombre_usuario'] = usuario.get('nombre') or usuario.get('correo', 'Usuario')
+    # Si es empleado y no hay nombre, obtenerlo de la BD
+    nombre_usuario = usuario.get('nombre')
+    if not nombre_usuario and usuario.get('tipo_usuario') == 'empleado' and usuario.get('id_empleado'):
+        from models.empleado import Empleado
+        empleado = Empleado.obtener_por_id(usuario['id_empleado'])
+        if empleado:
+            nombre_usuario = f"{empleado.get('nombres', '')} {empleado.get('apellidos', '')}".strip()
+    
+    session['nombre_usuario'] = nombre_usuario or usuario.get('correo', 'Usuario')
     session['rol'] = usuario.get('rol')
     session['id_rol'] = usuario.get('id_rol')
     session['id_paciente'] = usuario.get('id_paciente')

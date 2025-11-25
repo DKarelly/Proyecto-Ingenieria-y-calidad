@@ -1370,20 +1370,22 @@ def api_reprogramar_reserva_old():
 
 @reservas_bp.route('/api/crear-reserva', methods=['POST'])
 def api_crear_reserva():
-    data = request.get_json() or {}
-    id_paciente = data.get('id_paciente')
-    id_programacion = data.get('id_programacion')
-    id_servicio = data.get('id_servicio')
-
-    if not id_paciente:
-        return jsonify({'error': 'id_paciente es requerido'}), 400
-    if not id_programacion:
-        return jsonify({'error': 'id_programacion es requerido'}), 400
-    if not id_servicio:
-        return jsonify({'error': 'id_servicio es requerido'}), 400
-
-    conexion = None
+    """API: Crea una nueva reserva médica"""
     try:
+        data = request.get_json() or {}
+        id_paciente = data.get('id_paciente')
+        id_programacion = data.get('id_programacion')
+        id_servicio = data.get('id_servicio')
+
+        if not id_paciente:
+            return jsonify({'error': 'id_paciente es requerido'}), 400
+        if not id_programacion:
+            return jsonify({'error': 'id_programacion es requerido'}), 400
+        if not id_servicio:
+            return jsonify({'error': 'id_servicio es requerido'}), 400
+
+        conexion = None
+        try:
         # Verificar que la programación existe y está disponible
         conexion = obtener_conexion()
         with conexion.cursor() as cursor:
@@ -1685,6 +1687,7 @@ def api_crear_reserva():
         }), 201
 
     except Exception as e:
+        # Capturar cualquier error no manejado y devolver JSON
         print(f"❌ [API crear-reserva] Error crítico: {e}")
         import traceback
         traceback.print_exc()
@@ -3039,18 +3042,23 @@ def paciente_crear_reserva():
 
         tipo_reserva = 'servicio' if id_servicio else 'cita'
 
-        # Crear notificaciones para el paciente
+        # Crear notificaciones para el paciente (NO BLOQUEANTE - errores no afectan la reserva)
         try:
             # 1. Notificación de confirmación de creación
-            resultado = Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
-            if resultado.get('error'):
-                print(f"❌ Error creando notificación de confirmación: {resultado['error']}")
-            else:
-                print(f"✅ Notificación de confirmación creada para paciente (ID: {id_paciente})")
+            # Envolver en try/except para que errores de email no afecten la creación de reserva
+            try:
+                resultado = Notificacion.crear_confirmacion_reserva(id_paciente, id_reserva)
+                if resultado.get('error'):
+                    print(f"⚠️ Error creando notificación de confirmación (no crítico): {resultado['error']}")
+                else:
+                    print(f"✅ Notificación de confirmación creada para paciente (ID: {id_paciente})")
+            except Exception as email_error:
+                # Error de email NO debe afectar la creación de reserva
+                print(f"⚠️ Error enviando email de notificación (no crítico): {email_error}")
+                # La notificación se creó en BD, solo falló el email
         except Exception as e:
-            print(f"❌ Error creando notificación de confirmación: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"⚠️ Error creando notificación de confirmación (no crítico): {e}")
+            # No hacer traceback completo para no llenar logs
         
         try:
             # 2. Notificación del estado actual de la reserva (Confirmada)

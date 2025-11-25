@@ -8,6 +8,16 @@ from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import threading
+import socket
+
+# Import condicional de Flask para evitar errores si se usa fuera de contexto
+try:
+    from flask import current_app
+    FLASK_AVAILABLE = True
+except ImportError:
+    FLASK_AVAILABLE = False
+    current_app = None
 
 # Cargar variables de entorno
 load_dotenv()
@@ -67,6 +77,13 @@ class EmailService:
                 'message': error_msg
             }
         
+        # Llamar al método interno de envío
+        return self._enviar_email_sync(destinatario_email, destinatario_nombre, titulo, mensaje, tipo)
+    
+    def _enviar_email_sync(self, destinatario_email, destinatario_nombre, titulo, mensaje, tipo):
+        """
+        Método interno para enviar email de forma síncrona
+        """
         try:
             print(f"📧 Enviando email a {destinatario_email}...")
             # Crear el mensaje
@@ -105,9 +122,10 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
             msg.attach(part1)
             msg.attach(part2)
             
-            # Enviar el correo
+            # Enviar el correo con timeout reducido para evitar bloqueos
             print(f"📧 Conectando a {self.smtp_server}:{self.smtp_port}...")
-            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=30) as server:
+            # Timeout reducido a 10 segundos para evitar que bloquee el worker
+            with smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10) as server:
                 print(f"📧 Iniciando TLS...")
                 server.starttls()
                 print(f"📧 Autenticando con {self.sender_email}...")
@@ -128,9 +146,10 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
                 'success': False,
                 'message': error_msg
             }
-        except (smtplib.SMTPConnectError, ConnectionError, OSError) as e:
+        except (smtplib.SMTPConnectError, ConnectionError, OSError, TimeoutError, socket.timeout) as e:
             error_msg = f'Error conectando al servidor SMTP {self.smtp_server}:{self.smtp_port}. Detalle: {str(e)}'
             print(f"📧❌ {error_msg}")
+            # No es crítico - el sistema puede funcionar sin email
             return {
                 'success': False,
                 'message': error_msg
@@ -145,6 +164,7 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
                 'message': error_msg
             }
         except Exception as e:
+            # Capturar cualquier otro error (incluyendo timeouts del sistema)
             error_msg = f'Error inesperado al enviar email: {str(e)}'
             print(f"📧❌ {error_msg}")
             import traceback
@@ -280,6 +300,129 @@ Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}
 
 # Instancia global del servicio
 email_service = EmailService()
+
+
+# ============================================
+# PROTOCOLO DE ENVÍO ASÍNCRONO (NO BLOQUEANTE)
+# ============================================
+# Solución para evitar que Gunicorn mate el worker por timeout
+# cuando se intenta enviar emails de forma síncrona
+
+def lanzar_mensajero_fantasma(app_context, funcion_envio, **datos_mision):
+    """
+    Ejecuta el envío de correo en un plano existencial separado (otro hilo),
+    permitiendo que el hilo principal responda al usuario de inmediato.
+    
+    Args:
+        app_context: Contexto de Flask necesario para acceder a configuración
+        funcion_envio: Función que envía el email (email_service.enviar_notificacion_email)
+        **datos_mision: Datos para el envío (destinatario_email, destinatario_nombre, titulo, mensaje, tipo)
+    """
+    # Necesitamos empujar el contexto de Flask manualmente porque el nuevo hilo
+    # nace "desnudo" y no conoce la configuración de tu app.
+    with app_context:
+        try:
+            destinatario = datos_mision.get('destinatario_email', 'desconocido')
+            print(f"👻 [Fantasma] Iniciando transmisión a {destinatario}...")
+            
+            # Ejecutar el envío real
+            resultado = funcion_envio(**datos_mision)
+            
+            if resultado.get('success'):
+                print(f"👻 [Fantasma] Misión cumplida. El correo ha partido hacia {destinatario}.")
+            else:
+                print(f"💀 [Fantasma] Fallo en la misión hacia {destinatario}: {resultado.get('message', 'Error desconocido')}")
+                
+        except Exception as e:
+            print(f"💀 [Fantasma] Error crítico en la misión: {e}")
+            import traceback
+            traceback.print_exc()
+
+
+def invocar_protocolo_envio_rapido(email_service_instance, destinatario_email, destinatario_nombre, titulo, mensaje, tipo='informacion'):
+    """
+    Esta es la función que llamarás desde tu ruta/controlador en lugar de la llamada directa.
+    Envía el email en un hilo separado para no bloquear la respuesta HTTP.
+    
+    Args:
+        email_service_instance: Instancia de EmailService (usar email_service)
+        destinatario_email: Email del destinatario
+        destinatario_nombre: Nombre del destinatario
+        titulo: Título del mensaje
+        mensaje: Contenido del mensaje
+        tipo: Tipo de notificación (confirmacion, recordatorio, etc.)
+    
+    Returns:
+        bool: True si el hilo fue lanzado exitosamente (el email se enviará en segundo plano)
+    """
+    try:
+        # Capturamos el 'alma' de la aplicación actual (su contexto/configuración)
+        # Si no hay contexto de Flask (ej: fuera de una request), usar None
+        alma_app = None
+        
+        if FLASK_AVAILABLE:
+            try:
+                # Intentar obtener el contexto actual de Flask
+                alma_app = current_app.app_context()
+            except RuntimeError:
+                # Si no hay contexto de Flask activo, intentar obtenerlo desde el módulo app
+                try:
+                    import app
+                    if hasattr(app, 'app'):
+                        alma_app = app.app.app_context()
+                    else:
+                        print("⚠️ [Fantasma] No se encontró la instancia de Flask en app.app")
+                except Exception as e:
+                    print(f"⚠️ [Fantasma] No se pudo obtener contexto de Flask: {e}")
+                    alma_app = None
+        else:
+            print("⚠️ [Fantasma] Flask no está disponible. El email se enviará sin contexto.")
+        
+        # Preparamos los datos de la misión
+        paquete_secreto = {
+            'destinatario_email': destinatario_email,
+            'destinatario_nombre': destinatario_nombre,
+            'titulo': titulo,
+            'mensaje': mensaje,
+            'tipo': tipo
+        }
+        
+        # Si no hay contexto, intentar enviar de forma síncrona como fallback
+        if alma_app is None:
+            print("⚠️ [Fantasma] Sin contexto de Flask, enviando de forma síncrona como fallback")
+            resultado = email_service_instance.enviar_notificacion_email(**paquete_secreto)
+            return resultado.get('success', False)
+        
+        # Creamos el hilo (el agente sombra)
+        agente_sombra = threading.Thread(
+            target=lanzar_mensajero_fantasma,
+            args=(alma_app, email_service_instance.enviar_notificacion_email),
+            kwargs=paquete_secreto,
+            daemon=True  # El hilo morirá cuando termine la aplicación principal
+        )
+        
+        # .start() dispara el hilo y deja que el código principal continúe INMEDIATAMENTE
+        agente_sombra.start()
+        
+        print(f"🚀 [Fantasma] Agente sombra despachado para {destinatario_email}. El usuario recibirá respuesta inmediata.")
+        return True
+        
+    except Exception as e:
+        print(f"❌ [Fantasma] Error al lanzar agente sombra: {e}")
+        import traceback
+        traceback.print_exc()
+        # Fallback: intentar envío síncrono
+        try:
+            resultado = email_service_instance.enviar_notificacion_email(
+                destinatario_email=destinatario_email,
+                destinatario_nombre=destinatario_nombre,
+                titulo=titulo,
+                mensaje=mensaje,
+                tipo=tipo
+            )
+            return resultado.get('success', False)
+        except:
+            return False
 
 
 def enviar_email_reserva_creada(paciente_email, paciente_nombre, fecha, hora_inicio, hora_fin, 
