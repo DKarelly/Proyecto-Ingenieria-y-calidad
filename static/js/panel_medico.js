@@ -3,6 +3,12 @@ let paginaActualPacientes = 1;
 let paginaActualDiagnosticos = 1;
 const itemsPorPagina = 10;
 
+// ========== CONTROL DE VALIDACIONES ==========
+// Esta variable controla si las validaciones de tiempo están activas
+// true = validaciones activadas (comportamiento normal)
+// false = validaciones desactivadas (modo provisional para casos especiales)
+let validacionesActivas = true;
+
 // ========== EVENTOS INICIALES ==========
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Panel Médico cargado correctamente');
@@ -53,6 +59,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             formData.append('autorizar_examen', autorizarExamen);
             formData.append('autorizar_operacion', autorizarOperacion);
+            
+            // Agregar flag para omitir validación de tiempo si está desactivada
+            if (!validacionesActivas) {
+                formData.append('omitir_validacion_tiempo', 'true');
+            }
 
             try {
                 const response = await fetch('/medico/diagnosticos/guardar', {
@@ -218,6 +229,12 @@ function abrirFormularioModificacion(idCita, nombrePaciente, dni, idPaciente, fe
  *   * abrirFormularioModificacion() (si se requiere)
  */
 function validarHorarioCita(fechaCita, horaCita) {
+    // Si las validaciones están desactivadas, permitir siempre
+    if (!validacionesActivas) {
+        console.log('⚠️ Validaciones de tiempo DESACTIVADAS - Permitiendo registro sin restricción');
+        return true;
+    }
+    
     if (!fechaCita || !horaCita) {
         return true; // Si no hay datos, permitir (compatibilidad con citas antiguas)
     }
@@ -256,6 +273,101 @@ function cerrarFormularioDiagnostico() {
     // Re-habilitar checkboxes de autorización por si estaban deshabilitados
     document.getElementById('check_autorizar_examen').disabled = false;
     document.getElementById('check_autorizar_operacion').disabled = false;
+}
+
+// ========== FUNCIONES PARA CONTROL DE VALIDACIONES ==========
+/**
+ * Alterna el estado de las validaciones de tiempo para diagnósticos
+ * Cuando está desactivado, permite registrar diagnósticos sin restricción de horario
+ */
+function toggleValidaciones() {
+    validacionesActivas = !validacionesActivas;
+    actualizarBotonValidaciones();
+    
+    const estado = validacionesActivas ? 'ACTIVADAS' : 'DESACTIVADAS';
+    const mensaje = validacionesActivas 
+        ? '✅ Validaciones de tiempo ACTIVADAS\n\nSolo podrá registrar diagnósticos durante el horario de la cita y hasta la medianoche del mismo día.'
+        : '⚠️ Validaciones de tiempo DESACTIVADAS\n\nAhora puede registrar diagnósticos sin restricción de horario.\n\nNota: Este modo es provisional para casos especiales.';
+    
+    alert(mensaje);
+    console.log(`Validaciones de tiempo: ${estado}`);
+}
+
+/**
+ * Actualiza la apariencia visual del botón de validaciones según el estado
+ */
+function actualizarBotonValidaciones() {
+    const boton = document.getElementById('btn-toggle-validaciones');
+    const icono = document.getElementById('icono-validaciones');
+    const texto = document.getElementById('texto-validaciones');
+    
+    if (!boton || !icono || !texto) return;
+    
+    if (validacionesActivas) {
+        // Estado: Validaciones activas (botón para desactivar)
+        boton.className = 'flex items-center gap-2 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors text-sm font-medium shadow-sm';
+        icono.textContent = 'verified';
+        texto.textContent = 'Validaciones: ON';
+        boton.title = 'Validaciones de tiempo activas - Click para desactivar';
+    } else {
+        // Estado: Validaciones inactivas (botón para activar)
+        boton.className = 'flex items-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm font-medium shadow-sm animate-pulse';
+        icono.textContent = 'warning';
+        texto.textContent = 'Validaciones: OFF';
+        boton.title = 'Validaciones de tiempo desactivadas - Click para activar';
+    }
+}
+
+// ========== FUNCIONES PARA AUTO-COMPLETAR CITAS ==========
+/**
+ * Auto-completa las citas de días anteriores que no recibieron diagnóstico.
+ * Las marca como "Completada" con observación indicando que no se registró diagnóstico.
+ * NO crea autorizaciones ni procedimientos.
+ */
+async function autoCompletarCitasPasadas() {
+    const confirmar = confirm(
+        '⚠️ Auto-completar Citas Sin Diagnóstico\n\n' +
+        'Esta acción marcará como "Completadas" todas las citas de días anteriores que no tienen diagnóstico registrado.\n\n' +
+        'Las citas se marcarán con:\n' +
+        '• Diagnóstico: "[No registrado]"\n' +
+        '• Observación: "Diagnóstico no registrado por el médico"\n\n' +
+        '⚠️ IMPORTANTE: No se crearán autorizaciones de exámenes ni operaciones.\n\n' +
+        '¿Desea continuar?'
+    );
+    
+    if (!confirmar) return;
+    
+    try {
+        const response = await fetch('/medico/api/auto_completar_citas_sin_diagnostico', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})  // Sin fecha = usa el día anterior
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            if (result.citas_actualizadas > 0) {
+                let mensaje = `✅ ${result.message}\n\nCitas actualizadas:\n`;
+                result.detalle.forEach(cita => {
+                    mensaje += `• ${cita.paciente} (${cita.fecha})\n`;
+                });
+                alert(mensaje);
+                
+                // Recargar la página para actualizar la lista
+                window.location.reload();
+            } else {
+                alert(`✅ ${result.message}`);
+            }
+        } else {
+            alert(`❌ Error: ${result.message}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al auto-completar citas: ' + error.message);
+    }
 }
 
 // ========== FUNCIONES PARA HISTORIAL DE PACIENTES ==========
