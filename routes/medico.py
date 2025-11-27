@@ -909,6 +909,97 @@ def historial_paciente(id_paciente):
                 'observaciones': cita['observaciones'] if cita['observaciones'] else ''
             })
         
+        # Obtener EXÁMENES del paciente - Solo los que el médico autorizó (ya que él mismo los realiza)
+        cursor.execute("""
+            SELECT 
+                ap.id_autorizacion,
+                ap.id_tipo_servicio,
+                'EXAMEN' as tipo_procedimiento,
+                s.nombre as servicio_nombre,
+                ap.fecha_autorizacion,
+                ap.fecha_vencimiento,
+                ap.fecha_uso,
+                CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
+                CASE 
+                    WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
+                    WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
+                    ELSE 'PENDIENTE'
+                END as estado_autorizacion
+            FROM AUTORIZACION_PROCEDIMIENTO ap
+            INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
+            INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
+            WHERE ap.id_paciente = %s
+            AND ap.id_tipo_servicio = 4
+            AND ap.id_medico_asignado = %s
+            ORDER BY ap.fecha_autorizacion DESC
+        """, (id_paciente, id_empleado))
+        
+        examenes_raw = cursor.fetchall()
+        
+        # Obtener OPERACIONES del paciente - Solo las asignadas a este médico
+        cursor.execute("""
+            SELECT 
+                ap.id_autorizacion,
+                ap.id_tipo_servicio,
+                'OPERACION' as tipo_procedimiento,
+                s.nombre as servicio_nombre,
+                ap.fecha_autorizacion,
+                ap.fecha_vencimiento,
+                ap.fecha_uso,
+                CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
+                esp.nombre as especialidad_requerida,
+                CASE 
+                    WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
+                    WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
+                    ELSE 'PENDIENTE'
+                END as estado_autorizacion
+            FROM AUTORIZACION_PROCEDIMIENTO ap
+            INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
+            INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
+            LEFT JOIN ESPECIALIDAD esp ON ap.id_especialidad_requerida = esp.id_especialidad
+            WHERE ap.id_paciente = %s
+            AND ap.id_tipo_servicio = 2
+            AND ap.id_medico_asignado = %s
+            ORDER BY ap.fecha_autorizacion DESC
+        """, (id_paciente, id_empleado))
+        
+        operaciones_raw = cursor.fetchall()
+        
+        # Formatear exámenes
+        examenes = []
+        for aut in examenes_raw:
+            fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
+            fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
+            fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
+            
+            examenes.append({
+                'id': aut['id_autorizacion'],
+                'servicio': aut['servicio_nombre'],
+                'fecha_autorizacion': fecha_aut,
+                'fecha_vencimiento': fecha_venc,
+                'fecha_uso': fecha_uso,
+                'medico_autoriza': aut['medico_autoriza'],
+                'estado': aut['estado_autorizacion']
+            })
+        
+        # Formatear operaciones
+        operaciones = []
+        for aut in operaciones_raw:
+            fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
+            fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
+            fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
+            
+            operaciones.append({
+                'id': aut['id_autorizacion'],
+                'servicio': aut['servicio_nombre'],
+                'fecha_autorizacion': fecha_aut,
+                'fecha_vencimiento': fecha_venc,
+                'fecha_uso': fecha_uso,
+                'medico_autoriza': aut['medico_autoriza'],
+                'especialidad': aut['especialidad_requerida'] if aut['especialidad_requerida'] else None,
+                'estado': aut['estado_autorizacion']
+            })
+        
         return jsonify({
             'success': True,
             'paciente': {
@@ -916,7 +1007,9 @@ def historial_paciente(id_paciente):
                 'dni': paciente['documento_identidad'],
                 'edad': edad
             },
-            'historial': historial_formateado
+            'historial': historial_formateado,
+            'examenes': examenes,
+            'operaciones': operaciones
         })
         
     except Exception as e:
@@ -1079,30 +1172,50 @@ def guardar_diagnostico():
         autorizaciones_creadas = []
         
         if autorizar_examen:
-            id_servicio_examen = request.form.get('id_servicio_examen')
-            print(f"🔍 [DEBUG] Autorizar examen: {autorizar_examen}, ID servicio: {id_servicio_examen}")
+            # Soportar múltiples exámenes (hasta 3)
+            cantidad_examenes = request.form.get('cantidad_examenes', '0')
+            examenes_ids = []
             
-            if id_servicio_examen:
-                # Para exámenes, el médico que autoriza es el mismo que lo realiza
-                datos_examen = {
-                    'id_cita': int(id_cita),
-                    'id_paciente': int(id_paciente),
-                    'id_medico_autoriza': int(id_empleado),
-                    'tipo_procedimiento': 'EXAMEN',
-                    'id_servicio': int(id_servicio_examen),
-                    'id_especialidad_requerida': None,
-                    'id_medico_asignado': int(id_empleado)  # El mismo médico realiza el examen
-                }
-                print(f"🔍 [DEBUG] Datos para crear autorización de examen: {datos_examen}")
-                
-                resultado = AutorizacionProcedimiento.crear(datos_examen, cursor_externo=cursor)
-                print(f"🔍 [DEBUG] Resultado crear examen: {resultado}")
-                
-                if resultado.get('success'):
-                    autorizaciones_creadas.append('examen')
-                    print(f"✅ [DEBUG] Autorización de examen creada con ID: {resultado.get('id_autorizacion')}")
-                else:
-                    print(f"❌ Error al crear autorización de examen: {resultado.get('error')}")
+            # Obtener exámenes del nuevo formato (múltiples)
+            for i in range(int(cantidad_examenes) if cantidad_examenes else 0):
+                examen_id = request.form.get(f'examenes[{i}]')
+                if examen_id:
+                    examenes_ids.append(examen_id)
+            
+            # Fallback al formato antiguo (un solo examen)
+            if not examenes_ids:
+                id_servicio_examen = request.form.get('id_servicio_examen')
+                if id_servicio_examen:
+                    examenes_ids.append(id_servicio_examen)
+            
+            print(f"🔍 [DEBUG] Autorizar exámenes: {len(examenes_ids)} examen(es)")
+            
+            examenes_creados = 0
+            for id_servicio_examen in examenes_ids:
+                if id_servicio_examen:
+                    # Para exámenes, el médico que autoriza es el mismo que lo realiza
+                    datos_examen = {
+                        'id_cita': int(id_cita),
+                        'id_paciente': int(id_paciente),
+                        'id_medico_autoriza': int(id_empleado),
+                        'tipo_procedimiento': 'EXAMEN',
+                        'id_servicio': int(id_servicio_examen),
+                        'id_especialidad_requerida': None,
+                        'id_medico_asignado': int(id_empleado)  # El mismo médico realiza el examen
+                    }
+                    print(f"🔍 [DEBUG] Datos para crear autorización de examen: {datos_examen}")
+                    
+                    resultado = AutorizacionProcedimiento.crear(datos_examen, cursor_externo=cursor)
+                    print(f"🔍 [DEBUG] Resultado crear examen: {resultado}")
+                    
+                    if resultado.get('success'):
+                        examenes_creados += 1
+                        print(f"✅ [DEBUG] Autorización de examen creada con ID: {resultado.get('id_autorizacion')}")
+                    else:
+                        print(f"❌ Error al crear autorización de examen: {resultado.get('error')}")
+            
+            if examenes_creados > 0:
+                autorizaciones_creadas.append(f'{examenes_creados} examen(es)')
         
         if autorizar_operacion:
             id_servicio_operacion = request.form.get('id_servicio_operacion')
@@ -1183,60 +1296,89 @@ def guardar_diagnostico():
                     # NOTIFICACIÓN: Enviar notificación al médico derivado (si aplica)
                     if id_medico_derivar and id_medico_derivar != id_empleado:
                         try:
-                            # Obtener información del médico que autoriza y del servicio
+                            # Obtener información del médico que autoriza
                             cursor.execute("""
-                                SELECT 
-                                    CONCAT(e.nombres, ' ', e.apellidos) as nombre_medico_autoriza,
-                                    CONCAT(p.nombres, ' ', p.apellidos) as nombre_paciente,
-                                    s.nombre as nombre_servicio,
-                                    u.id_usuario as id_usuario_derivado
+                                SELECT CONCAT(nombres, ' ', apellidos) as nombre_medico_autoriza
+                                FROM EMPLEADO
+                                WHERE id_empleado = %s
+                            """, (id_empleado,))
+                            medico_autoriza = cursor.fetchone()
+                            nombre_medico_autoriza = medico_autoriza['nombre_medico_autoriza'] if medico_autoriza else 'Médico'
+                            
+                            # Obtener información del paciente
+                            cursor.execute("""
+                                SELECT CONCAT(nombres, ' ', apellidos) as nombre_paciente
+                                FROM PACIENTE
+                                WHERE id_paciente = %s
+                            """, (id_paciente,))
+                            paciente_info = cursor.fetchone()
+                            nombre_paciente = paciente_info['nombre_paciente'] if paciente_info else 'Paciente'
+                            
+                            # Obtener información del servicio
+                            cursor.execute("""
+                                SELECT nombre as nombre_servicio
+                                FROM SERVICIO
+                                WHERE id_servicio = %s
+                            """, (id_servicio_operacion,))
+                            servicio_info = cursor.fetchone()
+                            nombre_servicio = servicio_info['nombre_servicio'] if servicio_info else 'Operación'
+                            
+                            # Obtener id_usuario del médico derivado
+                            cursor.execute("""
+                                SELECT u.id_usuario
                                 FROM EMPLEADO e
-                                CROSS JOIN PACIENTE p
-                                CROSS JOIN SERVICIO s
-                                INNER JOIN EMPLEADO e2 ON e2.id_empleado = %s
-                                INNER JOIN USUARIO u ON e2.id_usuario = u.id_usuario
+                                INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
                                 WHERE e.id_empleado = %s
-                                AND p.id_paciente = %s
-                                AND s.id_servicio = %s
-                            """, (id_medico_derivar, id_empleado, id_paciente, id_servicio_operacion))
+                            """, (id_medico_derivar,))
+                            usuario_derivado = cursor.fetchone()
                             
-                            info_notif = cursor.fetchone()
-                            
-                            if info_notif and info_notif['id_usuario_derivado']:
+                            if usuario_derivado and usuario_derivado.get('id_usuario'):
+                                id_usuario_derivado = usuario_derivado['id_usuario']
+                                
                                 titulo_notif = "Nueva Operación Derivada"
                                 mensaje_notif = f"""
                                 <div style="margin: 15px 0;">
                                     <p style="margin: 10px 0; font-size: 15px; color: #374151;">
-                                        El Dr./Dra. <strong>{info_notif['nombre_medico_autoriza']}</strong> le ha derivado una operación.
+                                        El Dr./Dra. <strong>{nombre_medico_autoriza}</strong> le ha derivado una operación.
                                     </p>
                                     <div style="background-color: #f9fafb; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0; border-radius: 4px;">
-                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>🏥 Operación:</strong> {info_notif['nombre_servicio']}</p>
-                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>👤 Paciente:</strong> {info_notif['nombre_paciente']}</p>
-                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>📋 ID Autorización:</strong> {resultado.get('id_autorizacion')}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>Operación:</strong> {nombre_servicio}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>Paciente:</strong> {nombre_paciente}</p>
+                                        <p style="margin: 5px 0; color: #111827; font-size: 14px;"><strong>ID Autorización:</strong> {resultado.get('id_autorizacion')}</p>
                                     </div>
                                     <p style="margin: 10px 0; font-size: 14px; color: #6b7280;">
-                                        Por favor, revise su agenda para programar la operación correspondiente.
+                                        El paciente programará la operación cuando esté listo. Esté preparado para cuando reciba la solicitud de reserva.
                                     </p>
                                 </div>
                                 """
+                                
+                                print(f"🔍 [DEBUG] Creando notificación para médico derivado:")
+                                print(f"   - ID Usuario: {id_usuario_derivado}")
+                                print(f"   - Nombre médico autoriza: {nombre_medico_autoriza}")
+                                print(f"   - Nombre paciente: {nombre_paciente}")
+                                print(f"   - Nombre servicio: {nombre_servicio}")
+                                print(f"   - ID Autorización: {resultado.get('id_autorizacion')}")
                                 
                                 result_notif = Notificacion.crear_para_medico(
                                     titulo=titulo_notif,
                                     mensaje=mensaje_notif,
                                     tipo='derivacion_operacion',
-                                    id_usuario=info_notif['id_usuario_derivado']
+                                    id_usuario=id_usuario_derivado,
+                                    id_reserva=None  # No hay reserva en derivaciones
                                 )
                                 
                                 if result_notif.get('success'):
-                                    print(f"✅ [DEBUG] Notificación enviada al médico derivado (ID usuario: {info_notif['id_usuario_derivado']})")
+                                    print(f"✅ [DEBUG] Notificación enviada al médico derivado (ID usuario: {id_usuario_derivado}, ID notificación: {result_notif.get('id_notificacion')})")
                                 else:
                                     print(f"⚠️ [DEBUG] Error al enviar notificación: {result_notif.get('error')}")
                             else:
-                                print(f"⚠️ [DEBUG] No se pudo obtener id_usuario del médico derivado")
+                                print(f"⚠️ [DEBUG] No se pudo obtener id_usuario del médico derivado (ID empleado: {id_medico_derivar})")
                                 
                         except Exception as notif_error:
                             # No hacer fallar todo si la notificación falla
                             print(f"⚠️ [DEBUG] Error al enviar notificación de derivación: {notif_error}")
+                            import traceback
+                            traceback.print_exc()
                 else:
                     print(f"❌ Error al crear autorización de operación: {resultado.get('error')}")
         
@@ -1560,8 +1702,10 @@ def obtener_servicios_operacion():
 def obtener_medicos_mi_especialidad():
     """
     Obtiene médicos de la misma especialidad del médico logueado
+    que tengan programaciones disponibles para operaciones.
     Se usa para derivar operaciones sin mostrar selector de especialidad
     """
+    conexion = None
     try:
         id_empleado = session.get('id_empleado')
         
@@ -1576,28 +1720,61 @@ def obtener_medicos_mi_especialidad():
         result = cursor.fetchone()
         
         if not result:
-            conexion.close()
             return jsonify({'success': False, 'message': 'Médico no encontrado'}), 404
         
         id_especialidad_medico = result['id_especialidad']
-        medico_actual_nombre = f"{result['nombres']} {result['apellidos']}"
         
-        # Obtener otros médicos de la misma especialidad
-        medicos = AutorizacionProcedimiento.obtener_medicos_por_especialidad(id_especialidad_medico)
+        # Obtener médicos de la misma especialidad que tengan programaciones disponibles
+        # para servicios de tipo OPERACION (id_tipo_servicio = 2)
+        cursor.execute("""
+            SELECT DISTINCT
+                e.id_empleado,
+                CONCAT(e.nombres, ' ', e.apellidos) as nombre_completo,
+                e.nombres,
+                e.apellidos,
+                esp.nombre as especialidad,
+                u.correo,
+                u.telefono
+            FROM EMPLEADO e
+            INNER JOIN USUARIO u ON e.id_usuario = u.id_usuario
+            INNER JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
+            INNER JOIN HORARIO h ON h.id_empleado = e.id_empleado
+            INNER JOIN PROGRAMACION p ON p.id_horario = h.id_horario
+            INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+            WHERE e.id_especialidad = %s
+            AND e.id_empleado != %s
+            AND e.id_rol = 2
+            AND e.estado = 'activo'
+            AND u.estado = 'activo'
+            AND s.id_tipo_servicio = 2
+            AND p.estado = 'Disponible'
+            AND p.fecha >= CURDATE()
+            ORDER BY e.apellidos, e.nombres
+        """, (id_especialidad_medico, id_empleado))
         
-        # Filtrar para excluir el médico actual
-        medicos_filtrados = [m for m in medicos if m['id_empleado'] != id_empleado]
+        medicos = cursor.fetchall()
         
-        conexion.close()
+        # Obtener nombre de especialidad
+        cursor.execute("""
+            SELECT nombre FROM ESPECIALIDAD WHERE id_especialidad = %s
+        """, (id_especialidad_medico,))
+        esp_result = cursor.fetchone()
+        especialidad_nombre = esp_result['nombre'] if esp_result else 'N/A'
+        
         return jsonify({
             'success': True, 
-            'medicos': medicos_filtrados,
-            'especialidad_nombre': medicos[0]['especialidad'] if medicos else 'N/A'
+            'medicos': medicos,
+            'especialidad_nombre': especialidad_nombre
         })
         
     except Exception as e:
         print(f"Error al obtener médicos de mi especialidad: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
 
 
 @medico_bp.route('/api/verificar_autorizaciones/<int:id_paciente>', methods=['GET'])
