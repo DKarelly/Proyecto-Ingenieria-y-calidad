@@ -16,526 +16,137 @@
 </head>
 <body class="text-gray-700">
     {% include 'header_admin.html' %}
-    
+
+    <!-- Selector de submódulos -->
     <div class="max-w-7xl mx-auto p-6 md:p-10">
-        <!-- Botón de regreso -->
-        <div class="mb-6">
-            <a href="/reservas/" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
-                <i class="fas fa-arrow-left mr-2"></i>
-                <span class="font-medium">Volver al Panel de Reservas</span>
-            </a>
-        </div>
-
-        <!-- Título -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-black text-gray-800">
-                <i class="fas fa-calendar-check text-cyan-600 mr-3"></i>
-                Gestionar Solicitudes de Reprogramación
-            </h1>
-            <p class="text-gray-600 mt-2">Aprobar o rechazar solicitudes de cambio de fecha/hora de reservas</p>
-        </div>
-
-        <!-- Estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-yellow-600 text-sm font-semibold uppercase tracking-wide">Pendientes</p>
-                        <p class="text-3xl font-bold text-yellow-800 mt-2" id="total-pendientes">0</p>
-                    </div>
-                    <div class="bg-yellow-500 bg-opacity-20 rounded-full p-4">
-                        <i class="fas fa-clock text-yellow-600 text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-br from-cyan-50 to-blue-100 border-l-4 border-cyan-500 rounded-lg p-6 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-cyan-600 text-sm font-semibold uppercase tracking-wide">Reprogramadas Hoy</p>
-                        <p class="text-3xl font-bold text-cyan-800 mt-2" id="total-reprogramadas">0</p>
-                    </div>
-                    <div class="bg-cyan-500 bg-opacity-20 rounded-full p-4">
-                        <i class="fas fa-calendar-check text-cyan-600 text-2xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loading -->
-        <div id="loading" class="hidden text-center py-12">
-            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-500 mx-auto mb-4"></div>
-            <p class="text-gray-600 font-medium">Cargando solicitudes...</p>
-        </div>
-
-        <!-- Sin resultados -->
-        <div id="sin-resultados" class="hidden text-center py-12 bg-white rounded-lg border border-gray-200">
-            <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
-            <p class="text-gray-600 font-semibold text-lg">No hay solicitudes pendientes</p>
-            <p class="text-gray-500 text-sm mt-2">Todas las solicitudes han sido procesadas</p>
-        </div>
-
-        <!-- Tabla de Solicitudes -->
-        <div id="tabla-container" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gradient-to-r from-cyan-500 to-blue-500">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Solicitud</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Paciente</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Servicio</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha/Hora Actual</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Motivo</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Reprogramaciones</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-body" class="bg-white divide-y divide-gray-200">
-                        <!-- Filas dinámicas -->
-                    </tbody>
-                </table>
-            </div>
+        <div class="flex gap-3 mb-6">
+            <button id="btn-mod-reprogramar" type="button" class="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">Reprogramar Reserva</button>
+            <button id="btn-mod-cancelaciones" type="button" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300">Gestionar Cancelaciones</button>
         </div>
     </div>
 
-    {% include 'footer.html' %}
-
-    <!-- Modal para Aprobar Reprogramación -->
-    <div id="modal-aprobar" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full animate-fade-in max-h-[90vh] overflow-y-auto">
-            <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6 rounded-t-xl flex justify-between items-center">
-                <div>
-                    <h2 class="text-2xl font-bold">Aprobar Reprogramación</h2>
-                    <p class="text-sm opacity-90 mt-1">Selecciona nueva fecha y hora</p>
-                </div>
-                <button onclick="cerrarModalAprobar()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
+    <!-- Submódulo: Reprogramar Reserva -->
+    <div id="mod-reprogramar">
+        <div class="max-w-7xl mx-auto p-6 md:p-10">
+            <!-- Botón de regreso -->
+            <div class="mb-6">
+                <a href="/reservas/" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    <span class="font-medium">Volver al Panel de Reservas</span>
+                </a>
             </div>
-            
-            <div class="p-6">
-                <!-- Información de la Solicitud -->
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
-                    <h3 class="font-semibold text-gray-800 mb-2">Información de la Reserva</h3>
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <p><strong>Paciente:</strong> <span id="modal-paciente">---</span></p>
-                        <p><strong>DNI:</strong> <span id="modal-dni">---</span></p>
-                        <p><strong>Servicio:</strong> <span id="modal-servicio">---</span></p>
-                        <p><strong>Médico:</strong> <span id="modal-medico">---</span></p>
-                        <p><strong>Fecha/Hora Actual:</strong> <span id="modal-fecha-actual">---</span></p>
-                        <p><strong>Reprogramaciones:</strong> <span id="modal-reprogramaciones">0</span> / 2</p>
-                    </div>
-                    <div class="mt-3">
-                        <p class="text-sm"><strong>Motivo:</strong></p>
-                        <p class="text-sm text-gray-700 mt-1" id="modal-motivo">---</p>
-                    </div>
-                </div>
 
-                <!-- Selector de Nueva Programación -->
-                <div class="mb-6">
-                    <h3 class="font-semibold text-gray-800 mb-4">Seleccionar Nueva Fecha y Hora</h3>
-                    
-                    <!-- Filtros -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- Título -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-gray-800">
+                    <i class="fas fa-calendar-check text-cyan-600 mr-3"></i>
+                    Gestionar Solicitudes de Reprogramación
+                </h1>
+                <p class="text-gray-600 mt-2">Aprobar o rechazar solicitudes de cambio de fecha/hora de reservas</p>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-center justify-between">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
-                            <input type="date" id="modal-fecha" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500">
+                            <p class="text-yellow-600 text-sm font-semibold uppercase tracking-wide">Pendientes</p>
+                            <p class="text-3xl font-bold text-yellow-800 mt-2" id="total-pendientes">0</p>
                         </div>
-                        <div class="flex items-end">
-                            <button onclick="buscarHorariosDisponibles()" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">
-                                <i class="fas fa-search mr-2"></i>Buscar Horarios
-                            </button>
+                        <div class="bg-yellow-500 bg-opacity-20 rounded-full p-4">
+                            <i class="fas fa-clock text-yellow-600 text-2xl"></i>
                         </div>
-                    </div>
-
-                    <!-- Lista de Horarios Disponibles -->
-                    <div id="horarios-loading" class="hidden text-center py-8">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500 mx-auto mb-3"></div>
-                        <p class="text-gray-600">Buscando horarios...</p>
-                    </div>
-
-                    <div id="horarios-sin-resultados" class="hidden text-center py-8 bg-gray-50 rounded-lg">
-                        <i class="fas fa-calendar-times text-gray-300 text-4xl mb-3"></i>
-                        <p class="text-gray-600">No hay horarios disponibles para esta fecha</p>
-                    </div>
-
-                    <div id="horarios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                        <!-- Tarjetas de horarios dinámicas -->
                     </div>
                 </div>
 
-                <!-- Campo de Respuesta -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Comentario (opcional)</label>
-                    <textarea id="modal-respuesta" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500" placeholder="Agregar comentario adicional..."></textarea>
+                <div class="bg-gradient-to-br from-cyan-50 to-blue-100 border-l-4 border-cyan-500 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-cyan-600 text-sm font-semibold uppercase tracking-wide">Reprogramadas Hoy</p>
+                            <p class="text-3xl font-bold text-cyan-800 mt-2" id="total-reprogramadas">0</p>
+                        </div>
+                        <div class="bg-cyan-500 bg-opacity-20 rounded-full p-4">
+                            <i class="fas fa-calendar-check text-cyan-600 text-2xl"></i>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Botones -->
-                <div class="flex gap-3">
-                    <button id="btn-confirmar-aprobar" onclick="confirmarAprobar()" disabled class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-check mr-2"></i>Aprobar Reprogramación
-                    </button>
-                    <button onclick="cerrarModalAprobar()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all">
-                        <i class="fas fa-times mr-2"></i>Cancelar
-                    </button>
+            <!-- Loading -->
+            <div id="loading" class="hidden text-center py-12">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-500 mx-auto mb-4"></div>
+                <p class="text-gray-600 font-medium">Cargando solicitudes...</p>
+            </div>
+
+            <!-- Sin resultados -->
+            <div id="sin-resultados" class="hidden text-center py-12 bg-white rounded-lg border border-gray-200">
+                <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+                <p class="text-gray-600 font-semibold text-lg">No hay solicitudes pendientes</p>
+                <p class="text-gray-500 text-sm mt-2">Todas las solicitudes han sido procesadas</p>
+            </div>
+
+            <!-- Tabla de Solicitudes -->
+            <div id="tabla-container" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gradient-to-r from-cyan-500 to-blue-500">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Solicitud</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Paciente</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Servicio</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha/Hora Actual</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Motivo</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Reprogramaciones</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para Rechazar -->
-    <div id="modal-rechazar" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full animate-fade-in">
-            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl flex justify-between items-center">
-                <div>
-                    <h2 class="text-2xl font-bold">Rechazar Solicitud</h2>
-                    <p class="text-sm opacity-90 mt-1">Indica el motivo del rechazo</p>
-                </div>
-                <button onclick="cerrarModalRechazar()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-            
-            <div class="p-6">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Motivo del Rechazo *</label>
-                    <textarea id="rechazar-respuesta" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" placeholder="Explica por qué se rechaza la solicitud..."></textarea>
-                </div>
-
-                <div class="flex gap-3">
-                    <button onclick="confirmarRechazar()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-all">
-                        <i class="fas fa-ban mr-2"></i>Rechazar
-                    </button>
-                    <button onclick="cerrarModalRechazar()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all">
-                        Cancelar
-                    </button>
-                </div>
-            </div>
-        </div>
+    <!-- Submódulo: Gestionar Cancelaciones -->
+    <div id="mod-cancelaciones" class="hidden">
+        {% include 'Cancelar.html' %}
     </div>
 
-    <script>
-        let solicitudes = [];
-        let solicitudSeleccionada = null;
-        let programacionSeleccionada = null;
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/reprogramar-reserva.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cancelar.js') }}"></script>
+    <!-- (Scripts externos; no hay JS inline) -->
+        <script>
+            // Fallback: si por algún motivo no se enganchan los listeners del JS externo
+            (function(){
+                const btnReprog = document.getElementById('btn-mod-reprogramar');
+                const btnCanc = document.getElementById('btn-mod-cancelaciones');
+                const modReprog = document.getElementById('mod-reprogramar');
+                const modCanc = document.getElementById('mod-cancelaciones');
+                if (!btnReprog || !btnCanc || !modReprog || !modCanc) return;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            cargarSolicitudes();
-            cargarEstadisticas();
-        });
-
-        async function cargarSolicitudes() {
-            console.log('🔄 Cargando solicitudes de reprogramación...');
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('sin-resultados').classList.add('hidden');
-            document.getElementById('tabla-container').classList.add('hidden');
-
-            try {
-                const resp = await fetch('/reservas/api/solicitudes-reprogramacion');
-                const data = await resp.json();
-                
-                console.log('📥 Respuesta del servidor:', data);
-
-                if (!resp.ok) throw new Error(data.error || 'Error al cargar solicitudes');
-
-                solicitudes = data.solicitudes || [];
-                console.log(`📋 Total de solicitudes de reprogramación recibidas: ${solicitudes.length}`);
-                
-                mostrarSolicitudes();
-                cargarEstadisticas(); // Actualizar estadísticas después de cargar solicitudes
-            } catch (err) {
-                console.error('❌ Error:', err);
-                mostrarNotificacion('Error al cargar solicitudes', 'error');
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('sin-resultados').classList.remove('hidden');
-            }
-        }
-
-        async function cargarEstadisticas() {
-            try {
-                const resp = await fetch('/reservas/api/estadisticas-reprogramacion');
-                const data = await resp.json();
-
-                if (resp.ok) {
-                    document.getElementById('total-pendientes').textContent = data.pendientes || 0;
-                    document.getElementById('total-reprogramadas').textContent = data.reprogramadas_hoy || 0;
-                }
-            } catch (err) {
-                console.error('Error al cargar estadísticas:', err);
-            }
-        }
-
-        function mostrarSolicitudes() {
-            document.getElementById('loading').classList.add('hidden');
-
-            if (solicitudes.length === 0) {
-                document.getElementById('sin-resultados').classList.remove('hidden');
-                return;
-            }
-
-            document.getElementById('sin-resultados').classList.add('hidden');
-            document.getElementById('tabla-container').classList.remove('hidden');
-            
-            const tbody = document.getElementById('tabla-body');
-            tbody.innerHTML = '';
-
-            solicitudes.forEach(sol => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-50 transition-colors';
-
-                const fechaSolicitud = new Date(sol.fecha_solicitud);
-                const fechaFormateada = fechaSolicitud.toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                const fechaCita = new Date(sol.fecha_actual + 'T00:00:00');
-                const fechaCitaFormateada = fechaCita.toLocaleDateString('es-ES', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: 'short'
-                });
-
-                const maxReprog = sol.num_reprogramaciones >= 2;
-                const badgeReprog = maxReprog ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-mono text-gray-900">#${sol.id_solicitud}</div>
-                        <div class="text-xs text-gray-500">${fechaFormateada}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-medium text-gray-900">${sol.paciente_nombre}</div>
-                        <div class="text-xs text-gray-500">${sol.paciente_dni}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">${sol.servicio_nombre}</div>
-                        ${sol.medico_nombre ? `<div class="text-xs text-gray-500">${sol.medico_nombre}</div>` : ''}
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">${fechaCitaFormateada}</div>
-                        <div class="text-xs text-gray-500">${sol.hora_inicio_actual} - ${sol.hora_fin_actual}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm text-gray-700 max-w-xs truncate" title="${sol.motivo}">${sol.motivo}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeReprog}">
-                            ${sol.num_reprogramaciones} / 2
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <button onclick="abrirModalAprobar(${sol.id_solicitud})" class="text-green-600 hover:text-green-800 font-medium mr-3" ${maxReprog ? 'disabled title="Máximo de reprogramaciones alcanzado"' : ''}>
-                            <i class="fas fa-check mr-1"></i>Aprobar
-                        </button>
-                        <button onclick="abrirModalRechazar(${sol.id_solicitud})" class="text-red-600 hover:text-red-800 font-medium">
-                            <i class="fas fa-times mr-1"></i>Rechazar
-                        </button>
-                    </td>
-                `;
-
-                tbody.appendChild(tr);
-            });
-        }
-
-        function abrirModalAprobar(idSolicitud) {
-            solicitudSeleccionada = solicitudes.find(s => s.id_solicitud === idSolicitud);
-            if (!solicitudSeleccionada) return;
-
-            document.getElementById('modal-paciente').textContent = solicitudSeleccionada.paciente_nombre;
-            document.getElementById('modal-dni').textContent = solicitudSeleccionada.paciente_dni;
-            document.getElementById('modal-servicio').textContent = solicitudSeleccionada.servicio_nombre;
-            document.getElementById('modal-medico').textContent = solicitudSeleccionada.medico_nombre || '-';
-            document.getElementById('modal-fecha-actual').textContent = 
-                `${solicitudSeleccionada.fecha_actual} ${solicitudSeleccionada.hora_inicio_actual}-${solicitudSeleccionada.hora_fin_actual}`;
-            document.getElementById('modal-reprogramaciones').textContent = solicitudSeleccionada.num_reprogramaciones;
-            document.getElementById('modal-motivo').textContent = solicitudSeleccionada.motivo;
-
-            programacionSeleccionada = null;
-            document.getElementById('btn-confirmar-aprobar').disabled = true;
-            document.getElementById('horarios-container').innerHTML = '';
-            document.getElementById('horarios-sin-resultados').classList.add('hidden');
-            
-            document.getElementById('modal-aprobar').classList.remove('hidden');
-        }
-
-        function cerrarModalAprobar() {
-            document.getElementById('modal-aprobar').classList.add('hidden');
-            solicitudSeleccionada = null;
-            programacionSeleccionada = null;
-        }
-
-        async function buscarHorariosDisponibles() {
-            const fecha = document.getElementById('modal-fecha').value;
-            if (!fecha) {
-                mostrarNotificacion('Selecciona una fecha', 'error');
-                return;
-            }
-
-            const container = document.getElementById('horarios-container');
-            const loading = document.getElementById('horarios-loading');
-            const sinResultados = document.getElementById('horarios-sin-resultados');
-
-            container.innerHTML = '';
-            container.classList.add('hidden');
-            sinResultados.classList.add('hidden');
-            loading.classList.remove('hidden');
-
-            try {
-                const resp = await fetch(`/reservas/api/buscar-horarios-disponibles?fecha=${fecha}`);
-                const data = await resp.json();
-
-                loading.classList.add('hidden');
-
-                if (!data.horarios || data.horarios.length === 0) {
-                    sinResultados.classList.remove('hidden');
-                    return;
-                }
-
-                container.classList.remove('hidden');
-                data.horarios.forEach(horario => {
-                    const card = document.createElement('div');
-                    card.className = 'border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-cyan-500 transition-all';
-                    card.onclick = () => seleccionarHorario(horario.id_programacion, card);
-
-                    const fechaObj = new Date(horario.fecha + 'T00:00:00');
-                    const fechaStr = fechaObj.toLocaleDateString('es-ES', {
-                        weekday: 'short',
-                        day: '2-digit',
-                        month: 'short'
+                // Evitar múltiples registros
+                if (!btnReprog.dataset.fallbackBound) {
+                    btnReprog.dataset.fallbackBound = '1';
+                    btnReprog.addEventListener('click', function(){
+                        modReprog.classList.remove('hidden');
+                        modCanc.classList.add('hidden');
                     });
-
-                    card.innerHTML = `
-                        <div class="text-center">
-                            <p class="text-sm font-semibold text-gray-700">${fechaStr}</p>
-                            <p class="text-lg font-bold text-cyan-600">${horario.hora_inicio} - ${horario.hora_fin}</p>
-                            <p class="text-xs text-gray-500 mt-1">${horario.profesional}</p>
-                            ${horario.especialidad ? `<p class="text-xs text-gray-400">${horario.especialidad}</p>` : ''}
-                        </div>
-                    `;
-
-                    container.appendChild(card);
-                });
-            } catch (err) {
-                console.error('Error:', err);
-                loading.classList.add('hidden');
-                sinResultados.classList.remove('hidden');
-                mostrarNotificacion('Error al buscar horarios', 'error');
-            }
-        }
-
-        function seleccionarHorario(idProgramacion, cardElement) {
-            document.querySelectorAll('#horarios-container > div').forEach(c => {
-                c.classList.remove('border-cyan-500', 'bg-cyan-50');
-                c.classList.add('border-gray-200');
-            });
-
-            cardElement.classList.remove('border-gray-200');
-            cardElement.classList.add('border-cyan-500', 'bg-cyan-50');
-            
-            programacionSeleccionada = idProgramacion;
-            document.getElementById('btn-confirmar-aprobar').disabled = false;
-        }
-
-        async function confirmarAprobar() {
-            if (!programacionSeleccionada) {
-                mostrarNotificacion('Selecciona un horario', 'error');
-                return;
-            }
-
-            const respuesta = document.getElementById('modal-respuesta').value.trim() || 'Solicitud aprobada';
-
-            const btn = document.getElementById('btn-confirmar-aprobar');
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
-
-            try {
-                const resp = await fetch('/reservas/api/aprobar-reprogramacion', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_solicitud: solicitudSeleccionada.id_solicitud,
-                        nueva_programacion_id: programacionSeleccionada,
-                        respuesta: respuesta
-                    })
-                });
-
-                const data = await resp.json();
-
-                if (!resp.ok) throw new Error(data.error || 'Error al aprobar');
-
-                mostrarNotificacion('Reprogramación aprobada exitosamente', 'success');
-                cerrarModalAprobar();
-                cargarSolicitudes();
-            } catch (err) {
-                console.error('Error:', err);
-                mostrarNotificacion(err.message, 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar Reprogramación';
-            }
-        }
-
-        function abrirModalRechazar(idSolicitud) {
-            solicitudSeleccionada = solicitudes.find(s => s.id_solicitud === idSolicitud);
-            if (!solicitudSeleccionada) return;
-
-            document.getElementById('rechazar-respuesta').value = '';
-            document.getElementById('modal-rechazar').classList.remove('hidden');
-        }
-
-        function cerrarModalRechazar() {
-            document.getElementById('modal-rechazar').classList.add('hidden');
-            solicitudSeleccionada = null;
-        }
-
-        async function confirmarRechazar() {
-            const respuesta = document.getElementById('rechazar-respuesta').value.trim();
-            if (!respuesta) {
-                mostrarNotificacion('Debes indicar el motivo del rechazo', 'error');
-                return;
-            }
-
-            try {
-                const resp = await fetch('/reservas/api/rechazar-reprogramacion', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id_solicitud: solicitudSeleccionada.id_solicitud,
-                        respuesta: respuesta
-                    })
-                });
-
-                const data = await resp.json();
-
-                if (!resp.ok) throw new Error(data.error || 'Error al rechazar');
-
-                mostrarNotificacion('Solicitud rechazada', 'success');
-                cerrarModalRechazar();
-                cargarSolicitudes();
-            } catch (err) {
-                console.error('Error:', err);
-                mostrarNotificacion(err.message, 'error');
-            }
-        }
-
-        function mostrarNotificacion(mensaje, tipo) {
-            const toast = document.createElement('div');
-            const bgColor = tipo === 'success' ? 'bg-green-500' : tipo === 'error' ? 'bg-red-500' : 'bg-blue-500';
-            const icon = tipo === 'success' ? 'fa-check-circle' : tipo === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
-
-            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center animate-fade-in`;
-            toast.innerHTML = `
-                <i class="fas ${icon} mr-3 text-xl"></i>
-                <span>${mensaje}</span>
-            `;
-
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-    </script>
+                }
+                if (!btnCanc.dataset.fallbackBound) {
+                    btnCanc.dataset.fallbackBound = '1';
+                    btnCanc.addEventListener('click', function(){
+                        modReprog.classList.add('hidden');
+                        modCanc.classList.remove('hidden');
+                        modCanc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Disparar carga de cancelaciones al mostrar submódulo
+                        if (typeof cancelacionesInit === 'function') {
+                            try { cancelacionesInit(); } catch(e) { console.warn('No se pudo cargar cancelaciones:', e); }
+                        }
+                    });
+                }
+            })();
+        </script>
 
     <style>
         @keyframes fade-in {
