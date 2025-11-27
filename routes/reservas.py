@@ -1900,7 +1900,9 @@ def api_solicitudes_reprogramacion():
                     s.estado as estado_solicitud,
                     s.motivo,
                     s.fecha_solicitud,
+                    s.nueva_programacion_id,
                     r.estado as estado_reserva,
+                    r.tipo,
                     CONCAT(pac.nombres, ' ', pac.apellidos) as paciente_nombre,
                     pac.documento_identidad as paciente_dni,
                     p_actual.fecha as fecha_actual,
@@ -1921,10 +1923,13 @@ def api_solicitudes_reprogramacion():
                 LEFT JOIN EMPLEADO emp ON h.id_empleado = emp.id_empleado
                 LEFT JOIN ESPECIALIDAD esp ON emp.id_especialidad = esp.id_especialidad
                 WHERE s.estado = 'Pendiente'
+                AND s.nueva_programacion_id IS NOT NULL
                 ORDER BY s.fecha_solicitud DESC
             """
             cursor.execute(sql)
             solicitudes = cursor.fetchall()
+            
+            print(f"📊 Total de solicitudes de REPROGRAMACIÓN encontradas: {len(solicitudes)}")
             
             # Formatear fechas
             for sol in solicitudes:
@@ -4818,6 +4823,7 @@ def api_trabajador_solicitudes_cancelacion():
                     s.respuesta,
                     s.fecha_solicitud,
                     s.fecha_respuesta,
+                    s.nueva_programacion_id,
                     r.fecha_registro,
                     r.estado as estado_reserva,
                     r.tipo,
