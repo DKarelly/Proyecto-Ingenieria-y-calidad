@@ -408,9 +408,17 @@ def api_reservar_desde_autorizacion():
             sql_check_solapamiento = """
                 SELECT r.id_reserva, 
                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
-                       TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin
+                       TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
+                       s.nombre as servicio_nombre,
+                       CONCAT(e.nombres, ' ', e.apellidos) as medico_nombre,
+                       ts.nombre as tipo_servicio,
+                       p.fecha as fecha_conflicto
                 FROM RESERVA r
                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
+                INNER JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                INNER JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
+                INNER JOIN HORARIO h ON p.id_horario = h.id_horario
+                INNER JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                 WHERE r.id_paciente = %s
                   AND p.fecha = %s
                   AND r.estado IN ('Confirmada', 'Pendiente')
@@ -432,8 +440,22 @@ def api_reservar_desde_autorizacion():
             if reserva_solapada:
                 hora_conflicto_inicio = reserva_solapada.get('hora_inicio')
                 hora_conflicto_fin = reserva_solapada.get('hora_fin')
+                servicio_conflicto = reserva_solapada.get('servicio_nombre', 'Servicio')
+                medico_conflicto = reserva_solapada.get('medico_nombre', 'Médico')
+                tipo_servicio_conflicto = reserva_solapada.get('tipo_servicio', '')
+                id_reserva_conflicto = reserva_solapada.get('id_reserva')
+                
                 return jsonify({
-                    'error': f'Ya tienes una reserva en este horario. Conflicto con la reserva de {hora_conflicto_inicio} a {hora_conflicto_fin}.'
+                    'error': f'Ya tienes una reserva en este horario. Conflicto con la reserva de {hora_conflicto_inicio} a {hora_conflicto_fin}.',
+                    'conflicto': {
+                        'id_reserva': id_reserva_conflicto,
+                        'servicio': servicio_conflicto,
+                        'medico': medico_conflicto,
+                        'tipo_servicio': tipo_servicio_conflicto,
+                        'hora_inicio': hora_conflicto_inicio,
+                        'hora_fin': hora_conflicto_fin,
+                        'fecha': str(reserva_solapada.get('fecha_conflicto', ''))
+                    }
                 }), 400
 
             # Crear la reserva
@@ -910,10 +932,22 @@ def api_crear_incidencia():
             return jsonify({'error': 'Paciente no encontrado'}), 404
 
         id_paciente = paciente.get('id_paciente')
+        
+        # Identificador para rate limiting: IP + usuario_id
+        identificador = f"{request.remote_addr}_{usuario_id}"
 
         # Usar el modelo Incidencia para crear la incidencia con estado='En progreso'
-        resultado = Incidencia.crear(descripcion, id_paciente, categoria, prioridad)
+        resultado = Incidencia.crear(
+            descripcion=descripcion, 
+            id_paciente=id_paciente, 
+            categoria=categoria, 
+            prioridad=prioridad,
+            identificador_usuario=identificador
+        )
 
+        if resultado.get('rate_limited'):
+            return jsonify({'error': resultado['message']}), 429  # Too Many Requests
+        
         if resultado['success']:
             return jsonify({
                 'success': True,

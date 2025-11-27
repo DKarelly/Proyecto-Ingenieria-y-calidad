@@ -372,9 +372,14 @@
                     </div>
                     <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Cita Confirmada!</h3>
                     <p class="text-gray-600 mb-6">Tu cita ha sido agendada exitosamente. Recibirás un recordatorio antes de tu consulta.</p>
-                    <a href="/" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
-                        Volver al Inicio
-                    </a>
+                    <div class="flex flex-col gap-3">
+                        <a href="/reservas/paciente/historial" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            Ver Historial de Reservas
+                        </a>
+                        <a href="/" class="inline-block text-gray-600 hover:text-gray-800 font-medium py-2 transition-colors">
+                            Volver al Inicio
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -741,7 +746,12 @@
                                 }
                             }
                         } else {
-                            alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
+                            // Verificar si hay datos de conflicto para mostrar modal detallado
+                            if (data.conflicto) {
+                                mostrarModalConflicto(data.conflicto);
+                            } else {
+                                alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
+                            }
                             this.disabled = false;
                             this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
                         }
@@ -755,6 +765,190 @@
             }
             
         });
+
+        // Función para mostrar modal de conflicto de reserva
+        function mostrarModalConflicto(conflicto) {
+            // Formatear fecha
+            let fechaFormateada = 'No especificada';
+            if (conflicto.fecha) {
+                try {
+                    const fecha = new Date(conflicto.fecha + 'T00:00:00');
+                    fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } catch(e) {
+                    fechaFormateada = conflicto.fecha;
+                }
+            }
+            
+            // Determinar icono según tipo de servicio
+            let iconoServicio = '📋';
+            let colorGradient = 'from-red-500 to-red-600';
+            if (conflicto.tipo_servicio) {
+                const tipo = conflicto.tipo_servicio.toLowerCase();
+                if (tipo.includes('consulta') || tipo.includes('cita')) {
+                    iconoServicio = '🩺';
+                    colorGradient = 'from-blue-500 to-blue-600';
+                } else if (tipo.includes('examen') || tipo.includes('laboratorio')) {
+                    iconoServicio = '🔬';
+                    colorGradient = 'from-purple-500 to-purple-600';
+                } else if (tipo.includes('operación') || tipo.includes('cirug')) {
+                    iconoServicio = '⚕️';
+                    colorGradient = 'from-red-500 to-red-600';
+                }
+            }
+            
+            const modalHTML = `
+                <div id="modalConflictoReserva" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" style="animation: fadeIn 0.3s ease-out;">
+                    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden" style="animation: slideIn 0.3s ease-out;">
+                        <!-- Header con gradiente -->
+                        <div class="bg-gradient-to-r ${colorGradient} p-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                        <span class="text-3xl">⚠️</span>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-bold text-white">Conflicto de Horario</h2>
+                                        <p class="text-white/80 text-sm">Ya tienes una reserva programada</p>
+                                    </div>
+                                </div>
+                                <button onclick="cerrarModalConflicto()" class="text-white/80 hover:text-white transition-colors p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenido -->
+                        <div class="p-6">
+                            <!-- Mensaje de alerta -->
+                            <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg">
+                                <div class="flex items-start gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 flex-shrink-0 mt-0.5">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                        <path d="M12 9v4"/><path d="M12 17h.01"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-semibold text-amber-800">No se puede completar la reserva</p>
+                                        <p class="text-xs text-amber-700 mt-1">El horario seleccionado se cruza con una reserva existente. Por favor, selecciona otro horario disponible.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Card con detalles de la reserva en conflicto -->
+                            <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                                    <span class="text-2xl">${iconoServicio}</span>
+                                    Reserva Existente
+                                </h3>
+                                
+                                <div class="space-y-3">
+                                    <!-- Servicio -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                                <polyline points="14 2 14 8 20 8"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Servicio</p>
+                                            <p class="font-semibold text-gray-800">${conflicto.servicio || 'No especificado'}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Fecha y Hora -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
+                                                <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Fecha</p>
+                                            <p class="font-semibold text-gray-800">${fechaFormateada}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Horario -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Horario</p>
+                                            <p class="font-semibold text-gray-800">${conflicto.hora_inicio || '--:--'} - ${conflicto.hora_fin || '--:--'}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Médico -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600">
+                                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Médico</p>
+                                            <p class="font-semibold text-gray-800">${conflicto.medico ? 'Dr(a). ' + conflicto.medico : 'Por asignar'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer con botones -->
+                        <div class="p-6 bg-gray-50 border-t border-gray-200 flex gap-3">
+                            <button onclick="cerrarModalConflicto(); goToStep(3);" 
+                                    class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                                </svg>
+                                Seleccionar Otro Horario
+                            </button>
+                            <button onclick="cerrarModalConflicto();" 
+                                    class="bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Agregar estilos de animación si no existen
+            if (!document.getElementById('modalConflictoStyles')) {
+                const style = document.createElement('style');
+                style.id = 'modalConflictoStyles';
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes slideIn {
+                        from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+                        to { opacity: 1; transform: translateY(0) scale(1); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        function cerrarModalConflicto() {
+            const modal = document.getElementById('modalConflictoReserva');
+            if (modal) {
+                modal.style.animation = 'fadeOut 0.2s ease-out forwards';
+                setTimeout(() => modal.remove(), 200);
+            }
+        }
 
         // PASO 1: Cargar especialidades desde la BD
         async function cargarEspecialidades() {

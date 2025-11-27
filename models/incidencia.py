@@ -1,6 +1,76 @@
 from bd import obtener_conexion
+import re
+import html
+from datetime import datetime, timedelta
+
+# Rate limiting: almacenar intentos recientes
+_rate_limit_cache = {}
+RATE_LIMIT_MAX_REQUESTS = 5  # Máximo de solicitudes
+RATE_LIMIT_WINDOW = 60  # Ventana de tiempo en segundos
 
 class Incidencia:
+    
+    @staticmethod
+    def sanitizar_texto(texto):
+        """
+        Sanitiza el texto para prevenir ataques XSS
+        - Escapa caracteres HTML peligrosos
+        - Elimina etiquetas de script
+        - Limita la longitud del texto
+        """
+        if texto is None:
+            return None
+        
+        # Convertir a string si no lo es
+        texto = str(texto)
+        
+        # Escapar caracteres HTML peligrosos
+        texto = html.escape(texto)
+        
+        # Eliminar cualquier intento de script (doble protección)
+        texto = re.sub(r'<script[^>]*>.*?</script>', '', texto, flags=re.IGNORECASE | re.DOTALL)
+        texto = re.sub(r'javascript:', '', texto, flags=re.IGNORECASE)
+        texto = re.sub(r'on\w+\s*=', '', texto, flags=re.IGNORECASE)
+        
+        # Eliminar caracteres de control excepto saltos de línea
+        texto = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', texto)
+        
+        # Limitar longitud máxima (prevenir ataques de buffer)
+        max_length = 5000
+        if len(texto) > max_length:
+            texto = texto[:max_length]
+        
+        return texto.strip()
+    
+    @staticmethod
+    def verificar_rate_limit(identificador):
+        """
+        Verifica si se ha excedido el límite de solicitudes (anti-DDoS)
+        Retorna True si se permite la solicitud, False si se debe bloquear
+        """
+        global _rate_limit_cache
+        
+        ahora = datetime.now()
+        ventana_inicio = ahora - timedelta(seconds=RATE_LIMIT_WINDOW)
+        
+        # Limpiar entradas antiguas
+        _rate_limit_cache = {
+            k: v for k, v in _rate_limit_cache.items() 
+            if v['timestamp'] > ventana_inicio
+        }
+        
+        if identificador in _rate_limit_cache:
+            entrada = _rate_limit_cache[identificador]
+            if entrada['count'] >= RATE_LIMIT_MAX_REQUESTS:
+                print(f"[RATE LIMIT] Bloqueado: {identificador} - {entrada['count']} solicitudes en {RATE_LIMIT_WINDOW}s")
+                return False
+            entrada['count'] += 1
+            entrada['timestamp'] = ahora
+        else:
+            _rate_limit_cache[identificador] = {'count': 1, 'timestamp': ahora}
+        
+        return True
+
     @staticmethod
     def obtener_todas():
         """Obtiene todas las incidencias con información relacionada"""
@@ -250,25 +320,72 @@ class Incidencia:
             if 'conexion' in locals():
                 conexion.close()
 
-
-
     @staticmethod
-    def crear(descripcion, id_paciente, categoria=None, prioridad=None):
-        """Crea una nueva incidencia"""
+    def crear(descripcion, id_paciente, categoria=None, prioridad=None, identificador_usuario=None):
+        """
+        Crea una nueva incidencia con protección contra XSS y DDoS
+        
+        Args:
+            descripcion: Texto de la incidencia (será sanitizado)
+            id_paciente: ID del paciente (opcional)
+            categoria: Categoría de la incidencia
+            prioridad: Nivel de prioridad
+            identificador_usuario: IP o ID de sesión para rate limiting
+        """
         try:
+            # Verificar rate limiting (anti-DDoS)
+            if identificador_usuario:
+                if not Incidencia.verificar_rate_limit(identificador_usuario):
+                    return {
+                        'success': False,
+                        'message': 'Demasiadas solicitudes. Por favor, espera un momento antes de intentar nuevamente.',
+                        'rate_limited': True
+                    }
+            
+            # Sanitizar todos los campos de texto (anti-XSS)
+            descripcion_limpia = Incidencia.sanitizar_texto(descripcion)
+            categoria_limpia = Incidencia.sanitizar_texto(categoria) if categoria else None
+            prioridad_limpia = Incidencia.sanitizar_texto(prioridad) if prioridad else None
+            
+            # Validar que la descripción no esté vacía después de sanitizar
+            if not descripcion_limpia or len(descripcion_limpia) < 10:
+                return {
+                    'success': False,
+                    'message': 'La descripción debe tener al menos 10 caracteres válidos.'
+                }
+            
+            # Validar categoría contra lista permitida
+            categorias_validas = ['Técnica', 'Atención', 'Administrativa', 'Emergencia', 'Otro']
+            if categoria_limpia and categoria_limpia not in categorias_validas:
+                categoria_limpia = 'Otro'
+            
+            # Validar prioridad contra lista permitida
+            prioridades_validas = ['Alta', 'Media', 'Baja']
+            if prioridad_limpia and prioridad_limpia not in prioridades_validas:
+                prioridad_limpia = 'Media'
+            
+            # Validar id_paciente si existe
+            if id_paciente:
+                try:
+                    id_paciente = int(id_paciente)
+                except (ValueError, TypeError):
+                    id_paciente = None
+            
             conexion = obtener_conexion()
             cursor = conexion.cursor()
 
-            # Insertar la incidencia
+            # Insertar la incidencia con datos sanitizados
             query = """
                 INSERT INTO INCIDENCIA (descripcion, id_paciente, fecha_registro, categoria, prioridad, estado)
                 VALUES (%s, %s, NOW(), %s, %s, 'En progreso')
             """
 
-            cursor.execute(query, (descripcion, id_paciente, categoria, prioridad))
+            cursor.execute(query, (descripcion_limpia, id_paciente, categoria_limpia, prioridad_limpia))
             conexion.commit()
 
             id_incidencia = cursor.lastrowid
+            
+            print(f"[INCIDENCIA] Creada ID={id_incidencia} - Descripción sanitizada: {descripcion_limpia[:50]}...")
 
             return {
                 'success': True,
@@ -431,14 +548,6 @@ class Incidencia:
         finally:
             if conexion:
                 conexion.close()
-
-
-
-
-
-
-
-
 
     @staticmethod
     def generar_informe(filtros):

@@ -811,7 +811,7 @@ def api_incidencias_listar():
 @recepcionista_required
 def api_incidencias_generar():
     """
-    API: Genera una nueva incidencia
+    API: Genera una nueva incidencia con protección contra XSS y DDoS
     """
     try:
         tipo_incidencia = request.form.get('tipo_incidencia')
@@ -819,19 +819,31 @@ def api_incidencias_generar():
         prioridad = request.form.get('prioridad')
         id_paciente = request.form.get('id_paciente')  # Opcional
 
-        # Validaciones
+        # Validaciones básicas
         if not all([tipo_incidencia, descripcion, prioridad]):
             return jsonify({'success': False, 'message': 'Tipo de incidencia, descripción y prioridad son requeridos'}), 400
 
-        # Obtener ID del empleado recepcionista
+        # Obtener ID del empleado recepcionista para rate limiting
         id_empleado = session.get('id_empleado')
         if not id_empleado:
             return jsonify({'success': False, 'message': 'No se pudo identificar al empleado'}), 400
+        
+        # Usar IP + ID de empleado como identificador para rate limiting
+        identificador = f"{request.remote_addr}_{id_empleado}"
 
-        # Usar el modelo Incidencia para crear la incidencia
+        # Usar el modelo Incidencia para crear la incidencia (con sanitización y rate limiting)
         from models.incidencia import Incidencia
-        resultado = Incidencia.crear(descripcion, id_paciente, tipo_incidencia, prioridad)
+        resultado = Incidencia.crear(
+            descripcion=descripcion, 
+            id_paciente=id_paciente, 
+            categoria=tipo_incidencia, 
+            prioridad=prioridad,
+            identificador_usuario=identificador
+        )
 
+        if resultado.get('rate_limited'):
+            return jsonify({'success': False, 'message': resultado['message']}), 429  # Too Many Requests
+        
         if resultado['success']:
             return jsonify({'success': True, 'message': 'Incidencia generada exitosamente'})
         else:
