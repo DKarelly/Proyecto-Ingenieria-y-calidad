@@ -910,6 +910,7 @@ def historial_paciente(id_paciente):
             })
         
         # Obtener EXÁMENES del paciente - De la tabla EXAMEN via RESERVA
+        # Mostramos los exámenes donde el médico que hizo la cita es el actual (h.id_empleado)
         cursor.execute("""
             SELECT 
                 e.id_examen as id,
@@ -924,15 +925,15 @@ def historial_paciente(id_paciente):
             INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
             INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
             LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
-            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            LEFT JOIN HORARIO h ON prog.id_horario = h.id_horario
             WHERE r.id_paciente = %s
-            AND h.id_empleado = %s
             ORDER BY e.fecha_examen DESC
-        """, (id_paciente, id_empleado))
+        """, (id_paciente,))
         
         examenes_raw = cursor.fetchall()
         
-        # Obtener OPERACIONES del paciente - De la tabla OPERACION (tiene id_empleado directo)
+        # Obtener OPERACIONES del paciente - De la tabla OPERACION
+        # Mostramos todas las operaciones del paciente
         cursor.execute("""
             SELECT 
                 o.id_operacion as id,
@@ -950,9 +951,8 @@ def historial_paciente(id_paciente):
             LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
             LEFT JOIN EMPLEADO med ON o.id_empleado = med.id_empleado
             WHERE r.id_paciente = %s
-            AND o.id_empleado = %s
             ORDER BY o.fecha_operacion DESC
-        """, (id_paciente, id_empleado))
+        """, (id_paciente,))
         
         operaciones_raw = cursor.fetchall()
         
