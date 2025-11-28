@@ -520,9 +520,18 @@ function generarTarjetaOperacion(reserva) {
     const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
     const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
     
+    // Estados de la reserva
+    const esCompletada = reserva.estado_reserva === 'Completada';
+    const esInasistida = reserva.estado_reserva === 'Inasistida';
+    const esCancelada = reserva.estado_reserva === 'Cancelada';
+    const puedeGestionar = !esCompletada && !esInasistida && !esCancelada && estadoCancelacion === 'Ninguna';
+    
     // Verificar si esta es la reserva destacada
     const esDestacada = reservaDestacada && reserva.id_reserva === reservaDestacada;
     const estilosDestacado = esDestacada ? 'ring-4 ring-cyan-400 shadow-2xl' : '';
+    
+    // Verificar si tiene cita médica asociada
+    const tieneIdCita = reserva.operaciones && reserva.operaciones.length > 0 && reserva.operaciones[0].id_cita;
 
     let html = `
         <div id="reserva-${reserva.id_reserva}" class="${bgColorClass} border-2 ${borderColorClass} ${estilosDestacado} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
@@ -537,7 +546,18 @@ function generarTarjetaOperacion(reserva) {
                             <p class="text-sm text-gray-600">ID: #${reserva.id_reserva}</p>
                         </div>
                     </div>
-                    <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                    <div class="flex items-center gap-2">
+                        ${tieneIdCita ? `
+                        <button onclick="verDetalleCitaOperacion(${reserva.id_reserva}, ${reserva.operaciones[0].id_cita})" 
+                                class="w-8 h-8 bg-amber-100 hover:bg-amber-200 rounded-full flex items-center justify-center transition-all duration-200 group" 
+                                title="Ver cita médica que generó esta operación">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-600 group-hover:text-amber-700">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                        </button>
+                        ` : ''}
+                        <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                    </div>
                 </div>
 
                 <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-4 mb-4">
@@ -577,19 +597,115 @@ function generarTarjetaOperacion(reserva) {
                         </div>
                     </div>
                 </div>
-
-                ${reserva.operaciones && reserva.operaciones.length > 0 && reserva.operaciones[0].id_cita ? `
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                    <button onclick="verDetalleCitaOperacion(${reserva.id_reserva}, ${reserva.operaciones[0].id_cita})" 
-                            class="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver Detalle de Cita Médica
-                    </button>
-                </div>
-                ` : ''}
     `;
+
+    // Botones de acción (solo si puede gestionar)
+    if (puedeGestionar) {
+        // Calcular días hasta la operación
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const fechaOperacion = new Date(fechaStr + 'T00:00:00');
+        const diasDiferencia = Math.ceil((fechaOperacion - hoy) / (1000 * 60 * 60 * 24));
+        const puedeModificar = diasDiferencia >= 2;
+        
+        // Determinar estado de reprogramación y cancelación
+        const tieneReprogramacionAprobada = reserva.tiene_reprogramacion_aprobada > 0;
+        const tieneSolicitudReprogramacion = reserva.tiene_solicitud_reprogramacion > 0;
+        const tieneSolicitudCancelacion = reserva.tiene_solicitud_cancelacion > 0;
+        const numReprogramaciones = reserva.num_reprogramaciones || 0;
+        const puedeReprogramar = numReprogramaciones < 2 && !tieneSolicitudReprogramacion;
+        
+        html += `
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex flex-col gap-3">
+        `;
+        
+        // Mensaje de advertencia si faltan menos de 2 días
+        if (!puedeModificar) {
+            html += `
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+                                </svg>
+                                <p class="text-xs text-amber-700">Las solicitudes deben realizarse con al menos 2 días de anticipación.</p>
+                            </div>
+                        </div>
+            `;
+        }
+        
+        html += `
+                        <div class="grid grid-cols-2 gap-3">
+        `;
+        
+        // BOTÓN DE REPROGRAMACIÓN
+        if (tieneReprogramacionAprobada) {
+            html += `
+                            <button onclick="abrirModalReprogramar(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                    class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                                </svg>
+                                ✓ Reprogramar
+                            </button>
+            `;
+        } else if (tieneSolicitudReprogramacion) {
+            html += `
+                            <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                Pendiente...
+                            </button>
+            `;
+        } else if (!puedeReprogramar && numReprogramaciones >= 2) {
+            html += `
+                            <div class="bg-gray-100 border border-gray-300 text-gray-500 font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                Sin reprogramaciones
+                            </div>
+            `;
+        } else {
+            html += `
+                            <button ${!puedeModificar ? 'disabled' : ''} 
+                                    onclick="${puedeModificar ? `solicitarReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}', ${numReprogramaciones})` : 'return false;'}" 
+                                    class="bg-gradient-to-r from-blue-500 to-blue-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'} text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                                </svg>
+                                Solicitar Reprogramación
+                            </button>
+            `;
+        }
+        
+        // BOTÓN DE CANCELACIÓN
+        if (tieneSolicitudCancelacion) {
+            html += `
+                            <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                Pendiente...
+                            </button>
+            `;
+        } else {
+            html += `
+                            <button ${!puedeModificar ? 'disabled' : ''} 
+                                    onclick="${puedeModificar ? `solicitarCancelacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')` : 'return false;'}" 
+                                    class="bg-gradient-to-r from-red-500 to-red-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-red-600 hover:to-red-700'} text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
+                                </svg>
+                                Solicitar Cancelación
+                            </button>
+            `;
+        }
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+        `;
+    }
 
     html += `</div></div>`;
     return html;
@@ -609,9 +725,18 @@ function generarTarjetaExamen(reserva) {
     const estadoCancelacion = reserva.estado_cancelacion || 'Ninguna';
     const {estadoClass, estadoTexto, borderColorClass, bgColorClass} = obtenerEstilosEstado(reserva.estado_reserva, estadoCancelacion);
     
+    // Estados de la reserva
+    const esCompletada = reserva.estado_reserva === 'Completada';
+    const esInasistida = reserva.estado_reserva === 'Inasistida';
+    const esCancelada = reserva.estado_reserva === 'Cancelada';
+    const puedeGestionar = !esCompletada && !esInasistida && !esCancelada && estadoCancelacion === 'Ninguna';
+    
     // Verificar si esta es la reserva destacada
     const esDestacada = reservaDestacada && reserva.id_reserva === reservaDestacada;
     const estilosDestacado = esDestacada ? 'ring-4 ring-cyan-400 shadow-2xl' : '';
+    
+    // Verificar si tiene exámenes asociados
+    const tieneExamenes = reserva.examenes && reserva.examenes.length > 0;
 
     let html = `
         <div id="reserva-${reserva.id_reserva}" class="${bgColorClass} border-2 ${borderColorClass} ${estilosDestacado} rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
@@ -626,7 +751,18 @@ function generarTarjetaExamen(reserva) {
                             <p class="text-sm text-gray-600">ID: #${reserva.id_reserva}</p>
                         </div>
                     </div>
-                    <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                    <div class="flex items-center gap-2">
+                        ${tieneExamenes ? `
+                        <button onclick="verDetalleCitaExamen(${reserva.id_reserva})" 
+                                class="w-8 h-8 bg-amber-100 hover:bg-amber-200 rounded-full flex items-center justify-center transition-all duration-200 group" 
+                                title="Ver cita médica que generó este examen">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="text-amber-600 group-hover:text-amber-700">
+                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            </svg>
+                        </button>
+                        ` : ''}
+                        <span class="${estadoClass} status-badge">${estadoTexto}</span>
+                    </div>
                 </div>
 
                 <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 mb-4">
@@ -666,19 +802,115 @@ function generarTarjetaExamen(reserva) {
                         </div>
                     </div>
                 </div>
-
-                ${reserva.examenes && reserva.examenes.length > 0 ? `
-                <div class="mt-4 pt-4 border-t border-gray-200">
-                    <button onclick="verDetalleCitaExamen(${reserva.id_reserva})" 
-                            class="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold py-2.5 px-4 rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
-                        </svg>
-                        Ver Detalle de Cita Médica
-                    </button>
-                </div>
-                ` : ''}
     `;
+
+    // Botones de acción (solo si puede gestionar)
+    if (puedeGestionar) {
+        // Calcular días hasta el examen
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const fechaExamen = new Date(fechaStr + 'T00:00:00');
+        const diasDiferencia = Math.ceil((fechaExamen - hoy) / (1000 * 60 * 60 * 24));
+        const puedeModificar = diasDiferencia >= 2;
+        
+        // Determinar estado de reprogramación y cancelación
+        const tieneReprogramacionAprobada = reserva.tiene_reprogramacion_aprobada > 0;
+        const tieneSolicitudReprogramacion = reserva.tiene_solicitud_reprogramacion > 0;
+        const tieneSolicitudCancelacion = reserva.tiene_solicitud_cancelacion > 0;
+        const numReprogramaciones = reserva.num_reprogramaciones || 0;
+        const puedeReprogramar = numReprogramaciones < 2 && !tieneSolicitudReprogramacion;
+        
+        html += `
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <div class="flex flex-col gap-3">
+        `;
+        
+        // Mensaje de advertencia si faltan menos de 2 días
+        if (!puedeModificar) {
+            html += `
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+                                </svg>
+                                <p class="text-xs text-amber-700">Las solicitudes deben realizarse con al menos 2 días de anticipación.</p>
+                            </div>
+                        </div>
+            `;
+        }
+        
+        html += `
+                        <div class="grid grid-cols-2 gap-3">
+        `;
+        
+        // BOTÓN DE REPROGRAMACIÓN
+        if (tieneReprogramacionAprobada) {
+            html += `
+                            <button onclick="abrirModalReprogramar(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')" 
+                                    class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                                </svg>
+                                ✓ Reprogramar
+                            </button>
+            `;
+        } else if (tieneSolicitudReprogramacion) {
+            html += `
+                            <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                Pendiente...
+                            </button>
+            `;
+        } else if (!puedeReprogramar && numReprogramaciones >= 2) {
+            html += `
+                            <div class="bg-gray-100 border border-gray-300 text-gray-500 font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                Sin reprogramaciones
+                            </div>
+            `;
+        } else {
+            html += `
+                            <button ${!puedeModificar ? 'disabled' : ''} 
+                                    onclick="${puedeModificar ? `solicitarReprogramacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}', ${numReprogramaciones})` : 'return false;'}" 
+                                    class="bg-gradient-to-r from-blue-500 to-blue-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'} text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                                </svg>
+                                Solicitar Reprogramación
+                            </button>
+            `;
+        }
+        
+        // BOTÓN DE CANCELACIÓN
+        if (tieneSolicitudCancelacion) {
+            html += `
+                            <button disabled class="bg-gray-400 cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                                </svg>
+                                Pendiente...
+                            </button>
+            `;
+        } else {
+            html += `
+                            <button ${!puedeModificar ? 'disabled' : ''} 
+                                    onclick="${puedeModificar ? `solicitarCancelacion(${reserva.id_reserva}, '${reserva.servicio}', '${reserva.fecha_programacion}')` : 'return false;'}" 
+                                    class="bg-gradient-to-r from-red-500 to-red-600 ${!puedeModificar ? 'opacity-50 cursor-not-allowed' : 'hover:from-red-600 hover:to-red-700'} text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>
+                                </svg>
+                                Solicitar Cancelación
+                            </button>
+            `;
+        }
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+        `;
+    }
 
     html += `</div></div>`;
     return html;

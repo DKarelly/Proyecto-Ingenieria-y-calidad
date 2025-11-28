@@ -3644,6 +3644,7 @@ def api_paciente_historial_clinico():
                                ts.nombre as tipo_servicio_nombre,
                                CONCAT(emp.nombres, ' ', emp.apellidos) as medico_asignado,
                                esp.nombre as especialidad_requerida,
+                               prog_asignada.fecha as fecha_reserva_asignada,
                                CASE 
                                    WHEN a.fecha_uso IS NOT NULL THEN 'USADO'
                                    WHEN a.fecha_vencimiento IS NOT NULL AND a.fecha_vencimiento < NOW() THEN 'VENCIDO'
@@ -3654,6 +3655,8 @@ def api_paciente_historial_clinico():
                         INNER JOIN TIPO_SERVICIO ts ON a.id_tipo_servicio = ts.id_tipo_servicio
                         LEFT JOIN EMPLEADO emp ON a.id_medico_asignado = emp.id_empleado
                         LEFT JOIN ESPECIALIDAD esp ON a.id_especialidad_requerida = esp.id_especialidad
+                        LEFT JOIN RESERVA res_asignada ON a.id_reserva_generada = res_asignada.id_reserva
+                        LEFT JOIN PROGRAMACION prog_asignada ON res_asignada.id_programacion = prog_asignada.id_programacion
                         WHERE a.id_cita = %s
                         ORDER BY a.fecha_autorizacion DESC
                     """
@@ -3671,6 +3674,9 @@ def api_paciente_historial_clinico():
                         if aut.get('fecha_uso'):
                             if hasattr(aut['fecha_uso'], 'strftime'):
                                 aut['fecha_uso'] = aut['fecha_uso'].strftime('%Y-%m-%d %H:%M')
+                        if aut.get('fecha_reserva_asignada'):
+                            if hasattr(aut['fecha_reserva_asignada'], 'strftime'):
+                                aut['fecha_reserva_asignada'] = aut['fecha_reserva_asignada'].strftime('%Y-%m-%d')
                     
                     cita['autorizaciones'] = autorizaciones
                     
