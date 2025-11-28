@@ -34,6 +34,14 @@ def favicon():
 from bd import inicializar_pool
 inicializar_pool()
 
+# Ejecutar actualización automática de estados de reservas al iniciar
+# Esto marca como Completadas o Inasistidas las citas que ya pasaron
+try:
+    from utils.actualizar_estados_reservas import ejecutar_actualizacion_completa
+    ejecutar_actualizacion_completa()
+except Exception as e:
+    print(f"Advertencia: No se pudo ejecutar actualización de estados: {e}")
+
 # Registrar blueprints con lazy loading - se importan solo cuando se necesitan
 # Esto reduce el tiempo de inicio de la aplicación
 def registrar_blueprints():

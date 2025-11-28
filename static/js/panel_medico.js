@@ -506,25 +506,29 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
         html += `
             <div class="text-center py-8 text-gray-500">
                 <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">biotech</span>
-                <p>No hay exámenes autorizados</p>
+                <p>No hay exámenes registrados</p>
             </div>
         `;
     } else {
         examenes.forEach(examen => {
-            const estadoClass = examen.estado === 'COMPLETADO' ? 'bg-emerald-100 text-emerald-700' : 
-                               examen.estado === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' : 
-                               'bg-red-100 text-red-700';
-            const estadoIcon = examen.estado === 'COMPLETADO' ? 'check_circle' : 
-                              examen.estado === 'PENDIENTE' ? 'pending' : 'cancel';
+            const estadoClass = examen.estado === 'Completada' ? 'bg-emerald-100 text-emerald-700' : 
+                               examen.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 
+                               'bg-gray-100 text-gray-700';
+            const estadoIcon = examen.estado === 'Completada' ? 'check_circle' : 
+                              examen.estado === 'Pendiente' ? 'pending' : 'event';
             
             html += `
-                <div class="border border-blue-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-blue-50 to-cyan-50">
+                <div class="border border-violet-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-violet-50 to-purple-50">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-blue-600 text-2xl">biotech</span>
+                            <span class="material-symbols-outlined text-violet-600 text-2xl">biotech</span>
                             <div>
                                 <p class="font-semibold text-gray-800">${examen.servicio}</p>
-                                <p class="text-sm text-gray-600">Autorizado: ${examen.fecha_autorizacion}</p>
+                                <p class="text-sm text-gray-600 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">calendar_today</span>
+                                    ${examen.fecha}
+                                    ${examen.hora ? ` - <span class="material-symbols-outlined text-xs">schedule</span> ${examen.hora}` : ''}
+                                </p>
                             </div>
                         </div>
                         <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
@@ -532,22 +536,15 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
                             ${examen.estado}
                         </span>
                     </div>
-                    <div class="mt-3 pt-3 border-t border-blue-200 grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                            <p class="text-gray-500">Autorizado por:</p>
-                            <p class="font-medium text-gray-700">${examen.medico_autoriza}</p>
+                    ${examen.observacion && examen.observacion.trim() !== '' ? `
+                        <div class="mt-3 pt-3 border-t border-violet-200">
+                            <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">note</span>
+                                Observaciones:
+                            </p>
+                            <p class="text-sm text-gray-600 pl-5">${examen.observacion}</p>
                         </div>
-                        <div>
-                            <p class="text-gray-500">Vence:</p>
-                            <p class="font-medium ${examen.estado === 'VENCIDO' ? 'text-red-600' : 'text-gray-700'}">${examen.fecha_vencimiento}</p>
-                        </div>
-                        ${examen.fecha_uso ? `
-                            <div class="col-span-2">
-                                <p class="text-gray-500">Realizado:</p>
-                                <p class="font-medium text-emerald-600">${examen.fecha_uso}</p>
-                            </div>
-                        ` : ''}
-                    </div>
+                    ` : ''}
                 </div>
             `;
         });
@@ -560,25 +557,31 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
         html += `
             <div class="text-center py-8 text-gray-500">
                 <span class="material-symbols-outlined text-5xl mb-2 block text-gray-400">surgical</span>
-                <p>No hay operaciones autorizadas</p>
+                <p>No hay operaciones registradas</p>
             </div>
         `;
     } else {
         operaciones.forEach(operacion => {
-            const estadoClass = operacion.estado === 'COMPLETADO' ? 'bg-emerald-100 text-emerald-700' : 
-                               operacion.estado === 'PENDIENTE' ? 'bg-amber-100 text-amber-700' : 
-                               'bg-red-100 text-red-700';
-            const estadoIcon = operacion.estado === 'COMPLETADO' ? 'check_circle' : 
-                              operacion.estado === 'PENDIENTE' ? 'pending' : 'cancel';
+            const estadoClass = operacion.estado === 'Completada' ? 'bg-emerald-100 text-emerald-700' : 
+                               operacion.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 
+                               operacion.estado === 'Cancelada' ? 'bg-gray-100 text-gray-700' :
+                               'bg-gray-100 text-gray-700';
+            const estadoIcon = operacion.estado === 'Completada' ? 'check_circle' : 
+                              operacion.estado === 'Pendiente' ? 'pending' : 
+                              operacion.estado === 'Cancelada' ? 'event_busy' : 'event';
             
             html += `
-                <div class="border border-orange-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-orange-50 to-yellow-50">
+                <div class="border border-orange-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-orange-50 to-red-50">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center gap-3">
                             <span class="material-symbols-outlined text-orange-600 text-2xl">surgical</span>
                             <div>
                                 <p class="font-semibold text-gray-800">${operacion.servicio}</p>
-                                <p class="text-sm text-gray-600">Autorizado: ${operacion.fecha_autorizacion}</p>
+                                <p class="text-sm text-gray-600 flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">calendar_today</span>
+                                    ${operacion.fecha}
+                                    ${operacion.hora ? ` - <span class="material-symbols-outlined text-xs">schedule</span> ${operacion.hora}` : ''}
+                                </p>
                             </div>
                         </div>
                         <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
@@ -586,34 +589,21 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
                             ${operacion.estado}
                         </span>
                     </div>
-                    <div class="mt-3 pt-3 border-t border-orange-200 grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                            <p class="text-gray-500">Autorizado por:</p>
-                            <p class="font-medium text-gray-700">${operacion.medico_autoriza}</p>
+                    ${operacion.medico ? `
+                        <div class="mt-2 text-sm">
+                            <p class="text-gray-500">Médico asignado:</p>
+                            <p class="font-medium text-gray-700">${operacion.medico}</p>
                         </div>
-                        ${operacion.medico_asignado ? `
-                            <div>
-                                <p class="text-gray-500">Médico asignado:</p>
-                                <p class="font-medium text-gray-700">${operacion.medico_asignado}</p>
-                            </div>
-                        ` : ''}
-                        ${operacion.especialidad ? `
-                            <div>
-                                <p class="text-gray-500">Especialidad:</p>
-                                <p class="font-medium text-gray-700">${operacion.especialidad}</p>
-                            </div>
-                        ` : ''}
-                        <div>
-                            <p class="text-gray-500">Vence:</p>
-                            <p class="font-medium ${operacion.estado === 'VENCIDO' ? 'text-red-600' : 'text-gray-700'}">${operacion.fecha_vencimiento}</p>
+                    ` : ''}
+                    ${operacion.observaciones && operacion.observaciones.trim() !== '' ? `
+                        <div class="mt-3 pt-3 border-t border-orange-200">
+                            <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">note</span>
+                                Observaciones:
+                            </p>
+                            <p class="text-sm text-gray-600 pl-5 whitespace-pre-wrap">${operacion.observaciones}</p>
                         </div>
-                        ${operacion.fecha_uso ? `
-                            <div class="col-span-2">
-                                <p class="text-gray-500">Realizada:</p>
-                                <p class="font-medium text-emerald-600">${operacion.fecha_uso}</p>
-                            </div>
-                        ` : ''}
-                    </div>
+                    ` : ''}
                 </div>
             `;
         });
@@ -695,11 +685,6 @@ function abrirFormularioEvento(dia, hora, minutos = 0) {
 function nuevoEvento() {
     console.log('Crear nuevo evento');
     alert('Función para crear un nuevo evento.\nPróximamente disponible.');
-}
-
-function verDetalleEvento(eventId) {
-    console.log(`Ver detalles del evento ${eventId}`);
-    alert(`Ver detalles del evento ${eventId}.\nPróximamente disponible.`);
 }
 
 function verDetalleCita(citaId) {
@@ -1262,3 +1247,834 @@ function cambiarPaginaDiagnosticos(nuevaPagina) {
     filtrarYPaginarDiagnosticos(termino);
 }
 
+
+// ========== NUEVO SISTEMA DE AGENDA DINÁMICA ==========
+
+/**
+ * Variables globales para la agenda dinámica
+ */
+let agendaOffsetSemana = 0;
+let agendaEventos = [];
+let agendaRangoDisponible = { fecha_min: null, fecha_max: null };
+let agendaCacheEventos = {}; // Cache de eventos por semana
+
+/**
+ * Nombres de días y meses en español
+ */
+const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const DIAS_COMPLETOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+/**
+ * Inicializa la agenda dinámica al cargar la página
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Solo inicializar si estamos en la vista de agenda
+    if (document.getElementById('agenda-container')) {
+        cargarAgendaSemanal(0);
+    }
+});
+
+/**
+ * Carga los eventos de la agenda para una semana específica
+ */
+async function cargarAgendaSemanal(offset) {
+    const loading = document.getElementById('agenda-loading');
+    const calendario = document.getElementById('agenda-calendario');
+    const vacio = document.getElementById('agenda-vacio');
+    
+    // Verificar si ya tenemos en cache
+    if (agendaCacheEventos[offset]) {
+        // IMPORTANTE: Actualizar el offset actual ANTES de renderizar
+        agendaOffsetSemana = offset;
+        renderizarAgenda(agendaCacheEventos[offset]);
+        return;
+    }
+    
+    // Mostrar loading
+    if (loading) loading.classList.remove('hidden');
+    if (calendario) calendario.classList.add('hidden');
+    if (vacio) vacio.classList.add('hidden');
+    
+    try {
+        const response = await fetch(`/medico/api/agenda-semanal?offset=${offset}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            agendaOffsetSemana = offset;
+            agendaEventos = data.eventos;
+            agendaRangoDisponible = data.rango_disponible;
+            
+            // Guardar en cache
+            agendaCacheEventos[offset] = data;
+            
+            renderizarAgenda(data);
+        } else {
+            console.error('Error al cargar agenda:', data.message);
+            mostrarErrorAgenda('Error al cargar la agenda');
+        }
+    } catch (error) {
+        console.error('Error de conexión:', error);
+        mostrarErrorAgenda('Error de conexión con el servidor');
+    } finally {
+        if (loading) loading.classList.add('hidden');
+    }
+}
+
+/**
+ * Renderiza el calendario con los eventos
+ */
+function renderizarAgenda(data) {
+    const calendario = document.getElementById('agenda-calendario');
+    const vacio = document.getElementById('agenda-vacio');
+    const tituloSemana = document.getElementById('titulo-semana');
+    const btnHoy = document.getElementById('btn-hoy');
+    
+    // Actualizar título de semana
+    const inicio = new Date(data.semana.inicio + 'T00:00:00');
+    const fin = new Date(data.semana.fin + 'T00:00:00');
+    tituloSemana.textContent = `Semana del ${inicio.getDate()} al ${fin.getDate()} ${MESES[fin.getMonth()]} ${fin.getFullYear()}`;
+    
+    // Mostrar/ocultar botón "Hoy"
+    if (btnHoy) {
+        btnHoy.style.display = data.semana.offset !== 0 ? 'flex' : 'none';
+    }
+    
+    // Si no hay eventos, mostrar mensaje vacío
+    if (!data.eventos || data.eventos.length === 0) {
+        if (vacio) vacio.classList.remove('hidden');
+        if (calendario) calendario.classList.add('hidden');
+        actualizarListaEventosDia([]);
+        return;
+    }
+    
+    // Generar calendario
+    if (calendario) {
+        calendario.classList.remove('hidden');
+        generarCalendarioSemanal(data.eventos, data.semana);
+    }
+    
+    // Actualizar lista de eventos del día actual
+    const hoy = new Date();
+    const hoyStr = hoy.toISOString().split('T')[0];
+    const eventosHoy = data.eventos.filter(e => e.fecha === hoyStr);
+    actualizarListaEventosDia(eventosHoy);
+}
+
+/**
+ * Genera la estructura del calendario semanal estilo cuadrícula HORIZONTAL
+ */
+function generarCalendarioSemanal(eventos, semana) {
+    const diasContainer = document.getElementById('agenda-dias');
+    const bodyContainer = document.getElementById('agenda-body');
+    
+    const fechaInicio = new Date(semana.inicio + 'T00:00:00');
+    
+    // Usar zona horaria de Perú (UTC-5)
+    const hoyPeru = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Lima' }));
+    const hoyStr = hoyPeru.getFullYear() + '-' + 
+                   String(hoyPeru.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(hoyPeru.getDate()).padStart(2, '0');
+    
+    const DIAS_HEADER = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO', 'DOMINGO'];
+    
+    // Generar array de fechas de la semana
+    const fechasSemana = [];
+    for (let i = 0; i < 7; i++) {
+        const fecha = new Date(fechaInicio);
+        fecha.setDate(fecha.getDate() + i);
+        const fechaStr = fecha.getFullYear() + '-' + 
+                        String(fecha.getMonth() + 1).padStart(2, '0') + '-' + 
+                        String(fecha.getDate()).padStart(2, '0');
+        fechasSemana.push({
+            fecha: fecha,
+            fechaStr: fechaStr,
+            esHoy: fechaStr === hoyStr,
+            nombreDia: DIAS_HEADER[i],
+            diaNum: fecha.getDate()
+        });
+    }
+    
+    // Determinar rango de horas
+    let horaMin = 7, horaMax = 18;
+    if (eventos.length > 0) {
+        eventos.forEach(e => {
+            const h = parseInt(e.hora_inicio.split(':')[0]);
+            const hFin = parseInt(e.hora_fin.split(':')[0]);
+            if (h < horaMin) horaMin = Math.max(6, h);
+            if (hFin > horaMax) horaMax = Math.min(22, hFin + 1);
+        });
+    }
+    
+    // ===== GENERAR TABLA HTML CON CUADRÍCULA =====
+    let tableHTML = `
+        <table class="w-full" style="table-layout: fixed; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="width: 80px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc, #f1f5f9); padding: 12px 8px;">
+                        <span class="material-symbols-outlined text-gray-400" style="font-size: 20px;">schedule</span>
+                    </th>
+    `;
+    
+    // Encabezados de días mejorados con bordes
+    fechasSemana.forEach((d) => {
+        const bgStyle = d.esHoy 
+            ? 'background: linear-gradient(135deg, #06b6d4, #0891b2);' 
+            : 'background: linear-gradient(135deg, #f8fafc, #f1f5f9);';
+        const textColor = d.esHoy ? 'color: white;' : 'color: #334155;';
+        tableHTML += `
+            <th style="border: 1px solid #e2e8f0; padding: 12px 8px; ${bgStyle}">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; ${textColor}">${d.nombreDia}</span>
+                    <span style="font-size: 18px; font-weight: 700; margin-top: 4px; ${textColor}">${d.diaNum}</span>
+                </div>
+            </th>
+        `;
+    });
+    
+    tableHTML += `</tr></thead><tbody>`;
+    
+    // Filas de horas con cuadrícula
+    for (let hora = horaMin; hora <= horaMax; hora++) {
+        tableHTML += `<tr>`;
+        
+        // Celda de hora con borde
+        tableHTML += `
+            <td style="width: 80px; border: 1px solid #e2e8f0; background: linear-gradient(135deg, #f8fafc, #f1f5f9); padding: 12px 8px; text-align: center; vertical-align: middle;">
+                <span style="font-size: 13px; font-weight: 600; color: #64748b;">${String(hora).padStart(2, '0')}:00</span>
+            </td>
+        `;
+        
+        // Celdas de cada día con bordes
+        fechasSemana.forEach(d => {
+            const bgColor = d.esHoy ? '#ecfeff' : '#ffffff';
+            
+            const eventosEnCelda = eventos.filter(e => {
+                const horaEvento = parseInt(e.hora_inicio.split(':')[0]);
+                return e.fecha === d.fechaStr && horaEvento === hora;
+            });
+            
+            tableHTML += `<td style="border: 1px solid #e2e8f0; background-color: ${bgColor}; padding: 4px; vertical-align: top; min-height: 60px;" data-fecha="${d.fechaStr}" data-hora="${hora}">`;
+            
+            if (eventosEnCelda.length > 0) {
+                eventosEnCelda.forEach(evento => {
+                    const estilos = obtenerEstilosEvento(evento);
+                    const horaCorta = evento.hora_inicio.substring(0, 5);
+                    
+                    tableHTML += `
+                        <div style="
+                            background: ${estilos.bg};
+                            border-left: 4px solid ${estilos.borderColor};
+                            color: ${estilos.color};
+                            border-radius: 8px;
+                            padding: 8px 10px;
+                            margin: 3px;
+                            cursor: pointer;
+                            transition: all 0.2s ease;
+                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                        " 
+                        class="evento-agenda hover:shadow-lg hover:scale-105"
+                        onclick="verDetalleEvento('${evento.tipo}', ${evento.id})"
+                        title="${evento.titulo} - ${evento.hora_inicio} a ${evento.hora_fin}">
+                            <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; margin-bottom: 2px;">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">${estilos.icon}</span>
+                                ${horaCorta}
+                            </div>
+                            <div style="font-size: 11px; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${evento.titulo}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            tableHTML += `</td>`;
+        });
+        
+        tableHTML += `</tr>`;
+    }
+    
+    tableHTML += `</tbody></table>`;
+    
+    // Limpiar contenedores y poner la tabla
+    diasContainer.innerHTML = '';
+    bodyContainer.innerHTML = tableHTML;
+}
+
+/**
+ * Obtiene los estilos inline para un evento según su tipo y estado
+ */
+function obtenerEstilosEvento(evento) {
+    let styles = {
+        bg: '',
+        color: '',
+        borderColor: '',
+        icon: 'calendar_today'
+    };
+    
+    if (evento.estado === 'Cancelada') {
+        styles.bg = '#f3f4f6';
+        styles.color = '#6b7280';
+        styles.borderColor = '#9ca3af';
+        styles.icon = 'event_busy';
+    } else {
+        switch(evento.tipo) {
+            case 'cita':
+                if (evento.estado === 'Completada' || evento.estado === 'Confirmada') {
+                    styles.bg = 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)';
+                    styles.color = '#065f46';
+                    styles.borderColor = '#10b981';
+                    styles.icon = 'check_circle';
+                } else {
+                    styles.bg = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+                    styles.color = '#92400e';
+                    styles.borderColor = '#f59e0b';
+                    styles.icon = 'event';
+                }
+                break;
+            case 'examen':
+                styles.bg = 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)';
+                styles.color = '#3730a3';
+                styles.borderColor = '#6366f1';
+                styles.icon = 'biotech';
+                break;
+            case 'operacion':
+                styles.bg = 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)';
+                styles.color = '#9f1239';
+                styles.borderColor = '#f43f5e';
+                styles.icon = 'surgical';
+                break;
+            default:
+                styles.bg = 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)';
+                styles.color = '#92400e';
+                styles.borderColor = '#f59e0b';
+                styles.icon = 'event';
+        }
+    }
+    
+    return styles;
+}
+
+/**
+ * Obtiene los colores para un evento según su tipo y estado
+ */
+function obtenerColorEvento(evento) {
+    if (evento.estado === 'Cancelada') {
+        return {
+            bg: 'bg-red-100',
+            text: 'text-red-700',
+            textSecondary: 'text-red-600'
+        };
+    }
+    
+    switch(evento.tipo) {
+        case 'cita':
+            if (evento.estado === 'Completada' || evento.estado === 'Confirmada') {
+                return {
+                    bg: 'bg-emerald-100',
+                    text: 'text-emerald-700',
+                    textSecondary: 'text-emerald-600'
+                };
+            } else {
+                return {
+                    bg: 'bg-amber-100',
+                    text: 'text-amber-700',
+                    textSecondary: 'text-amber-600'
+                };
+            }
+        case 'examen':
+            return {
+                bg: 'bg-violet-100',
+                text: 'text-violet-700',
+                textSecondary: 'text-violet-600'
+            };
+        case 'operacion':
+            return {
+                bg: 'bg-rose-100',
+                text: 'text-rose-700',
+                textSecondary: 'text-rose-600'
+            };
+        default:
+            return {
+                bg: 'bg-gray-100',
+                text: 'text-gray-700',
+                textSecondary: 'text-gray-600'
+            };
+    }
+}
+
+/**
+ * Calcula la duración en minutos entre dos horas
+ */
+function calcularDuracionMinutos(inicio, fin) {
+    const [h1, m1] = inicio.split(':').map(Number);
+    const [h2, m2] = fin.split(':').map(Number);
+    return (h2 * 60 + m2) - (h1 * 60 + m1);
+}
+
+/**
+ * Actualiza la lista de eventos del día
+ */
+function actualizarListaEventosDia(eventos) {
+    const container = document.getElementById('lista-eventos-dia');
+    const titulo = document.getElementById('titulo-eventos-dia');
+    const contador = document.getElementById('contador-eventos-dia');
+    
+    if (!container) return;
+    
+    const hoy = new Date();
+    const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+    
+    if (titulo) {
+        titulo.innerHTML = `
+            <span class="material-symbols-outlined text-cyan-600">event_note</span>
+            Eventos de Hoy - ${hoy.toLocaleDateString('es-ES', opciones)}
+        `;
+    }
+    
+    if (contador) {
+        contador.textContent = `${eventos.length} evento(s)`;
+    }
+    
+    if (eventos.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <div class="w-16 h-16 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-4xl text-gray-400">event_busy</span>
+                </div>
+                <p class="font-semibold">No hay eventos programados para hoy</p>
+                <p class="text-sm mt-2 text-gray-400">Tu agenda está libre</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    eventos.sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio));
+    
+    eventos.forEach(evento => {
+        // Determinar colores según tipo y estado
+        let borderColor, bgColor, iconColor;
+        switch(evento.tipo) {
+            case 'cita':
+                borderColor = evento.estado === 'Completada' ? 'border-emerald-200' : 
+                              evento.estado === 'Confirmada' ? 'border-blue-200' : 
+                              evento.estado === 'Cancelada' ? 'border-red-200' : 'border-amber-200';
+                bgColor = evento.estado === 'Completada' ? 'bg-emerald-50' : 
+                          evento.estado === 'Confirmada' ? 'bg-blue-50' : 
+                          evento.estado === 'Cancelada' ? 'bg-red-50' : 'bg-amber-50';
+                iconColor = 'from-cyan-500 to-teal-500';
+                break;
+            case 'examen':
+                borderColor = evento.estado === 'Completada' ? 'border-blue-200' : 'border-blue-300';
+                bgColor = evento.estado === 'Completada' ? 'bg-blue-50/50' : 'bg-blue-50';
+                iconColor = 'from-blue-500 to-cyan-500';
+                break;
+            case 'operacion':
+                borderColor = evento.estado === 'Completada' ? 'border-orange-200' : 'border-orange-300';
+                bgColor = evento.estado === 'Completada' ? 'bg-orange-50/50' : 'bg-orange-50';
+                iconColor = 'from-orange-500 to-red-500';
+                break;
+            default:
+                borderColor = 'border-gray-200';
+                bgColor = 'bg-gray-50';
+                iconColor = 'from-gray-500 to-gray-600';
+        }
+        
+        // Badge de tipo
+        const tipoBadge = evento.tipo === 'cita' ? '' : `
+            <span class="text-[10px] px-2 py-0.5 rounded-full ${evento.tipo === 'examen' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'} font-semibold">
+                ${evento.tipo === 'examen' ? 'EXAMEN' : 'OPERACIÓN'}
+            </span>
+        `;
+        
+        // Badge de estado
+        let estadoBadge = '';
+        switch(evento.estado) {
+            case 'Pendiente':
+                estadoBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-lg">
+                    <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>Pendiente
+                </span>`;
+                break;
+            case 'Confirmada':
+            case 'Confirmado':
+                estadoBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-lg">
+                    <span class="material-symbols-outlined text-xs">check_circle</span>Confirmada
+                </span>`;
+                break;
+            case 'Completada':
+            case 'Completado':
+                estadoBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">
+                    <span class="material-symbols-outlined text-xs">task_alt</span>Completada
+                </span>`;
+                break;
+            case 'Cancelada':
+                estadoBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-lg">
+                    <span class="material-symbols-outlined text-xs">cancel</span>Cancelada
+                </span>`;
+                break;
+        }
+        
+        // Obtener iniciales del paciente
+        const partes = evento.titulo.split(' ');
+        const iniciales = partes.length >= 2 ? partes[0][0] + partes[1][0] : partes[0].slice(0, 2);
+        
+        html += `
+            <div class="flex items-center gap-4 p-4 rounded-xl border-2 ${borderColor} ${bgColor} hover:shadow-md transition-all cursor-pointer"
+                 onclick="verDetalleEvento('${evento.tipo}', ${evento.id})">
+                <div class="flex-shrink-0">
+                    <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br ${iconColor} rounded-xl flex items-center justify-center text-white font-bold text-sm md:text-lg shadow-md">
+                        ${iniciales.toUpperCase()}
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <h4 class="font-bold text-gray-800 text-sm md:text-base truncate">${evento.titulo}</h4>
+                        ${tipoBadge}
+                    </div>
+                    <p class="text-xs md:text-sm text-gray-600 truncate">${evento.subtitulo}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-sm md:text-lg text-cyan-600">${evento.hora_inicio}</p>
+                    <div class="mt-2">${estadoBadge}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+/**
+ * Navega a la semana anterior o siguiente
+ */
+function navegarAgenda(direccion) {
+    cargarAgendaSemanal(agendaOffsetSemana + direccion);
+}
+
+/**
+ * Navega a la semana actual
+ */
+function irAHoy() {
+    cargarAgendaSemanal(0);
+}
+
+/**
+ * Ver detalle de un evento específico
+ */
+async function verDetalleEvento(tipo, id) {
+    const modal = document.getElementById('modal-detalle-evento');
+    if (!modal) return;
+    
+    try {
+        const response = await fetch(`/medico/api/detalle-evento/${tipo}/${id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            mostrarModalEvento(data.evento, tipo);
+        } else {
+            alert('Error al cargar el detalle del evento');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    }
+}
+
+// Variables globales para el modal de eventos
+let eventoActual = null;
+let tipoEventoActual = null;
+
+/**
+ * Muestra el modal con el detalle del evento
+ */
+function mostrarModalEvento(evento, tipo) {
+    const modal = document.getElementById('modal-detalle-evento');
+    const header = document.getElementById('modal-evento-header');
+    const icono = document.getElementById('modal-evento-icono');
+    const tipoEl = document.getElementById('modal-evento-tipo');
+    const estadoEl = document.getElementById('modal-evento-estado');
+    const pacienteEl = document.getElementById('modal-evento-paciente');
+    const servicioEl = document.getElementById('modal-evento-servicio');
+    const fechaEl = document.getElementById('modal-evento-fecha');
+    const horaEl = document.getElementById('modal-evento-hora');
+    
+    // Guardar evento actual para uso posterior
+    eventoActual = evento;
+    tipoEventoActual = tipo;
+    
+    // Color del header según tipo
+    let gradiente = '';
+    let iconoTexto = '';
+    let tipoTexto = '';
+    
+    switch(tipo) {
+        case 'cita':
+            gradiente = 'from-cyan-500 to-teal-500';
+            iconoTexto = 'event';
+            tipoTexto = 'Cita Médica';
+            break;
+        case 'examen':
+            gradiente = 'from-blue-500 to-cyan-500';
+            iconoTexto = 'biotech';
+            tipoTexto = 'Examen Médico';
+            break;
+        case 'operacion':
+            gradiente = 'from-red-500 to-orange-500';
+            iconoTexto = 'surgical';
+            tipoTexto = 'Operación';
+            break;
+    }
+    
+    header.className = `px-6 py-5 text-white bg-gradient-to-br ${gradiente}`;
+    icono.textContent = iconoTexto;
+    tipoEl.textContent = tipoTexto;
+    estadoEl.textContent = evento.estado || 'Pendiente';
+    pacienteEl.textContent = evento.paciente || '-';
+    servicioEl.textContent = evento.servicio || '-';
+    
+    // Formatear fecha
+    if (evento.fecha) {
+        const fecha = new Date(evento.fecha + 'T00:00:00');
+        fechaEl.textContent = fecha.toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+    } else {
+        fechaEl.textContent = '-';
+    }
+    
+    // Formatear hora
+    if (evento.hora_inicio && evento.hora_fin) {
+        horaEl.textContent = `${evento.hora_inicio} - ${evento.hora_fin}`;
+    } else if (evento.hora_inicio) {
+        horaEl.textContent = evento.hora_inicio;
+    } else {
+        horaEl.textContent = '-';
+    }
+    
+    // Manejar sección de observaciones para exámenes y operaciones
+    manejarSeccionObservaciones(evento, tipo);
+    
+    modal.classList.remove('hidden');
+}
+
+/**
+ * Maneja la visibilidad y contenido de la sección de observaciones
+ */
+function manejarSeccionObservaciones(evento, tipo) {
+    const seccionObservaciones = document.getElementById('seccion-observaciones');
+    const observacionesExistentes = document.getElementById('observaciones-existentes');
+    const formularioCompletar = document.getElementById('formulario-completar');
+    const btnCompletar = document.getElementById('btn-completar-procedimiento');
+    const btnCompletarTexto = document.getElementById('btn-completar-texto');
+    const camposOperacion = document.getElementById('campos-operacion');
+    
+    // Limpiar formularios
+    const inputObservaciones = document.getElementById('input-observaciones');
+    const inputProcedimientos = document.getElementById('input-procedimientos');
+    const inputComplicaciones = document.getElementById('input-complicaciones');
+    
+    if (inputObservaciones) inputObservaciones.value = '';
+    if (inputProcedimientos) inputProcedimientos.value = '';
+    if (inputComplicaciones) inputComplicaciones.value = '';
+    
+    // Solo mostrar para exámenes y operaciones
+    if (tipo === 'examen' || tipo === 'operacion') {
+        seccionObservaciones.classList.remove('hidden');
+        
+        const esPendiente = evento.estado === 'Pendiente' || evento.estado === 'pendiente';
+        
+        if (esPendiente) {
+            // Mostrar formulario para completar
+            observacionesExistentes.classList.add('hidden');
+            formularioCompletar.classList.remove('hidden');
+            btnCompletar.classList.remove('hidden');
+            
+            // Mostrar campos adicionales solo para operaciones
+            if (tipo === 'operacion') {
+                camposOperacion.classList.remove('hidden');
+                btnCompletarTexto.textContent = 'Completar Operación';
+            } else {
+                camposOperacion.classList.add('hidden');
+                btnCompletarTexto.textContent = 'Completar Examen';
+            }
+        } else {
+            // Mostrar observaciones existentes si ya está completado
+            formularioCompletar.classList.add('hidden');
+            btnCompletar.classList.add('hidden');
+            
+            // Cargar observaciones desde el servidor
+            cargarObservacionesExistentes(evento.id, tipo);
+        }
+    } else {
+        // Para citas, ocultar toda la sección
+        seccionObservaciones.classList.add('hidden');
+        btnCompletar.classList.add('hidden');
+    }
+}
+
+/**
+ * Carga las observaciones existentes de un examen/operación
+ */
+async function cargarObservacionesExistentes(idEvento, tipo) {
+    const observacionesExistentes = document.getElementById('observaciones-existentes');
+    const textoObservaciones = document.getElementById('texto-observaciones-existentes');
+    const fechaCompletado = document.getElementById('fecha-completado');
+    
+    try {
+        const response = await fetch(`/medico/api/obtener-observaciones/${tipo}/${idEvento}`);
+        const data = await response.json();
+        
+        if (data.success && data.observaciones) {
+            textoObservaciones.textContent = data.observaciones;
+            if (data.completado) {
+                fechaCompletado.textContent = 'Estado: Completado';
+            } else {
+                fechaCompletado.textContent = '';
+            }
+            observacionesExistentes.classList.remove('hidden');
+        } else {
+            observacionesExistentes.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Error al cargar observaciones:', error);
+        observacionesExistentes.classList.add('hidden');
+    }
+}
+
+/**
+ * Completa un procedimiento (examen u operación)
+ */
+async function completarProcedimiento() {
+    if (!eventoActual || !tipoEventoActual) {
+        alert('Error: No hay evento seleccionado');
+        return;
+    }
+    
+    const inputObservaciones = document.getElementById('input-observaciones');
+    const observaciones = inputObservaciones.value.trim();
+    
+    if (!observaciones) {
+        alert('Por favor, ingresa las observaciones del procedimiento');
+        inputObservaciones.focus();
+        return;
+    }
+    
+    const btnCompletar = document.getElementById('btn-completar-procedimiento');
+    const btnCompletarTexto = document.getElementById('btn-completar-texto');
+    const textoOriginal = btnCompletarTexto.textContent;
+    
+    // Mostrar estado de carga
+    btnCompletar.disabled = true;
+    btnCompletarTexto.textContent = 'Procesando...';
+    
+    try {
+        let url = '';
+        let body = { observaciones: observaciones };
+        
+        if (tipoEventoActual === 'examen') {
+            url = `/medico/api/completar-examen/${eventoActual.id}`;
+        } else if (tipoEventoActual === 'operacion') {
+            url = `/medico/api/completar-operacion/${eventoActual.id}`;
+            
+            // Agregar campos adicionales para operaciones
+            const inputProcedimientos = document.getElementById('input-procedimientos');
+            const inputComplicaciones = document.getElementById('input-complicaciones');
+            
+            if (inputProcedimientos && inputProcedimientos.value.trim()) {
+                body.procedimientos_realizados = inputProcedimientos.value.trim();
+            }
+            if (inputComplicaciones && inputComplicaciones.value.trim()) {
+                body.complicaciones = inputComplicaciones.value.trim();
+            }
+        } else {
+            alert('Tipo de procedimiento no válido');
+            return;
+        }
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Mostrar mensaje de éxito
+            alert(`${tipoEventoActual === 'examen' ? 'Examen' : 'Operación'} completado exitosamente`);
+            
+            // Cerrar modal
+            cerrarModalEvento();
+            
+            // Recargar la agenda para reflejar el cambio
+            if (typeof cargarAgendaSemanal === 'function') {
+                // Limpiar cache para forzar recarga
+                if (typeof agendaCacheEventos !== 'undefined') {
+                    agendaCacheEventos = {};
+                }
+                cargarAgendaSemanal(agendaOffsetSemana);
+            }
+        } else {
+            alert(data.message || 'Error al completar el procedimiento');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error de conexión al completar el procedimiento');
+    } finally {
+        // Restaurar botón
+        btnCompletar.disabled = false;
+        btnCompletarTexto.textContent = textoOriginal;
+    }
+}
+
+/**
+ * Cierra el modal de detalle de evento
+ */
+function cerrarModalEvento() {
+    const modal = document.getElementById('modal-detalle-evento');
+    if (modal) modal.classList.add('hidden');
+    
+    // Limpiar variables globales
+    eventoActual = null;
+    tipoEventoActual = null;
+}
+
+/**
+ * Muestra un mensaje de error en la agenda
+ */
+function mostrarErrorAgenda(mensaje) {
+    const vacio = document.getElementById('agenda-vacio');
+    if (vacio) {
+        vacio.innerHTML = `
+            <span class="material-symbols-outlined text-6xl text-red-300 mb-4 block">error</span>
+            <p class="text-red-500 font-medium">${mensaje}</p>
+            <button onclick="cargarAgendaSemanal(agendaOffsetSemana)" class="mt-4 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors">
+                Reintentar
+            </button>
+        `;
+        vacio.classList.remove('hidden');
+    }
+}
+
+// Cerrar modales al hacer clic fuera
+document.addEventListener('click', function(e) {
+    const modalEvento = document.getElementById('modal-detalle-evento');
+    if (modalEvento && e.target === modalEvento) {
+        cerrarModalEvento();
+    }
+});
+
+// ========== EXPORTAR FUNCIONES AL OBJETO WINDOW ==========
+// Necesario para que los eventos onclick en el HTML puedan acceder a estas funciones
+window.navegarAgenda = navegarAgenda;
+window.irAHoy = irAHoy;
+window.verDetalleEvento = verDetalleEvento;
+window.cerrarModalEvento = cerrarModalEvento;
+window.cargarAgendaSemanal = cargarAgendaSemanal;
+window.completarProcedimiento = completarProcedimiento;
