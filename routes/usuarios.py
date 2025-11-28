@@ -65,6 +65,12 @@ def login():
         session['id_paciente'] = usuario.get('id_paciente')
         session['id_empleado'] = usuario.get('id_empleado')
         
+        # SEGURIDAD: Inicializar timestamp de última actividad para pacientes
+        # Esto permite el control de timeout de 15 minutos de inactividad
+        if usuario['tipo_usuario'] == 'paciente':
+            from datetime import datetime
+            session['last_activity'] = datetime.now().isoformat()
+        
         flash(f'Bienvenido {usuario["nombre"]}', 'success')
         
         # Redirigir según el tipo de usuario
@@ -514,6 +520,11 @@ def api_login():
     session['id_rol'] = usuario.get('id_rol')
     session['id_paciente'] = usuario.get('id_paciente')
     session['id_empleado'] = usuario.get('id_empleado')
+    
+    # SEGURIDAD: Inicializar timestamp de última actividad para pacientes (API login)
+    if usuario.get('tipo_usuario') == 'paciente':
+        from datetime import datetime
+        session['last_activity'] = datetime.now().isoformat()
     
     # Debug: imprimir información del usuario
     print(f"[DEBUG api_login] Usuario logueado - tipo: {usuario.get('tipo_usuario')}, id_rol: {usuario.get('id_rol')}, id_empleado: {usuario.get('id_empleado')}")

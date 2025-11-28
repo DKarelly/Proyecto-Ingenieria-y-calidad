@@ -1,6 +1,7 @@
-from flask import Flask, render_template, session, redirect, url_for, g, request, send_from_directory
+from flask import Flask, render_template, session, redirect, url_for, g, request, send_from_directory, flash
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 # Cargar variables de entorno
 load_dotenv()
@@ -88,6 +89,66 @@ def load_logged_in_user():
         except Exception:
             # En caso de error (DB, etc.) no romper la app; dejar sin usuario
             g.user = None
+
+# SEGURIDAD: Timeout de sesión diferenciado por rol
+# Pacientes: 15 minutos de inactividad
+# Otros roles: Sin restricción de timeout
+@app.before_request
+def check_patient_session_timeout():
+    """
+    Verifica el timeout de sesión para pacientes.
+    Si un paciente está inactivo por más de 15 minutos, cierra su sesión automáticamente.
+    Para otros roles (empleados, médicos, etc.), no aplica restricción.
+    """
+    # OPTIMIZACIÓN: No procesar archivos estáticos ni rutas de login/logout
+    if request.path.startswith('/static/'):
+        return
+    
+    # Excluir rutas de login y logout para evitar bucles de redirección
+    if request.path in ['/usuarios/login', '/usuarios/logout', '/logout', '/']:
+        return
+    
+    # Solo aplicar timeout a pacientes
+    tipo_usuario = session.get('tipo_usuario')
+    if tipo_usuario != 'paciente':
+        return  # No aplicar timeout a empleados, médicos, etc.
+    
+    # Verificar si hay timestamp de última actividad
+    last_activity_str = session.get('last_activity')
+    
+    if last_activity_str is None:
+        # Si no hay timestamp, inicializarlo (primera petición después del login)
+        # Esto puede pasar si el usuario ya tenía sesión antes de implementar esta funcionalidad
+        session['last_activity'] = datetime.now().isoformat()
+        return
+    
+    try:
+        # Convertir el timestamp string a datetime
+        last_activity = datetime.fromisoformat(last_activity_str)
+        now = datetime.now()
+        
+        # Calcular tiempo de inactividad
+        inactivity_time = now - last_activity
+        
+        # Timeout: 15 minutos
+        timeout_duration = timedelta(minutes=15)
+        
+        # Si el tiempo de inactividad supera el timeout, cerrar sesión
+        if inactivity_time > timeout_duration:
+            # Limpiar sesión
+            session.clear()
+            # Redirigir al login con mensaje
+            flash('Su sesión ha expirado por seguridad. Por favor, inicie sesión nuevamente.', 'warning')
+            return redirect(url_for('usuarios.login'))
+        
+        # Si está activo, actualizar el timestamp (Rolling Window)
+        # Esto reinicia el contador de 15 minutos con cada petición
+        session['last_activity'] = now.isoformat()
+        
+    except (ValueError, TypeError) as e:
+        # Si hay error al parsear el timestamp, reinicializarlo
+        # Esto es resistente a fallos como se solicitó
+        session['last_activity'] = datetime.now().isoformat()
 
 
 def is_auth():
