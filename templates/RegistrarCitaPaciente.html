@@ -33,6 +33,82 @@
             background: #e5e7eb;
             color: #6b7280;
         }
+        
+        /* Estilos del calendario - diseño modal procedimientos */
+        .fc {
+            font-family: 'Inter', sans-serif;
+        }
+        .fc .fc-toolbar-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .fc .fc-button {
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            border: none;
+            font-size: 0.75rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        .fc .fc-button:hover {
+            background: linear-gradient(135deg, #0891b2 0%, #2563eb 100%);
+        }
+        .fc .fc-button-active {
+            background: linear-gradient(135deg, #0891b2 0%, #2563eb 100%) !important;
+        }
+        .fc .fc-col-header-cell-cushion {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #4b5563;
+            padding: 8px 4px;
+        }
+        .fc .fc-timegrid-slot-label-cushion {
+            font-size: 0.7rem;
+            color: #6b7280;
+        }
+        .fc .fc-event {
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin: 1px 2px;
+            border-width: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .fc .fc-event:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        }
+        .fc-event-main-frame {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .fc .fc-timegrid-col.fc-day-today {
+            background-color: rgba(6, 182, 212, 0.05);
+        }
+        .fc .fc-now-indicator-line {
+            border-color: #ef4444;
+            border-width: 2px;
+        }
+        .fc .fc-now-indicator-arrow {
+            border-color: #ef4444;
+            border-top-color: transparent;
+            border-bottom-color: transparent;
+        }
+        .fc .fc-scrollgrid {
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        
+        /* Header del calendario */
+        .fc .fc-header-toolbar {
+            margin-bottom: 1rem !important;
+            padding: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -159,57 +235,28 @@
                             </div>
                         </div>
 
-                        <!-- Navegación de semana -->
-                        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <button 
-                                    type="button" 
-                                    id="btnSemanaAnterior" 
-                                    class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="m15 18-6-6 6-6"/>
-                                    </svg>
-                                    Anterior
-                                </button>
-                                
-                                <button 
-                                    type="button"
-                                    onclick="abrirModalSelectorMes()"
-                                    class="text-center hover:bg-gray-50 rounded-lg px-4 py-2 transition-colors cursor-pointer"
-                                >
-                                    <p class="text-sm text-gray-600">Semana actual</p>
-                                    <p id="rangoSemana" class="text-lg font-semibold text-gray-800"></p>
-                                    <p class="text-xs text-cyan-600 mt-1">▼ Click para cambiar</p>
-                                </button>
-                                
-                                <button 
-                                    type="button" 
-                                    id="btnSemanaSiguiente" 
-                                    class="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
-                                >
-                                    Siguiente
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="m9 18 6-6-6-6"/>
-                                    </svg>
-                                </button>
-                            </div>
+                        <!-- Calendario FullCalendar (diseño modal procedimientos) -->
+                        <div id="calendarContainer" class="bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                            <div id="calendar" class="p-2"></div>
                         </div>
 
-                        <!-- Calendario FullCalendar -->
-                        <div id="calendarContainer" class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                            <div id="calendar"></div>
-                        </div>
-
-                        <!-- Leyenda -->
+                        <!-- Leyenda (diseño modal procedimientos) -->
                         <div class="mt-4 flex flex-wrap items-center gap-4 text-sm">
                             <div class="flex items-center gap-2">
                                 <div class="w-4 h-4 bg-green-500 rounded"></div>
                                 <span class="text-gray-600">Disponible</span>
                             </div>
                             <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-gray-400 rounded"></div>
+                                <span class="text-gray-600">Pasado</span>
+                            </div>
+                            <div class="flex items-center gap-2">
                                 <div class="w-4 h-4 bg-red-500 rounded"></div>
                                 <span class="text-gray-600">Ocupado</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-yellow-400 rounded"></div>
+                                <span class="text-gray-600">Tu Reserva</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="w-4 h-4 bg-cyan-500 rounded"></div>
@@ -325,9 +372,14 @@
                     </div>
                     <h3 class="text-2xl font-bold text-gray-800 mb-2">¡Cita Confirmada!</h3>
                     <p class="text-gray-600 mb-6">Tu cita ha sido agendada exitosamente. Recibirás un recordatorio antes de tu consulta.</p>
-                    <a href="/" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
-                        Volver al Inicio
-                    </a>
+                    <div class="flex flex-col gap-3">
+                        <a href="/reservas/paciente/historial" class="inline-block bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold py-3 px-8 rounded-lg hover:from-cyan-600 hover:to-blue-600 transition-all duration-300">
+                            Ver Historial de Reservas
+                        </a>
+                        <a href="/" class="inline-block text-gray-600 hover:text-gray-800 font-medium py-2 transition-colors">
+                            Volver al Inicio
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -411,40 +463,6 @@
 
                 <div id="modalDetalleFooter" class="bg-gray-50 p-6 rounded-b-2xl flex gap-3">
                     <!-- Los botones se generan dinámicamente según disponibilidad -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal de Selector de Mes -->
-        <div id="modalSelectorMes" onclick="cerrarModalSelectorMesClick(event)" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div onclick="event.stopPropagation()" class="bg-white rounded-lg shadow-2xl w-[440px] transform scale-95 transition-transform">
-                <div class="p-6">
-                    <!-- Navegación de mes -->
-                    <div class="flex items-center justify-between mb-6">
-                        <button id="btnMesAnterior" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="m15 18-6-6 6-6"/>
-                            </svg>
-                        </button>
-                        <h4 id="nombreMesSelector" class="text-xl font-bold text-gray-800"></h4>
-                        <button id="btnMesSiguiente" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="m9 18 6-6-6-6"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Calendario mensual -->
-                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;" class="mb-4">
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">L</div>
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">M</div>
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">X</div>
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">J</div>
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">V</div>
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">S</div>
-                        <div class="text-center text-sm font-semibold text-gray-600 py-2">D</div>
-                    </div>
-                    <div id="diasMesSelector" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;"></div>
                 </div>
             </div>
         </div>
@@ -574,11 +592,7 @@
                         fechaFinEl.value = '';
                     }
                     
-                    // Reiniciar a la semana actual
-                    semanaActual = new Date();
-                    actualizarRangoSemana();
-                    
-                    console.log('[Paso3] Regresando a la semana actual');
+                    console.log('[Paso3] Regresando al paso 2');
                     await cargarHorariosSemanales();
                 });
             }
@@ -732,7 +746,12 @@
                                 }
                             }
                         } else {
-                            alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
+                            // Verificar si hay datos de conflicto para mostrar modal detallado
+                            if (data.conflicto) {
+                                mostrarModalConflicto(data.conflicto);
+                            } else {
+                                alert(data.error || 'Error al crear la reserva. Por favor, intenta nuevamente.');
+                            }
                             this.disabled = false;
                             this.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-2"><polyline points="20 6 9 17 4 12"/></svg>Confirmar Cita';
                         }
@@ -745,39 +764,191 @@
                 });
             }
             
-            // Event listeners para navegación de semanas
-            const btnSemanaAnterior = document.getElementById('btnSemanaAnterior');
-            if (btnSemanaAnterior) {
-                btnSemanaAnterior.addEventListener('click', () => {
-                    navegarSemanaAnterior();
-                });
-            }
-
-            const btnSemanaSiguiente = document.getElementById('btnSemanaSiguiente');
-            if (btnSemanaSiguiente) {
-                btnSemanaSiguiente.addEventListener('click', () => {
-                    navegarSemanaSiguiente();
-                });
-            }
-
-            // Event listeners para modal de selector de mes
-            const btnMesAnterior = document.getElementById('btnMesAnterior');
-            if (btnMesAnterior) {
-                btnMesAnterior.addEventListener('click', () => {
-                    cambiarMesSelector(-1);
-                });
-            }
-
-            const btnMesSiguiente = document.getElementById('btnMesSiguiente');
-            if (btnMesSiguiente) {
-                btnMesSiguiente.addEventListener('click', () => {
-                    cambiarMesSelector(1);
-                });
-            }
-
-            // Validar estado inicial de botón anterior
-            validarBotonSemanaAnterior();
         });
+
+        // Función para mostrar modal de conflicto de reserva
+        function mostrarModalConflicto(conflicto) {
+            // Formatear fecha
+            let fechaFormateada = 'No especificada';
+            if (conflicto.fecha) {
+                try {
+                    const fecha = new Date(conflicto.fecha + 'T00:00:00');
+                    fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } catch(e) {
+                    fechaFormateada = conflicto.fecha;
+                }
+            }
+            
+            // Determinar icono según tipo de servicio
+            let iconoServicio = '📋';
+            let colorGradient = 'from-red-500 to-red-600';
+            if (conflicto.tipo_servicio) {
+                const tipo = conflicto.tipo_servicio.toLowerCase();
+                if (tipo.includes('consulta') || tipo.includes('cita')) {
+                    iconoServicio = '🩺';
+                    colorGradient = 'from-blue-500 to-blue-600';
+                } else if (tipo.includes('examen') || tipo.includes('laboratorio')) {
+                    iconoServicio = '🔬';
+                    colorGradient = 'from-purple-500 to-purple-600';
+                } else if (tipo.includes('operación') || tipo.includes('cirug')) {
+                    iconoServicio = '⚕️';
+                    colorGradient = 'from-red-500 to-red-600';
+                }
+            }
+            
+            const modalHTML = `
+                <div id="modalConflictoReserva" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" style="animation: fadeIn 0.3s ease-out;">
+                    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden" style="animation: slideIn 0.3s ease-out;">
+                        <!-- Header con gradiente -->
+                        <div class="bg-gradient-to-r ${colorGradient} p-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                        <span class="text-3xl">⚠️</span>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-xl font-bold text-white">Conflicto de Horario</h2>
+                                        <p class="text-white/80 text-sm">Ya tienes una reserva programada</p>
+                                    </div>
+                                </div>
+                                <button onclick="cerrarModalConflicto()" class="text-white/80 hover:text-white transition-colors p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Contenido -->
+                        <div class="p-6">
+                            <!-- Mensaje de alerta -->
+                            <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-lg">
+                                <div class="flex items-start gap-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-600 flex-shrink-0 mt-0.5">
+                                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                        <path d="M12 9v4"/><path d="M12 17h.01"/>
+                                    </svg>
+                                    <div>
+                                        <p class="text-sm font-semibold text-amber-800">No se puede completar la reserva</p>
+                                        <p class="text-xs text-amber-700 mt-1">El horario seleccionado se cruza con una reserva existente. Por favor, selecciona otro horario disponible.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Card con detalles de la reserva en conflicto -->
+                            <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                                <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2 text-lg">
+                                    <span class="text-2xl">${iconoServicio}</span>
+                                    Reserva Existente
+                                </h3>
+                                
+                                <div class="space-y-3">
+                                    <!-- Servicio -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
+                                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                                <polyline points="14 2 14 8 20 8"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Servicio</p>
+                                            <p class="font-semibold text-gray-800">${conflicto.servicio || 'No especificado'}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Fecha y Hora -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
+                                                <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Fecha</p>
+                                            <p class="font-semibold text-gray-800">${fechaFormateada}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Horario -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600">
+                                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Horario</p>
+                                            <p class="font-semibold text-gray-800">${conflicto.hora_inicio || '--:--'} - ${conflicto.hora_fin || '--:--'}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Médico -->
+                                    <div class="flex items-center gap-3 bg-white rounded-lg p-3 shadow-sm">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600">
+                                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Médico</p>
+                                            <p class="font-semibold text-gray-800">${conflicto.medico ? 'Dr(a). ' + conflicto.medico : 'Por asignar'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer con botones -->
+                        <div class="p-6 bg-gray-50 border-t border-gray-200 flex gap-3">
+                            <button onclick="cerrarModalConflicto(); goToStep(3);" 
+                                    class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>
+                                </svg>
+                                Seleccionar Otro Horario
+                            </button>
+                            <button onclick="cerrarModalConflicto();" 
+                                    class="bg-white border-2 border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Agregar estilos de animación si no existen
+            if (!document.getElementById('modalConflictoStyles')) {
+                const style = document.createElement('style');
+                style.id = 'modalConflictoStyles';
+                style.textContent = `
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    @keyframes slideIn {
+                        from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+                        to { opacity: 1; transform: translateY(0) scale(1); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+        
+        function cerrarModalConflicto() {
+            const modal = document.getElementById('modalConflictoReserva');
+            if (modal) {
+                modal.style.animation = 'fadeOut 0.2s ease-out forwards';
+                setTimeout(() => modal.remove(), 200);
+            }
+        }
 
         // PASO 1: Cargar especialidades desde la BD
         async function cargarEspecialidades() {
@@ -952,7 +1123,6 @@
 
         // PASO 3: Variables globales para el calendario
         let calendar = null;
-        let semanaActual = new Date();
         let horarioSeleccionado = null;
 
         // Inicializar FullCalendar
@@ -962,14 +1132,23 @@
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'timeGridWeek',
                 locale: 'es',
-                headerToolbar: false, // Ocultamos el header por defecto, usaremos nuestro propio control
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'timeGridWeek,dayGridMonth'
+                },
+                buttonText: {
+                    today: 'today',
+                    week: 'week',
+                    month: 'month'
+                },
                 allDaySlot: false,
                 slotMinTime: '07:00:00',
                 slotMaxTime: '20:00:00',
                 slotDuration: '00:30:00',
                 slotLabelInterval: '01:00',
                 height: 'auto',
-                contentHeight: 'auto',
+                contentHeight: 650,
                 aspectRatio: 1.8,
                 expandRows: true,
                 stickyHeaderDates: true,
@@ -978,13 +1157,41 @@
                 nowIndicator: true, // Línea roja de hora actual
                 now: new Date(), // Hora actual actualizada
                 selectable: false,
+                slotLabelFormat: {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    omitZeroMinute: true,
+                    meridiem: false,
+                    hour12: false
+                },
+                dayHeaderFormat: {
+                    weekday: 'short',
+                    day: '2-digit',
+                    month: '2-digit'
+                },
                 eventClick: function(info) {
                     mostrarDetallePrograma(info.event);
                 },
                 eventContent: function(arg) {
                     const disponible = arg.event.extendedProps.disponible;
                     const horaInicio = arg.event.extendedProps.hora_inicio;
-                    const horaFin = arg.event.extendedProps.hora_fin;
+                    const yaPaso = arg.event.extendedProps.yaPaso;
+                    const esReservaPropia = arg.event.extendedProps.esReservaPropia;
+                    
+                    let estadoTexto, icono;
+                    if (esReservaPropia) {
+                        estadoTexto = 'Tu Reserva';
+                        icono = '⭐';
+                    } else if (yaPaso) {
+                        estadoTexto = 'Pasado';
+                        icono = '✕';
+                    } else if (disponible) {
+                        estadoTexto = 'Disponible';
+                        icono = '✓';
+                    } else {
+                        estadoTexto = 'Ocupado';
+                        icono = '✕';
+                    }
                     
                     return {
                         html: `
@@ -992,10 +1199,10 @@
                                 <div class="fc-event-title-container">
                                     <div class="fc-event-title fc-sticky text-xs font-semibold">
                                         ${horaInicio}
-                                        ${disponible ? '<span class="ml-1">✓</span>' : '<span class="ml-1">✕</span>'}
+                                        <span class="ml-1">${icono}</span>
                                     </div>
                                     <div class="text-xs opacity-90 mt-0.5">
-                                        ${disponible ? 'Disponible' : 'Ocupado'}
+                                        ${estadoTexto}
                                     </div>
                                 </div>
                             </div>
@@ -1005,42 +1212,18 @@
             });
 
             calendar.render();
-            actualizarRangoSemana();
         }
 
-        // Actualizar el texto del rango de semana
-        function actualizarRangoSemana() {
-            const inicioSemana = obtenerInicioSemana(semanaActual);
-            const finSemana = obtenerFinSemana(semanaActual);
-            
-            const inicioStr = inicioSemana.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-            const finStr = finSemana.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-            
-            document.getElementById('rangoSemana').textContent = `${inicioStr} - ${finStr}`;
-        }
-
-        // Obtener inicio de semana (lunes)
-        function obtenerInicioSemana(fecha) {
-            const d = new Date(fecha);
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            return new Date(d.setDate(diff));
-        }
-
-        // Obtener fin de semana (domingo)
-        function obtenerFinSemana(fecha) {
-            const inicio = obtenerInicioSemana(fecha);
-            return new Date(inicio.getTime() + 6 * 24 * 60 * 60 * 1000);
-        }
-
-        // Cargar horarios en el calendario
+        // Cargar horarios en el calendario (3 meses de programaciones del médico seleccionado)
         async function cargarHorariosSemanales() {
             try {
-                const inicioSemana = obtenerInicioSemana(semanaActual);
-                const finSemana = obtenerFinSemana(semanaActual);
+                // Cargar 3 meses de programaciones desde hoy
+                const hoy = new Date();
+                const tresMesesDespues = new Date();
+                tresMesesDespues.setMonth(tresMesesDespues.getMonth() + 3);
                 
-                const fechaInicio = inicioSemana.toISOString().split('T')[0];
-                const fechaFin = finSemana.toISOString().split('T')[0];
+                const fechaInicio = hoy.toISOString().split('T')[0];
+                const fechaFin = tresMesesDespues.toISOString().split('T')[0];
 
                 console.log('[Paso3] Cargando horarios para médico ID:', formData.id_empleado, 'desde:', fechaInicio, 'hasta:', fechaFin);
                 
@@ -1087,12 +1270,16 @@
                         const fechaHoraProgramacion = new Date(`${horario.fecha}T${horario.hora_inicio}`);
                         const yaPaso = fechaHoraProgramacion < ahora;
                         
-                        // Determinar color según estado
+                        // Determinar color según estado (igual que modal de procedimientos)
                         let backgroundColor, borderColor;
                         if (esReservaPropia) {
                             // Amarillo para reservas propias
                             backgroundColor = '#fbbf24';
                             borderColor = '#f59e0b';
+                        } else if (yaPaso) {
+                            // Gris para citas que ya pasaron
+                            backgroundColor = '#9ca3af';
+                            borderColor = '#6b7280';
                         } else if (disponible) {
                             // Verde para disponibles
                             backgroundColor = '#10b981';
@@ -1128,13 +1315,13 @@
                     // Agregar eventos al calendario
                     calendar.addEventSource(eventos);
                     
-                    // Navegar a la fecha de inicio de la semana
-                    calendar.gotoDate(inicioSemana);
+                    // Navegar a la fecha actual (hoy)
+                    calendar.gotoDate(hoy);
                 } else {
                     // Mostrar mensaje pero mantener calendario visible
                     noHorarios.classList.remove('hidden');
-                    // Navegar a la fecha de inicio de la semana aunque no haya eventos
-                    calendar.gotoDate(inicioSemana);
+                    // Navegar a la fecha actual aunque no haya eventos
+                    calendar.gotoDate(hoy);
                 }
             } catch (error) {
                 console.error('[Paso3] Error al cargar horarios:', error);
@@ -1535,219 +1722,6 @@
             
             // Cerrar modal
             cerrarModalDetalle();
-        }
-
-        // ============================================
-        // FUNCIONES PARA NAVEGACIÓN DE SEMANAS
-        // ============================================
-        
-        function navegarSemanaAnterior() {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            
-            const inicioSemanaActual = obtenerInicioSemana(semanaActual);
-            const inicioSemanaNueva = new Date(inicioSemanaActual);
-            inicioSemanaNueva.setDate(inicioSemanaNueva.getDate() - 7);
-            
-            // Validar que no retroceda a semanas pasadas
-            const inicioSemanaHoy = obtenerInicioSemana(hoy);
-            
-            if (inicioSemanaNueva >= inicioSemanaHoy) {
-                semanaActual.setDate(semanaActual.getDate() - 7);
-                actualizarRangoSemana();
-                cargarHorariosSemanales();
-                validarBotonSemanaAnterior();
-            } else {
-                console.log('[Navegación] No se puede retroceder a semanas anteriores a la actual');
-            }
-        }
-
-        function navegarSemanaSiguiente() {
-            semanaActual.setDate(semanaActual.getDate() + 7);
-            actualizarRangoSemana();
-            cargarHorariosSemanales();
-            validarBotonSemanaAnterior();
-        }
-
-        function validarBotonSemanaAnterior() {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            
-            const inicioSemanaActual = obtenerInicioSemana(semanaActual);
-            const inicioSemanaHoy = obtenerInicioSemana(hoy);
-            
-            const btnAnterior = document.getElementById('btnSemanaAnterior');
-            if (btnAnterior) {
-                if (inicioSemanaActual <= inicioSemanaHoy) {
-                    btnAnterior.disabled = true;
-                    btnAnterior.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btnAnterior.disabled = false;
-                    btnAnterior.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }
-        }
-
-        // ============================================
-        // FUNCIONES PARA MODAL DE SELECTOR DE MES
-        // ============================================
-        
-        let mesActualSelector = new Date();
-        let ocupacionPorDia = {};
-
-        async function abrirModalSelectorMes() {
-            mesActualSelector = new Date(semanaActual);
-            await cargarOcupacionMes();
-            renderizarCalendarioMensual();
-            
-            const modal = document.getElementById('modalSelectorMes');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.querySelector('.transform').classList.remove('scale-95');
-                modal.querySelector('.transform').classList.add('scale-100');
-            }, 10);
-        }
-
-        function cerrarModalSelectorMes() {
-            const modal = document.getElementById('modalSelectorMes');
-            modal.querySelector('.transform').classList.remove('scale-100');
-            modal.querySelector('.transform').classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 200);
-        }
-
-        function cerrarModalSelectorMesClick(event) {
-            // Cerrar solo si se hace clic en el fondo oscuro (no en el contenido del modal)
-            if (event.target === event.currentTarget) {
-                cerrarModalSelectorMes();
-            }
-        }
-
-        async function cargarOcupacionMes() {
-            try {
-                const primerDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth(), 1);
-                const ultimoDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth() + 1, 0);
-                
-                const fechaInicio = primerDia.toISOString().split('T')[0];
-                const fechaFin = ultimoDia.toISOString().split('T')[0];
-                
-                const url = `/reservas/api/buscar-horarios-disponibles?id_tipo_servicio=1&id_empleado=${formData.id_empleado}&fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                ocupacionPorDia = {};
-                
-                if (data.horarios && data.horarios.length > 0) {
-                    data.horarios.forEach(h => {
-                        if (!ocupacionPorDia[h.fecha]) {
-                            ocupacionPorDia[h.fecha] = { total: 0, ocupados: 0 };
-                        }
-                        ocupacionPorDia[h.fecha].total++;
-                        // El backend envía 'estado_programacion' como 'Disponible' o 'Ocupado'
-                        if (h.estado_programacion === 'Ocupado') {
-                            ocupacionPorDia[h.fecha].ocupados++;
-                        }
-                    });
-                }
-                
-                console.log('[SelectorMes] Ocupación cargada:', ocupacionPorDia);
-            } catch (error) {
-                console.error('[SelectorMes] Error al cargar ocupación:', error);
-            }
-        }
-
-        function renderizarCalendarioMensual() {
-            const nombreMes = mesActualSelector.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-            document.getElementById('nombreMesSelector').textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
-            
-            const primerDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth(), 1);
-            const ultimoDia = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth() + 1, 0);
-            let primerDiaSemana = primerDia.getDay();
-            // Ajustar para que lunes sea 0 (0=Lun, 1=Mar, ..., 6=Dom)
-            primerDiaSemana = primerDiaSemana === 0 ? 6 : primerDiaSemana - 1;
-            
-            const container = document.getElementById('diasMesSelector');
-            container.innerHTML = '';
-            
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            
-            // Días vacíos antes del primer día
-            for (let i = 0; i < primerDiaSemana; i++) {
-                const diaVacio = document.createElement('div');
-                diaVacio.className = 'aspect-square';
-                container.appendChild(diaVacio);
-            }
-            
-            // Días del mes
-            for (let dia = 1; dia <= ultimoDia.getDate(); dia++) {
-                const fecha = new Date(mesActualSelector.getFullYear(), mesActualSelector.getMonth(), dia);
-                const fechaStr = fecha.toISOString().split('T')[0];
-                const esPasado = fecha < hoy;
-                const esHoy = fecha.toDateString() === hoy.toDateString();
-                
-                const diaBtn = document.createElement('button');
-                diaBtn.type = 'button';
-                diaBtn.className = 'w-full aspect-square flex items-center justify-center rounded-full text-base font-semibold transition-all hover:scale-105';
-                diaBtn.textContent = dia;
-                
-                if (esPasado) {
-                    diaBtn.className += ' text-gray-300 cursor-not-allowed';
-                    diaBtn.disabled = true;
-                } else if (esHoy) {
-                    // Día actual - círculo azul
-                    diaBtn.className += ' bg-blue-500 text-white font-semibold cursor-pointer hover:bg-blue-600';
-                    diaBtn.onclick = () => seleccionarFechaDesdeModal(fecha);
-                } else {
-                    // Calcular color según ocupación
-                    let colorClass = 'text-gray-700 hover:bg-gray-100';
-                    
-                    if (ocupacionPorDia[fechaStr]) {
-                        const porcentaje = (ocupacionPorDia[fechaStr].ocupados / ocupacionPorDia[fechaStr].total) * 100;
-                        if (porcentaje < 30) {
-                            colorClass = 'bg-green-100 text-green-700 hover:bg-green-200';
-                        } else if (porcentaje < 70) {
-                            colorClass = 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200';
-                        } else {
-                            colorClass = 'bg-red-100 text-red-700 hover:bg-red-200';
-                        }
-                    }
-                    
-                    diaBtn.className += ` ${colorClass} cursor-pointer font-medium`;
-                    diaBtn.onclick = () => seleccionarFechaDesdeModal(fecha);
-                }
-                
-                container.appendChild(diaBtn);
-            }
-        }
-
-        function cambiarMesSelector(direccion) {
-            mesActualSelector.setMonth(mesActualSelector.getMonth() + direccion);
-            cargarOcupacionMes().then(() => {
-                renderizarCalendarioMensual();
-            });
-        }
-
-        function seleccionarFechaDesdeModal(fecha) {
-            // Validar que no sea una fecha pasada
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            
-            if (fecha < hoy) {
-                alert('No puedes seleccionar fechas pasadas.');
-                return;
-            }
-            
-            // Actualizar semana actual a la semana de la fecha seleccionada
-            semanaActual = new Date(fecha);
-            actualizarRangoSemana();
-            cargarHorariosSemanales();
-            validarBotonSemanaAnterior();
-            
-            // Cerrar modal
-            cerrarModalSelectorMes();
         }
     </script>
 

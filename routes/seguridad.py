@@ -398,15 +398,23 @@ def api_crear_incidencia():
                 'message': 'Debe seleccionar una categoría'
             }), 400
         
-        # Crear la incidencia
+        # Identificador para rate limiting: IP + usuario_id
+        usuario_id = session.get('usuario_id', 'anon')
+        identificador = f"{request.remote_addr}_{usuario_id}"
+        
+        # Crear la incidencia con sanitización y rate limiting
         resultado = Incidencia.crear(
             descripcion=descripcion.strip(),
             id_paciente=id_paciente,
             categoria=categoria,
-            prioridad=prioridad
+            prioridad=prioridad,
+            identificador_usuario=identificador
         )
         
         print('[API CREAR INCIDENCIA] Resultado:', resultado)
+        
+        if resultado.get('rate_limited'):
+            return jsonify({'success': False, 'message': resultado['message']}), 429
         
         if resultado['success']:
             return jsonify(resultado), 201

@@ -131,5 +131,6 @@ def obtener_conexion():
         password='lkzttuSAneuJecLBIWToEmnXaILvqDYI',
         db='bd_finalcalidad',
         charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=False
     )
