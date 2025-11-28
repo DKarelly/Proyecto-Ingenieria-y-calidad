@@ -276,18 +276,26 @@ class Usuario:
 
     @staticmethod
     def login(correo, contrasena):
-        """Realiza el login de un usuario"""
+        """
+        Realiza el login de un usuario
+        
+        SEGURIDAD: Todos los mensajes de error son genéricos para no revelar
+        información sobre qué campo está incorrecto (correo o contraseña)
+        """
         usuario = Usuario.obtener_por_correo(correo)
         
+        # Mensaje genérico: no revelar si el correo existe o no
         if not usuario:
-            return {'error': 'Usuario no encontrado'}
+            return {'error': 'Credenciales incorrectas'}
         
         # Verificar que el usuario esté activo (normalizado a 'Activo')
+        # Mensaje genérico: no revelar el estado del usuario
         if not usuario['estado'] or usuario['estado'] != 'Activo':
-            return {'error': 'Usuario inactivo'}
+            return {'error': 'Credenciales incorrectas'}
         
+        # Mensaje genérico: no revelar si la contraseña es incorrecta
         if not Usuario.verificar_contrasena(usuario['contrasena'], contrasena):
-            return {'error': 'Contraseña incorrecta'}
+            return {'error': 'Credenciales incorrectas'}
         
         # Determinar el nombre según el tipo de usuario
         nombre = None

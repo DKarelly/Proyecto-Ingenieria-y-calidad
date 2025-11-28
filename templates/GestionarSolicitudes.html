@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar Solicitudes - Sistema Médico</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .badge-pendiente { background-color: #fef3c7; color: #92400e; }
+        .badge-aprobada { background-color: #d1fae5; color: #065f46; }
+        .badge-rechazada { background-color: #fee2e2; color: #991b1b; }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .tab-button.active {
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        }
+        .tab-button:not(.active) {
+            background: white;
+            color: #64748b;
+            border: 2px solid #e2e8f0;
+        }
+        .tab-button:not(.active):hover {
+            border-color: #06b6d4;
+            color: #06b6d4;
+        }
+        .tipo-badge-cancelacion {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .tipo-badge-reprogramacion {
+            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+    {% include 'header_admin.html' %}
+    
+    <div class="max-w-7xl mx-auto p-6 md:p-10">
+        <!-- Botón de regreso -->
+        <div class="mb-6">
+            <a href="/reservas/" class="inline-flex items-center text-gray-600 hover:text-cyan-600 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                <span class="font-medium">Volver al Panel de Reservas</span>
+            </a>
+        </div>
+
+        <!-- Título -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-black text-gray-800">
+                <i class="fas fa-tasks text-cyan-600 mr-3"></i>
+                Gestionar Solicitudes
+            </h1>
+            <p class="text-gray-600 mt-2">Revisar y aprobar solicitudes de cancelación y reprogramación de reservas</p>
+        </div>
+
+        <!-- Tabs para cambiar entre Cancelación y Reprogramación -->
+        <div class="mb-6 flex gap-3">
+            <button id="tab-cancelacion" onclick="cambiarTab('cancelacion')" class="tab-button active flex-1 px-6 py-3 rounded-lg font-semibold text-lg">
+                <i class="fas fa-ban mr-2"></i>
+                Cancelaciones
+            </button>
+            <button id="tab-reprogramacion" onclick="cambiarTab('reprogramacion')" class="tab-button flex-1 px-6 py-3 rounded-lg font-semibold text-lg">
+                <i class="fas fa-calendar-check mr-2"></i>
+                Reprogramaciones
+            </button>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 border-l-4 border-yellow-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-yellow-600 text-sm font-semibold uppercase tracking-wide">Pendientes</p>
+                        <p class="text-3xl font-bold text-yellow-800 mt-2" id="total-pendientes">0</p>
+                    </div>
+                    <div class="bg-yellow-500 bg-opacity-20 rounded-full p-4">
+                        <i class="fas fa-clock text-yellow-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="card-estadistica-2" class="bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p id="label-estadistica-2" class="text-green-600 text-sm font-semibold uppercase tracking-wide">Aprobadas Hoy</p>
+                        <p class="text-3xl font-bold text-green-800 mt-2" id="total-estadistica-2">0</p>
+                    </div>
+                    <div class="bg-green-500 bg-opacity-20 rounded-full p-4">
+                        <i id="icon-estadistica-2" class="fas fa-check-circle text-green-600 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden text-center py-12">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-500 mx-auto mb-4"></div>
+            <p class="text-gray-600 font-medium">Cargando solicitudes...</p>
+        </div>
+
+        <!-- Sin resultados -->
+        <div id="sin-resultados" class="hidden text-center py-12 bg-white rounded-lg border border-gray-200">
+            <i class="fas fa-inbox text-gray-300 text-6xl mb-4"></i>
+            <p class="text-gray-600 font-semibold text-lg">No hay solicitudes pendientes</p>
+            <p class="text-gray-500 text-sm mt-2">Todas las solicitudes han sido procesadas</p>
+        </div>
+
+        <!-- Tabla de Solicitudes -->
+        <div id="tabla-container" class="hidden bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead id="tabla-header" class="bg-gradient-to-r from-red-500 to-pink-500">
+                        <!-- Headers dinámicos según el tipo -->
+                    </thead>
+                    <tbody id="tabla-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Filas dinámicas -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+
+    <!-- Modal para Aprobar Cancelación -->
+    <div id="modal-aprobar-cancelacion" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full animate-fade-in">
+            <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6 rounded-t-xl flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold">Confirmar Cancelación</h2>
+                    <p class="text-sm opacity-90 mt-1">La reserva será cancelada definitivamente</p>
+                </div>
+                <button onclick="cerrarModalAprobarCancelacion()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-3">Información de la Reserva</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <p><strong>Paciente:</strong> <span id="modal-cancel-paciente">---</span></p>
+                        <p><strong>DNI:</strong> <span id="modal-cancel-dni">---</span></p>
+                        <p><strong>Servicio:</strong> <span id="modal-cancel-servicio">---</span></p>
+                        <p><strong>Médico:</strong> <span id="modal-cancel-medico">---</span></p>
+                        <p><strong>Fecha/Hora:</strong> <span id="modal-cancel-fecha-hora">---</span></p>
+                        <p><strong>Estado Actual:</strong> <span id="modal-cancel-estado" class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">---</span></p>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-sm"><strong>Motivo de la solicitud:</strong></p>
+                        <p class="text-sm text-gray-700 mt-2 bg-white p-3 rounded border border-gray-200" id="modal-cancel-motivo">---</p>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-xl mr-3 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-yellow-800 mb-1">⚠️ Importante</p>
+                            <p class="text-sm text-yellow-700">
+                                Al aprobar esta cancelación, la reserva quedará cancelada y se notificará al paciente y al médico asignado.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comentario adicional (opcional)</label>
+                    <textarea id="modal-cancel-comentario" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" placeholder="Agregar un comentario para el paciente..."></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="btn-confirmar-cancelacion" onclick="confirmarAprobarCancelacion()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all">
+                        <i class="fas fa-check mr-2"></i>Aprobar Cancelación
+                    </button>
+                    <button onclick="cerrarModalAprobarCancelacion()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Aprobar Reprogramación -->
+    <div id="modal-aprobar-reprogramacion" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-6xl w-full animate-fade-in max-h-[90vh] overflow-y-auto">
+            <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6 rounded-t-xl flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold">Aprobar Reprogramación</h2>
+                    <p class="text-sm opacity-90 mt-1">Selecciona nueva fecha y hora</p>
+                </div>
+                <button onclick="cerrarModalAprobarReprogramacion()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-2">Información de la Reserva</h3>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <p><strong>Paciente:</strong> <span id="modal-reprog-paciente">---</span></p>
+                        <p><strong>DNI:</strong> <span id="modal-reprog-dni">---</span></p>
+                        <p><strong>Servicio:</strong> <span id="modal-reprog-servicio">---</span></p>
+                        <p><strong>Médico:</strong> <span id="modal-reprog-medico">---</span></p>
+                        <p><strong>Fecha/Hora Actual:</strong> <span id="modal-reprog-fecha-actual">---</span></p>
+                        <p><strong>Reprogramaciones:</strong> <span id="modal-reprog-reprogramaciones">0</span> / 2</p>
+                    </div>
+                    <div class="mt-3">
+                        <p class="text-sm"><strong>Motivo:</strong></p>
+                        <p class="text-sm text-gray-700 mt-1" id="modal-reprog-motivo">---</p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="font-semibold text-gray-800 mb-4">Seleccionar Nueva Fecha y Hora</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha</label>
+                            <input type="date" id="modal-reprog-fecha" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="buscarHorariosDisponibles()" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-all">
+                                <i class="fas fa-search mr-2"></i>Buscar Horarios
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="horarios-loading" class="hidden text-center py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-cyan-500 mx-auto mb-3"></div>
+                        <p class="text-gray-600">Buscando horarios...</p>
+                    </div>
+
+                    <div id="horarios-sin-resultados" class="hidden text-center py-8 bg-gray-50 rounded-lg">
+                        <i class="fas fa-calendar-times text-gray-300 text-4xl mb-3"></i>
+                        <p class="text-gray-600">No hay horarios disponibles para esta fecha</p>
+                    </div>
+
+                    <div id="horarios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                        <!-- Tarjetas de horarios dinámicas -->
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Comentario (opcional)</label>
+                    <textarea id="modal-reprog-respuesta" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500" placeholder="Agregar comentario adicional..."></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="btn-confirmar-reprogramacion" onclick="confirmarAprobarReprogramacion()" disabled class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-check mr-2"></i>Aprobar Reprogramación
+                    </button>
+                    <button onclick="cerrarModalAprobarReprogramacion()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Rechazar -->
+    <div id="modal-rechazar" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full animate-fade-in">
+            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-xl flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold">Rechazar Solicitud</h2>
+                    <p class="text-sm opacity-90 mt-1">Indica el motivo del rechazo</p>
+                </div>
+                <button onclick="cerrarModalRechazar()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-all">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Motivo del Rechazo *</label>
+                    <textarea id="rechazar-respuesta" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" placeholder="Explica por qué se rechaza la solicitud..."></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="confirmarRechazar()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg transition-all">
+                        <i class="fas fa-ban mr-2"></i>Rechazar
+                    </button>
+                    <button onclick="cerrarModalRechazar()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg transition-all">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tipoActual = 'cancelacion'; // 'cancelacion' o 'reprogramacion'
+        let solicitudes = [];
+        let solicitudSeleccionada = null;
+        let programacionSeleccionada = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializar con cancelación por defecto
+            actualizarEstadisticasVisuales('cancelacion');
+            cambiarTab('cancelacion');
+        });
+
+        function cambiarTab(tipo) {
+            tipoActual = tipo;
+            
+            // Actualizar botones de tabs
+            document.getElementById('tab-cancelacion').classList.toggle('active', tipo === 'cancelacion');
+            document.getElementById('tab-reprogramacion').classList.toggle('active', tipo === 'reprogramacion');
+            
+            // Actualizar estadísticas visualmente según el tipo
+            actualizarEstadisticasVisuales(tipo);
+            
+            // Cargar datos según el tipo
+            cargarSolicitudes();
+            cargarEstadisticas();
+        }
+
+        function actualizarEstadisticasVisuales(tipo) {
+            const card2 = document.getElementById('card-estadistica-2');
+            const label2 = document.getElementById('label-estadistica-2');
+            const icon2 = document.getElementById('icon-estadistica-2');
+            
+            if (tipo === 'cancelacion') {
+                // Cancelación: Verde para "Aprobadas Hoy"
+                label2.textContent = 'Aprobadas Hoy';
+                icon2.className = 'fas fa-check-circle text-green-600 text-2xl';
+                card2.className = 'bg-gradient-to-br from-green-50 to-green-100 border-l-4 border-green-500 rounded-lg p-6 shadow-sm';
+                // Actualizar color del número
+                document.getElementById('total-estadistica-2').className = 'text-3xl font-bold text-green-800 mt-2';
+            } else {
+                // Reprogramación: Azul/Cyan para "Reprogramadas Hoy"
+                label2.textContent = 'Reprogramadas Hoy';
+                icon2.className = 'fas fa-calendar-check text-cyan-600 text-2xl';
+                card2.className = 'bg-gradient-to-br from-cyan-50 to-blue-100 border-l-4 border-cyan-500 rounded-lg p-6 shadow-sm';
+                // Actualizar color del número
+                document.getElementById('total-estadistica-2').className = 'text-3xl font-bold text-cyan-800 mt-2';
+            }
+        }
+
+        async function cargarSolicitudes() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('sin-resultados').classList.add('hidden');
+            document.getElementById('tabla-container').classList.add('hidden');
+
+            try {
+                let url, filtro;
+                if (tipoActual === 'cancelacion') {
+                    url = '/reservas/api/trabajador/solicitudes-cancelacion';
+                    filtro = (s) => s.estado === 'Pendiente';
+                } else {
+                    url = '/reservas/api/solicitudes-reprogramacion';
+                    filtro = (s) => s.estado_solicitud === 'Pendiente';
+                }
+
+                console.log('📡 Cargando solicitudes desde:', url);
+                
+                const resp = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!resp.ok) {
+                    const errorText = await resp.text();
+                    console.error('❌ Error en respuesta:', resp.status, errorText);
+                    throw new Error(`Error ${resp.status}: ${errorText}`);
+                }
+                
+                const data = await resp.json();
+                console.log('✅ Datos recibidos:', data);
+
+                if (!data.success && data.error) {
+                    throw new Error(data.error);
+                }
+
+                solicitudes = (data.solicitudes || []).filter(filtro);
+                console.log(`📊 Solicitudes filtradas (${tipoActual}):`, solicitudes.length);
+                
+                mostrarSolicitudes();
+                cargarEstadisticas();
+            } catch (err) {
+                console.error('❌ Error al cargar solicitudes:', err);
+                mostrarNotificacion('Error al cargar solicitudes: ' + err.message, 'error');
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('sin-resultados').classList.remove('hidden');
+            }
+        }
+
+        async function cargarEstadisticas() {
+            try {
+                let url, hoy = new Date().toISOString().split('T')[0];
+                
+                if (tipoActual === 'cancelacion') {
+                    // Estadísticas de cancelación
+                    url = '/reservas/api/trabajador/solicitudes-cancelacion';
+                    const resp = await fetch(url);
+                    const data = await resp.json();
+                    
+                    if (resp.ok && data.solicitudes) {
+                        const pendientes = data.solicitudes.filter(s => s.estado === 'Pendiente').length;
+                        const aprobadasHoy = data.solicitudes.filter(s => 
+                            s.estado === 'Aprobada' && 
+                            s.fecha_respuesta && 
+                            s.fecha_respuesta.startsWith(hoy)
+                        ).length;
+                        
+                        document.getElementById('total-pendientes').textContent = pendientes;
+                        document.getElementById('total-estadistica-2').textContent = aprobadasHoy;
+                    }
+                } else {
+                    // Estadísticas de reprogramación
+                    url = '/reservas/api/estadisticas-reprogramacion';
+                    const resp = await fetch(url);
+                    const data = await resp.json();
+                    
+                    if (resp.ok) {
+                        document.getElementById('total-pendientes').textContent = data.pendientes || 0;
+                        document.getElementById('total-estadistica-2').textContent = data.reprogramadas_hoy || 0;
+                    } else {
+                        // Fallback: calcular desde la API de solicitudes
+                        url = '/reservas/api/solicitudes-reprogramacion';
+                        const resp2 = await fetch(url);
+                        const data2 = await resp2.json();
+                        
+                        if (resp2.ok && data2.solicitudes) {
+                            const pendientes = data2.solicitudes.filter(s => s.estado_solicitud === 'Pendiente').length;
+                            // Para reprogramadas hoy, necesitaríamos otra consulta, pero por ahora usamos 0
+                            document.getElementById('total-pendientes').textContent = pendientes;
+                            document.getElementById('total-estadistica-2').textContent = 0;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error al cargar estadísticas:', err);
+            }
+        }
+
+        function mostrarSolicitudes() {
+            document.getElementById('loading').classList.add('hidden');
+
+            if (solicitudes.length === 0) {
+                document.getElementById('sin-resultados').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('sin-resultados').classList.add('hidden');
+            document.getElementById('tabla-container').classList.remove('hidden');
+            
+            // Actualizar header de tabla según el tipo
+            const header = document.getElementById('tabla-header');
+            if (tipoActual === 'cancelacion') {
+                header.className = 'bg-gradient-to-r from-red-500 to-pink-500';
+                header.innerHTML = `
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Solicitud</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Paciente</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Servicio / Médico</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha/Hora Cita</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Motivo Cancelación</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                `;
+            } else {
+                header.className = 'bg-gradient-to-r from-cyan-500 to-blue-500';
+                header.innerHTML = `
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Solicitud</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Paciente</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Servicio</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Fecha/Hora Actual</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Motivo</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Reprogramaciones</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Acciones</th>
+                    </tr>
+                `;
+            }
+            
+            const tbody = document.getElementById('tabla-body');
+            tbody.innerHTML = '';
+
+            solicitudes.forEach(sol => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50 transition-colors';
+
+                const fechaSolicitud = new Date(sol.fecha_solicitud || sol.fecha_solicitud);
+                const fechaFormateada = fechaSolicitud.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                if (tipoActual === 'cancelacion') {
+                    const fechaCita = new Date(sol.fecha_programacion + 'T00:00:00');
+                    const fechaCitaFormateada = fechaCita.toLocaleDateString('es-ES', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <span class="tipo-badge-cancelacion px-2 py-1 rounded text-xs font-semibold">CANCELACIÓN</span>
+                                <div>
+                                    <div class="text-sm font-mono text-gray-900">#${sol.id_solicitud}</div>
+                                    <div class="text-xs text-gray-500">${fechaFormateada}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">${sol.paciente_nombres} ${sol.paciente_apellidos}</div>
+                            <div class="text-xs text-gray-500">DNI: ${sol.paciente_dni}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">${sol.servicio}</div>
+                            ${sol.especialidad ? `<div class="text-xs text-gray-500">${sol.especialidad}</div>` : '<div class="text-xs text-gray-500">Consulta General</div>'}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">${fechaCitaFormateada}</div>
+                            <div class="text-xs text-gray-500">${sol.hora_inicio || '--:--'} - ${sol.hora_fin || '--:--'}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-700 max-w-xs truncate" title="${sol.motivo}">${sol.motivo}</div>
+                        </td>
+                        <td class="px-6 py-4 text-center whitespace-nowrap">
+                            <button onclick="abrirModalAprobarCancelacion(${sol.id_solicitud})" class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-all">
+                                <i class="fas fa-check mr-2"></i>Aprobar
+                            </button>
+                        </td>
+                    `;
+                } else {
+                    const fechaCita = new Date(sol.fecha_actual + 'T00:00:00');
+                    const fechaCitaFormateada = fechaCita.toLocaleDateString('es-ES', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short'
+                    });
+
+                    const maxReprog = sol.num_reprogramaciones >= 2;
+                    const badgeReprog = maxReprog ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+
+                    tr.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <span class="tipo-badge-reprogramacion px-2 py-1 rounded text-xs font-semibold">REPROGRAMACIÓN</span>
+                                <div>
+                                    <div class="text-sm font-mono text-gray-900">#${sol.id_solicitud}</div>
+                                    <div class="text-xs text-gray-500">${fechaFormateada}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">${sol.paciente_nombre}</div>
+                            <div class="text-xs text-gray-500">${sol.paciente_dni}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">${sol.servicio_nombre}</div>
+                            ${sol.medico_nombre ? `<div class="text-xs text-gray-500">${sol.medico_nombre}</div>` : ''}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">${fechaCitaFormateada}</div>
+                            <div class="text-xs text-gray-500">${sol.hora_inicio_actual} - ${sol.hora_fin_actual}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-700 max-w-xs truncate" title="${sol.motivo}">${sol.motivo}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold ${badgeReprog}">
+                                ${sol.num_reprogramaciones} / 2
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="abrirModalAprobarReprogramacion(${sol.id_solicitud})" class="text-green-600 hover:text-green-800 font-medium mr-3" ${maxReprog ? 'disabled title="Máximo de reprogramaciones alcanzado"' : ''}>
+                                <i class="fas fa-check mr-1"></i>Aprobar
+                            </button>
+                            <button onclick="abrirModalRechazar(${sol.id_solicitud})" class="text-red-600 hover:text-red-800 font-medium">
+                                <i class="fas fa-times mr-1"></i>Rechazar
+                            </button>
+                        </td>
+                    `;
+                }
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Funciones para Cancelación
+        function abrirModalAprobarCancelacion(idSolicitud) {
+            solicitudSeleccionada = solicitudes.find(s => s.id_solicitud === idSolicitud);
+            if (!solicitudSeleccionada) return;
+
+            document.getElementById('modal-cancel-paciente').textContent = `${solicitudSeleccionada.paciente_nombres} ${solicitudSeleccionada.paciente_apellidos}`;
+            document.getElementById('modal-cancel-dni').textContent = solicitudSeleccionada.paciente_dni;
+            document.getElementById('modal-cancel-servicio').textContent = solicitudSeleccionada.servicio;
+            document.getElementById('modal-cancel-medico').textContent = solicitudSeleccionada.especialidad || 'Consulta General';
+            
+            const fechaCita = new Date(solicitudSeleccionada.fecha_programacion + 'T00:00:00');
+            const fechaStr = fechaCita.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+            const horaInicio = solicitudSeleccionada.hora_inicio || '--:--';
+            const horaFin = solicitudSeleccionada.hora_fin || '--:--';
+            document.getElementById('modal-cancel-fecha-hora').textContent = 
+                `${fechaStr} - ${horaInicio} a ${horaFin}`;
+            
+            document.getElementById('modal-cancel-estado').textContent = solicitudSeleccionada.estado_reserva || 'Pendiente';
+            document.getElementById('modal-cancel-motivo').textContent = solicitudSeleccionada.motivo;
+            document.getElementById('modal-cancel-comentario').value = '';
+            
+            document.getElementById('modal-aprobar-cancelacion').classList.remove('hidden');
+        }
+
+        function cerrarModalAprobarCancelacion() {
+            document.getElementById('modal-aprobar-cancelacion').classList.add('hidden');
+            solicitudSeleccionada = null;
+        }
+
+        async function confirmarAprobarCancelacion() {
+            if (!solicitudSeleccionada) return;
+
+            const comentario = document.getElementById('modal-cancel-comentario').value.trim() || 'Solicitud de cancelación aprobada';
+
+            const btn = document.getElementById('btn-confirmar-cancelacion');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+
+            try {
+                const resp = await fetch('/reservas/api/trabajador/procesar-cancelacion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_solicitud: solicitudSeleccionada.id_solicitud,
+                        accion: 'Aprobada',
+                        respuesta: comentario
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) throw new Error(data.error || 'Error al aprobar');
+
+                mostrarNotificacion('Cancelación aprobada exitosamente. Se enviaron notificaciones al paciente y médico.', 'success');
+                cerrarModalAprobarCancelacion();
+                cargarSolicitudes();
+            } catch (err) {
+                console.error('Error:', err);
+                mostrarNotificacion(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar Cancelación';
+            }
+        }
+
+        // Funciones para Reprogramación
+        function abrirModalAprobarReprogramacion(idSolicitud) {
+            solicitudSeleccionada = solicitudes.find(s => s.id_solicitud === idSolicitud);
+            if (!solicitudSeleccionada) return;
+
+            document.getElementById('modal-reprog-paciente').textContent = solicitudSeleccionada.paciente_nombre;
+            document.getElementById('modal-reprog-dni').textContent = solicitudSeleccionada.paciente_dni;
+            document.getElementById('modal-reprog-servicio').textContent = solicitudSeleccionada.servicio_nombre;
+            document.getElementById('modal-reprog-medico').textContent = solicitudSeleccionada.medico_nombre || '-';
+            document.getElementById('modal-reprog-fecha-actual').textContent = 
+                `${solicitudSeleccionada.fecha_actual} ${solicitudSeleccionada.hora_inicio_actual}-${solicitudSeleccionada.hora_fin_actual}`;
+            document.getElementById('modal-reprog-reprogramaciones').textContent = solicitudSeleccionada.num_reprogramaciones;
+            document.getElementById('modal-reprog-motivo').textContent = solicitudSeleccionada.motivo;
+
+            programacionSeleccionada = null;
+            document.getElementById('btn-confirmar-reprogramacion').disabled = true;
+            document.getElementById('horarios-container').innerHTML = '';
+            document.getElementById('horarios-sin-resultados').classList.add('hidden');
+            
+            document.getElementById('modal-aprobar-reprogramacion').classList.remove('hidden');
+        }
+
+        function cerrarModalAprobarReprogramacion() {
+            document.getElementById('modal-aprobar-reprogramacion').classList.add('hidden');
+            solicitudSeleccionada = null;
+            programacionSeleccionada = null;
+        }
+
+        async function buscarHorariosDisponibles() {
+            const fecha = document.getElementById('modal-reprog-fecha').value;
+            if (!fecha) {
+                mostrarNotificacion('Selecciona una fecha', 'error');
+                return;
+            }
+
+            // Verificar que hay una solicitud seleccionada
+            if (!solicitudSeleccionada) {
+                mostrarNotificacion('Error: No hay solicitud seleccionada', 'error');
+                return;
+            }
+
+            const container = document.getElementById('horarios-container');
+            const loading = document.getElementById('horarios-loading');
+            const sinResultados = document.getElementById('horarios-sin-resultados');
+
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            sinResultados.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                // Construir URL con filtros de médico y servicio
+                let url = `/reservas/api/buscar-horarios-disponibles?fecha_inicio=${fecha}&fecha_fin=${fecha}`;
+                
+                // Agregar filtro por médico si está disponible
+                if (solicitudSeleccionada.id_empleado) {
+                    url += `&id_empleado=${solicitudSeleccionada.id_empleado}`;
+                    console.log('🔍 Filtrando por médico:', solicitudSeleccionada.id_empleado);
+                }
+                
+                // Agregar filtro por servicio si está disponible
+                if (solicitudSeleccionada.id_servicio) {
+                    url += `&id_servicio=${solicitudSeleccionada.id_servicio}`;
+                    console.log('🔍 Filtrando por servicio:', solicitudSeleccionada.id_servicio);
+                }
+
+                console.log('🔍 Buscando horarios con URL:', url);
+                
+                const resp = await fetch(url);
+                const data = await resp.json();
+
+                loading.classList.add('hidden');
+
+                if (!resp.ok) {
+                    throw new Error(data.error || 'Error al buscar horarios');
+                }
+
+                // Filtrar solo horarios disponibles (estado = 'Disponible')
+                const horariosDisponibles = (data.horarios || []).filter(h => h.estado_programacion === 'Disponible');
+
+                if (horariosDisponibles.length === 0) {
+                    sinResultados.classList.remove('hidden');
+                    return;
+                }
+
+                container.classList.remove('hidden');
+                horariosDisponibles.forEach(horario => {
+                    const card = document.createElement('div');
+                    card.className = 'border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-cyan-500 transition-all';
+                    card.onclick = () => seleccionarHorario(horario.id_programacion, card);
+
+                    const fechaObj = new Date(horario.fecha + 'T00:00:00');
+                    const fechaStr = fechaObj.toLocaleDateString('es-ES', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short'
+                    });
+
+                    card.innerHTML = `
+                        <div class="text-center">
+                            <p class="text-sm font-semibold text-gray-700">${fechaStr}</p>
+                            <p class="text-lg font-bold text-cyan-600">${horario.hora_inicio} - ${horario.hora_fin}</p>
+                            <p class="text-xs text-gray-500 mt-1">${horario.profesional || 'Sin asignar'}</p>
+                            ${horario.especialidad ? `<p class="text-xs text-gray-400">${horario.especialidad}</p>` : ''}
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error('Error:', err);
+                loading.classList.add('hidden');
+                sinResultados.classList.remove('hidden');
+                mostrarNotificacion('Error al buscar horarios: ' + err.message, 'error');
+            }
+        }
+
+        function seleccionarHorario(idProgramacion, cardElement) {
+            document.querySelectorAll('#horarios-container > div').forEach(c => {
+                c.classList.remove('border-cyan-500', 'bg-cyan-50');
+                c.classList.add('border-gray-200');
+            });
+
+            cardElement.classList.remove('border-gray-200');
+            cardElement.classList.add('border-cyan-500', 'bg-cyan-50');
+            
+            programacionSeleccionada = idProgramacion;
+            document.getElementById('btn-confirmar-reprogramacion').disabled = false;
+        }
+
+        async function confirmarAprobarReprogramacion() {
+            if (!programacionSeleccionada) {
+                mostrarNotificacion('Selecciona un horario', 'error');
+                return;
+            }
+
+            const respuesta = document.getElementById('modal-reprog-respuesta').value.trim() || 'Solicitud aprobada';
+
+            const btn = document.getElementById('btn-confirmar-reprogramacion');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+
+            try {
+                const resp = await fetch('/reservas/api/aprobar-reprogramacion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id_solicitud: solicitudSeleccionada.id_solicitud,
+                        nueva_programacion_id: programacionSeleccionada,
+                        respuesta: respuesta
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) throw new Error(data.error || 'Error al aprobar');
+
+                mostrarNotificacion('Reprogramación aprobada exitosamente', 'success');
+                cerrarModalAprobarReprogramacion();
+                cargarSolicitudes();
+            } catch (err) {
+                console.error('Error:', err);
+                mostrarNotificacion(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar Reprogramación';
+            }
+        }
+
+        // Funciones para Rechazar
+        function abrirModalRechazar(idSolicitud) {
+            solicitudSeleccionada = solicitudes.find(s => s.id_solicitud === idSolicitud);
+            if (!solicitudSeleccionada) return;
+
+            document.getElementById('rechazar-respuesta').value = '';
+            document.getElementById('modal-rechazar').classList.remove('hidden');
+        }
+
+        function cerrarModalRechazar() {
+            document.getElementById('modal-rechazar').classList.add('hidden');
+            solicitudSeleccionada = null;
+        }
+
+        async function confirmarRechazar() {
+            const respuesta = document.getElementById('rechazar-respuesta').value.trim();
+            if (!respuesta) {
+                mostrarNotificacion('Debes indicar el motivo del rechazo', 'error');
+                return;
+            }
+
+            try {
+                const url = tipoActual === 'cancelacion' 
+                    ? '/reservas/api/trabajador/procesar-cancelacion'
+                    : '/reservas/api/rechazar-reprogramacion';
+                
+                const body = tipoActual === 'cancelacion'
+                    ? {
+                        id_solicitud: solicitudSeleccionada.id_solicitud,
+                        accion: 'Rechazada',
+                        respuesta: respuesta
+                    }
+                    : {
+                        id_solicitud: solicitudSeleccionada.id_solicitud,
+                        respuesta: respuesta
+                    };
+
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) throw new Error(data.error || 'Error al rechazar');
+
+                mostrarNotificacion('Solicitud rechazada', 'success');
+                cerrarModalRechazar();
+                cargarSolicitudes();
+            } catch (err) {
+                console.error('Error:', err);
+                mostrarNotificacion(err.message, 'error');
+            }
+        }
+
+        function mostrarNotificacion(mensaje, tipo) {
+            const toast = document.createElement('div');
+            const bgColor = tipo === 'success' ? 'bg-green-500' : tipo === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            const icon = tipo === 'success' ? 'fa-check-circle' : tipo === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+
+            toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center animate-fade-in`;
+            toast.innerHTML = `
+                <i class="fas ${icon} mr-3 text-xl"></i>
+                <span>${mensaje}</span>
+            `;
+
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    </script>
+
+    <style>
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.3s ease-out;
+        }
+    </style>
+</body>
+</html>
+
