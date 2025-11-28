@@ -201,322 +201,154 @@
             container.innerHTML = historial.map((cita, index) => {
                 const fecha = new Date(cita.fecha_cita + 'T00:00:00');
                 const fechaFormateada = fecha.toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
                 });
 
                 return `
-                    <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
-                        <!-- Header del Card -->
-                        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 border-b border-gray-100">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <span class="bg-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                            ID: #${cita.id_cita}
-                                        </span>
-                                        <span class="text-sm text-gray-600">${fechaFormateada}</span>
-                                    </div>
-                                    <h3 class="text-xl font-bold text-gray-800 mb-1">${cita.especialidad || 'Consulta General'}</h3>
-                                    <p class="text-cyan-600 font-medium">Cita Médica</p>
+                    <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+                        <!-- Header Compacto -->
+                        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 px-5 py-4 border-b border-gray-100">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="bg-cyan-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">ID: #${cita.id_cita}</span>
+                                    <span class="text-sm text-gray-500">${fechaFormateada}</span>
+                                    <h3 class="text-lg font-bold text-gray-800">${cita.especialidad || 'Consulta General'}</h3>
+                                    <span class="text-cyan-600 text-sm font-medium hidden md:inline">Cita Médica</span>
                                 </div>
-                                <button onclick="toggleExpand(${index})" class="flex items-center gap-2 bg-white text-cyan-600 font-semibold py-2 px-4 rounded-lg hover:bg-cyan-50 transition-all duration-200 border border-cyan-200">
+                                <button onclick="toggleExpand(${index})" class="flex items-center gap-1.5 text-cyan-600 font-medium text-sm py-1.5 px-3 rounded-lg hover:bg-white transition-all duration-200">
                                     <span id="btnText-${index}">Ver Detalles</span>
-                                    <svg id="chevron-${index}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform transition-transform duration-200">
+                                    <svg id="chevron-${index}" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="transform transition-transform duration-200">
                                         <path d="m6 9 6 6 6-6"/>
                                     </svg>
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Información Básica (siempre visible) -->
-                        <div class="p-6">
-                            <div class="grid md:grid-cols-2 gap-4 mb-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600">
-                                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Médico Tratante</p>
-                                        <p class="font-semibold text-gray-800">${cita.medico_nombres ? 'Dr(a). ' + cita.medico_nombres + ' ' + cita.medico_apellidos : 'No especificado'}</p>
-                                    </div>
+                        <!-- Información Básica Compacta -->
+                        <div class="px-5 py-4">
+                            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-500">👨‍⚕️</span>
+                                    <span class="text-gray-600">Médico Tratante</span>
+                                    <span class="font-semibold text-gray-800">${cita.medico_nombres ? 'Dr(a). ' + cita.medico_nombres + ' ' + cita.medico_apellidos : 'No especificado'}</span>
                                 </div>
-
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-cyan-600">
-                                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">Horario de Consulta</p>
-                                        <p class="font-semibold text-gray-800">${cita.hora_inicio || 'No especificado'}</p>
-                                    </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-500">🕐</span>
+                                    <span class="text-gray-600">Horario de Consulta</span>
+                                    <span class="font-semibold text-gray-800">${cita.hora_inicio || 'No especificado'}</span>
                                 </div>
                             </div>
 
                             <!-- Contenido Expandible -->
                             <div id="content-${index}" class="expandable-content">
-                                <div class="border-t border-gray-100 pt-4 mt-4">
-                                    <!-- Diagnóstico -->
-                                    <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded">
-                                        <div class="flex items-start gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-600 flex-shrink-0 mt-1">
-                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                                            </svg>
+                                <div class="border-t border-gray-100 pt-4 mt-4 space-y-3">
+                                    <!-- Diagnóstico Compacto -->
+                                    <div class="bg-green-50 border-l-4 border-green-500 p-3 rounded-r">
+                                        <div class="flex items-start gap-2">
+                                            <span class="text-green-600 text-lg">✓</span>
                                             <div class="flex-1">
-                                                <h4 class="font-bold text-gray-800 mb-2">Diagnóstico</h4>
-                                                <p class="text-gray-700 leading-relaxed">${cita.diagnostico || 'No se ha registrado un diagnóstico para esta consulta.'}</p>
+                                                <h4 class="font-bold text-gray-800 text-sm mb-1">Diagnóstico</h4>
+                                                <p class="text-gray-700 text-sm">${cita.diagnostico || 'No se ha registrado un diagnóstico para esta consulta.'}</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Observaciones -->
+                                    <!-- Observaciones Compacto -->
                                     ${cita.observaciones ? `
-                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-4">
-                                        <div class="flex items-start gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 flex-shrink-0 mt-1">
-                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-                                            </svg>
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r">
+                                        <div class="flex items-start gap-2">
+                                            <span class="text-blue-600 text-lg">📋</span>
                                             <div class="flex-1">
-                                                <h4 class="font-bold text-gray-800 mb-2">Observaciones y Recomendaciones</h4>
-                                                <p class="text-gray-700 leading-relaxed">${cita.observaciones}</p>
+                                                <h4 class="font-bold text-gray-800 text-sm mb-1">Observaciones y Recomendaciones</h4>
+                                                <p class="text-gray-700 text-sm">${cita.observaciones}</p>
                                             </div>
                                         </div>
                                     </div>
                                     ` : ''}
 
-                                    <!-- Exámenes asociados -->
-                                    ${cita.examenes && cita.examenes.length > 0 ? `
-                                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded mb-4">
-                                        <div class="flex items-start gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-purple-600 flex-shrink-0 mt-1">
-                                                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                                            </svg>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-gray-800 mb-3">🔬 Exámenes Asociados (${cita.examenes.length})</h4>
-                                                <div class="space-y-3">
-                                                    ${cita.examenes.map((examen, exIndex) => {
-                                                        const fechaExamen = new Date(examen.fecha_examen + 'T00:00:00');
-                                                        const fechaExamenFormateada = fechaExamen.toLocaleDateString('es-ES', {
-                                                            year: 'numeric',
-                                                            month: 'short',
-                                                            day: 'numeric'
-                                                        });
-                                                        
-                                                        // Determinar color del estado
-                                                        let estadoColor = 'bg-gray-100 text-gray-700';
-                                                        const estadoLower = (examen.estado || '').toLowerCase();
-                                                        if (estadoLower === 'realizado' || estadoLower === 'completado') {
-                                                            estadoColor = 'bg-green-100 text-green-700';
-                                                        } else if (estadoLower === 'pendiente') {
-                                                            estadoColor = 'bg-yellow-100 text-yellow-700';
-                                                        } else if (estadoLower === 'en proceso' || estadoLower === 'en_proceso') {
-                                                            estadoColor = 'bg-blue-100 text-blue-700';
-                                                        }
-                                                        
-                                                        return `
-                                                            <div class="bg-white border border-purple-200 rounded-lg p-3">
-                                                                <div class="flex items-start justify-between gap-3 mb-2">
-                                                                    <div class="flex-1">
-                                                                        <div class="flex items-center gap-2 mb-1">
-                                                                            <span class="font-semibold text-gray-800">${examen.tipo_examen || 'Examen Médico'}</span>
-                                                                            <span class="text-xs ${estadoColor} px-2 py-1 rounded-full font-medium">
-                                                                                ${examen.estado || 'Pendiente'}
-                                                                            </span>
-                                                                        </div>
-                                                                        <div class="flex items-center gap-4 text-sm text-gray-600">
-                                                                            <span>📅 ${fechaExamenFormateada}</span>
-                                                                            ${examen.hora_examen ? `<span>🕐 ${examen.hora_examen}</span>` : ''}
-                                                                        </div>
-                                                                    </div>
-                                                                    <span class="text-xs text-purple-600 font-mono bg-purple-100 px-2 py-1 rounded">
-                                                                        ID: #${examen.id_examen}
-                                                                    </span>
-                                                                </div>
-                                                                ${examen.observacion ? `
-                                                                <div class="mt-2 pt-2 border-t border-purple-100">
-                                                                    <p class="text-sm text-gray-600 italic">
-                                                                        <span class="font-medium text-gray-700">Observación:</span> ${examen.observacion}
-                                                                    </p>
-                                                                </div>
-                                                                ` : ''}
-                                                            </div>
-                                                        `;
-                                                    }).join('')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    ` : cita.total_examenes && cita.total_examenes > 0 ? `
-                                    <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg mb-4">
-                                        <div class="flex items-center gap-2 text-purple-700">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                                            </svg>
-                                            <span class="text-sm font-semibold">🔬 ${cita.total_examenes} examen(es) asociado(s)</span>
-                                        </div>
-                                    </div>
-                                    ` : ''}
-
-                                    <!-- Operaciones asociadas -->
-                                    ${cita.operaciones && cita.operaciones.length > 0 ? `
-                                    <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded mb-4">
-                                        <div class="flex items-start gap-3">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-600 flex-shrink-0 mt-1">
-                                                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                            </svg>
-                                            <div class="flex-1">
-                                                <h4 class="font-bold text-gray-800 mb-3">🏥 Operaciones Asociadas (${cita.operaciones.length})</h4>
-                                                <div class="space-y-3">
-                                                    ${cita.operaciones.map((operacion, opIndex) => {
-                                                        const fechaOperacion = new Date(operacion.fecha_operacion + 'T00:00:00');
-                                                        const fechaOperacionFormateada = fechaOperacion.toLocaleDateString('es-ES', {
-                                                            year: 'numeric',
-                                                            month: 'short',
-                                                            day: 'numeric'
-                                                        });
-                                                        
-                                                        // Determinar color del estado
-                                                        let estadoColor = 'bg-gray-100 text-gray-700';
-                                                        const estadoLower = (operacion.estado || '').toLowerCase();
-                                                        if (estadoLower === 'realizada' || estadoLower === 'completada') {
-                                                            estadoColor = 'bg-green-100 text-green-700';
-                                                        } else if (estadoLower === 'programada' || estadoLower === 'pendiente') {
-                                                            estadoColor = 'bg-yellow-100 text-yellow-700';
-                                                        } else if (estadoLower === 'en proceso' || estadoLower === 'en_proceso') {
-                                                            estadoColor = 'bg-blue-100 text-blue-700';
-                                                        } else if (estadoLower === 'cancelada') {
-                                                            estadoColor = 'bg-red-100 text-red-700';
-                                                        }
-                                                        
-                                                        return `
-                                                            <div class="bg-white border border-red-200 rounded-lg p-3">
-                                                                <div class="flex items-start justify-between gap-3 mb-2">
-                                                                    <div class="flex-1">
-                                                                        <div class="flex items-center gap-2 mb-1">
-                                                                            <span class="font-semibold text-gray-800">${operacion.tipo_operacion || 'Operación Quirúrgica'}</span>
-                                                                            <span class="text-xs ${estadoColor} px-2 py-1 rounded-full font-medium">
-                                                                                ${operacion.estado || 'Programada'}
-                                                                            </span>
-                                                                        </div>
-                                                                        <div class="flex items-center gap-4 text-sm text-gray-600">
-                                                                            <span>📅 ${fechaOperacionFormateada}</span>
-                                                                            ${operacion.hora_operacion ? `<span>🕐 ${operacion.hora_operacion}</span>` : ''}
-                                                                        </div>
-                                                                    </div>
-                                                                    <span class="text-xs text-red-600 font-mono bg-red-100 px-2 py-1 rounded">
-                                                                        ID: #${operacion.id_operacion}
-                                                                    </span>
-                                                                </div>
-                                                                ${operacion.descripcion ? `
-                                                                <div class="mt-2 pt-2 border-t border-red-100">
-                                                                    <p class="text-sm text-gray-600 italic">
-                                                                        <span class="font-medium text-gray-700">Descripción:</span> ${operacion.descripcion}
-                                                                    </p>
-                                                                </div>
-                                                                ` : ''}
-                                                            </div>
-                                                        `;
-                                                    }).join('')}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    ` : ''}
-
-                                    <!-- Estado de la Cita -->
-                                    <div class="mt-4 flex items-center gap-2 text-sm">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-500">
-                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                                        </svg>
-                                        <span class="text-gray-600">Estado: <span class="font-semibold text-green-600">${cita.estado || 'Completada'}</span></span>
+                                    <!-- Estado de la Cita Compacto -->
+                                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                                        <span class="text-green-500">✓</span>
+                                        <span>Estado: <span class="font-semibold text-green-600">${cita.estado || 'Completada'}</span></span>
                                     </div>
 
-                                    <!-- Botones para Ver Exámenes / Ver Operaciones -->
-                                    <!-- Estos botones ahora están dentro de cada autorización individual -->
-
-                                    <!-- Autorizaciones de Procedimientos -->
+                                    <!-- Autorizaciones de Procedimientos Compactas -->
                                     ${cita.autorizaciones && cita.autorizaciones.length > 0 ? `
-                                    <div class="mt-6 pt-4 border-t border-gray-200">
-                                        <h4 class="text-sm font-semibold text-gray-700 mb-3">📋 Procedimientos Autorizados por el Médico:</h4>
-                                        <div class="space-y-3">
+                                    <div class="mt-4 pt-3 border-t border-gray-200">
+                                        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Procedimientos Autorizados por el Médico:</h4>
+                                        <div class="space-y-2">
                                             ${cita.autorizaciones.map((aut, autIndex) => {
                                                 const esActivo = aut.estado_autorizacion === 'ACTIVO';
-                                                // Determinar tipo basado en id_tipo_servicio
+                                                const esUsado = aut.estado_autorizacion === 'USADO';
                                                 const isOperacion = aut.id_tipo_servicio === 2;
                                                 const isExamen = aut.id_tipo_servicio === 4;
                                                 
-                                                // CORREGIDO: Morado para operaciones, Naranja para exámenes
-                                                const colorClasses = isOperacion ? 'bg-purple-50 border-purple-300' : 'bg-orange-50 border-orange-300';
+                                                const colorBorder = isOperacion ? 'border-purple-200 bg-purple-50' : 'border-orange-200 bg-orange-50';
                                                 const iconColor = isOperacion ? 'text-purple-600' : 'text-orange-600';
                                                 const badgeColor = isOperacion ? 'bg-purple-500' : 'bg-orange-500';
                                                 const icon = isOperacion ? '🏥' : '🔬';
                                                 const tipoNombre = isOperacion ? 'Operación' : 'Examen';
                                                 
                                                 return `
-                                                    <div class="${colorClasses} border-2 rounded-lg p-4">
-                                                        <div class="flex items-start justify-between gap-3 mb-3">
-                                                            <div class="flex-1">
-                                                                <div class="flex items-center gap-2 mb-2">
-                                                                    <span class="text-2xl">${icon}</span>
-                                                                    <span class="font-semibold ${iconColor} text-lg">${aut.servicio_nombre}</span>
-                                                                    <span class="text-xs px-2 py-1 rounded-full font-bold text-white ${badgeColor}">
-                                                                        ${tipoNombre}
-                                                                    </span>
-                                                                </div>
-                                                                ${aut.medico_asignado ? `
-                                                                    <p class="text-sm text-gray-600 mb-1">
-                                                                        <span class="font-medium">👨‍⚕️ Médico asignado:</span> ${aut.medico_asignado}
-                                                                    </p>
-                                                                ` : ''}
-                                                                ${aut.especialidad_requerida ? `
-                                                                    <p class="text-sm text-gray-600 mb-1">
-                                                                        <span class="font-medium">🏥 Especialidad:</span> ${aut.especialidad_requerida}
-                                                                    </p>
-                                                                ` : ''}
-                                                                ${aut.fecha_vencimiento ? `
-                                                                    <p class="text-xs text-gray-500 mt-2">
-                                                                        ⏰ Válido hasta: ${(() => {
-                                                                            try {
-                                                                                const fecha = new Date(aut.fecha_vencimiento);
-                                                                                return fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-                                                                            } catch(e) {
-                                                                                return 'Fecha no disponible';
-                                                                            }
-                                                                        })()}
-                                                                    </p>
-                                                                ` : ''}
+                                                    <div class="border ${colorBorder} rounded-lg p-3">
+                                                        <div class="flex items-center justify-between gap-2">
+                                                            <div class="flex items-center gap-2 flex-1 min-w-0">
+                                                                <span class="text-lg flex-shrink-0">${icon}</span>
+                                                                <span class="font-semibold ${iconColor} text-sm truncate">${aut.servicio_nombre}</span>
+                                                                <span class="text-xs px-1.5 py-0.5 rounded font-bold text-white ${badgeColor} flex-shrink-0">
+                                                                    ${tipoNombre}
+                                                                </span>
                                                             </div>
-                                                            <span class="text-xs px-3 py-1 rounded-full font-medium ${
-                                                                esActivo ? 'bg-green-100 text-green-700' :
-                                                                aut.estado_autorizacion === 'USADO' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-gray-100 text-gray-700'
-                                                            }">
-                                                                ${aut.estado_autorizacion}
-                                                            </span>
+                                                            ${esUsado && aut.fecha_reserva_asignada ? `
+                                                                <span class="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700 flex-shrink-0">
+                                                                    📅 ${(() => {
+                                                                        try {
+                                                                            const fecha = new Date(aut.fecha_reserva_asignada);
+                                                                            return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                                                                        } catch(e) {
+                                                                            return 'Agendado';
+                                                                        }
+                                                                    })()}
+                                                                </span>
+                                                            ` : esActivo ? `
+                                                                <span class="text-xs px-2 py-1 rounded-full font-medium bg-green-100 text-green-700 flex-shrink-0">
+                                                                    ACTIVO
+                                                                </span>
+                                                            ` : `
+                                                                <span class="text-xs px-2 py-1 rounded-full font-medium bg-gray-100 text-gray-600 flex-shrink-0">
+                                                                    ${aut.estado_autorizacion}
+                                                                </span>
+                                                            `}
                                                         </div>
+                                                        ${aut.medico_asignado ? `
+                                                            <p class="text-xs text-gray-600 mt-1 ml-7">👨‍⚕️ ${aut.medico_asignado}${aut.especialidad_requerida ? ` • ${aut.especialidad_requerida}` : ''}</p>
+                                                        ` : ''}
+                                                        ${esActivo && aut.fecha_vencimiento ? `
+                                                            <p class="text-xs text-gray-400 mt-1 ml-7">
+                                                                ⏰ Válido hasta: ${(() => {
+                                                                    try {
+                                                                        const fecha = new Date(aut.fecha_vencimiento);
+                                                                        return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+                                                                    } catch(e) {
+                                                                        return 'Fecha no disponible';
+                                                                    }
+                                                                })()}
+                                                            </p>
+                                                        ` : ''}
                                                         ${esActivo ? `
-                                                        <div class="pt-3 border-t border-gray-200">
+                                                        <div class="mt-2 ml-7">
                                                             ${isOperacion ? `
                                                                 <button onclick="verOperacionesCita(${cita.id_cita})" 
-                                                                        class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                        <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                                                    </svg>
-                                                                    🏥 Agendar Operación
+                                                                        class="inline-flex items-center gap-1.5 bg-purple-500 hover:bg-purple-600 text-white font-medium text-xs py-1.5 px-3 rounded-lg transition-all">
+                                                                    Agendar Operación →
                                                                 </button>
                                                             ` : ''}
                                                             ${isExamen ? `
                                                                 <button onclick="verExamenesCita(${cita.id_cita})" 
-                                                                        class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                                        <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                                                                    </svg>
-                                                                    🔬 Agendar Examen
+                                                                        class="inline-flex items-center gap-1.5 bg-orange-500 hover:bg-orange-600 text-white font-medium text-xs py-1.5 px-3 rounded-lg transition-all">
+                                                                    Agendar Examen →
                                                                 </button>
                                                             ` : ''}
                                                         </div>
@@ -624,13 +456,15 @@
                 title: `${prog.hora_inicio} - ${prog.medico_nombre}`,
                 start: `${prog.fecha}T${prog.hora_inicio}`,
                 end: `${prog.fecha}T${prog.hora_fin}`,
-                backgroundColor: '#06b6d4',
-                borderColor: '#0891b2',
+                backgroundColor: '#10b981',
+                borderColor: '#059669',
                 extendedProps: {
                     id_programacion: prog.id_programacion,
                     medico: prog.medico_nombre,
                     especialidad: prog.especialidad,
-                    servicio: prog.servicio_nombre
+                    servicio: prog.servicio_nombre,
+                    hora_inicio: prog.hora_inicio,
+                    seleccionado: false
                 }
             }));
 
@@ -653,6 +487,26 @@
                     seleccionarProgramacion(info.event);
                 },
                 height: 'auto',
+                eventContent: function(arg) {
+                    const horaInicio = arg.event.extendedProps.hora_inicio || arg.event.start.toTimeString().slice(0, 5);
+                    const medico = arg.event.extendedProps.medico || '';
+                    const seleccionado = arg.event.extendedProps.seleccionado;
+                    
+                    return {
+                        html: `
+                            <div class="fc-event-main-frame px-2 py-1">
+                                <div class="fc-event-title-container">
+                                    <div class="fc-event-title fc-sticky text-sm font-bold">
+                                        ${horaInicio} ${seleccionado ? '✓' : ''}
+                                    </div>
+                                    <div class="text-sm opacity-90 truncate font-medium">
+                                        ${medico}
+                                    </div>
+                                </div>
+                            </div>
+                        `
+                    };
+                },
                 eventTimeFormat: {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -664,6 +518,20 @@
         }
 
         function seleccionarProgramacion(event) {
+            // Remover selección anterior en el calendario (cambiar de azul a verde)
+            calendarInstance.getEvents().forEach(ev => {
+                if (ev.extendedProps.seleccionado) {
+                    ev.setExtendedProp('seleccionado', false);
+                    ev.setProp('backgroundColor', '#10b981');
+                    ev.setProp('borderColor', '#059669');
+                }
+            });
+
+            // Marcar el evento seleccionado con color azul
+            event.setExtendedProp('seleccionado', true);
+            event.setProp('backgroundColor', '#3b82f6');
+            event.setProp('borderColor', '#2563eb');
+
             programacionSeleccionada = {
                 id_programacion: event.extendedProps.id_programacion,
                 fecha: event.start.toISOString().split('T')[0],
@@ -962,17 +830,33 @@
                     const disponible = arg.event.extendedProps.disponible;
                     const horaInicio = arg.event.extendedProps.hora_inicio;
                     const yaPaso = arg.event.extendedProps.yaPaso;
+                    const seleccionado = arg.event.extendedProps.seleccionado;
+                    
+                    let estadoTexto, icono;
+                    if (seleccionado) {
+                        estadoTexto = 'Seleccionado';
+                        icono = '✓';
+                    } else if (yaPaso) {
+                        estadoTexto = 'Pasado';
+                        icono = '✕';
+                    } else if (disponible) {
+                        estadoTexto = 'Disponible';
+                        icono = '✓';
+                    } else {
+                        estadoTexto = 'Ocupado';
+                        icono = '✕';
+                    }
                     
                     return {
                         html: `
-                            <div class="fc-event-main-frame px-1 py-1">
+                            <div class="fc-event-main-frame px-2 py-1">
                                 <div class="fc-event-title-container">
-                                    <div class="fc-event-title fc-sticky text-xs font-semibold">
+                                    <div class="fc-event-title fc-sticky text-sm font-bold">
                                         ${horaInicio}
-                                        ${disponible && !yaPaso ? '<span class="ml-1">✓</span>' : '<span class="ml-1">✕</span>'}
+                                        <span class="ml-1">${icono}</span>
                                     </div>
-                                    <div class="text-xs opacity-90 mt-0.5">
-                                        ${yaPaso ? 'Pasado' : (disponible ? 'Disponible' : 'Ocupado')}
+                                    <div class="text-sm opacity-90 mt-0.5 font-medium">
+                                        ${estadoTexto}
                                     </div>
                                 </div>
                             </div>
@@ -990,6 +874,23 @@
         }
 
         function seleccionarProgramacionProcedimiento(event) {
+            // Remover selección anterior en el calendario (cambiar de azul a verde)
+            calendarInstance.getEvents().forEach(ev => {
+                if (ev.extendedProps.seleccionado) {
+                    ev.setExtendedProp('seleccionado', false);
+                    // Restaurar color verde para disponible
+                    if (ev.extendedProps.disponible && !ev.extendedProps.yaPaso) {
+                        ev.setProp('backgroundColor', '#10b981');
+                        ev.setProp('borderColor', '#059669');
+                    }
+                }
+            });
+
+            // Marcar el evento seleccionado con color azul
+            event.setExtendedProp('seleccionado', true);
+            event.setProp('backgroundColor', '#3b82f6');
+            event.setProp('borderColor', '#2563eb');
+
             programacionSeleccionadaProcedimiento = {
                 id_programacion: event.extendedProps.id_programacion,
                 fecha: event.start.toISOString().split('T')[0],
