@@ -3384,6 +3384,8 @@ def api_paciente_mis_reservas():
                        TIME_FORMAT(p.hora_inicio, '%%H:%%i') as hora_inicio,
                        TIME_FORMAT(p.hora_fin, '%%H:%%i') as hora_fin,
                        COALESCE(s.nombre, 'Consulta Médica') as servicio,
+                       ts.id_tipo_servicio,
+                       ts.nombre as tipo_servicio_nombre,
                        e.nombres as medico_nombres,
                        e.apellidos as medico_apellidos,
                        esp.nombre as especialidad,
@@ -3402,6 +3404,7 @@ def api_paciente_mis_reservas():
                 FROM RESERVA r
                 INNER JOIN PROGRAMACION p ON r.id_programacion = p.id_programacion
                 LEFT JOIN SERVICIO s ON p.id_servicio = s.id_servicio
+                LEFT JOIN TIPO_SERVICIO ts ON s.id_tipo_servicio = ts.id_tipo_servicio
                 LEFT JOIN HORARIO h ON p.id_horario = h.id_horario
                 LEFT JOIN EMPLEADO e ON h.id_empleado = e.id_empleado
                 LEFT JOIN ESPECIALIDAD esp ON e.id_especialidad = esp.id_especialidad
@@ -3413,9 +3416,23 @@ def api_paciente_mis_reservas():
             
             print(f"[API mis-reservas] Encontradas {len(reservas)} reservas")
             
-            # Debug: mostrar id_servicio de cada reserva
+            # Calcular el tipo (1=cita, 2=operación, 3=examen) basado en id_tipo_servicio
             for r in reservas:
-                print(f"[API mis-reservas] Reserva {r['id_reserva']}: id_servicio={r.get('id_servicio')}, servicio={r.get('servicio')}")
+                id_tipo_servicio = r.get('id_tipo_servicio')
+                tipo_servicio_nombre = (r.get('tipo_servicio_nombre') or '').lower()
+                
+                # Determinar el tipo según id_tipo_servicio o nombre del tipo de servicio
+                # id_tipo_servicio: 1=Consulta Médica, 2=Quirúrgico, 4=Examen Diagnóstico
+                if id_tipo_servicio == 1 or 'consulta' in tipo_servicio_nombre or 'cita' in tipo_servicio_nombre:
+                    r['tipo'] = 1  # Cita
+                elif id_tipo_servicio == 2 or 'quirúrgico' in tipo_servicio_nombre or 'quirurgico' in tipo_servicio_nombre or 'operación' in tipo_servicio_nombre or 'operacion' in tipo_servicio_nombre:
+                    r['tipo'] = 2  # Operación
+                elif id_tipo_servicio == 4 or 'examen' in tipo_servicio_nombre or 'diagnóstico' in tipo_servicio_nombre or 'diagnostico' in tipo_servicio_nombre:
+                    r['tipo'] = 3  # Examen
+                else:
+                    r['tipo'] = 1  # Por defecto: Cita
+                
+                print(f"[API mis-reservas] Reserva {r['id_reserva']}: id_tipo_servicio={id_tipo_servicio}, tipo_servicio={tipo_servicio_nombre}, tipo={r['tipo']}")
             
             # Para cada reserva, obtener sus CITAS, EXAMENES y OPERACIONES relacionadas
             for reserva in reservas:

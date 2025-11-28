@@ -442,8 +442,8 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
         </div>
     `;
     
-    // Contenido de Citas
-    html += '<div id="content-citas" class="tab-content-historial space-y-4">';
+    // Contenido de Citas - DESPLEGABLE
+    html += '<div id="content-citas" class="tab-content-historial space-y-2">';
     if (historial.length === 0) {
         html += `
             <div class="text-center py-8 text-gray-500">
@@ -452,45 +452,57 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
             </div>
         `;
     } else {
-        historial.forEach(cita => {
+        historial.forEach((cita, index) => {
             const estadoClass = cita.estado === 'Completada' ? 'bg-emerald-100 text-emerald-700' : 
                                cita.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 
                                cita.estado === 'Confirmada' ? 'bg-blue-100 text-blue-700' :
                                'bg-gray-100 text-gray-700';
             
+            const tieneDetalle = (cita.diagnostico && cita.diagnostico.trim() !== '') || 
+                                (cita.observaciones && cita.observaciones.trim() !== '');
+            
             html += `
-                <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-white to-gray-50">
-                    <div class="flex items-center justify-between mb-3">
+                <div class="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-gradient-to-r from-white to-gray-50">
+                    <!-- Header desplegable -->
+                    <div class="flex items-center justify-between p-3 cursor-pointer ${tieneDetalle ? 'hover:bg-gray-50' : ''}" 
+                         ${tieneDetalle ? `onclick="toggleHistorialCita(${index})"` : ''}>
                         <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-cyan-600 text-2xl">event</span>
+                            <span class="material-symbols-outlined text-cyan-600 text-xl">event</span>
                             <div>
-                                <p class="font-semibold text-gray-800">${cita.fecha}</p>
-                                <p class="text-sm text-gray-600 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-xs">schedule</span>
-                                    ${cita.hora}
-                                </p>
+                                <p class="font-semibold text-gray-800 text-sm">${cita.fecha}</p>
+                                <p class="text-xs text-gray-500">${cita.hora}</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm">
-                            ${cita.estado}
-                        </span>
-                    </div>
-                    ${cita.diagnostico && cita.diagnostico.trim() !== '' ? `
-                        <div class="mt-3 pt-3 border-t border-gray-200">
-                            <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">clinical_notes</span>
-                                Diagnóstico:
-                            </p>
-                            <p class="text-sm text-gray-600 pl-5">${cita.diagnostico}</p>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 ${estadoClass} rounded-full text-xs font-semibold">
+                                ${cita.estado}
+                            </span>
+                            ${tieneDetalle ? `
+                                <span class="material-symbols-outlined text-gray-400 transition-transform duration-200" id="chevron-cita-${index}">expand_more</span>
+                            ` : ''}
                         </div>
-                    ` : ''}
-                    ${cita.observaciones && cita.observaciones.trim() !== '' ? `
-                        <div class="mt-2 ${cita.diagnostico && cita.diagnostico.trim() !== '' ? '' : 'pt-3 border-t border-gray-200'}">
-                            <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">note</span>
-                                Observaciones:
-                            </p>
-                            <p class="text-sm text-gray-600 pl-5">${cita.observaciones}</p>
+                    </div>
+                    <!-- Contenido desplegable -->
+                    ${tieneDetalle ? `
+                        <div id="detalle-cita-${index}" class="hidden border-t border-gray-100 bg-gray-50 px-4 py-3">
+                            ${cita.diagnostico && cita.diagnostico.trim() !== '' ? `
+                                <div class="mb-2">
+                                    <p class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">clinical_notes</span>
+                                        Diagnóstico:
+                                    </p>
+                                    <p class="text-sm text-gray-700 pl-4">${cita.diagnostico}</p>
+                                </div>
+                            ` : ''}
+                            ${cita.observaciones && cita.observaciones.trim() !== '' ? `
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">note</span>
+                                        Observaciones:
+                                    </p>
+                                    <p class="text-sm text-gray-700 pl-4">${cita.observaciones}</p>
+                                </div>
+                            ` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -500,8 +512,8 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
     
     html += '</div>'; // Cierra content-citas
     
-    // Contenido de Exámenes
-    html += '<div id="content-examenes" class="tab-content-historial space-y-4 hidden">';
+    // Contenido de Exámenes - DESPLEGABLE
+    html += '<div id="content-examenes" class="tab-content-historial space-y-2 hidden">';
     if (examenes.length === 0) {
         html += `
             <div class="text-center py-8 text-gray-500">
@@ -510,39 +522,45 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
             </div>
         `;
     } else {
-        examenes.forEach(examen => {
+        examenes.forEach((examen, index) => {
             const estadoClass = examen.estado === 'Completada' ? 'bg-emerald-100 text-emerald-700' : 
                                examen.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 
                                'bg-gray-100 text-gray-700';
             const estadoIcon = examen.estado === 'Completada' ? 'check_circle' : 
                               examen.estado === 'Pendiente' ? 'pending' : 'event';
             
+            const tieneDetalle = examen.observacion && examen.observacion.trim() !== '';
+            
             html += `
-                <div class="border border-violet-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-violet-50 to-purple-50">
-                    <div class="flex items-center justify-between mb-3">
+                <div class="border border-violet-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-gradient-to-r from-violet-50 to-purple-50">
+                    <!-- Header desplegable -->
+                    <div class="flex items-center justify-between p-3 cursor-pointer ${tieneDetalle ? 'hover:bg-violet-100' : ''}" 
+                         ${tieneDetalle ? `onclick="toggleHistorialExamen(${index})"` : ''}>
                         <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-violet-600 text-2xl">biotech</span>
+                            <span class="material-symbols-outlined text-violet-600 text-xl">biotech</span>
                             <div>
-                                <p class="font-semibold text-gray-800">${examen.servicio}</p>
-                                <p class="text-sm text-gray-600 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-xs">calendar_today</span>
-                                    ${examen.fecha}
-                                    ${examen.hora ? ` - <span class="material-symbols-outlined text-xs">schedule</span> ${examen.hora}` : ''}
-                                </p>
+                                <p class="font-semibold text-gray-800 text-sm">${examen.servicio}</p>
+                                <p class="text-xs text-gray-500">${examen.fecha}${examen.hora ? ' - ' + examen.hora : ''}</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
-                            <span class="material-symbols-outlined text-xs">${estadoIcon}</span>
-                            ${examen.estado}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 ${estadoClass} rounded-full text-xs font-semibold flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">${estadoIcon}</span>
+                                ${examen.estado}
+                            </span>
+                            ${tieneDetalle ? `
+                                <span class="material-symbols-outlined text-gray-400 transition-transform duration-200" id="chevron-examen-${index}">expand_more</span>
+                            ` : ''}
+                        </div>
                     </div>
-                    ${examen.observacion && examen.observacion.trim() !== '' ? `
-                        <div class="mt-3 pt-3 border-t border-violet-200">
-                            <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">note</span>
+                    <!-- Contenido desplegable -->
+                    ${tieneDetalle ? `
+                        <div id="detalle-examen-${index}" class="hidden border-t border-violet-100 bg-violet-50 px-4 py-3">
+                            <p class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">note</span>
                                 Observaciones:
                             </p>
-                            <p class="text-sm text-gray-600 pl-5">${examen.observacion}</p>
+                            <p class="text-sm text-gray-700 pl-4">${examen.observacion}</p>
                         </div>
                     ` : ''}
                 </div>
@@ -551,8 +569,8 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
     }
     html += '</div>'; // Cierra content-examenes
     
-    // Contenido de Operaciones
-    html += '<div id="content-operaciones" class="tab-content-historial space-y-4 hidden">';
+    // Contenido de Operaciones - DESPLEGABLE
+    html += '<div id="content-operaciones" class="tab-content-historial space-y-2 hidden">';
     if (operaciones.length === 0) {
         html += `
             <div class="text-center py-8 text-gray-500">
@@ -561,7 +579,7 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
             </div>
         `;
     } else {
-        operaciones.forEach(operacion => {
+        operaciones.forEach((operacion, index) => {
             const estadoClass = operacion.estado === 'Completada' ? 'bg-emerald-100 text-emerald-700' : 
                                operacion.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' : 
                                operacion.estado === 'Cancelada' ? 'bg-gray-100 text-gray-700' :
@@ -570,38 +588,48 @@ function mostrarModalHistorial(paciente, historial, examenes, operaciones) {
                               operacion.estado === 'Pendiente' ? 'pending' : 
                               operacion.estado === 'Cancelada' ? 'event_busy' : 'event';
             
+            const tieneDetalle = operacion.medico || (operacion.observaciones && operacion.observaciones.trim() !== '');
+            
             html += `
-                <div class="border border-orange-200 rounded-xl p-4 hover:shadow-md transition-shadow bg-gradient-to-r from-orange-50 to-red-50">
-                    <div class="flex items-center justify-between mb-3">
+                <div class="border border-orange-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow bg-gradient-to-r from-orange-50 to-red-50">
+                    <!-- Header desplegable -->
+                    <div class="flex items-center justify-between p-3 cursor-pointer ${tieneDetalle ? 'hover:bg-orange-100' : ''}" 
+                         ${tieneDetalle ? `onclick="toggleHistorialOperacion(${index})"` : ''}>
                         <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-orange-600 text-2xl">surgical</span>
+                            <span class="material-symbols-outlined text-orange-600 text-xl">surgical</span>
                             <div>
-                                <p class="font-semibold text-gray-800">${operacion.servicio}</p>
-                                <p class="text-sm text-gray-600 flex items-center gap-1">
-                                    <span class="material-symbols-outlined text-xs">calendar_today</span>
-                                    ${operacion.fecha}
-                                    ${operacion.hora ? ` - <span class="material-symbols-outlined text-xs">schedule</span> ${operacion.hora}` : ''}
-                                </p>
+                                <p class="font-semibold text-gray-800 text-sm">${operacion.servicio}</p>
+                                <p class="text-xs text-gray-500">${operacion.fecha}${operacion.hora ? ' - ' + operacion.hora : ''}</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 ${estadoClass} rounded-full text-xs font-semibold shadow-sm flex items-center gap-1">
-                            <span class="material-symbols-outlined text-xs">${estadoIcon}</span>
-                            ${operacion.estado}
-                        </span>
-                    </div>
-                    ${operacion.medico ? `
-                        <div class="mt-2 text-sm">
-                            <p class="text-gray-500">Médico asignado:</p>
-                            <p class="font-medium text-gray-700">${operacion.medico}</p>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 ${estadoClass} rounded-full text-xs font-semibold flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">${estadoIcon}</span>
+                                ${operacion.estado}
+                            </span>
+                            ${tieneDetalle ? `
+                                <span class="material-symbols-outlined text-gray-400 transition-transform duration-200" id="chevron-operacion-${index}">expand_more</span>
+                            ` : ''}
                         </div>
-                    ` : ''}
-                    ${operacion.observaciones && operacion.observaciones.trim() !== '' ? `
-                        <div class="mt-3 pt-3 border-t border-orange-200">
-                            <p class="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">note</span>
-                                Observaciones:
-                            </p>
-                            <p class="text-sm text-gray-600 pl-5 whitespace-pre-wrap">${operacion.observaciones}</p>
+                    </div>
+                    <!-- Contenido desplegable -->
+                    ${tieneDetalle ? `
+                        <div id="detalle-operacion-${index}" class="hidden border-t border-orange-100 bg-orange-50 px-4 py-3">
+                            ${operacion.medico ? `
+                                <div class="mb-2">
+                                    <p class="text-xs font-semibold text-gray-600 mb-1">Médico asignado:</p>
+                                    <p class="text-sm text-gray-700 pl-4">${operacion.medico}</p>
+                                </div>
+                            ` : ''}
+                            ${operacion.observaciones && operacion.observaciones.trim() !== '' ? `
+                                <div>
+                                    <p class="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">note</span>
+                                        Observaciones:
+                                    </p>
+                                    <p class="text-sm text-gray-700 pl-4 whitespace-pre-wrap">${operacion.observaciones}</p>
+                                </div>
+                            ` : ''}
                         </div>
                     ` : ''}
                 </div>
@@ -633,6 +661,34 @@ function cambiarTabHistorial(tab) {
     const tabBtn = document.getElementById(`tab-${tab}`);
     tabBtn.classList.add('border-cyan-500', 'text-cyan-600');
     tabBtn.classList.remove('border-transparent', 'text-gray-500');
+}
+
+// Funciones para toggle de historial desplegable
+function toggleHistorialCita(index) {
+    const detalle = document.getElementById(`detalle-cita-${index}`);
+    const chevron = document.getElementById(`chevron-cita-${index}`);
+    if (detalle && chevron) {
+        detalle.classList.toggle('hidden');
+        chevron.style.transform = detalle.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+function toggleHistorialExamen(index) {
+    const detalle = document.getElementById(`detalle-examen-${index}`);
+    const chevron = document.getElementById(`chevron-examen-${index}`);
+    if (detalle && chevron) {
+        detalle.classList.toggle('hidden');
+        chevron.style.transform = detalle.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
+}
+
+function toggleHistorialOperacion(index) {
+    const detalle = document.getElementById(`detalle-operacion-${index}`);
+    const chevron = document.getElementById(`chevron-operacion-${index}`);
+    if (detalle && chevron) {
+        detalle.classList.toggle('hidden');
+        chevron.style.transform = detalle.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
 }
 
 function cerrarModalHistorial() {
