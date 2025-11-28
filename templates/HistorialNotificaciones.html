@@ -6,7 +6,29 @@
     <title>Historial de Notificaciones</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>body{font-family:'Inter',sans-serif}</style>
+    <style>
+        body{font-family:'Inter',sans-serif}
+        /* Estilos para notificaciones con HTML */
+        .notification-message {
+            line-height: 1.6;
+        }
+        .notification-message p {
+            margin: 0.5rem 0;
+        }
+        .notification-message strong {
+            font-weight: 600;
+        }
+        .notification-message div {
+            margin: 0.75rem 0;
+        }
+        .notification-message ul, .notification-message ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        .notification-message li {
+            margin: 0.25rem 0;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
 
@@ -64,7 +86,7 @@
                                                         <h3 class="font-semibold text-gray-900">{{ n.titulo }}</h3>
                                                         <span class="badge-tipo text-xs px-2 py-1 rounded-full"></span>
                                                     </div>
-                                                    <p class="text-sm text-gray-600 leading-relaxed">{{ n.mensaje }}</p>
+                                                    <div class="text-sm text-gray-600 leading-relaxed notification-message">{{ n.mensaje|safe }}</div>
                                                 </div>
                                                 
                                                 <!-- Estado leída y botón marcar como leído -->

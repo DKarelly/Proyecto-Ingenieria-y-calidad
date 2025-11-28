@@ -9,7 +9,7 @@ Cuando despliegues en Render, configura estas variables de entorno en el panel d
 | Key (Clave) | Value (Valor) |
 |-------------|---------------|
 | `SMTP_EMAIL` | `clinicaunion.cix.1@gmail.com` |
-| `SMTP_PASSWORD` | `snkzldzsgsarwwqa` |
+| `SMTP_PASSWORD` | `jtyxtabjhvrmqlha` |
 | `SMTP_SERVER` | `smtp.gmail.com` |
 | `SMTP_PORT` | `587` |
 | `FRONTEND_URL` | `https://proyecto-ingenieria-y-calidad.onrender.com` |
