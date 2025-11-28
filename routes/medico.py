@@ -639,7 +639,7 @@ def medico_required(f):
         # Verificar si el usuario es médico (id_rol = 2)
         if session.get('id_rol') != 2:
             flash('No tienes permisos para acceder a esta sección', 'danger')
-            return redirect(url_for('index'))
+            return redirect(url_for('home'))
 
         return f(*args, **kwargs)
     return decorated_function
@@ -909,95 +909,94 @@ def historial_paciente(id_paciente):
                 'observaciones': cita['observaciones'] if cita['observaciones'] else ''
             })
         
-        # Obtener EXÁMENES del paciente - Solo los que el médico autorizó (ya que él mismo los realiza)
+        # Obtener EXÁMENES del paciente - De la tabla EXAMEN via RESERVA
         cursor.execute("""
             SELECT 
-                ap.id_autorizacion,
-                ap.id_tipo_servicio,
+                e.id_examen as id,
                 'EXAMEN' as tipo_procedimiento,
                 s.nombre as servicio_nombre,
-                ap.fecha_autorizacion,
-                ap.fecha_vencimiento,
-                ap.fecha_uso,
-                CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
-                CASE 
-                    WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
-                    WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
-                    ELSE 'PENDIENTE'
-                END as estado_autorizacion
-            FROM AUTORIZACION_PROCEDIMIENTO ap
-            INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
-            INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
-            WHERE ap.id_paciente = %s
-            AND ap.id_tipo_servicio = 4
-            AND ap.id_medico_asignado = %s
-            ORDER BY ap.fecha_autorizacion DESC
+                e.fecha_examen,
+                e.hora_inicio,
+                e.hora_fin,
+                e.estado,
+                e.observacion
+            FROM EXAMEN e
+            INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            WHERE r.id_paciente = %s
+            AND h.id_empleado = %s
+            ORDER BY e.fecha_examen DESC
         """, (id_paciente, id_empleado))
         
         examenes_raw = cursor.fetchall()
         
-        # Obtener OPERACIONES del paciente - Solo las asignadas a este médico
+        # Obtener OPERACIONES del paciente - De la tabla OPERACION (tiene id_empleado directo)
         cursor.execute("""
             SELECT 
-                ap.id_autorizacion,
-                ap.id_tipo_servicio,
+                o.id_operacion as id,
                 'OPERACION' as tipo_procedimiento,
                 s.nombre as servicio_nombre,
-                ap.fecha_autorizacion,
-                ap.fecha_vencimiento,
-                ap.fecha_uso,
-                CONCAT(med.nombres, ' ', med.apellidos) as medico_autoriza,
-                esp.nombre as especialidad_requerida,
-                CASE 
-                    WHEN ap.fecha_uso IS NOT NULL THEN 'COMPLETADO'
-                    WHEN ap.fecha_vencimiento < NOW() THEN 'VENCIDO'
-                    ELSE 'PENDIENTE'
-                END as estado_autorizacion
-            FROM AUTORIZACION_PROCEDIMIENTO ap
-            INNER JOIN SERVICIO s ON ap.id_servicio = s.id_servicio
-            INNER JOIN EMPLEADO med ON ap.id_medico_autoriza = med.id_empleado
-            LEFT JOIN ESPECIALIDAD esp ON ap.id_especialidad_requerida = esp.id_especialidad
-            WHERE ap.id_paciente = %s
-            AND ap.id_tipo_servicio = 2
-            AND ap.id_medico_asignado = %s
-            ORDER BY ap.fecha_autorizacion DESC
+                o.fecha_operacion,
+                o.hora_inicio,
+                o.hora_fin,
+                o.estado,
+                o.observaciones,
+                CONCAT(med.nombres, ' ', med.apellidos) as medico_asignado
+            FROM OPERACION o
+            INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            LEFT JOIN EMPLEADO med ON o.id_empleado = med.id_empleado
+            WHERE r.id_paciente = %s
+            AND o.id_empleado = %s
+            ORDER BY o.fecha_operacion DESC
         """, (id_paciente, id_empleado))
         
         operaciones_raw = cursor.fetchall()
         
-        # Formatear exámenes
+        # Formatear exámenes - Nuevo formato usando tabla EXAMEN
         examenes = []
-        for aut in examenes_raw:
-            fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
-            fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
-            fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
+        for ex in examenes_raw:
+            fecha_examen = ex['fecha_examen'].strftime('%d/%m/%Y') if ex['fecha_examen'] else 'N/A'
+            hora_inicio = ''
+            if ex['hora_inicio']:
+                if isinstance(ex['hora_inicio'], timedelta):
+                    total_sec = int(ex['hora_inicio'].total_seconds())
+                    hora_inicio = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+                else:
+                    hora_inicio = str(ex['hora_inicio'])[:5]
             
             examenes.append({
-                'id': aut['id_autorizacion'],
-                'servicio': aut['servicio_nombre'],
-                'fecha_autorizacion': fecha_aut,
-                'fecha_vencimiento': fecha_venc,
-                'fecha_uso': fecha_uso,
-                'medico_autoriza': aut['medico_autoriza'],
-                'estado': aut['estado_autorizacion']
+                'id': ex['id'],
+                'servicio': ex['servicio_nombre'] or 'Examen',
+                'fecha': fecha_examen,
+                'hora': hora_inicio,
+                'estado': ex['estado'] or 'Pendiente',
+                'observacion': ex['observacion'] or ''
             })
         
-        # Formatear operaciones
+        # Formatear operaciones - Nuevo formato usando tabla OPERACION
         operaciones = []
-        for aut in operaciones_raw:
-            fecha_aut = aut['fecha_autorizacion'].strftime('%d/%m/%Y') if aut['fecha_autorizacion'] else 'N/A'
-            fecha_venc = aut['fecha_vencimiento'].strftime('%d/%m/%Y') if aut['fecha_vencimiento'] else 'N/A'
-            fecha_uso = aut['fecha_uso'].strftime('%d/%m/%Y') if aut['fecha_uso'] else None
+        for op in operaciones_raw:
+            fecha_operacion = op['fecha_operacion'].strftime('%d/%m/%Y') if op['fecha_operacion'] else 'N/A'
+            hora_inicio = ''
+            if op['hora_inicio']:
+                if isinstance(op['hora_inicio'], timedelta):
+                    total_sec = int(op['hora_inicio'].total_seconds())
+                    hora_inicio = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+                else:
+                    hora_inicio = str(op['hora_inicio'])[:5]
             
             operaciones.append({
-                'id': aut['id_autorizacion'],
-                'servicio': aut['servicio_nombre'],
-                'fecha_autorizacion': fecha_aut,
-                'fecha_vencimiento': fecha_venc,
-                'fecha_uso': fecha_uso,
-                'medico_autoriza': aut['medico_autoriza'],
-                'especialidad': aut['especialidad_requerida'] if aut['especialidad_requerida'] else None,
-                'estado': aut['estado_autorizacion']
+                'id': op['id'],
+                'servicio': op['servicio_nombre'] or 'Operación',
+                'fecha': fecha_operacion,
+                'hora': hora_inicio,
+                'estado': op['estado'] or 'Pendiente',
+                'observaciones': op['observaciones'] or '',
+                'medico': op['medico_asignado'] or ''
             })
         
         return jsonify({
@@ -1165,6 +1164,14 @@ def guardar_diagnostico():
                 estado = 'Completada'
             WHERE id_cita = %s
         """, (diagnostico, observaciones, id_cita))
+        
+        # También actualizar la RESERVA asociada a Completada
+        cursor.execute("""
+            UPDATE RESERVA r
+            INNER JOIN CITA c ON c.id_reserva = r.id_reserva
+            SET r.estado = 'Completada', r.fecha_completada = NOW()
+            WHERE c.id_cita = %s AND r.estado = 'Confirmada'
+        """, (id_cita,))
         
         id_empleado = session.get('id_empleado')
         
@@ -1981,6 +1988,602 @@ def obtener_citas_sin_diagnostico_pendientes():
         
     except Exception as e:
         print(f"Error al obtener citas sin diagnóstico: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/agenda-semanal', methods=['GET'])
+@medico_required
+def api_agenda_semanal():
+    """
+    API optimizada para obtener todos los eventos de la agenda del médico.
+    Incluye citas médicas (tabla CITA), exámenes (tabla EXAMEN) y operaciones (tabla OPERACION).
+    Todos vinculados a través de RESERVA -> PROGRAMACION -> HORARIO.
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        offset_semana = request.args.get('offset', 0, type=int)
+        
+        # Calcular fechas de la semana
+        hoy = datetime.now()
+        inicio_semana = hoy - timedelta(days=hoy.weekday()) + timedelta(weeks=offset_semana)
+        fin_semana = inicio_semana + timedelta(days=6)
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        eventos = []
+        
+        # 1. CITAS MÉDICAS (tabla CITA)
+        # Las citas están vinculadas: CITA -> RESERVA -> PROGRAMACION -> HORARIO -> EMPLEADO
+        cursor.execute("""
+            SELECT 
+                c.id_cita as id,
+                'cita' as tipo_evento,
+                c.fecha_cita as fecha,
+                c.hora_inicio,
+                c.hora_fin,
+                c.estado,
+                c.diagnostico,
+                CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                s.nombre as servicio,
+                r.id_reserva
+            FROM CITA c
+            INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            WHERE h.id_empleado = %s
+            AND c.fecha_cita BETWEEN %s AND %s
+            ORDER BY c.fecha_cita, c.hora_inicio
+        """, (id_empleado, inicio_semana.date(), fin_semana.date()))
+        
+        citas = cursor.fetchall()
+        
+        for cita in citas:
+            hora_inicio = cita['hora_inicio']
+            hora_fin = cita['hora_fin']
+            
+            if isinstance(hora_inicio, timedelta):
+                total_sec = int(hora_inicio.total_seconds())
+                hora_inicio_str = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+            else:
+                hora_inicio_str = hora_inicio.strftime('%H:%M') if hora_inicio else '00:00'
+            
+            if isinstance(hora_fin, timedelta):
+                total_sec = int(hora_fin.total_seconds())
+                hora_fin_str = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+            else:
+                hora_fin_str = hora_fin.strftime('%H:%M') if hora_fin else '00:00'
+            
+            # Color según estado
+            colores = {
+                'Pendiente': '#f59e0b',
+                'Confirmada': '#3b82f6', 
+                'Completada': '#10b981',
+                'Cancelada': '#ef4444'
+            }
+            
+            eventos.append({
+                'id': cita['id'],
+                'tipo': 'cita',
+                'titulo': cita['paciente'],
+                'subtitulo': cita['servicio'] or 'Consulta General',
+                'fecha': cita['fecha'].strftime('%Y-%m-%d'),
+                'hora_inicio': hora_inicio_str,
+                'hora_fin': hora_fin_str,
+                'estado': cita['estado'],
+                'color': colores.get(cita['estado'], '#6b7280'),
+                'icono': 'event'
+            })
+        
+        # 2. EXÁMENES (tabla EXAMEN)
+        # Los exámenes están vinculados: EXAMEN -> RESERVA -> PROGRAMACION -> HORARIO -> EMPLEADO
+        cursor.execute("""
+            SELECT 
+                e.id_examen as id,
+                'examen' as tipo_evento,
+                e.fecha_examen as fecha,
+                e.hora_inicio,
+                e.hora_fin,
+                e.estado,
+                e.observacion,
+                CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                s.nombre as servicio,
+                r.id_reserva
+            FROM EXAMEN e
+            INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            WHERE h.id_empleado = %s
+            AND e.fecha_examen BETWEEN %s AND %s
+            ORDER BY e.fecha_examen, e.hora_inicio
+        """, (id_empleado, inicio_semana.date(), fin_semana.date()))
+        
+        examenes = cursor.fetchall()
+        
+        for examen in examenes:
+            hora_inicio = examen['hora_inicio']
+            hora_fin = examen['hora_fin']
+            
+            if isinstance(hora_inicio, timedelta):
+                total_sec = int(hora_inicio.total_seconds())
+                hora_inicio_str = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+            else:
+                hora_inicio_str = hora_inicio.strftime('%H:%M') if hora_inicio else '09:00'
+            
+            if isinstance(hora_fin, timedelta):
+                total_sec = int(hora_fin.total_seconds())
+                hora_fin_str = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+            else:
+                hora_fin_str = hora_fin.strftime('%H:%M') if hora_fin else '10:00'
+            
+            # Color según estado
+            colores_examen = {
+                'Pendiente': '#8b5cf6',  # Violeta
+                'Completada': '#10b981',  # Verde
+                'Cancelada': '#ef4444'    # Rojo
+            }
+            
+            eventos.append({
+                'id': examen['id'],
+                'tipo': 'examen',
+                'titulo': examen['paciente'],
+                'subtitulo': examen['servicio'] or 'Examen Médico',
+                'fecha': examen['fecha'].strftime('%Y-%m-%d'),
+                'hora_inicio': hora_inicio_str,
+                'hora_fin': hora_fin_str,
+                'estado': examen['estado'],
+                'color': colores_examen.get(examen['estado'], '#8b5cf6'),
+                'icono': 'biotech'
+            })
+        
+        # 3. OPERACIONES (tabla OPERACION)
+        # Las operaciones están vinculadas por id_empleado directamente
+        cursor.execute("""
+            SELECT 
+                o.id_operacion as id,
+                'operacion' as tipo_evento,
+                o.fecha_operacion as fecha,
+                o.hora_inicio,
+                o.hora_fin,
+                o.estado,
+                o.observaciones,
+                CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                s.nombre as servicio,
+                r.id_reserva
+            FROM OPERACION o
+            INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            WHERE o.id_empleado = %s
+            AND o.fecha_operacion BETWEEN %s AND %s
+            ORDER BY o.fecha_operacion, o.hora_inicio
+        """, (id_empleado, inicio_semana.date(), fin_semana.date()))
+        
+        operaciones = cursor.fetchall()
+        
+        for op in operaciones:
+            hora_inicio = op['hora_inicio']
+            hora_fin = op['hora_fin']
+            
+            if isinstance(hora_inicio, timedelta):
+                total_sec = int(hora_inicio.total_seconds())
+                hora_inicio_str = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+            else:
+                hora_inicio_str = hora_inicio.strftime('%H:%M') if hora_inicio else '09:00'
+            
+            if isinstance(hora_fin, timedelta):
+                total_sec = int(hora_fin.total_seconds())
+                hora_fin_str = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+            else:
+                hora_fin_str = hora_fin.strftime('%H:%M') if hora_fin else '10:00'
+            
+            # Color según estado
+            colores_op = {
+                'Pendiente': '#ef4444',   # Rojo
+                'Completada': '#10b981',  # Verde
+                'Cancelada': '#6b7280'    # Gris
+            }
+            
+            eventos.append({
+                'id': op['id'],
+                'tipo': 'operacion',
+                'titulo': op['paciente'],
+                'subtitulo': op['servicio'] or 'Operación',
+                'fecha': op['fecha'].strftime('%Y-%m-%d'),
+                'hora_inicio': hora_inicio_str,
+                'hora_fin': hora_fin_str,
+                'estado': op['estado'],
+                'color': colores_op.get(op['estado'], '#ef4444'),
+                'icono': 'surgical'
+            })
+        
+        # Ordenar todos los eventos por fecha y hora
+        eventos.sort(key=lambda x: (x['fecha'], x['hora_inicio']))
+        
+        # Obtener rango de fechas con eventos para navegación
+        cursor.execute("""
+            SELECT 
+                MIN(fecha_evento) as fecha_min,
+                MAX(fecha_evento) as fecha_max
+            FROM (
+                SELECT c.fecha_cita as fecha_evento
+                FROM CITA c
+                INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+                WHERE h.id_empleado = %s
+                UNION ALL
+                SELECT e.fecha_examen as fecha_evento
+                FROM EXAMEN e
+                INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
+                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+                WHERE h.id_empleado = %s
+                UNION ALL
+                SELECT o.fecha_operacion as fecha_evento
+                FROM OPERACION o
+                WHERE o.id_empleado = %s
+            ) as todas_fechas
+        """, (id_empleado, id_empleado, id_empleado))
+        
+        rango = cursor.fetchone()
+        fecha_min = rango['fecha_min'].strftime('%Y-%m-%d') if rango and rango['fecha_min'] else None
+        fecha_max = rango['fecha_max'].strftime('%Y-%m-%d') if rango and rango['fecha_max'] else None
+        
+        return jsonify({
+            'success': True,
+            'eventos': eventos,
+            'semana': {
+                'inicio': inicio_semana.strftime('%Y-%m-%d'),
+                'fin': fin_semana.strftime('%Y-%m-%d'),
+                'offset': offset_semana
+            },
+            'rango_disponible': {
+                'fecha_min': fecha_min,
+                'fecha_max': fecha_max
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error en api_agenda_semanal: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/detalle-evento/<tipo>/<int:id_evento>', methods=['GET'])
+@medico_required
+def api_detalle_evento(tipo, id_evento):
+    """
+    Obtiene el detalle completo de un evento (cita, examen u operación)
+    Usa las tablas CITA, EXAMEN y OPERACION respectivamente.
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        if tipo == 'cita':
+            cursor.execute("""
+                SELECT 
+                    c.id_cita as id,
+                    c.fecha_cita as fecha,
+                    c.hora_inicio,
+                    c.hora_fin,
+                    c.estado,
+                    c.diagnostico,
+                    c.observaciones,
+                    CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                    p.documento_identidad as dni,
+                    p.id_paciente,
+                    s.nombre as servicio
+                FROM CITA c
+                INNER JOIN RESERVA r ON c.id_reserva = r.id_reserva
+                INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                WHERE c.id_cita = %s
+            """, (id_evento,))
+            
+        elif tipo == 'examen':
+            # Consulta de la tabla EXAMEN
+            cursor.execute("""
+                SELECT 
+                    e.id_examen as id,
+                    e.fecha_examen as fecha,
+                    e.hora_inicio,
+                    e.hora_fin,
+                    e.estado,
+                    e.observacion as observaciones,
+                    CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                    p.documento_identidad as dni,
+                    p.id_paciente,
+                    s.nombre as servicio
+                FROM EXAMEN e
+                INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
+                INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                WHERE e.id_examen = %s
+            """, (id_evento,))
+            
+        elif tipo == 'operacion':
+            # Consulta de la tabla OPERACION
+            cursor.execute("""
+                SELECT 
+                    o.id_operacion as id,
+                    o.fecha_operacion as fecha,
+                    o.hora_inicio,
+                    o.hora_fin,
+                    o.estado,
+                    o.observaciones,
+                    CONCAT(p.nombres, ' ', p.apellidos) as paciente,
+                    p.documento_identidad as dni,
+                    p.id_paciente,
+                    s.nombre as servicio,
+                    CONCAT(med.nombres, ' ', med.apellidos) as medico_asignado
+                FROM OPERACION o
+                INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+                INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+                INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+                LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+                LEFT JOIN EMPLEADO med ON o.id_empleado = med.id_empleado
+                WHERE o.id_operacion = %s
+            """, (id_evento,))
+        else:
+            return jsonify({'success': False, 'message': 'Tipo de evento no válido'}), 400
+        
+        evento = cursor.fetchone()
+        
+        if not evento:
+            return jsonify({'success': False, 'message': 'Evento no encontrado'}), 404
+        
+        # Formatear fechas y horas
+        resultado = dict(evento)
+        for key, value in resultado.items():
+            if isinstance(value, (date, datetime)):
+                resultado[key] = value.strftime('%Y-%m-%d %H:%M:%S') if isinstance(value, datetime) else value.strftime('%Y-%m-%d')
+            elif isinstance(value, timedelta):
+                total_sec = int(value.total_seconds())
+                resultado[key] = f"{total_sec//3600:02d}:{(total_sec%3600)//60:02d}"
+        
+        return jsonify({'success': True, 'evento': resultado, 'tipo': tipo})
+        
+    except Exception as e:
+        print(f"Error al obtener detalle del evento: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/completar-examen/<int:id_examen>', methods=['POST'])
+@medico_required
+def api_completar_examen(id_examen):
+    """
+    Completa un examen actualizando el estado y guardando las observaciones.
+    Usa la tabla EXAMEN directamente.
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        observaciones = request.json.get('observaciones', '')
+        
+        if not observaciones or observaciones.strip() == '':
+            return jsonify({'success': False, 'message': 'Las observaciones son requeridas'}), 400
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Verificar que el examen existe y está asignado al médico (a través de PROGRAMACION->HORARIO)
+        cursor.execute("""
+            SELECT e.id_examen, e.estado, e.observacion,
+                   CONCAT(p.nombres, ' ', p.apellidos) as paciente_nombre,
+                   s.nombre as servicio_nombre,
+                   h.id_empleado
+            FROM EXAMEN e
+            INNER JOIN RESERVA r ON e.id_reserva = r.id_reserva
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            INNER JOIN HORARIO h ON prog.id_horario = h.id_horario
+            WHERE e.id_examen = %s
+        """, (id_examen,))
+        
+        examen = cursor.fetchone()
+        
+        if not examen:
+            return jsonify({'success': False, 'message': 'Examen no encontrado'}), 404
+        
+        if examen['estado'] == 'Completada':
+            return jsonify({'success': False, 'message': 'Este examen ya fue completado'}), 400
+        
+        if examen['id_empleado'] != id_empleado:
+            return jsonify({'success': False, 'message': 'No tienes permisos para completar este examen'}), 403
+        
+        # Actualizar el examen con estado Completada y las observaciones
+        cursor.execute("""
+            UPDATE EXAMEN 
+            SET estado = 'Completada', observacion = %s
+            WHERE id_examen = %s
+        """, (observaciones, id_examen))
+        
+        # También actualizar la RESERVA asociada a Completada
+        cursor.execute("""
+            UPDATE RESERVA r
+            INNER JOIN EXAMEN e ON e.id_reserva = r.id_reserva
+            SET r.estado = 'Completada', r.fecha_completada = NOW()
+            WHERE e.id_examen = %s AND r.estado = 'Confirmada'
+        """, (id_examen,))
+        
+        conexion.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Examen completado exitosamente',
+            'paciente': examen['paciente_nombre'],
+            'servicio': examen['servicio_nombre']
+        })
+        
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"Error al completar examen: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/completar-operacion/<int:id_operacion>', methods=['POST'])
+@medico_required
+def api_completar_operacion(id_operacion):
+    """
+    Completa una operación actualizando el estado y guardando las observaciones.
+    Usa la tabla OPERACION directamente.
+    """
+    conexion = None
+    try:
+        id_empleado = session.get('id_empleado')
+        data = request.json
+        
+        observaciones = data.get('observaciones', '')
+        complicaciones = data.get('complicaciones', '')
+        procedimientos_realizados = data.get('procedimientos_realizados', '')
+        
+        if not observaciones or observaciones.strip() == '':
+            return jsonify({'success': False, 'message': 'Las observaciones son requeridas'}), 400
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        # Verificar que la operación existe y está asignada al médico (id_empleado directo)
+        cursor.execute("""
+            SELECT o.id_operacion, o.estado, o.observaciones,
+                   CONCAT(p.nombres, ' ', p.apellidos) as paciente_nombre,
+                   s.nombre as servicio_nombre,
+                   o.id_empleado
+            FROM OPERACION o
+            INNER JOIN RESERVA r ON o.id_reserva = r.id_reserva
+            INNER JOIN PACIENTE p ON r.id_paciente = p.id_paciente
+            INNER JOIN PROGRAMACION prog ON r.id_programacion = prog.id_programacion
+            LEFT JOIN SERVICIO s ON prog.id_servicio = s.id_servicio
+            WHERE o.id_operacion = %s
+        """, (id_operacion,))
+        
+        operacion = cursor.fetchone()
+        
+        if not operacion:
+            return jsonify({'success': False, 'message': 'Operación no encontrada'}), 404
+        
+        if operacion['estado'] == 'Completada':
+            return jsonify({'success': False, 'message': 'Esta operación ya fue completada'}), 400
+        
+        if operacion['id_empleado'] != id_empleado:
+            return jsonify({'success': False, 'message': 'No tienes permisos para completar esta operación'}), 403
+        
+        # Construir descripción completa de la operación
+        descripcion_completa = observaciones
+        if procedimientos_realizados:
+            descripcion_completa += f"\n\nProcedimientos realizados: {procedimientos_realizados}"
+        if complicaciones:
+            descripcion_completa += f"\n\nComplicaciones: {complicaciones}"
+        
+        # Actualizar la operación con estado Completada y las observaciones
+        cursor.execute("""
+            UPDATE OPERACION 
+            SET estado = 'Completada', observaciones = %s
+            WHERE id_operacion = %s
+        """, (descripcion_completa, id_operacion))
+        
+        # También actualizar la RESERVA asociada a Completada
+        cursor.execute("""
+            UPDATE RESERVA r
+            INNER JOIN OPERACION o ON o.id_reserva = r.id_reserva
+            SET r.estado = 'Completada', r.fecha_completada = NOW()
+            WHERE o.id_operacion = %s AND r.estado = 'Confirmada'
+        """, (id_operacion,))
+        
+        conexion.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Operación completada exitosamente',
+            'paciente': operacion['paciente_nombre'],
+            'servicio': operacion['servicio_nombre']
+        })
+        
+    except Exception as e:
+        if conexion:
+            conexion.rollback()
+        print(f"Error al completar operación: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if conexion:
+            conexion.close()
+
+
+@medico_bp.route('/api/obtener-observaciones/<tipo>/<int:id_evento>', methods=['GET'])
+@medico_required
+def api_obtener_observaciones(tipo, id_evento):
+    """
+    Obtiene las observaciones guardadas de un examen u operación.
+    Usa las tablas EXAMEN y OPERACION directamente.
+    """
+    conexion = None
+    try:
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        if tipo == 'examen':
+            cursor.execute("""
+                SELECT observacion as observaciones, estado
+                FROM EXAMEN
+                WHERE id_examen = %s
+            """, (id_evento,))
+        elif tipo == 'operacion':
+            cursor.execute("""
+                SELECT observaciones, estado
+                FROM OPERACION
+                WHERE id_operacion = %s
+            """, (id_evento,))
+        else:
+            return jsonify({'success': False, 'message': 'Tipo no válido'}), 400
+        
+        resultado = cursor.fetchone()
+        
+        if resultado:
+            return jsonify({
+                'success': True,
+                'observaciones': resultado['observaciones'],
+                'estado': resultado['estado'],
+                'completado': resultado['estado'] == 'Completada'
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'observaciones': None,
+                'mensaje': 'No hay observaciones registradas'
+            })
+        
+    except Exception as e:
+        print(f"Error al obtener observaciones: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
     finally:
         if conexion:

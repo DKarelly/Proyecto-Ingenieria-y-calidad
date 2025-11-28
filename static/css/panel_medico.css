@@ -6,6 +6,293 @@
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20
 }
 
+/* ========== ESTILOS PARA AGENDA DINÁMICA ========== */
+
+/* Animación de carga */
+#agenda-loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* ===== BOTONES DE NAVEGACIÓN MEJORADOS ===== */
+.nav-agenda-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+}
+
+.nav-agenda-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.nav-agenda-btn:active {
+    transform: scale(0.95);
+}
+
+.nav-agenda-btn .material-symbols-outlined {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+/* Botón HOY */
+.btn-hoy-agenda {
+    background: white;
+    color: #0891b2;
+    font-weight: 700;
+    padding: 8px 20px;
+    border-radius: 25px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hoy-agenda:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    background: #f0fdfa;
+}
+
+/* ===== TABLA CALENDARIO ===== */
+#agenda-calendario {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+#agenda-body table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* Encabezados de días */
+.dia-header {
+    padding: 14px 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 12px;
+    border-bottom: 3px solid #e2e8f0;
+}
+
+.dia-header.dia-hoy {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+    color: white !important;
+    border-bottom-color: #0891b2;
+}
+
+/* Celda de hora */
+.celda-hora {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    font-weight: 600;
+    color: #64748b;
+    border-right: 3px solid #e2e8f0;
+}
+
+/* Celdas del calendario */
+#agenda-body td {
+    min-height: 65px;
+    vertical-align: top;
+    transition: all 0.2s ease;
+    border: 1px solid #e5e7eb;
+}
+
+#agenda-body td:hover {
+    background-color: #f0f9ff !important;
+}
+
+#agenda-body td.celda-hoy {
+    background: linear-gradient(135deg, #ecfeff 0%, #e0f2fe 100%) !important;
+}
+
+/* ===== EVENTOS - COLORES DIFERENCIADORES ===== */
+
+/* CITA PENDIENTE - Naranja vibrante */
+.evento-cita-pendiente {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid #f59e0b;
+    color: #92400e;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.evento-cita-pendiente:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+/* CITA CONFIRMADA/COMPLETADA - Verde esmeralda */
+.evento-cita-confirmada {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-left: 4px solid #10b981;
+    color: #065f46;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.evento-cita-confirmada:hover {
+    background: linear-gradient(135deg, #a7f3d0 0%, #6ee7b7 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* EXAMEN - Azul índigo */
+.evento-examen {
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    border-left: 4px solid #6366f1;
+    color: #3730a3;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.evento-examen:hover {
+    background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+/* OPERACIÓN - Rojo coral */
+.evento-operacion {
+    background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
+    border-left: 4px solid #f43f5e;
+    color: #9f1239;
+    box-shadow: 0 2px 8px rgba(244, 63, 94, 0.25);
+}
+
+.evento-operacion:hover {
+    background: linear-gradient(135deg, #fecdd3 0%, #fda4af 100%);
+    box-shadow: 0 4px 12px rgba(244, 63, 94, 0.35);
+}
+
+/* CANCELADA - Gris tachado */
+.evento-cancelado {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-left: 4px solid #9ca3af;
+    color: #6b7280;
+    opacity: 0.7;
+    text-decoration: line-through;
+}
+
+/* Estilos comunes para eventos */
+.evento-agenda {
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin: 3px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.evento-agenda:hover {
+    transform: translateY(-2px) scale(1.02);
+    z-index: 10;
+}
+
+.evento-agenda::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.evento-hora {
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 2px;
+}
+
+.evento-titulo {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* Leyenda de colores */
+.leyenda-agenda {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-radius: 10px;
+    margin-top: 12px;
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.leyenda-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+}
+
+/* Scrollbar estilizado para el calendario */
+#agenda-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+#agenda-body::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+#agenda-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #06b6d4 0%, #14b8a6 100%);
+    border-radius: 10px;
+}
+
+#agenda-body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #0891b2 0%, #0d9488 100%);
+}
+
+/* Animación para eventos */
+#agenda-body [onclick*="verDetalleEvento"] {
+    transition: all 0.15s ease-out;
+}
+
+#agenda-body [onclick*="verDetalleEvento"]:hover {
+    transform: scale(1.02);
+    z-index: 20 !important;
+}
+
+/* Modal de evento - animación de entrada */
+#modal-detalle-evento:not(.hidden) > div {
+    animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 /* Animación para el desglose de tiempo */
 .time-breakdown {
     animation: expandIn 0.2s ease-out;

@@ -205,181 +205,247 @@
                 {% endif %}
 
                 {% if subsistema == 'agenda' %}
-                <!-- Subsistema: Mi Agenda -->
+                <!-- Subsistema: Mi Agenda - CALENDARIO DINÁMICO -->
                 <div class="mb-6">
                     <h2 class="text-3xl font-bold text-gray-800 mb-2">Mi Agenda</h2>
-                    <p class="text-gray-600">Visualiza tu calendario de citas y eventos de la semana</p>
+                    <p class="text-gray-600">Visualiza tu calendario de citas, exámenes y operaciones</p>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <!-- Header navegación semana -->
-                    <div class="bg-gradient-to-r from-cyan-500 to-teal-500 text-white p-4 md:p-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2 md:gap-4">
-                                <button onclick="cambiarSemana(-1)" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
-                                    <span class="material-symbols-outlined">chevron_left</span>
+                <!-- Contenedor del calendario dinámico -->
+                <div id="agenda-container" class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <!-- Header navegación semana MEJORADO -->
+                    <div class="bg-gradient-to-r from-cyan-600 via-teal-500 to-emerald-500 text-white p-5">
+                        <div class="flex items-center justify-between flex-wrap gap-3">
+                            <div class="flex items-center gap-4">
+                                <!-- Flecha izquierda mejorada -->
+                                <button id="btn-semana-anterior" onclick="navegarAgenda(-1)" class="nav-agenda-btn" title="Semana anterior">
+                                    <span class="material-symbols-outlined">arrow_back_ios_new</span>
                                 </button>
-                                <h2 class="text-lg md:text-xl font-semibold">
-                                    {% if inicio_semana and fin_semana %}
-                                    Semana del {{ inicio_semana.strftime('%d') }} al {{ fin_semana.strftime('%d %b %Y') }}
-                                    {% else %}
-                                    Semana actual
-                                    {% endif %}
+                                
+                                <h2 id="titulo-semana" class="text-lg md:text-xl font-bold tracking-wide">
+                                    Cargando...
                                 </h2>
-                                <button onclick="cambiarSemana(1)" class="p-2 hover:bg-white/20 rounded-lg transition-colors">
-                                    <span class="material-symbols-outlined">chevron_right</span>
+                                
+                                <!-- Flecha derecha mejorada -->
+                                <button id="btn-semana-siguiente" onclick="navegarAgenda(1)" class="nav-agenda-btn" title="Semana siguiente">
+                                    <span class="material-symbols-outlined">arrow_forward_ios</span>
                                 </button>
                             </div>
-                            <div class="flex gap-2">
-                                {% if offset_semana != 0 %}
-                                <button onclick="irHoy()" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-md">
-                                    <span class="material-symbols-outlined text-lg">today</span>
-                                    <span class="hidden md:inline">Hoy</span>
+                            
+                            <div class="flex gap-3 items-center">
+                                <!-- Botón HOY mejorado -->
+                                <button id="btn-hoy" onclick="irAHoy()" class="btn-hoy-agenda flex items-center gap-2">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">today</span>
+                                    <span>Ir a Hoy</span>
                                 </button>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <!-- Calendario semanal -->
-                    <div class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-280px)]">
-                        {% if horarios_medico and horarios_medico.horarios %}
-                        {# OPTIMIZACIÓN: Horas pre-calculadas en backend #}
-                        {% set hora_min = horarios_medico.hora_min %}
-                        {% set hora_max = horarios_medico.hora_max %}
-                        {% set horarios = horarios_medico.horarios %}
-                        
-                        <table class="min-w-full border-collapse">
-                            <thead>
-                                <tr>
-                                    <th class="w-20 p-3 bg-gray-50 border border-gray-200 text-center text-sm font-medium text-gray-600 sticky left-0 z-20">Hora</th>
-                                    {% for day in range(7) %}
-                                    {% set dia_nombres = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'] %}
-                                    <th class="p-3 bg-gray-50 border border-gray-200 text-center text-sm font-medium text-gray-600 min-w-[150px]">
-                                        {{ dia_nombres[day] }}
-                                        {% if day in horarios %}
-                                        <br><span class="text-xs font-normal">{{ horarios[day].fecha.strftime('%d/%m') }}</span>
-                                        {% endif %}
-                                    </th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {# OPTIMIZACIÓN: Bucle simplificado sin nested loops #}
-                                {% for hour in range(hora_min, hora_max + 1) %}
-                                <tr>
-                                    <td class="w-20 p-2 bg-gray-50 border border-gray-200 text-sm text-gray-600 font-medium sticky left-0 z-10 text-center">
-                                        {{ '%02d:00'|format(hour) }}
-                                    </td>
-                                    {% for day in range(7) %}
-                                    {# OPTIMIZACIÓN: Verificación rápida sin bucles anidados #}
-                                    {% set tiene_horario = day in horarios and horarios[day].bloques %}
-                                    
-                                    {% if tiene_horario %}
-                                    <td class="p-0 border border-gray-200 h-20 align-top relative calendar-cell"
-                                        data-day="{{ day }}" data-hour="{{ hour }}">
-                                        {# OPTIMIZACIÓN: Citas pre-calculadas con estilos en backend #}
-                                        {% set clave_cita = day|string + '_' + hour|string %}
-                                        {% if citas_semana and clave_cita in citas_semana %}
-                                            {% for cita in citas_semana[clave_cita] %}
-                                            <div class="cita-event absolute rounded px-2 py-1 text-white overflow-hidden shadow-md z-10 cursor-pointer hover:shadow-lg transition-all"
-                                                 style="top: {{ cita.offset }}px; height: {{ cita.altura }}px; background-color: {{ cita.color }}; left: 2px; right: 2px;"
-                                                 data-inicio="{{ cita.hora_inicio_str }}" data-fin="{{ cita.hora_fin_str }}" data-dia="{{ day }}" data-hora="{{ hour }}"
-                                                 onclick="event.stopPropagation(); verDetalleCita({{ cita.id }})">
-                                                <div class="text-xs font-bold line-clamp-1">{{ cita.paciente }}</div>
-                                                <div class="text-xs opacity-90 line-clamp-1">{{ cita.tipo }}</div>
-                                                <div class="text-xs font-medium mt-1">{{ cita.hora_inicio_str }} - {{ cita.hora_fin_str }}</div>
-                                            </div>
-                                            {% endfor %}
-                                        {% endif %}
-                                    </td>
-                                    {% else %}
-                                    <td class="p-0 border border-gray-200 h-20 bg-gray-100 relative">
-                                        <div class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">
-                                            <span class="material-symbols-outlined text-lg opacity-30">block</span>
-                                        </div>
-                                    </td>
-                                    {% endif %}
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        {% else %}
-                        <!-- Mensaje cuando no hay horarios -->
-                        <div class="text-center py-12">
-                            <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">schedule</span>
-                            <p class="text-gray-500 font-medium">No hay horarios configurados para esta semana</p>
-                            <p class="text-gray-400 text-sm mt-2">Contacta con administración para configurar tu agenda</p>
+                    <!-- Estado de carga -->
+                    <div id="agenda-loading" class="p-8 text-center">
+                        <div class="inline-flex items-center gap-3 text-cyan-600">
+                            <svg class="animate-spin h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-gray-600 font-medium">Cargando agenda...</span>
                         </div>
-                        {% endif %}
+                    </div>
+
+                    <!-- Calendario semanal dinámico -->
+                    <div id="agenda-calendario" class="hidden">
+                        <!-- Cabecera de días -->
+                        <div id="agenda-dias" class="bg-gray-50 border-b-2 border-gray-200">
+                            <!-- Los días se generan dinámicamente -->
+                        </div>
+                        
+                        <!-- Cuerpo del calendario -->
+                        <div id="agenda-body" class="overflow-y-auto overflow-x-hidden" style="max-height: calc(100vh - 320px); min-height: 350px;">
+                            <!-- Las filas de horas y eventos se generan dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Mensaje de sin eventos -->
+                    <div id="agenda-vacio" class="hidden text-center py-12">
+                        <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">event_busy</span>
+                        <p class="text-gray-500 font-medium">No hay eventos programados para esta semana</p>
+                        <p class="text-gray-400 text-sm mt-2">Navega a otras semanas usando las flechas</p>
                     </div>
                 </div>
 
-                <!-- Lista de citas del día -->
+                <!-- Lista de eventos del día seleccionado -->
                 <div class="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <h3 id="titulo-eventos-dia" class="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <span class="material-symbols-outlined text-cyan-600">event_note</span>
-                            Citas de Hoy
+                            Eventos de Hoy
                         </h3>
-                        <span class="text-sm text-gray-500">{{ citas_hoy|length if citas_hoy else 0 }} cita(s)</span>
+                        <span id="contador-eventos-dia" class="text-sm text-gray-500">0 evento(s)</span>
                     </div>
-                    {% if citas_hoy %}
-                    <div class="space-y-3">
-                        {% for cita in citas_hoy %}
-                        <div class="flex items-center gap-4 p-4 rounded-xl border-2
-                            {% if cita.estado == 'Pendiente' %}border-amber-200 bg-amber-50
-                            {% elif cita.estado == 'Confirmada' %}border-blue-200 bg-blue-50
-                            {% elif cita.estado == 'Completada' %}border-emerald-200 bg-emerald-50
-                            {% else %}border-gray-200 bg-gray-50{% endif %} hover:shadow-md transition-all">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-cyan-500 to-teal-500 rounded-xl flex items-center justify-center text-white font-bold text-sm md:text-lg shadow-md">
-                                    {{ cita.paciente.split()[0][0] }}{{ cita.paciente.split()[1][0] if cita.paciente.split()|length > 1 else '' }}
+                    
+                    <!-- Contenedor de eventos del día (se llena dinámicamente) -->
+                    <div id="lista-eventos-dia" class="space-y-3">
+                        <div class="text-center py-10 text-gray-500">
+                            <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                                <span class="material-symbols-outlined text-4xl md:text-5xl text-gray-400">event_busy</span>
+                            </div>
+                            <p class="font-semibold text-sm md:text-lg">Cargando eventos...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de detalle de evento -->
+                <div id="modal-detalle-evento" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" style="background: rgba(0,0,0,0.35); backdrop-filter: blur(6px);">
+                    <div class="bg-white rounded-3xl shadow-lg w-full max-w-lg overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
+                        <!-- Header del modal (ajustado) -->
+                        <div id="modal-evento-header" class="px-6 py-5 bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500 text-white flex-shrink-0">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shadow-sm border border-white/20">
+                                        <span id="modal-evento-icono" class="material-symbols-outlined text-2xl text-white">event</span>
+                                    </div>
+                                    <div>
+                                        <h3 id="modal-evento-tipo" class="font-bold text-lg">Cita Médica</h3>
+                                        <p id="modal-evento-estado" class="text-sm opacity-95 mt-1">Pendiente</p>
+                                    </div>
                                 </div>
+                                <button onclick="cerrarModalEvento()" class="p-2 hover:bg-white/20 rounded-lg transition-all">
+                                    <span class="material-symbols-outlined text-white text-2xl">close</span>
+                                </button>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-gray-800 text-sm md:text-lg truncate">{{ cita.paciente }}</h4>
-                                <p class="text-xs md:text-sm text-gray-600 mt-1 truncate">{{ cita.tipo }}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-sm md:text-xl {% if cita.estado == 'Pendiente' or cita.estado == 'Confirmada' %}text-cyan-600{% else %}text-gray-600{% endif %}">{{ cita.hora }}</p>
-                                <div class="mt-2">
-                                    {% if cita.estado == 'Pendiente' %}
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-1.5 md:px-3 md:py-1.5 bg-amber-100 text-amber-700 text-[10px] md:text-xs font-bold rounded-lg">
-                                        <span class="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                                        Pendiente
-                                    </span>
-                                    {% elif cita.estado == 'Confirmada' %}
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-1.5 md:px-3 md:py-1.5 bg-blue-100 text-blue-700 text-[10px] md:text-xs font-bold rounded-lg">
-                                        <span class="material-symbols-outlined text-xs md:text-sm">check_circle</span>
-                                        Confirmada
-                                    </span>
-                                    {% elif cita.estado == 'Completada' %}
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-1.5 md:px-3 md:py-1.5 bg-emerald-100 text-emerald-700 text-[10px] md:text-xs font-bold rounded-lg">
-                                        <span class="material-symbols-outlined text-xs md:text-sm filled">task_alt</span>
-                                        Completada
-                                    </span>
-                                    {% elif cita.estado == 'Cancelada' %}
-                                    <span class="inline-flex items-center gap-1.5 px-2 py-1.5 md:px-3 md:py-1.5 bg-red-100 text-red-700 text-[10px] md:text-xs font-bold rounded-lg">
-                                        <span class="material-symbols-outlined text-xs md:text-sm">cancel</span>
-                                        Cancelada
-                                    </span>
-                                    {% endif %}
+                        </div>
+
+                        <!-- Cuerpo del modal: tarjetas consistentes -->
+                        <div class="p-6 bg-gray-50 overflow-y-auto flex-1">
+                            <div class="space-y-5">
+                                <!-- Paciente -->
+                                <div class="flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shadow-sm bg-gradient-to-br from-blue-500 to-cyan-500">
+                                        <span class="material-symbols-outlined text-white text-xl">person</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Paciente</p>
+                                        <p id="modal-evento-paciente" class="font-semibold text-gray-900">-</p>
+                                    </div>
+                                </div>
+
+                                <!-- Servicio -->
+                                <div class="flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center shadow-sm bg-gradient-to-br from-green-500 to-emerald-500">
+                                        <span class="material-symbols-outlined text-white text-xl">medical_services</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">Servicio</p>
+                                        <p id="modal-evento-servicio" class="font-semibold text-gray-900">-</p>
+                                    </div>
+                                </div>
+
+                                <!-- Fecha y Hora: tarjetas iguales en estilo -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex gap-4 items-start">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-500 shadow-sm">
+                                            <span class="material-symbols-outlined text-white">calendar_today</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">Fecha</p>
+                                            <p id="modal-evento-fecha" class="text-sm font-semibold text-gray-900">-</p>
+                                        </div>
+                                    </div>
+                                    <div class="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex gap-4 items-start">
+                                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-orange-500 to-red-500 shadow-sm">
+                                            <span class="material-symbols-outlined text-white">schedule</span>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-1">Hora</p>
+                                            <p id="modal-evento-hora" class="text-sm font-semibold text-gray-900">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sección de observaciones (visible solo para exámenes/operaciones) -->
+                                <div id="seccion-observaciones" class="hidden">
+                                    <!-- Observaciones existentes (para eventos completados) -->
+                                    <div id="observaciones-existentes" class="hidden p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                        <div class="flex items-start gap-4">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm flex-shrink-0">
+                                                <span class="material-symbols-outlined text-white">description</span>
+                                            </div>
+                                            <div class="flex-1">
+                                                <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-2">Observaciones del Procedimiento</p>
+                                                <p id="texto-observaciones-existentes" class="text-sm text-gray-700 whitespace-pre-wrap"></p>
+                                                <p id="fecha-completado" class="text-xs text-gray-400 mt-2"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Formulario para completar (para eventos pendientes) -->
+                                    <div id="formulario-completar" class="hidden space-y-4">
+                                        <div class="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                                            <div class="flex items-center gap-3 mb-4">
+                                                <div class="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-amber-500 to-orange-500 shadow-sm">
+                                                    <span class="material-symbols-outlined text-white">edit_note</span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-semibold text-gray-900">Completar Procedimiento</p>
+                                                    <p class="text-xs text-gray-500">Ingresa los detalles del procedimiento realizado</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Campo de observaciones -->
+                                            <div class="mb-4">
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                    Observaciones <span class="text-red-500">*</span>
+                                                </label>
+                                                <textarea id="input-observaciones" 
+                                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                                                    rows="4"
+                                                    placeholder="Describe el procedimiento realizado, hallazgos, resultados..."></textarea>
+                                            </div>
+
+                                            <!-- Campos adicionales para operaciones -->
+                                            <div id="campos-operacion" class="hidden space-y-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                        Procedimientos realizados
+                                                    </label>
+                                                    <textarea id="input-procedimientos" 
+                                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                                                        rows="2"
+                                                        placeholder="Lista de procedimientos realizados durante la operación..."></textarea>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                        Complicaciones (si las hubo)
+                                                    </label>
+                                                    <textarea id="input-complicaciones" 
+                                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent resize-none"
+                                                        rows="2"
+                                                        placeholder="Describe cualquier complicación durante el procedimiento..."></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-10 text-gray-500">
-                        <div class="w-16 h-16 md:w-20 md:h-20 mx-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
-                            <span class="material-symbols-outlined text-4xl md:text-5xl text-gray-400">event_busy</span>
+
+                        <!-- Footer del modal -->
+                        <div class="px-6 py-6 bg-white border-t border-gray-100 flex-shrink-0">
+                            <!-- Botón para completar (visible solo si pendiente) -->
+                            <button id="btn-completar-procedimiento" 
+                                onclick="completarProcedimiento()" 
+                                class="hidden w-full px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-shadow shadow-md hover:shadow-lg mb-3">
+                                <span class="flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                    <span id="btn-completar-texto">Completar Procedimiento</span>
+                                </span>
+                            </button>
+                            <button onclick="cerrarModalEvento()" class="w-full px-5 py-3.5 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white rounded-xl font-semibold transition-shadow shadow-md hover:shadow-lg">
+                                Cerrar
+                            </button>
                         </div>
-                        <p class="font-semibold text-sm md:text-lg">No hay citas programadas para hoy</p>
-                        <p class="text-xs md:text-sm mt-2">Tu agenda está libre.</p>
                     </div>
-                    {% endif %}
                 </div>
                 {% endif %}
 
@@ -873,7 +939,7 @@
     </div>
 
     <!-- Script del panel médico -->
-    <script src="{{ url_for('static', filename='js/panel_medico.js') }}?v=20251125-005"></script>
+    <script src="{{ url_for('static', filename='js/panel_medico.js') }}?v=20251128-009"></script>
     
     {% if subsistema == 'notificaciones' %}
     <script>
