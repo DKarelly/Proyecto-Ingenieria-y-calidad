@@ -389,7 +389,11 @@ function generarTarjetaCita(reserva) {
         }
         
         // BOTÓN DE CANCELACIÓN (condicional según estado)
-        if (tieneSolicitudCancelacion) {
+        // No mostrar botones si la reserva ya está cancelada
+        if (esCitaCancelada) {
+            // No mostrar botones para reservas canceladas
+            html += '';
+        } else if (tieneSolicitudCancelacion) {
             // Si tiene solicitud de cancelación pendiente, mostrar botón deshabilitado
             html += `
                             <button disabled 
@@ -923,7 +927,13 @@ function obtenerEstilosEstado(estadoReserva, estadoCancelacion) {
     let borderColorClass = 'border-gray-100';
     let bgColorClass = 'bg-white';
     
-    if (estadoCancelacion === 'Solicitada') {
+    // Si la reserva está cancelada (estado_reserva = 'Cancelada'), mostrar como cancelada
+    if (estadoReserva === 'Cancelada') {
+        estadoClass = 'bg-red-200 text-red-900';
+        estadoTexto = '❌ Cancelada';
+        borderColorClass = 'border-red-300';
+        bgColorClass = 'bg-red-50';
+    } else if (estadoCancelacion === 'Solicitada') {
         estadoClass = 'bg-gray-300 text-gray-700';
         estadoTexto = '⏳ Cancelación Solicitada';
         borderColorClass = 'border-gray-400';

@@ -1,10 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
+from flask_limiter.util import get_remote_address
 from models.usuario import Usuario
 from functools import wraps
 from models.notificacion import Notificacion
 from models.paciente import Paciente
 
 usuarios_bp = Blueprint('usuarios', __name__)
+
+# Importar limiter después de que la app esté inicializada
+def get_limiter():
+    """Obtiene el limiter desde la aplicación Flask"""
+    from app import limiter
+    return limiter
 
 # Decorador para rutas protegidas
 def login_required(f):
@@ -28,7 +35,14 @@ def empleado_required(f):
 
 @usuarios_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Página de inicio de sesión"""
+    """
+    Página de inicio de sesión
+    
+    SEGURIDAD:
+    - Rate limiting: máximo 5 intentos por IP en 15 minutos
+    - Mensajes genéricos de error para no revelar información
+    - Bloqueo temporal después de 5 intentos fallidos (solo por IP)
+    """
     if request.method == 'POST':
         correo = request.form.get('correo')
         contrasena = request.form.get('contrasena')
@@ -37,11 +51,34 @@ def login():
             flash('Debe completar todos los campos', 'warning')
             return render_template('home.html')
         
+        # SEGURIDAD: Verificar bloqueo por IP antes de intentar login
+        from utils.security_helper import SecurityHelper
+        ip_address = SecurityHelper.obtener_ip_cliente()
+        
+        # Verificar bloqueo por IP (solo por IP, no por correo)
+        bloqueo_ip = SecurityHelper.verificar_bloqueo(ip_address=ip_address)
+        if bloqueo_ip['bloqueado']:
+            flash(bloqueo_ip['mensaje'], 'danger')
+            return render_template('home.html')
+        
         resultado = Usuario.login(correo, contrasena)
         
         if 'error' in resultado:
-            flash(resultado['error'], 'danger')
+            # Registrar intento fallido (se registra por correo e IP para auditoría)
+            SecurityHelper.registrar_intento_fallido(correo, ip_address)
+            
+            # Verificar si ahora está bloqueado después de este intento (solo por IP)
+            bloqueo_actualizado = SecurityHelper.verificar_bloqueo(ip_address=ip_address)
+            if bloqueo_actualizado['bloqueado']:
+                flash(bloqueo_actualizado['mensaje'], 'danger')
+            else:
+                # Mensaje genérico siempre
+                flash('Credenciales incorrectas', 'danger')
+            
             return render_template('home.html')
+        
+        # Login exitoso: limpiar intentos fallidos de la IP
+        SecurityHelper.limpiar_intentos_exitoso(ip_address)
         
         # Guardar datos en sesión
         usuario = resultado['usuario']
@@ -65,11 +102,10 @@ def login():
         session['id_paciente'] = usuario.get('id_paciente')
         session['id_empleado'] = usuario.get('id_empleado')
         
-        # SEGURIDAD: Inicializar timestamp de última actividad para pacientes
-        # Esto permite el control de timeout de 15 minutos de inactividad
-        if usuario['tipo_usuario'] == 'paciente':
-            from datetime import datetime
-            session['last_activity'] = datetime.now().isoformat()
+        # SEGURIDAD: Inicializar timestamp de última actividad para TODOS los usuarios
+        # Esto permite el control de timeout de 10 minutos de inactividad para todos los roles
+        from datetime import datetime
+        session['last_activity'] = datetime.now().isoformat()
         
         flash(f'Bienvenido {usuario["nombre"]}', 'success')
         
@@ -468,36 +504,46 @@ def eliminar(id_usuario):
 # API endpoints
 @usuarios_bp.route('/api/login', methods=['POST'])
 def api_login():
-    """API: Login de usuario"""
-    data = request.get_json()
-    correo = data.get('correo')
-    contrasena = data.get('contrasena')
+    """
+    API: Login de usuario
     
-    # Log para debugging (solo en desarrollo)
-    print(f"\n[DEBUG LOGIN] Intento de login para: {correo}")
-    print(f"[DEBUG LOGIN] Contraseña recibida: {len(contrasena) if contrasena else 0} caracteres")
+    SEGURIDAD:
+    - Rate limiting: máximo 5 intentos por IP en 15 minutos
+    - Mensajes genéricos de error para no revelar información
+    - Bloqueo temporal después de 5 intentos fallidos (solo por IP)
+    """
+    data = request.get_json()
+    correo = data.get('correo') if data else None
+    contrasena = data.get('contrasena') if data else None
     
     if not correo or not contrasena:
-        print(f"[DEBUG LOGIN] Error: Campos incompletos")
         return jsonify({'error': 'Debe completar todos los campos'}), 400
     
-    # Obtener usuario para debugging
-    from models.usuario import Usuario
-    usuario_test = Usuario.obtener_por_correo(correo)
-    if usuario_test:
-        print(f"[DEBUG LOGIN] Usuario encontrado - Estado: {usuario_test.get('estado')}")
-        print(f"[DEBUG LOGIN] Hash en BD: {usuario_test.get('contrasena')[:50]}...")
-        
-        # Verificar contraseña manualmente
-        from werkzeug.security import check_password_hash
-        match = check_password_hash(usuario_test['contrasena'], contrasena)
-        print(f"[DEBUG LOGIN] Verificación de contraseña: {'✓ MATCH' if match else '✗ NO MATCH'}")
+    # SEGURIDAD: Verificar bloqueo por IP antes de intentar login
+    from utils.security_helper import SecurityHelper
+    ip_address = SecurityHelper.obtener_ip_cliente()
+    
+    # Verificar bloqueo por IP (solo por IP, no por correo)
+    bloqueo_ip = SecurityHelper.verificar_bloqueo(ip_address=ip_address)
+    if bloqueo_ip['bloqueado']:
+        return jsonify({'error': bloqueo_ip['mensaje']}), 429  # 429 Too Many Requests
     
     resultado = Usuario.login(correo, contrasena)
     
     if 'error' in resultado:
-        print(f"[DEBUG LOGIN] Error: {resultado['error']}")
-        return jsonify({'error': resultado['error']}), 401
+        # Registrar intento fallido (se registra por correo e IP para auditoría)
+        SecurityHelper.registrar_intento_fallido(correo, ip_address)
+        
+        # Verificar si ahora está bloqueado después de este intento (solo por IP)
+        bloqueo_actualizado = SecurityHelper.verificar_bloqueo(ip_address=ip_address)
+        if bloqueo_actualizado['bloqueado']:
+            return jsonify({'error': bloqueo_actualizado['mensaje']}), 429
+        
+        # Mensaje genérico siempre (no revelar información)
+        return jsonify({'error': 'Credenciales incorrectas'}), 401
+    
+    # Login exitoso: limpiar intentos fallidos de la IP
+    SecurityHelper.limpiar_intentos_exitoso(ip_address)
     
     # Guardar en sesión también
     usuario = resultado['usuario']
@@ -521,10 +567,10 @@ def api_login():
     session['id_paciente'] = usuario.get('id_paciente')
     session['id_empleado'] = usuario.get('id_empleado')
     
-    # SEGURIDAD: Inicializar timestamp de última actividad para pacientes (API login)
-    if usuario.get('tipo_usuario') == 'paciente':
-        from datetime import datetime
-        session['last_activity'] = datetime.now().isoformat()
+    # SEGURIDAD: Inicializar timestamp de última actividad para TODOS los usuarios (API login)
+    # Esto permite el control de timeout de 10 minutos de inactividad para todos los roles
+    from datetime import datetime
+    session['last_activity'] = datetime.now().isoformat()
     
     # Debug: imprimir información del usuario
     print(f"[DEBUG api_login] Usuario logueado - tipo: {usuario.get('tipo_usuario')}, id_rol: {usuario.get('id_rol')}, id_empleado: {usuario.get('id_empleado')}")
