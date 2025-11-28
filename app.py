@@ -1,4 +1,6 @@
 from flask import Flask, render_template, session, redirect, url_for, g, request, send_from_directory, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -8,6 +10,25 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'tu_clave_secreta_super_segura_aqui_12345')
+
+# SEGURIDAD: Rate Limiting para prevenir ataques de fuerza bruta
+# Máximo 5 intentos de login por IP en 15 minutos
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"  # En producción, considerar usar Redis
+)
+
+# SEGURIDAD: Configuración de sesiones
+# Timeout de sesión permanente: 30 minutos (backup, pero usamos timeout personalizado de 10 min)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+# Cookies seguras: HttpOnly y SameSite para prevenir XSS y CSRF
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Protección CSRF
+# En producción, usar Secure=True para HTTPS
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True
 
 # OPTIMIZACIÓN: Deshabilitar caché en desarrollo
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 if app.debug else 31536000
@@ -98,15 +119,15 @@ def load_logged_in_user():
             # En caso de error (DB, etc.) no romper la app; dejar sin usuario
             g.user = None
 
-# SEGURIDAD: Timeout de sesión diferenciado por rol
-# Pacientes: 15 minutos de inactividad
-# Otros roles: Sin restricción de timeout
+# SEGURIDAD: Timeout de sesión para TODOS los roles
+# Todos los usuarios: 10 minutos de inactividad
+# Previene ataques por cookies guardadas y mejora la seguridad general
 @app.before_request
-def check_patient_session_timeout():
+def check_session_timeout():
     """
-    Verifica el timeout de sesión para pacientes.
-    Si un paciente está inactivo por más de 15 minutos, cierra su sesión automáticamente.
-    Para otros roles (empleados, médicos, etc.), no aplica restricción.
+    Verifica el timeout de sesión para TODOS los usuarios.
+    Si cualquier usuario está inactivo por más de 10 minutos, cierra su sesión automáticamente.
+    Esto previene ataques por cookies guardadas y mejora la seguridad general.
     """
     # OPTIMIZACIÓN: No procesar archivos estáticos ni rutas de login/logout
     if request.path.startswith('/static/'):
@@ -116,10 +137,9 @@ def check_patient_session_timeout():
     if request.path in ['/usuarios/login', '/usuarios/logout', '/logout', '/']:
         return
     
-    # Solo aplicar timeout a pacientes
-    tipo_usuario = session.get('tipo_usuario')
-    if tipo_usuario != 'paciente':
-        return  # No aplicar timeout a empleados, médicos, etc.
+    # Aplicar timeout a TODOS los usuarios autenticados
+    if 'usuario_id' not in session:
+        return  # No hay sesión activa, no aplicar timeout
     
     # Verificar si hay timestamp de última actividad
     last_activity_str = session.get('last_activity')
@@ -138,19 +158,19 @@ def check_patient_session_timeout():
         # Calcular tiempo de inactividad
         inactivity_time = now - last_activity
         
-        # Timeout: 15 minutos
-        timeout_duration = timedelta(minutes=15)
+        # Timeout: 10 minutos para TODOS los roles
+        timeout_duration = timedelta(minutes=10)
         
         # Si el tiempo de inactividad supera el timeout, cerrar sesión
         if inactivity_time > timeout_duration:
-            # Limpiar sesión
+            # Limpiar sesión completamente
             session.clear()
             # Redirigir al login con mensaje
             flash('Su sesión ha expirado por seguridad. Por favor, inicie sesión nuevamente.', 'warning')
             return redirect(url_for('usuarios.login'))
         
         # Si está activo, actualizar el timestamp (Rolling Window)
-        # Esto reinicia el contador de 15 minutos con cada petición
+        # Esto reinicia el contador de 10 minutos con cada petición
         session['last_activity'] = now.isoformat()
         
     except (ValueError, TypeError) as e:
