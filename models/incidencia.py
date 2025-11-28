@@ -36,7 +36,7 @@ class Incidencia:
         texto = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', texto)
         
         # Limitar longitud máxima (prevenir ataques de buffer)
-        max_length = 5000
+        max_length = 1000
         if len(texto) > max_length:
             texto = texto[:max_length]
         
